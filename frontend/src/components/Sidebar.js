@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 import { 
   Bike, 
   LayoutDashboard, 
@@ -39,14 +40,17 @@ const Sidebar = () => {
   return (
     <aside className="sidebar sidebar-texture">
       <div className="sidebar-header">
-        <Link to={user?.role === 'admin' ? '/admin' : '/dealer'} className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-            <Bike className="w-6 h-6 text-white" />
-          </div>
-          <span className="font-barlow text-xl font-bold uppercase tracking-tight text-white">
-            Moto Import
-          </span>
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link to={user?.role === 'admin' ? '/admin' : '/dealer'} className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+              <Bike className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-barlow text-xl font-bold uppercase tracking-tight text-white">
+              Moto Import
+            </span>
+          </Link>
+          {user?.role === 'dealer' && <NotificationBell />}
+        </div>
       </div>
 
       <nav className="sidebar-nav">
