@@ -279,6 +279,10 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
 @api_router.get("/motorcycles", response_model=List[Motorcycle])
 async def get_motorcycles(user: dict = Depends(get_current_user)):
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
+    # Add default starting_price if missing
+    for m in motorcycles:
+        if "starting_price" not in m or m["starting_price"] is None:
+            m["starting_price"] = m.get("price", 0) * 0.8
     return motorcycles
 
 @api_router.get("/motorcycles/available", response_model=List[Motorcycle])
