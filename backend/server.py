@@ -83,7 +83,7 @@ class Motorcycle(BaseModel):
     model: str
     year: int
     price: float  # Koop nu prijs
-    starting_price: float  # Vanaf prijs
+    starting_price: Optional[float] = None  # Vanaf prijs
     mileage: int
     color: str
     description: str
