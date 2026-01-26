@@ -40,9 +40,15 @@ const LoginPage = () => {
           <h1 className="font-barlow text-5xl font-bold uppercase tracking-tight mb-4">
             Moto Import Portal
           </h1>
-          <p className="text-lg text-zinc-300 max-w-md">
+          <p className="text-lg text-zinc-300 max-w-md mb-8">
             Exclusieve motorfietsen voor uw dealer netwerk. Bekijk, bestel en beheer uw voorraad.
           </p>
+          <div className="text-sm text-zinc-400 space-y-1">
+            <p className="font-semibold text-zinc-300">Moto Import B.V.</p>
+            <p>Horsterhoekweg 11</p>
+            <p>7433 SV Schalkhaar</p>
+            <p>Tel: +31 6 81792660</p>
+          </div>
         </div>
       </div>
       
