@@ -38,7 +38,7 @@ const LoginPage = () => {
       >
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
           <h1 className="font-barlow text-5xl font-bold uppercase tracking-tight mb-4">
-            Moto Dealer Portal
+            Moto Import Portal
           </h1>
           <p className="text-lg text-zinc-300 max-w-md">
             Exclusieve motorfietsen voor uw dealer netwerk. Bekijk, bestel en beheer uw voorraad.
