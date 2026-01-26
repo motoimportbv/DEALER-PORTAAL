@@ -36,6 +36,12 @@ class UserCreate(BaseModel):
     email: str
     password: str
     company_name: str
+    kvk_number: str = ""
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    phone: str = ""
+    contact_person: str = ""
     role: str = "dealer"  # "admin" or "dealer"
 
 class UserLogin(BaseModel):
@@ -47,6 +53,12 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: str
     company_name: str
+    kvk_number: str = ""
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    phone: str = ""
+    contact_person: str = ""
     role: str
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -195,12 +207,22 @@ async def register(user_data: UserCreate):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Check KVK for dealers
+    if user_data.role == "dealer" and not user_data.kvk_number:
+        raise HTTPException(status_code=400, detail="KVK nummer is verplicht voor dealers")
+    
     user_id = str(uuid.uuid4())
     user_doc = {
         "id": user_id,
         "email": user_data.email,
         "password_hash": hash_password(user_data.password),
         "company_name": user_data.company_name,
+        "kvk_number": user_data.kvk_number,
+        "address": user_data.address,
+        "postal_code": user_data.postal_code,
+        "city": user_data.city,
+        "phone": user_data.phone,
+        "contact_person": user_data.contact_person,
         "role": user_data.role,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -213,6 +235,7 @@ async def register(user_data: UserCreate):
             "id": user_id,
             "email": user_data.email,
             "company_name": user_data.company_name,
+            "kvk_number": user_data.kvk_number,
             "role": user_data.role
         }
     }
