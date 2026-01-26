@@ -1,0 +1,182 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import Layout from '../../components/Layout';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { 
+  Bike, 
+  Search,
+  Eye,
+  ShoppingCart
+} from 'lucide-react';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const DealerDashboard = () => {
+  const [motorcycles, setMotorcycles] = useState([]);
+  const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMotorcycles();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = motorcycles.filter(m => 
+        m.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.color.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredMotorcycles(filtered);
+    } else {
+      setFilteredMotorcycles(motorcycles);
+    }
+  }, [searchTerm, motorcycles]);
+
+  const fetchMotorcycles = async () => {
+    try {
+      const response = await axios.get(`${API}/motorcycles/available`);
+      setMotorcycles(response.data);
+      setFilteredMotorcycles(response.data);
+    } catch (error) {
+      console.error('Failed to fetch motorcycles:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getConditionBadge = (condition) => {
+    const styles = {
+      new: 'bg-emerald-100 text-emerald-800',
+      excellent: 'bg-blue-100 text-blue-800',
+      good: 'bg-amber-100 text-amber-800',
+      fair: 'bg-zinc-100 text-zinc-800'
+    };
+    const labels = {
+      new: 'Nieuw',
+      excellent: 'Uitstekend',
+      good: 'Goed',
+      fair: 'Redelijk'
+    };
+    return <Badge className={styles[condition]}>{labels[condition]}</Badge>;
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('nl-NL', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0
+    }).format(price);
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="content-header">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
+              Beschikbare Motoren
+            </h1>
+            <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} motoren beschikbaar</p>
+          </div>
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+            <Input
+              type="text"
+              placeholder="Zoeken op merk, model of kleur..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-11"
+              data-testid="search-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="content-body" data-testid="dealer-dashboard">
+        {filteredMotorcycles.length === 0 ? (
+          <Card>
+            <CardContent className="py-16">
+              <div className="empty-state">
+                <Bike className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
+                <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
+                  {searchTerm ? 'Geen resultaten gevonden' : 'Geen motoren beschikbaar'}
+                </h3>
+                <p className="text-zinc-500">
+                  {searchTerm ? 'Probeer een andere zoekterm' : 'Er zijn momenteel geen motoren beschikbaar'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredMotorcycles.map((motorcycle) => (
+              <Card key={motorcycle.id} className="motorcycle-card overflow-hidden" data-testid={`motorcycle-card-${motorcycle.id}`}>
+                <div className="aspect-[4/3] relative bg-zinc-100">
+                  {motorcycle.images?.[0] ? (
+                    <img 
+                      src={motorcycle.images[0]} 
+                      alt={`${motorcycle.brand} ${motorcycle.model}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Bike className="w-16 h-16 text-zinc-300" />
+                    </div>
+                  )}
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
+                        {motorcycle.brand}
+                      </h3>
+                      <p className="text-zinc-600">{motorcycle.model}</p>
+                    </div>
+                    {getConditionBadge(motorcycle.condition)}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-zinc-500 mb-3">
+                    <span>{motorcycle.year}</span>
+                    <span>•</span>
+                    <span>{motorcycle.mileage.toLocaleString('nl-NL')} km</span>
+                    <span>•</span>
+                    <span>{motorcycle.color}</span>
+                  </div>
+
+                  <p className="font-barlow text-2xl font-bold text-red-600 mb-4">
+                    {formatPrice(motorcycle.price)}
+                  </p>
+
+                  <Link to={`/motorcycle/${motorcycle.id}`}>
+                    <Button className="w-full bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid={`view-btn-${motorcycle.id}`}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Bekijk Details
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+export default DealerDashboard;
