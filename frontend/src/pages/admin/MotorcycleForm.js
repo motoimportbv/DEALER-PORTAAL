@@ -24,6 +24,7 @@ const MotorcycleForm = () => {
     model: '',
     year: new Date().getFullYear(),
     price: '',
+    starting_price: '',
     mileage: '',
     color: '',
     description: '',
@@ -82,6 +83,7 @@ const MotorcycleForm = () => {
       const payload = {
         ...formData,
         price: parseFloat(formData.price),
+        starting_price: parseFloat(formData.starting_price || formData.price),
         mileage: parseInt(formData.mileage),
         year: parseInt(formData.year)
       };
@@ -189,7 +191,21 @@ const MotorcycleForm = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-                      Prijs (€) *
+                      Vanaf Prijs (€) *
+                    </Label>
+                    <Input
+                      type="number"
+                      value={formData.starting_price}
+                      onChange={(e) => handleChange('starting_price', e.target.value)}
+                      placeholder="15000"
+                      min="0"
+                      data-testid="starting-price-input"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                      Koop Nu Prijs (€) *
                     </Label>
                     <Input
                       type="number"
@@ -201,6 +217,9 @@ const MotorcycleForm = () => {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Kilometerstand *
@@ -215,9 +234,6 @@ const MotorcycleForm = () => {
                       required
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Kleur *
@@ -230,7 +246,7 @@ const MotorcycleForm = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                </div>
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Conditie *
                     </Label>
