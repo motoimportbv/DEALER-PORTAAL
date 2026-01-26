@@ -159,14 +159,25 @@ const DealerDashboard = () => {
                     <span>{motorcycle.color}</span>
                   </div>
 
-                  <p className="font-barlow text-2xl font-bold text-red-600 mb-4">
-                    {formatPrice(motorcycle.price)}
-                  </p>
+                  <div className="space-y-1 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-zinc-500">Vanaf</span>
+                      <span className="font-barlow font-bold text-zinc-700">
+                        {formatPrice(motorcycle.starting_price || motorcycle.price * 0.8)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-zinc-500">Koop Nu</span>
+                      <span className="font-barlow text-xl font-bold text-red-600">
+                        {formatPrice(motorcycle.price)}
+                      </span>
+                    </div>
+                  </div>
 
                   <Link to={`/motorcycle/${motorcycle.id}`}>
                     <Button className="w-full bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid={`view-btn-${motorcycle.id}`}>
                       <Eye className="w-4 h-4 mr-2" />
-                      Bekijk Details
+                      Bekijk & Bied
                     </Button>
                   </Link>
                 </CardContent>
