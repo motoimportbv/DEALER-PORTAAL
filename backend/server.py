@@ -54,18 +54,21 @@ class MotorcycleCreate(BaseModel):
     brand: str
     model: str
     year: int
-    price: float
+    price: float  # Koop nu prijs
+    starting_price: float  # Vanaf prijs voor bieden
     mileage: int
     color: str
     description: str
     condition: str  # "new", "excellent", "good", "fair"
     images: List[str] = []
+    auction_duration_hours: int = 3  # Standaard 3 uur
 
 class MotorcycleUpdate(BaseModel):
     brand: Optional[str] = None
     model: Optional[str] = None
     year: Optional[int] = None
     price: Optional[float] = None
+    starting_price: Optional[float] = None
     mileage: Optional[int] = None
     color: Optional[str] = None
     description: Optional[str] = None
@@ -79,15 +82,32 @@ class Motorcycle(BaseModel):
     brand: str
     model: str
     year: int
-    price: float
+    price: float  # Koop nu prijs
+    starting_price: float  # Vanaf prijs
     mileage: int
     color: str
     description: str
     condition: str
     images: List[str] = []
     is_available: bool = True
+    auction_end_time: Optional[str] = None  # Wanneer de veiling eindigt
+    highest_bid: Optional[float] = None
+    highest_bidder_id: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str = ""
+
+class BidCreate(BaseModel):
+    motorcycle_id: str
+    amount: float
+
+class Bid(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    motorcycle_id: str
+    dealer_id: str
+    dealer_company: str
+    amount: float
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OrderCreate(BaseModel):
     motorcycle_id: str
