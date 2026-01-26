@@ -77,6 +77,7 @@ const Sidebar = () => {
           <p className="font-semibold text-zinc-400">Moto Import B.V.</p>
           <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
           <p>+31 6 81792660</p>
+          <p>Motoimportbv@gmail.com</p>
         </div>
         <button
           onClick={handleLogout}
