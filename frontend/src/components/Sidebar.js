@@ -68,10 +68,15 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="mb-4 px-1">
+        <div className="mb-4 px-1 pb-4 border-b border-zinc-800">
           <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500 mb-1">Ingelogd als</p>
           <p className="text-white font-semibold truncate">{user?.company_name}</p>
           <p className="text-zinc-400 text-sm truncate">{user?.email}</p>
+        </div>
+        <div className="mb-4 px-1 text-xs text-zinc-500">
+          <p className="font-semibold text-zinc-400">Moto Import B.V.</p>
+          <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+          <p>+31 6 81792660</p>
         </div>
         <button
           onClick={handleLogout}
