@@ -44,7 +44,7 @@ const Sidebar = () => {
             <Bike className="w-6 h-6 text-white" />
           </div>
           <span className="font-barlow text-xl font-bold uppercase tracking-tight text-white">
-            MotoDealer
+            Moto Import
           </span>
         </Link>
       </div>
