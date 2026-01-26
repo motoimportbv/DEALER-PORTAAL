@@ -116,6 +116,12 @@ class OrderWithMotorcycle(BaseModel):
     created_at: str
     motorcycle: Optional[dict] = None
 
+# ============ ROOT ENDPOINT ============
+
+@api_router.get("/")
+async def root():
+    return {"message": "Moto Dealer API is running"}
+
 # ============ AUTH HELPERS ============
 
 def hash_password(password: str) -> str:
