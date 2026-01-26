@@ -242,8 +242,21 @@ async def get_me(user: dict = Depends(get_current_user)):
 
 @api_router.post("/motorcycles", response_model=Motorcycle)
 async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require_admin)):
+    # Bereken auction end time (3 uur vanaf nu)
+    auction_end = datetime.now(timezone.utc) + timedelta(hours=data.auction_duration_hours)
+    
     motorcycle = Motorcycle(
-        **data.model_dump(),
+        brand=data.brand,
+        model=data.model,
+        year=data.year,
+        price=data.price,
+        starting_price=data.starting_price,
+        mileage=data.mileage,
+        color=data.color,
+        description=data.description,
+        condition=data.condition,
+        images=data.images,
+        auction_end_time=auction_end.isoformat(),
         created_by=user["id"]
     )
     doc = motorcycle.model_dump()
@@ -256,7 +269,7 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
             user_id=dealer["id"],
             type="new_motorcycle",
             title="Nieuwe motor toegevoegd",
-            message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) is nu beschikbaar voor €{motorcycle.price:,.0f}",
+            message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - Bied vanaf €{motorcycle.starting_price:,.0f} of Koop Nu voor €{motorcycle.price:,.0f}",
             motorcycle_id=motorcycle.id
         )
         await db.notifications.insert_one(notification.model_dump())
