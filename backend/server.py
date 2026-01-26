@@ -299,6 +299,9 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(get_current_us
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
+    # Add default starting_price if missing
+    if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
+        motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
     return motorcycle
 
 @api_router.put("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
