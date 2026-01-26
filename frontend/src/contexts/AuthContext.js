@@ -41,12 +41,18 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
-  const register = async (email, password, companyName, role = 'dealer') => {
+  const register = async (email, password, companyName, role = 'dealer', kvkNumber = '', address = '', postalCode = '', city = '', phone = '', contactPerson = '') => {
     const response = await axios.post(`${API}/auth/register`, {
       email,
       password,
       company_name: companyName,
-      role
+      role,
+      kvk_number: kvkNumber,
+      address,
+      postal_code: postalCode,
+      city,
+      phone,
+      contact_person: contactPerson
     });
     const { token: newToken, user: userData } = response.data;
     localStorage.setItem('token', newToken);
