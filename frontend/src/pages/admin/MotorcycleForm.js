@@ -247,6 +247,8 @@ const MotorcycleForm = () => {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Conditie *
                     </Label>
@@ -264,7 +266,6 @@ const MotorcycleForm = () => {
                         <SelectItem value="fair">Redelijk</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
