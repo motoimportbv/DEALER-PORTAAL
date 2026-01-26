@@ -1,0 +1,153 @@
+{
+  "identity": {
+    "persona": "E1 - The Anti-AI Designer",
+    "mission": "Create a 'Performance Pro' B2B platform that feels like a high-end trading terminal, not a generic admin panel.",
+    "principles": [
+      "Fusion over Imitation: Mix Automotive Aesthetics with Fintech Precision.",
+      "Emotion First: Evoke 'Power' and 'Efficiency'.",
+      "Content is King: Data legibility is paramount for dealers.",
+      "Contrast: High contrast (Black/White/Red) for clarity and impact."
+    ]
+  },
+  "typography": {
+    "fonts": [
+      {
+        "family": "Barlow Condensed",
+        "weights": ["400", "500", "600", "700"],
+        "usage": "Headings, KPIs, VIN Numbers, Prices",
+        "import_url": "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap"
+      },
+      {
+        "family": "Manrope",
+        "weights": ["400", "500", "600"],
+        "usage": "Body text, Tables, Forms, Descriptions",
+        "import_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap"
+      }
+    ],
+    "rules": {
+      "headings": "font-barlow uppercase tracking-tight font-bold",
+      "body": "font-manrope tracking-normal",
+      "labels": "font-barlow uppercase tracking-widest text-xs font-semibold text-muted-foreground"
+    }
+  },
+  "colors": {
+    "theme": "The Performance Pro (Hybrid)",
+    "palette": {
+      "primary": "#DC2626",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#F4F4F5",
+      "secondary_foreground": "#18181B",
+      "accent": "#DC2626",
+      "accent_foreground": "#FFFFFF",
+      "background": "#FFFFFF",
+      "foreground": "#09090B",
+      "card": "#FFFFFF",
+      "card_foreground": "#09090B",
+      "border": "#E4E4E7",
+      "input": "#E4E4E7",
+      "ring": "#DC2626",
+      "sidebar_background": "#09090B",
+      "sidebar_foreground": "#FAFAFA",
+      "sidebar_accent": "#27272A"
+    },
+    "usage": {
+      "buttons": "bg-primary text-primary-foreground hover:bg-red-700",
+      "sidebar": "bg-zinc-950 text-zinc-50",
+      "cards": "bg-card border border-border shadow-sm"
+    }
+  },
+  "layout": {
+    "spacing_scale": "Generous (p-6, p-8, gap-6)",
+    "grid_systems": {
+      "dashboard": {
+        "name": "High Density Grid (Mode B)",
+        "classes": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+        "rules": "Use for Inventory Lists, Order Overviews. Dense but legible."
+      },
+      "detail_page": {
+        "name": "Tetris Grid (Mode A)",
+        "classes": "grid grid-cols-1 md:grid-cols-12 gap-8",
+        "rules": "Hero Image (col-span-8), Specs (col-span-4), Gallery (col-span-12)"
+      }
+    },
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+  },
+  "components": {
+    "buttons": {
+      "style": "sharp-edges",
+      "classes": "rounded-md font-barlow uppercase tracking-wide font-semibold shadow-sm transition-all active:scale-95"
+    },
+    "cards": {
+      "style": "technical",
+      "classes": "rounded-lg border border-zinc-200 shadow-sm hover:shadow-md transition-shadow bg-white"
+    },
+    "inputs": {
+      "style": "clean",
+      "classes": "rounded-md border-zinc-300 focus:ring-2 focus:ring-red-600 focus:border-transparent"
+    },
+    "tables": {
+      "style": "dense",
+      "classes": "w-full text-sm text-left",
+      "header": "bg-zinc-50 text-zinc-500 font-barlow uppercase text-xs tracking-wider border-b border-zinc-200",
+      "row": "border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Subtle noise overlay on the Sidebar only.",
+    "shadows": "Crisp, low-blur shadows (shadow-sm, shadow-md).",
+    "borders": "1px solid borders are preferred over heavy shadows for separation.",
+    "empty_states": "Use stylized mechanical icons (gears, wrenches) or ASCII art for empty data."
+  },
+  "images": {
+    "hero_backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1579509554181-545d7cee73fb?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "login_hero",
+        "description": "Dark moody Harley Davidson, perfect for Login/Register background."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1706062202423-e6655d342741?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "dashboard_header",
+        "description": "Row of motorcycles, good for 'Inventory' section header."
+      }
+    ],
+    "motorcycles": [
+      {
+        "url": "https://images.unsplash.com/photo-1677344758233-6c49769a4554?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "sportbike",
+        "description": "Ducati Panigale Red Studio"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1611323201023-e489a0ad943c?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "adventure",
+        "description": "BMW R1250GS Adventure White/Black"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1694355845854-637e683091ae?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "classic",
+        "description": "Triumph Bonneville T100 Red/Black"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1568854054564-2e4216df7ce5?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "category": "touring",
+        "description": "Black Touring Motorcycle"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "IMPLEMENTATION: Use the 'Performance Pro' theme. Dark Sidebar (#09090B), White Content Area.",
+    "FONTS: You MUST import 'Barlow Condensed' and 'Manrope' in index.css or index.html.",
+    "COMPONENTS: Override default Shadcn radius to '0.5rem' (rounded-md) or '0.375rem' (rounded-sm) for a sharper, mechanical feel.",
+    "LAYOUT: Use the 'High Density Grid' for the Dealer Dashboard. Dealers need to see many bikes at once.",
+    "DETAILS: The Motorcycle Detail page should feel like a 'Spec Sheet'. Use bold labels and clear data points.",
+    "TESTING: Add 'data-testid' to all interactive elements (buttons, inputs, table rows).",
+    "IMAGES: Use the provided Unsplash URLs for mock data. DO NOT use placeholders."
+  ],
+  "universal_guidelines": [
+    "Avoid 'AI Slop': No generic gradients, no centered text everywhere.",
+    "Micro-interactions: Add hover states to everything interactable.",
+    "Spacing: Use generous padding inside containers (p-6, p-8).",
+    "Contrast: Ensure text is legible. No gray-on-gray.",
+    "Toasts: Use 'sonner' for notifications."
+  ]
+}
