@@ -59,7 +59,7 @@ const RegisterPage = () => {
             <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
               <Bike className="w-7 h-7 text-white" />
             </div>
-            <span className="font-barlow text-2xl font-bold uppercase tracking-tight">MotoDealer</span>
+            <span className="font-barlow text-2xl font-bold uppercase tracking-tight">Moto Import</span>
           </div>
           <h2 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
             Account aanmaken

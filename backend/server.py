@@ -120,7 +120,7 @@ class OrderWithMotorcycle(BaseModel):
 
 @api_router.get("/")
 async def root():
-    return {"message": "Moto Dealer API is running"}
+    return {"message": "Moto Import API is running"}
 
 # ============ AUTH HELPERS ============
 
