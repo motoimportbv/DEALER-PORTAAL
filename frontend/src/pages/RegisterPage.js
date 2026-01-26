@@ -40,7 +40,7 @@ const RegisterPage = () => {
       <div 
         className="auth-hero hidden md:flex"
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1579509554181-545d7cee73fb?crop=entropy&cs=srgb&fm=jpg&q=85)'
+          backgroundImage: 'url(https://customer-assets.emergentagent.com/job_dealer-moto-portal/artifacts/338sojwi_Screenshot_20260124_144156_ChatGPT.jpg)'
         }}
       >
         <div className="relative z-10 flex flex-col justify-end p-12 text-white">
