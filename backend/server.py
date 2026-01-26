@@ -377,6 +377,87 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
     
     return {"message": f"Order status updated to {status}"}
 
+# ============ BID ENDPOINTS ============
+
+@api_router.post("/bids")
+async def place_bid(data: BidCreate, user: dict = Depends(get_current_user)):
+    # Get motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if not motorcycle.get("is_available", True):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+    
+    # Check if auction is still active
+    auction_end = datetime.fromisoformat(motorcycle.get("auction_end_time", datetime.now(timezone.utc).isoformat()))
+    if datetime.now(timezone.utc) > auction_end:
+        raise HTTPException(status_code=400, detail="Veiling is afgelopen")
+    
+    # Check minimum bid
+    current_highest = motorcycle.get("highest_bid") or motorcycle.get("starting_price", 0)
+    min_bid = current_highest + 100 if motorcycle.get("highest_bid") else motorcycle.get("starting_price", 0)
+    
+    if data.amount < min_bid:
+        raise HTTPException(status_code=400, detail=f"Minimum bod is €{min_bid:,.0f}")
+    
+    # Check if bid is not higher than buy now price
+    if data.amount >= motorcycle.get("price", float('inf')):
+        raise HTTPException(status_code=400, detail="Bod is hoger dan Koop Nu prijs. Gebruik Koop Nu optie.")
+    
+    # Save bid
+    bid = Bid(
+        motorcycle_id=data.motorcycle_id,
+        dealer_id=user["id"],
+        dealer_company=user["company_name"],
+        amount=data.amount
+    )
+    await db.bids.insert_one(bid.model_dump())
+    
+    # Update motorcycle with highest bid
+    await db.motorcycles.update_one(
+        {"id": data.motorcycle_id},
+        {"$set": {"highest_bid": data.amount, "highest_bidder_id": user["id"]}}
+    )
+    
+    return {"message": f"Bod van €{data.amount:,.0f} geplaatst", "bid": bid.model_dump()}
+
+@api_router.get("/bids/{motorcycle_id}")
+async def get_bids(motorcycle_id: str, user: dict = Depends(get_current_user)):
+    bids = await db.bids.find(
+        {"motorcycle_id": motorcycle_id},
+        {"_id": 0}
+    ).sort("amount", -1).to_list(100)
+    return bids
+
+@api_router.post("/motorcycles/{motorcycle_id}/buy-now")
+async def buy_now(motorcycle_id: str, user: dict = Depends(get_current_user)):
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if not motorcycle.get("is_available", True):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+    
+    # Create order with buy now
+    order = Order(
+        motorcycle_id=motorcycle_id,
+        dealer_id=user["id"],
+        dealer_email=user["email"],
+        dealer_company=user["company_name"],
+        status="approved",
+        notes=f"Koop Nu voor €{motorcycle['price']:,.0f}"
+    )
+    await db.orders.insert_one(order.model_dump())
+    
+    # Mark motorcycle as unavailable
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {"is_available": False}}
+    )
+    
+    return {"message": "Motor gekocht!", "order": order.model_dump()}
+
 # ============ NOTIFICATION ENDPOINTS ============
 
 @api_router.get("/notifications", response_model=List[Notification])
