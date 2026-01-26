@@ -48,6 +48,7 @@ const LoginPage = () => {
             <p>Horsterhoekweg 11</p>
             <p>7433 SV Schalkhaar</p>
             <p>Tel: +31 6 81792660</p>
+            <p>Motoimportbv@gmail.com</p>
           </div>
         </div>
       </div>
