@@ -116,6 +116,17 @@ class OrderWithMotorcycle(BaseModel):
     created_at: str
     motorcycle: Optional[dict] = None
 
+class Notification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    type: str  # "new_motorcycle", "order_update"
+    title: str
+    message: str
+    motorcycle_id: Optional[str] = None
+    is_read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 # ============ ROOT ENDPOINT ============
 
 @api_router.get("/")
@@ -217,6 +228,19 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
+    
+    # Create notifications for all dealers
+    dealers = await db.users.find({"role": "dealer"}, {"_id": 0, "id": 1}).to_list(1000)
+    for dealer in dealers:
+        notification = Notification(
+            user_id=dealer["id"],
+            type="new_motorcycle",
+            title="Nieuwe motor toegevoegd",
+            message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) is nu beschikbaar voor €{motorcycle.price:,.0f}",
+            motorcycle_id=motorcycle.id
+        )
+        await db.notifications.insert_one(notification.model_dump())
+    
     return motorcycle
 
 @api_router.get("/motorcycles", response_model=List[Motorcycle])
@@ -319,6 +343,37 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
         await db.motorcycles.update_one({"id": order["motorcycle_id"]}, {"$set": {"is_available": False}})
     
     return {"message": f"Order status updated to {status}"}
+
+# ============ NOTIFICATION ENDPOINTS ============
+
+@api_router.get("/notifications", response_model=List[Notification])
+async def get_notifications(user: dict = Depends(get_current_user)):
+    notifications = await db.notifications.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return notifications
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_count(user: dict = Depends(get_current_user)):
+    count = await db.notifications.count_documents({"user_id": user["id"], "is_read": False})
+    return {"count": count}
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user: dict = Depends(get_current_user)):
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": user["id"]},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "Notification marked as read"}
+
+@api_router.put("/notifications/read-all")
+async def mark_all_read(user: dict = Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": user["id"], "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "All notifications marked as read"}
 
 # ============ STATS ENDPOINTS ============
 
