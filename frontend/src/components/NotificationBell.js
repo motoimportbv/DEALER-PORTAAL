@@ -1,0 +1,204 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { Bell, Bike, Check, CheckCheck } from 'lucide-react';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from './ui/dropdown-menu';
+import { Badge } from './ui/badge';
+import { ScrollArea } from './ui/scroll-area';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const NotificationBell = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      fetchNotifications();
+    }
+  }, [open]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get(`${API}/notifications/unread-count`);
+      setUnreadCount(response.data.count);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get(`${API}/notifications`);
+      setNotifications(response.data);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.put(`${API}/notifications/${notificationId}/read`);
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await axios.put(`${API}/notifications/read-all`);
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Zojuist';
+    if (minutes < 60) return `${minutes} min geleden`;
+    if (hours < 24) return `${hours} uur geleden`;
+    if (days < 7) return `${days} dagen geleden`;
+    return date.toLocaleDateString('nl-NL');
+  };
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative text-zinc-400 hover:text-white hover:bg-zinc-800"
+          data-testid="notification-bell"
+        >
+          <Bell className="w-5 h-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent 
+        align="end" 
+        className="w-80 bg-zinc-900 border-zinc-800 text-white"
+        data-testid="notification-dropdown"
+      >
+        <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800">
+          <span className="font-barlow uppercase tracking-wide text-sm font-semibold">
+            Meldingen
+          </span>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs text-zinc-400 hover:text-white h-7"
+              onClick={markAllAsRead}
+              data-testid="mark-all-read-btn"
+            >
+              <CheckCheck className="w-4 h-4 mr-1" />
+              Alles gelezen
+            </Button>
+          )}
+        </div>
+        
+        <ScrollArea className="h-[300px]">
+          {notifications.length === 0 ? (
+            <div className="py-8 text-center text-zinc-500">
+              <Bell className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Geen meldingen</p>
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`px-3 py-3 border-b border-zinc-800 hover:bg-zinc-800 transition-colors ${
+                  !notification.is_read ? 'bg-zinc-800/50' : ''
+                }`}
+                data-testid={`notification-${notification.id}`}
+              >
+                <div className="flex gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    notification.type === 'new_motorcycle' ? 'bg-red-600/20 text-red-500' : 'bg-blue-600/20 text-blue-500'
+                  }`}>
+                    <Bike className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm text-white">
+                        {notification.title}
+                        {!notification.is_read && (
+                          <span className="ml-2 w-2 h-2 bg-red-500 rounded-full inline-block"></span>
+                        )}
+                      </p>
+                    </div>
+                    <p className="text-sm text-zinc-400 mt-0.5 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-zinc-500">
+                        {formatTime(notification.created_at)}
+                      </span>
+                      <div className="flex gap-2">
+                        {notification.motorcycle_id && (
+                          <Link 
+                            to={`/motorcycle/${notification.motorcycle_id}`}
+                            onClick={() => {
+                              if (!notification.is_read) markAsRead(notification.id);
+                              setOpen(false);
+                            }}
+                          >
+                            <Button size="sm" variant="ghost" className="h-6 text-xs text-red-500 hover:text-red-400">
+                              Bekijk
+                            </Button>
+                          </Link>
+                        )}
+                        {!notification.is_read && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-6 text-xs text-zinc-500 hover:text-white"
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <Check className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </ScrollArea>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export default NotificationBell;
