@@ -69,11 +69,11 @@ const PaymentSuccess = () => {
               <h1 className="font-barlow text-2xl font-bold uppercase tracking-tight text-zinc-900 mb-2">
                 Betaling Geslaagd!
               </h1>
-              <p className="text-zinc-500 mb-6">
-                Uw aanbetaling is succesvol ontvangen. Wij nemen zo snel mogelijk contact met u op.
+              <p className="text-zinc-500 mb-4">
+                Uw aanbetaling is succesvol ontvangen.
               </p>
               {paymentData && (
-                <div className="p-4 bg-zinc-100 rounded-lg mb-6 text-left">
+                <div className="p-4 bg-zinc-100 rounded-lg mb-4 text-left">
                   <p className="text-sm text-zinc-600">
                     <strong>Betaald:</strong> {formatPrice(paymentData.amount_total)}
                   </p>
@@ -82,6 +82,26 @@ const PaymentSuccess = () => {
                   </p>
                 </div>
               )}
+              
+              {/* Restbedrag informatie */}
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6 text-left">
+                <h3 className="font-barlow font-bold text-amber-800 mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Restbedrag Overmaken
+                </h3>
+                <p className="text-sm text-amber-700 mb-3">
+                  Na ontvangst van de originele factuur dient u het restbedrag binnen <strong>5 werkdagen</strong> over te maken naar:
+                </p>
+                <div className="bg-white p-3 rounded border border-amber-200">
+                  <p className="text-sm font-mono text-zinc-800">
+                    <strong>IBAN:</strong> NL23INGB0107076063
+                  </p>
+                  <p className="text-sm text-zinc-600">
+                    <strong>T.n.v.:</strong> Moto Import B.V.
+                  </p>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <Link to="/dealer" className="block">
                   <Button className="w-full bg-red-600 hover:bg-red-700">
