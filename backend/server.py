@@ -29,12 +29,13 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # JWT Config
-JWT_SECRET = os.environ.get('JWT_SECRET', 'moto-dealer-secret-key-production-2024')
-JWT_ALGORITHM = "HS256"
+JWT_SECRET = os.environ.get('JWT_SECRET')
+if not JWT_SECRET:
+    raise ValueError("JWT_SECRET environment variable is required")
 
 # Gmail Config
-ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'Motoimportbv@gmail.com')
-GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', 'Motoimportbv@gmail.com')
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
+GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
 # Stripe Config
