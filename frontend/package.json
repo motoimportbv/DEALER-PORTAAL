@@ -66,7 +66,16 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "cap:init": "npx cap init 'Moto Import' nl.motoimport.app --web-dir build",
+    "cap:add:ios": "npx cap add ios",
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:open:android": "npx cap open android",
+    "build:mobile": "npm run build && npx cap sync",
+    "build:ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "build:android": "npm run build && npx cap sync android && npx cap open android"
   },
   "browserslist": {
     "production": [
