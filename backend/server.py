@@ -154,8 +154,14 @@ class Order(BaseModel):
     dealer_id: str
     dealer_email: str
     dealer_company: str
-    status: str = "pending"  # pending, approved, rejected, completed
+    status: str = "pending"  # pending, paid, approved, rejected, completed
     notes: str = ""
+    needs_delivery: bool = False
+    delivery_cost: float = 0.0
+    deposit_amount: float = 0.0
+    total_price: float = 0.0
+    payment_status: str = "unpaid"  # unpaid, pending, paid
+    stripe_session_id: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OrderWithMotorcycle(BaseModel):
