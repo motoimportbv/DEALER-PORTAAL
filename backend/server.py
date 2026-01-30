@@ -921,7 +921,7 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
     
     # Stuur email naar dealer dat ze goedgekeurd zijn
     try:
-        base_url = os.environ.get("REACT_APP_BACKEND_URL", os.environ.get("BASE_URL", ""))
+        base_url = os.environ.get("BASE_URL", "")
         login_url = f"{base_url}/login" if base_url else "#"
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
