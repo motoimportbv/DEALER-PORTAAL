@@ -48,7 +48,7 @@ DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
 # Twilio Config
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+TWILIO_SENDER_ID = os.environ.get('TWILIO_SENDER_ID', 'MotoImport')  # Alphanumeric Sender ID
 
 # Initialize Twilio client
 twilio_client = None
