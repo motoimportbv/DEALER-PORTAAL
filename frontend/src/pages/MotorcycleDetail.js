@@ -547,8 +547,14 @@ const MotorcycleDetail = () => {
                 {formatPrice(paymentInfo?.total_to_pay || (motorcycle.price * 0.1 + (needsDelivery ? 50 : 0)))}
               </p>
               <p className="text-sm text-zinc-400 mt-2">
-                Restbedrag: {formatPrice(motorcycle.price - (paymentInfo?.deposit_amount || motorcycle.price * 0.1))} bij levering
+                Restbedrag: {formatPrice(motorcycle.price - (paymentInfo?.deposit_amount || motorcycle.price * 0.1))} binnen 5 werkdagen na factuur
               </p>
+            </div>
+
+            {/* Bank info */}
+            <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 text-xs text-zinc-600">
+              <p>Het restbedrag dient na ontvangst van de factuur te worden overgemaakt naar:</p>
+              <p className="font-mono mt-1"><strong>IBAN:</strong> NL23INGB0107076063 t.n.v. Moto Import B.V.</p>
             </div>
           </div>
           <DialogFooter>
