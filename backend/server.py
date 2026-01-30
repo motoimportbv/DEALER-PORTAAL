@@ -274,6 +274,65 @@ async def send_admin_notification(subject: str, html_content: str):
     """Send email notification to admin"""
     await send_email(ADMIN_EMAIL, subject, html_content)
 
+async def send_sms(to_phone: str, message: str):
+    """Send SMS via Twilio"""
+    if not twilio_client or not TWILIO_PHONE_NUMBER:
+        logger.warning("Twilio not configured, skipping SMS")
+        return False
+    
+    try:
+        # Format phone number (ensure it starts with +)
+        if not to_phone.startswith('+'):
+            # Assume Dutch number if no country code
+            if to_phone.startswith('06'):
+                to_phone = '+31' + to_phone[1:]
+            elif to_phone.startswith('0'):
+                to_phone = '+31' + to_phone[1:]
+            else:
+                to_phone = '+31' + to_phone
+        
+        def send_sync():
+            return twilio_client.messages.create(
+                body=message,
+                from_=TWILIO_PHONE_NUMBER,
+                to=to_phone
+            )
+        
+        result = await asyncio.to_thread(send_sync)
+        logger.info(f"SMS sent to {to_phone}, SID: {result.sid}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send SMS to {to_phone}: {str(e)}")
+        return False
+
+async def notify_dealers_new_motorcycle(motorcycle):
+    """Send SMS notifications to all approved dealers about a new motorcycle"""
+    try:
+        # Get all approved dealers with phone numbers
+        dealers = await db.users.find(
+            {"role": "dealer", "is_approved": True, "phone": {"$ne": "", "$exists": True}},
+            {"_id": 0, "phone": 1, "company_name": 1}
+        ).to_list(1000)
+        
+        if not dealers:
+            logger.info("No dealers to notify via SMS")
+            return
+        
+        # Format message
+        message = f"🏍️ MOTO IMPORT: Nieuwe motor!\n\n{motorcycle.brand} {motorcycle.model} ({motorcycle.year})\n\nBied vanaf €{motorcycle.starting_price:,.0f}\nKoop Nu: €{motorcycle.price:,.0f}\n\nBekijk op motoimport.nl"
+        
+        # Send SMS to all dealers
+        for dealer in dealers:
+            phone = dealer.get('phone', '')
+            if phone:
+                await send_sms(phone, message)
+                # Small delay to avoid rate limiting
+                await asyncio.sleep(0.5)
+        
+        logger.info(f"SMS notifications sent to {len(dealers)} dealers")
+    except Exception as e:
+        logger.error(f"Failed to notify dealers via SMS: {str(e)}")
+
 # ============ AUTH ENDPOINTS ============
 
 @api_router.post("/auth/register")
