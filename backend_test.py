@@ -153,11 +153,13 @@ class MotorcycleDealerAPITester:
             "model": "Panigale V4",
             "year": 2023,
             "price": 25000.0,
+            "starting_price": 20000.0,
             "mileage": 1500,
             "color": "Rosso Corsa",
             "description": "Prachtige Ducati Panigale V4 in perfecte staat",
             "condition": "excellent",
-            "images": ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800"]
+            "images": ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800"],
+            "auction_duration_hours": 3
         }
         success, response = self.run_test(
             "Create Motorcycle", "POST", "motorcycles", 200, motorcycle_data, self.admin_token
