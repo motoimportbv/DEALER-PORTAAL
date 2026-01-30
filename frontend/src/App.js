@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
+import { initializeNativeFeatures, isNative } from "./services/nativeService";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -18,6 +19,13 @@ import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 
 function App() {
+  useEffect(() => {
+    // Initialize native features when running as mobile app
+    if (isNative) {
+      initializeNativeFeatures();
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <div className="App">
