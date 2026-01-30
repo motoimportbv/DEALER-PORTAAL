@@ -32,6 +32,7 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET')
 if not JWT_SECRET:
     raise ValueError("JWT_SECRET environment variable is required")
+JWT_ALGORITHM = "HS256"
 
 # Gmail Config
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
