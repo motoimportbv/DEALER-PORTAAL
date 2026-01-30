@@ -550,7 +550,7 @@ async def upload_multiple_images(files: List[UploadFile] = File(...), user: dict
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             base_url = os.environ.get("BASE_URL", "https://dealer-moto-portal.preview.emergentagent.com")
-            urls.append(f"{base_url}/uploads/{filename}")
+            urls.append(f"{base_url}/api/uploads/{filename}")
         except:
             continue
     
