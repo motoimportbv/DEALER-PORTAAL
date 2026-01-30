@@ -314,6 +314,11 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check if dealer is approved
+    is_approved = user.get("is_approved", True)  # Default True for backwards compatibility
+    if user["role"] == "dealer" and not is_approved:
+        raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+    
     token = create_token(user["id"], user["email"], user["role"])
     return {
         "token": token,
@@ -321,7 +326,8 @@ async def login(credentials: UserLogin):
             "id": user["id"],
             "email": user["email"],
             "company_name": user["company_name"],
-            "role": user["role"]
+            "role": user["role"],
+            "is_approved": is_approved
         }
     }
 
