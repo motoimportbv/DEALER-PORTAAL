@@ -799,8 +799,9 @@ async def upload_multiple_images(files: List[UploadFile] = File(...), user: dict
         try:
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            base_url = os.environ.get("BASE_URL", "https://bike-dealer-1.preview.emergentagent.com")
-            urls.append(f"{base_url}/api/uploads/{filename}")
+            base_url = os.environ.get("REACT_APP_BACKEND_URL", os.environ.get("BASE_URL", ""))
+            if base_url:
+                urls.append(f"{base_url}/api/uploads/{filename}")
         except:
             continue
     
