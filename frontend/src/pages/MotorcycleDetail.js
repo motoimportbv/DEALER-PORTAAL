@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Checkbox } from '../components/ui/checkbox';
 import { 
   ArrowLeft, 
   Bike, 
@@ -19,7 +20,9 @@ import {
   Clock,
   Gavel,
   TrendingUp,
-  Zap
+  Zap,
+  Truck,
+  CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -47,6 +50,8 @@ const MotorcycleDetail = () => {
   const [buyNowDialogOpen, setBuyNowDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [needsDelivery, setNeedsDelivery] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState(null);
 
   useEffect(() => {
     fetchMotorcycle();
