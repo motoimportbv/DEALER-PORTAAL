@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import MotorcycleList from "./pages/admin/MotorcycleList";
 import MotorcycleForm from "./pages/admin/MotorcycleForm";
 import OrderList from "./pages/admin/OrderList";
+import DealerManagement from "./pages/admin/DealerManagement";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import MotorcycleDetail from "./pages/MotorcycleDetail";
@@ -32,6 +33,7 @@ function App() {
             <Route path="/admin/motorcycles/new" element={<MotorcycleForm />} />
             <Route path="/admin/motorcycles/:id/edit" element={<MotorcycleForm />} />
             <Route path="/admin/orders" element={<OrderList />} />
+            <Route path="/admin/dealers" element={<DealerManagement />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
