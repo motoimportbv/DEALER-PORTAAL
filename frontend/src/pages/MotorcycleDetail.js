@@ -535,6 +535,9 @@ const MotorcycleDetail = () => {
                   </p>
                 </div>
               </div>
+              <div className="mt-3 pt-3 border-t border-zinc-100 text-sm text-green-600 font-medium">
+                ✓ Ophalen bij Moto Import is gratis!
+              </div>
             </div>
 
             {/* Total to Pay */}
