@@ -211,19 +211,32 @@ async def require_admin(user: dict = Depends(get_current_user)):
 
 # ============ EMAIL HELPER ============
 
-async def send_admin_notification(subject: str, html_content: str):
-    """Send email notification to admin"""
+async def send_email(to_email: str, subject: str, html_content: str):
+    """Send email via Gmail SMTP"""
     try:
-        params = {
-            "from": SENDER_EMAIL,
-            "to": [ADMIN_EMAIL],
-            "subject": subject,
-            "html": html_content
-        }
-        await asyncio.to_thread(resend.Emails.send, params)
-        logger.info(f"Email sent to {ADMIN_EMAIL}")
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"Moto Import <{GMAIL_EMAIL}>"
+        msg['To'] = to_email
+        
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        def send_sync():
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+                server.sendmail(GMAIL_EMAIL, to_email, msg.as_string())
+        
+        await asyncio.to_thread(send_sync)
+        logger.info(f"Email sent to {to_email}")
+        return True
     except Exception as e:
         logger.error(f"Failed to send email: {str(e)}")
+        return False
+
+async def send_admin_notification(subject: str, html_content: str):
+    """Send email notification to admin"""
+    await send_email(ADMIN_EMAIL, subject, html_content)
 
 # ============ AUTH ENDPOINTS ============
 
