@@ -566,6 +566,80 @@ async def buy_now(motorcycle_id: str, user: dict = Depends(get_current_user)):
     
     return {"message": "Motor gekocht!", "order": order.model_dump()}
 
+# ============ DEALER MANAGEMENT ENDPOINTS ============
+
+@api_router.get("/dealers")
+async def get_dealers(user: dict = Depends(require_admin)):
+    dealers = await db.users.find(
+        {"role": "dealer"},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    return dealers
+
+@api_router.get("/dealers/pending")
+async def get_pending_dealers(user: dict = Depends(require_admin)):
+    dealers = await db.users.find(
+        {"role": "dealer", "is_approved": False},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    return dealers
+
+@api_router.put("/dealers/{dealer_id}/approve")
+async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_approved": True}}
+    )
+    
+    # Stuur email naar dealer dat ze goedgekeurd zijn
+    try:
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #16a34a;">✅ Account Goedgekeurd!</h2>
+            <p>Beste {dealer.get('contact_person', dealer['company_name'])},</p>
+            <p>Uw dealer account bij <strong>Moto Import</strong> is goedgekeurd!</p>
+            <p>U kunt nu inloggen en direct bieden op onze motorfietsen.</p>
+            <p style="margin-top: 30px;">
+                <a href="https://dealer-moto-portal.preview.emergentagent.com/login" 
+                   style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                    Nu Inloggen
+                </a>
+            </p>
+            <p style="color: #71717a; margin-top: 30px;">
+                Met vriendelijke groet,<br>
+                Moto Import B.V.<br>
+                Horsterhoekweg 11, 7433 SV Schalkhaar<br>
+                +31 6 81792660
+            </p>
+        </div>
+        """
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [dealer["email"]],
+            "subject": "Uw Moto Import account is goedgekeurd!",
+            "html": html_content
+        }
+        await asyncio.to_thread(resend.Emails.send, params)
+    except Exception as e:
+        logger.error(f"Failed to send approval email: {str(e)}")
+    
+    return {"message": f"Dealer {dealer['company_name']} is goedgekeurd"}
+
+@api_router.put("/dealers/{dealer_id}/reject")
+async def reject_dealer(dealer_id: str, user: dict = Depends(require_admin)):
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    # Verwijder de dealer
+    await db.users.delete_one({"id": dealer_id})
+    
+    return {"message": f"Dealer {dealer['company_name']} is afgewezen en verwijderd"}
+
 # ============ NOTIFICATION ENDPOINTS ============
 
 @api_router.get("/notifications", response_model=List[Notification])
