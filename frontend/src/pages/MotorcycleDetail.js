@@ -354,16 +354,18 @@ const MotorcycleDetail = () => {
                   </p>
                 </div>
 
-                {user?.role === 'dealer' && motorcycle.is_available && !timeLeft?.expired && (
+                {user?.role === 'dealer' && motorcycle.is_available && (
                   <div className="space-y-3">
-                    <Button 
-                      className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
-                      onClick={() => setBidDialogOpen(true)}
-                      data-testid="bid-btn"
-                    >
-                      <Gavel className="w-5 h-5 mr-2" />
-                      Plaats Bod
-                    </Button>
+                    {!timeLeft?.expired && (
+                      <Button 
+                        className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
+                        onClick={() => setBidDialogOpen(true)}
+                        data-testid="bid-btn"
+                      >
+                        <Gavel className="w-5 h-5 mr-2" />
+                        Plaats Bod
+                      </Button>
+                    )}
                     <Button 
                       className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 font-barlow uppercase tracking-wide"
                       onClick={() => {
