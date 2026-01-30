@@ -1252,23 +1252,25 @@ async def get_conversations(user: dict = Depends(get_current_user)):
 async def get_messages(conversation_id: str, user: dict = Depends(get_current_user)):
     """Get messages for a conversation"""
     # Dealers can only access their own conversation
-    if user["role"] != "admin" and conversation_id != user["id"]:
+    actual_conv_id = user["id"] if conversation_id == "me" else conversation_id
+    
+    if user["role"] != "admin" and actual_conv_id != user["id"]:
         raise HTTPException(status_code=403, detail="Geen toegang tot dit gesprek")
     
     messages = await db.chat_messages.find(
-        {"conversation_id": conversation_id},
+        {"conversation_id": actual_conv_id},
         {"_id": 0}
     ).sort("created_at", 1).to_list(500)
     
     # Mark messages as read
     if user["role"] == "admin":
         await db.chat_messages.update_many(
-            {"conversation_id": conversation_id, "sender_role": "dealer", "is_read": False},
+            {"conversation_id": actual_conv_id, "sender_role": "dealer", "is_read": False},
             {"$set": {"is_read": True}}
         )
     else:
         await db.chat_messages.update_many(
-            {"conversation_id": conversation_id, "sender_role": "admin", "is_read": False},
+            {"conversation_id": actual_conv_id, "sender_role": "admin", "is_read": False},
             {"$set": {"is_read": True}}
         )
     
