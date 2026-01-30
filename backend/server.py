@@ -777,8 +777,8 @@ async def upload_image(file: UploadFile = File(...), user: dict = Depends(get_cu
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Kon bestand niet opslaan: {str(e)}")
     
-    # Return URL - use REACT_APP_BACKEND_URL from frontend for image URLs
-    base_url = os.environ.get("REACT_APP_BACKEND_URL", os.environ.get("BASE_URL", ""))
+    # Return URL - use BASE_URL from environment
+    base_url = os.environ.get("BASE_URL", "")
     if not base_url:
         raise HTTPException(status_code=500, detail="BASE_URL niet geconfigureerd")
     image_url = f"{base_url}/api/uploads/{filename}"
