@@ -227,6 +227,11 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Chat Section */}
+        <div className="mt-8">
+          <ChatWidget isAdmin={true} />
+        </div>
       </div>
     </Layout>
   );
