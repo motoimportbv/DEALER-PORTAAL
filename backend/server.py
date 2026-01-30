@@ -295,8 +295,8 @@ async def send_admin_notification(subject: str, html_content: str):
     await send_email(ADMIN_EMAIL, subject, html_content)
 
 async def send_sms(to_phone: str, message: str):
-    """Send SMS via Twilio"""
-    if not twilio_client or not TWILIO_PHONE_NUMBER:
+    """Send SMS via Twilio with Alphanumeric Sender ID"""
+    if not twilio_client:
         logger.warning("Twilio not configured, skipping SMS")
         return False
     
@@ -314,7 +314,7 @@ async def send_sms(to_phone: str, message: str):
         def send_sync():
             return twilio_client.messages.create(
                 body=message,
-                from_=TWILIO_PHONE_NUMBER,
+                from_=TWILIO_SENDER_ID,  # Alphanumeric Sender ID "MotoImport"
                 to=to_phone
             )
         
