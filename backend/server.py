@@ -584,6 +584,7 @@ async def create_checkout(data: PaymentRequest, user: dict = Depends(get_current
             currency="eur",
             success_url=success_url,
             cancel_url=cancel_url,
+            payment_methods=["ideal", "card"],  # iDEAL + creditcard
             metadata={
                 "order_id": order.id,
                 "motorcycle_id": data.motorcycle_id,
