@@ -519,6 +519,240 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
     
     return {"message": f"Order status updated to {status}"}
 
+# ============ PAYMENT ENDPOINTS ============
+
+class PaymentRequest(BaseModel):
+    motorcycle_id: str
+    needs_delivery: bool = False
+    order_type: str = "buy_now"  # "buy_now" or "bid_won"
+    origin_url: str
+
+@api_router.post("/payments/create-checkout")
+async def create_checkout(data: PaymentRequest, user: dict = Depends(get_current_user)):
+    # Get motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if not motorcycle.get("is_available", True):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+    
+    # Calculate amounts
+    if data.order_type == "bid_won":
+        # Use highest bid price
+        motor_price = motorcycle.get("highest_bid", motorcycle["price"])
+    else:
+        # Use buy now price
+        motor_price = motorcycle["price"]
+    
+    deposit_amount = motor_price * DEPOSIT_PERCENTAGE
+    delivery_cost = DELIVERY_COST if data.needs_delivery else 0.0
+    total_to_pay = deposit_amount + delivery_cost
+    
+    # Create order first
+    order = Order(
+        motorcycle_id=data.motorcycle_id,
+        dealer_id=user["id"],
+        dealer_email=user["email"],
+        dealer_company=user["company_name"],
+        status="pending",
+        needs_delivery=data.needs_delivery,
+        delivery_cost=delivery_cost,
+        deposit_amount=deposit_amount,
+        total_price=motor_price,
+        payment_status="pending"
+    )
+    
+    # Save order
+    await db.orders.insert_one(order.model_dump())
+    
+    # Create Stripe checkout session
+    try:
+        webhook_url = f"{data.origin_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+        
+        success_url = f"{data.origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}"
+        cancel_url = f"{data.origin_url}/motorcycle/{data.motorcycle_id}"
+        
+        # Description for Stripe
+        description = f"Aanbetaling 10% - {motorcycle['brand']} {motorcycle['model']}"
+        if data.needs_delivery:
+            description += " + Bezorging €50"
+        
+        checkout_request = CheckoutSessionRequest(
+            amount=float(total_to_pay),
+            currency="eur",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "order_id": order.id,
+                "motorcycle_id": data.motorcycle_id,
+                "dealer_id": user["id"],
+                "deposit_amount": str(deposit_amount),
+                "delivery_cost": str(delivery_cost),
+                "total_price": str(motor_price)
+            }
+        )
+        
+        session = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        # Update order with stripe session id
+        await db.orders.update_one(
+            {"id": order.id},
+            {"$set": {"stripe_session_id": session.session_id}}
+        )
+        
+        # Save payment transaction
+        await db.payment_transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "order_id": order.id,
+            "session_id": session.session_id,
+            "amount": total_to_pay,
+            "currency": "eur",
+            "dealer_id": user["id"],
+            "dealer_email": user["email"],
+            "payment_status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return {
+            "checkout_url": session.url,
+            "session_id": session.session_id,
+            "order_id": order.id,
+            "deposit_amount": deposit_amount,
+            "delivery_cost": delivery_cost,
+            "total_to_pay": total_to_pay
+        }
+        
+    except Exception as e:
+        # Delete the order if Stripe fails
+        await db.orders.delete_one({"id": order.id})
+        logger.error(f"Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Betaling kon niet worden gestart: {str(e)}")
+
+@api_router.get("/payments/status/{session_id}")
+async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
+    try:
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
+        status = await stripe_checkout.get_checkout_status(session_id)
+        
+        # Update order and transaction status
+        if status.payment_status == "paid":
+            # Update payment transaction
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"payment_status": "paid"}}
+            )
+            
+            # Update order
+            transaction = await db.payment_transactions.find_one({"session_id": session_id})
+            if transaction:
+                await db.orders.update_one(
+                    {"id": transaction["order_id"]},
+                    {"$set": {"payment_status": "paid", "status": "paid"}}
+                )
+                
+                # Mark motorcycle as unavailable
+                order = await db.orders.find_one({"id": transaction["order_id"]})
+                if order:
+                    await db.motorcycles.update_one(
+                        {"id": order["motorcycle_id"]},
+                        {"$set": {"is_available": False}}
+                    )
+                    
+                    # Send email to admin
+                    motorcycle = await db.motorcycles.find_one({"id": order["motorcycle_id"]}, {"_id": 0})
+                    if motorcycle:
+                        delivery_text = "Ja (€50)" if order.get("needs_delivery") else "Nee"
+                        html_content = f"""
+                        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                            <h2 style="color: #16a34a;">💰 Betaling Ontvangen!</h2>
+                            <p>Er is een aanbetaling ontvangen voor:</p>
+                            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                                <tr style="background: #f4f4f5;">
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Dealer</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{order['dealer_company']}</td>
+                                </tr>
+                                <tr style="background: #f4f4f5;">
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Totaalprijs</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">€{order['total_price']:,.2f}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Aanbetaling (10%)</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">€{order['deposit_amount']:,.2f}</td>
+                                </tr>
+                                <tr style="background: #f4f4f5;">
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bezorging gewenst</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{delivery_text}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        """
+                        await send_admin_notification("💰 Aanbetaling Ontvangen!", html_content)
+        
+        return {
+            "status": status.status,
+            "payment_status": status.payment_status,
+            "amount_total": status.amount_total,
+            "currency": status.currency
+        }
+    except Exception as e:
+        logger.error(f"Error getting payment status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Kon betaalstatus niet ophalen")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    try:
+        body = await request.body()
+        stripe_signature = request.headers.get("Stripe-Signature")
+        
+        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
+        webhook_response = await stripe_checkout.handle_webhook(body, stripe_signature)
+        
+        if webhook_response.payment_status == "paid":
+            session_id = webhook_response.session_id
+            
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {"$set": {"payment_status": "paid"}}
+            )
+            
+            transaction = await db.payment_transactions.find_one({"session_id": session_id})
+            if transaction:
+                await db.orders.update_one(
+                    {"id": transaction["order_id"]},
+                    {"$set": {"payment_status": "paid", "status": "paid"}}
+                )
+        
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        return {"status": "error"}
+
+@api_router.get("/payments/calculate")
+async def calculate_payment(motorcycle_id: str, needs_delivery: bool = False, user: dict = Depends(get_current_user)):
+    """Calculate payment amounts before checkout"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    motor_price = motorcycle["price"]
+    deposit_amount = motor_price * DEPOSIT_PERCENTAGE
+    delivery_cost = DELIVERY_COST if needs_delivery else 0.0
+    total_to_pay = deposit_amount + delivery_cost
+    
+    return {
+        "motor_price": motor_price,
+        "deposit_percentage": DEPOSIT_PERCENTAGE * 100,
+        "deposit_amount": deposit_amount,
+        "delivery_cost": delivery_cost,
+        "total_to_pay": total_to_pay
+    }
+
 # ============ UPLOAD ENDPOINT ============
 
 @api_router.post("/upload")
