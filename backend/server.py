@@ -775,7 +775,7 @@ async def upload_image(file: UploadFile = File(...), user: dict = Depends(get_cu
         raise HTTPException(status_code=500, detail=f"Kon bestand niet opslaan: {str(e)}")
     
     # Return URL
-    base_url = os.environ.get("BASE_URL", "https://dealer-moto-portal.preview.emergentagent.com")
+    base_url = os.environ.get("BASE_URL", "https://bike-dealer-1.preview.emergentagent.com")
     image_url = f"{base_url}/api/uploads/{filename}"
     
     return {"url": image_url, "filename": filename}
@@ -796,7 +796,7 @@ async def upload_multiple_images(files: List[UploadFile] = File(...), user: dict
         try:
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            base_url = os.environ.get("BASE_URL", "https://dealer-moto-portal.preview.emergentagent.com")
+            base_url = os.environ.get("BASE_URL", "https://bike-dealer-1.preview.emergentagent.com")
             urls.append(f"{base_url}/api/uploads/{filename}")
         except:
             continue
@@ -922,7 +922,7 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
             <p>Uw dealer account bij <strong>Moto Import</strong> is goedgekeurd!</p>
             <p>U kunt nu inloggen en direct bieden op onze motorfietsen.</p>
             <p style="margin-top: 30px;">
-                <a href="https://dealer-moto-portal.preview.emergentagent.com/login" 
+                <a href="https://bike-dealer-1.preview.emergentagent.com/login" 
                    style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
                     Nu Inloggen
                 </a>
