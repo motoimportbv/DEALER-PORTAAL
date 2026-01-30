@@ -34,7 +34,9 @@ const MotorcycleForm = () => {
   });
   const [newImageUrl, setNewImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [fetching, setFetching] = useState(isEditing);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isEditing) {
