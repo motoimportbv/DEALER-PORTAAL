@@ -28,6 +28,7 @@ const Sidebar = () => {
     { path: '/admin/motorcycles', icon: Bike, label: 'Motorfietsen' },
     { path: '/admin/motorcycles/new', icon: Plus, label: 'Nieuwe Motor' },
     { path: '/admin/orders', icon: ShoppingCart, label: 'Bestellingen' },
+    { path: '/admin/dealers', icon: Package, label: 'Dealers' },
   ];
 
   const dealerNavItems = [
