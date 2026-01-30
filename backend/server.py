@@ -752,20 +752,32 @@ async def get_payment_status(session_id: str, user: dict = Depends(get_current_u
                     
                     # Send email to admin
                     motorcycle = await db.motorcycles.find_one({"id": order["motorcycle_id"]}, {"_id": 0})
+                    dealer = await db.users.find_one({"id": order["dealer_id"]}, {"_id": 0})
                     if motorcycle:
-                        delivery_text = "Ja (€50)" if order.get("needs_delivery") else "Nee"
-                        html_content = f"""
+                        delivery_text = "Ja (€50)" if order.get("needs_delivery") else "Nee (ophalen)"
+                        rest_bedrag = order['total_price'] - order['deposit_amount']
+                        
+                        # Email naar Admin
+                        admin_html = f"""
                         <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                            <h2 style="color: #16a34a;">💰 Betaling Ontvangen!</h2>
+                            <h2 style="color: #16a34a;">💰 Aanbetaling Ontvangen!</h2>
                             <p>Er is een aanbetaling ontvangen voor:</p>
                             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                                 <tr style="background: #f4f4f5;">
                                     <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
-                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']}</td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Dealer</strong></td>
                                     <td style="padding: 10px; border: 1px solid #e4e4e7;">{order['dealer_company']}</td>
+                                </tr>
+                                <tr style="background: #f4f4f5;">
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Dealer Email</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{order.get('dealer_email', 'N/A')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Dealer Telefoon</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{dealer.get('phone', 'N/A') if dealer else 'N/A'}</td>
                                 </tr>
                                 <tr style="background: #f4f4f5;">
                                     <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Totaalprijs</strong></td>
@@ -776,13 +788,87 @@ async def get_payment_status(session_id: str, user: dict = Depends(get_current_u
                                     <td style="padding: 10px; border: 1px solid #e4e4e7;">€{order['deposit_amount']:,.2f}</td>
                                 </tr>
                                 <tr style="background: #f4f4f5;">
-                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bezorging gewenst</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Restbedrag</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">€{rest_bedrag:,.2f}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bezorging</strong></td>
                                     <td style="padding: 10px; border: 1px solid #e4e4e7;">{delivery_text}</td>
+                                </tr>
+                                <tr style="background: #f4f4f5;">
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Order ID</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{order['id']}</td>
                                 </tr>
                             </table>
                         </div>
                         """
-                        await send_admin_notification("💰 Aanbetaling Ontvangen!", html_content)
+                        await send_admin_notification("💰 Aanbetaling Ontvangen!", admin_html)
+                        
+                        # Email naar Dealer
+                        dealer_html = f"""
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <div style="background: #DC2626; padding: 20px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 24px;">MOTO IMPORT</h1>
+                            </div>
+                            <div style="padding: 30px; background: #f9fafb;">
+                                <h2 style="color: #16a34a; margin-top: 0;">✅ Aankoopbevestiging</h2>
+                                <p>Beste {order['dealer_company']},</p>
+                                <p>Bedankt voor uw aankoop! Hieronder vindt u de details van uw bestelling.</p>
+                                
+                                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                    <h3 style="margin-top: 0; color: #18181b;">Uw Motorfiets</h3>
+                                    <p style="font-size: 20px; font-weight: bold; color: #DC2626; margin: 10px 0;">
+                                        {motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})
+                                    </p>
+                                    <p style="color: #6b7280; margin: 5px 0;">Kleur: {motorcycle.get('color', 'N/A')}</p>
+                                    <p style="color: #6b7280; margin: 5px 0;">Kilometerstand: {motorcycle.get('mileage', 'N/A'):,} km</p>
+                                </div>
+                                
+                                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                    <h3 style="margin-top: 0; color: #18181b;">Betalingsoverzicht</h3>
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Totaalprijs motor</td>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">€{order['total_price']:,.2f}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Aanbetaling (10%)</td>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #16a34a;">- €{order['deposit_amount']:,.2f}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Bezorging</td>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{delivery_text}</td>
+                                        </tr>
+                                        <tr style="font-weight: bold; font-size: 18px;">
+                                            <td style="padding: 12px 0;">Restbedrag</td>
+                                            <td style="padding: 12px 0; text-align: right; color: #DC2626;">€{rest_bedrag:,.2f}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                    <h3 style="margin-top: 0; color: #92400e;">⚠️ Restbedrag Overmaken</h3>
+                                    <p style="margin-bottom: 15px;">Maak het restbedrag binnen <strong>5 werkdagen</strong> na ontvangst van de factuur over naar:</p>
+                                    <div style="background: white; padding: 15px; border-radius: 6px; font-family: monospace;">
+                                        <p style="margin: 5px 0;"><strong>IBAN:</strong> NL23 INGB 0107 0760 63</p>
+                                        <p style="margin: 5px 0;"><strong>T.n.v.:</strong> Moto Import B.V.</p>
+                                        <p style="margin: 5px 0;"><strong>Kenmerk:</strong> {order['id'][:8].upper()}</p>
+                                    </div>
+                                </div>
+                                
+                                <p style="color: #6b7280; font-size: 14px;">
+                                    Order ID: {order['id']}<br>
+                                    Datum: {datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')}
+                                </p>
+                            </div>
+                            <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+                                <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+                                <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                            </div>
+                        </div>
+                        """
+                        await send_email(order.get('dealer_email', ''), "✅ Aankoopbevestiging - Moto Import", dealer_html)
         
         return {
             "status": status.status,
