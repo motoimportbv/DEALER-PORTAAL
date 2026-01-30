@@ -919,6 +919,8 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
     
     # Stuur email naar dealer dat ze goedgekeurd zijn
     try:
+        base_url = os.environ.get("REACT_APP_BACKEND_URL", os.environ.get("BASE_URL", ""))
+        login_url = f"{base_url}/login" if base_url else "#"
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #16a34a;">✅ Account Goedgekeurd!</h2>
@@ -926,7 +928,7 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
             <p>Uw dealer account bij <strong>Moto Import</strong> is goedgekeurd!</p>
             <p>U kunt nu inloggen en direct bieden op onze motorfietsen.</p>
             <p style="margin-top: 30px;">
-                <a href="https://bike-dealer-1.preview.emergentagent.com/login" 
+                <a href="{login_url}" 
                    style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
                     Nu Inloggen
                 </a>
