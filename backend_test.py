@@ -72,8 +72,9 @@ class MotorcycleDealerAPITester:
 
     def test_admin_registration(self):
         """Test admin registration"""
+        timestamp = datetime.now().strftime("%H%M%S")
         admin_data = {
-            "email": "admin@test.nl",
+            "email": f"admin{timestamp}@test.nl",
             "password": "admin123",
             "company_name": "Test Admin Company",
             "role": "admin"
@@ -88,10 +89,17 @@ class MotorcycleDealerAPITester:
 
     def test_dealer_registration(self):
         """Test dealer registration"""
+        timestamp = datetime.now().strftime("%H%M%S")
         dealer_data = {
-            "email": "dealer@test.nl", 
+            "email": f"dealer{timestamp}@test.nl", 
             "password": "dealer123",
             "company_name": "Test Dealer Company",
+            "kvk_number": "12345678",
+            "address": "Test Street 123",
+            "postal_code": "1234AB",
+            "city": "Amsterdam",
+            "phone": "+31612345678",
+            "contact_person": "John Doe",
             "role": "dealer"
         }
         success, response = self.run_test(
