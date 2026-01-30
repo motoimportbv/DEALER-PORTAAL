@@ -106,6 +106,20 @@ const MotorcycleDetail = () => {
     }
   };
 
+  const calculatePayment = async (delivery = needsDelivery) => {
+    try {
+      const response = await axios.get(`${API}/payments/calculate?motorcycle_id=${id}&needs_delivery=${delivery}`);
+      setPaymentInfo(response.data);
+    } catch (error) {
+      console.error('Failed to calculate payment:', error);
+    }
+  };
+
+  const handleDeliveryChange = (checked) => {
+    setNeedsDelivery(checked);
+    calculatePayment(checked);
+  };
+
   const handleBid = async () => {
     setSubmitting(true);
     try {
@@ -127,13 +141,17 @@ const MotorcycleDetail = () => {
   const handleBuyNow = async () => {
     setSubmitting(true);
     try {
-      await axios.post(`${API}/motorcycles/${id}/buy-now`);
-      toast.success('Motor gekocht! Gefeliciteerd!');
-      setBuyNowDialogOpen(false);
-      fetchMotorcycle();
+      const response = await axios.post(`${API}/payments/create-checkout`, {
+        motorcycle_id: id,
+        needs_delivery: needsDelivery,
+        order_type: "buy_now",
+        origin_url: window.location.origin
+      });
+      
+      // Redirect to Stripe checkout
+      window.location.href = response.data.checkout_url;
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Kon motor niet kopen');
-    } finally {
+      toast.error(error.response?.data?.detail || 'Kon betaling niet starten');
       setSubmitting(false);
     }
   };
