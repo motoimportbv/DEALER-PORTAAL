@@ -42,6 +42,7 @@ function App() {
             
             {/* Shared Routes */}
             <Route path="/motorcycle/:id" element={<MotorcycleDetail />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
             
             {/* Default Redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />
