@@ -45,9 +45,6 @@ security = HTTPBearer()
 UPLOAD_DIR = ROOT_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# Mount static files for uploads
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
 # ============ MODELS ============
 
 class UserCreate(BaseModel):
