@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
+import ChatWidget from '../../components/ChatWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -12,7 +13,8 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  Package
+  Package,
+  MessageCircle
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -21,6 +23,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -28,12 +31,14 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [statsRes, ordersRes] = await Promise.all([
+      const [statsRes, ordersRes, chatRes] = await Promise.all([
         axios.get(`${API}/stats`),
-        axios.get(`${API}/orders`)
+        axios.get(`${API}/orders`),
+        axios.get(`${API}/chat/unread-count`).catch(() => ({ data: { unread_count: 0 } }))
       ]);
       setStats(statsRes.data);
       setRecentOrders(ordersRes.data.slice(0, 5));
+      setUnreadMessages(chatRes.data.unread_count);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
