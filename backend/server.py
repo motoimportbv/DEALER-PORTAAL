@@ -469,7 +469,7 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
     
-    # Create notifications for all dealers (batch insert for efficiency)
+    # Create in-app notifications for all dealers (batch insert for efficiency)
     dealers = await db.users.find({"role": "dealer"}, {"_id": 0, "id": 1}).to_list(1000)
     if dealers:
         notifications = [
@@ -483,6 +483,9 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
             for dealer in dealers
         ]
         await db.notifications.insert_many(notifications)
+    
+    # Send SMS notifications to dealers (runs in background)
+    asyncio.create_task(notify_dealers_new_motorcycle(motorcycle))
     
     return motorcycle
 
