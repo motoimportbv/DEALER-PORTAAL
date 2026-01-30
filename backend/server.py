@@ -146,6 +146,7 @@ class Bid(BaseModel):
 class OrderCreate(BaseModel):
     motorcycle_id: str
     notes: Optional[str] = ""
+    needs_delivery: bool = False
 
 class Order(BaseModel):
     model_config = ConfigDict(extra="ignore")
