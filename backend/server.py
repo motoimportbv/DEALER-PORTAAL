@@ -29,10 +29,10 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET', 'moto-dealer-secret-key-production-2024')
 JWT_ALGORITHM = "HS256"
 
-# Resend Config
-resend.api_key = os.environ.get('RESEND_API_KEY')
+# Gmail Config
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'Motoimportbv@gmail.com')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', 'Motoimportbv@gmail.com')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
 # Create the main app
 app = FastAPI()
