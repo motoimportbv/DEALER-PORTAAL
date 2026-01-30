@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
+import ChatWidget from './ChatWidget';
 
 const Layout = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
@@ -31,6 +32,8 @@ const Layout = ({ children, requiredRole }) => {
       <main className="main-content">
         {children}
       </main>
+      {/* Chat widget for dealers */}
+      {user.role === 'dealer' && <ChatWidget isAdmin={false} />}
     </div>
   );
 };
