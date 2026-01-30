@@ -205,6 +205,21 @@ class Notification(BaseModel):
     is_read: bool = False
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    conversation_id: str  # Usually dealer_id for dealer-admin chats
+    sender_id: str
+    sender_name: str
+    sender_role: str  # "admin" or "dealer"
+    message: str
+    is_read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ChatMessageCreate(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None  # Optional for dealers (defaults to their own ID)
+
 # ============ ROOT ENDPOINT ============
 
 @api_router.get("/")
