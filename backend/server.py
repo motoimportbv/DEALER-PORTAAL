@@ -529,7 +529,7 @@ async def upload_image(file: UploadFile = File(...), user: dict = Depends(get_cu
     
     # Return URL
     base_url = os.environ.get("BASE_URL", "https://dealer-moto-portal.preview.emergentagent.com")
-    image_url = f"{base_url}/uploads/{filename}"
+    image_url = f"{base_url}/api/uploads/{filename}"
     
     return {"url": image_url, "filename": filename}
 
