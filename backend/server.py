@@ -190,7 +190,12 @@ class OrderWithMotorcycle(BaseModel):
     dealer_email: str
     dealer_company: str
     status: str
-    notes: str
+    notes: str = ""
+    needs_delivery: bool = False
+    delivery_cost: float = 0.0
+    deposit_amount: float = 0.0
+    total_price: float = 0.0
+    payment_status: str = "unpaid"
     created_at: str
     motorcycle: Optional[dict] = None
 
