@@ -509,6 +509,56 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
     
     return {"message": f"Order status updated to {status}"}
 
+# ============ UPLOAD ENDPOINT ============
+
+@api_router.post("/upload")
+async def upload_image(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    # Check file type
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Alleen JPG, PNG of WEBP afbeeldingen toegestaan")
+    
+    # Generate unique filename
+    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    filename = f"{uuid.uuid4()}.{ext}"
+    filepath = UPLOAD_DIR / filename
+    
+    # Save file
+    try:
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Kon bestand niet opslaan: {str(e)}")
+    
+    # Return URL
+    base_url = os.environ.get("BASE_URL", "https://dealer-moto-portal.preview.emergentagent.com")
+    image_url = f"{base_url}/uploads/{filename}"
+    
+    return {"url": image_url, "filename": filename}
+
+@api_router.post("/upload/multiple")
+async def upload_multiple_images(files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
+    urls = []
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
+    
+    for file in files:
+        if file.content_type not in allowed_types:
+            continue
+        
+        ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+        filename = f"{uuid.uuid4()}.{ext}"
+        filepath = UPLOAD_DIR / filename
+        
+        try:
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            base_url = os.environ.get("BASE_URL", "https://dealer-moto-portal.preview.emergentagent.com")
+            urls.append(f"{base_url}/uploads/{filename}")
+        except:
+            continue
+    
+    return {"urls": urls}
+
 # ============ BID ENDPOINTS ============
 
 @api_router.post("/bids")
