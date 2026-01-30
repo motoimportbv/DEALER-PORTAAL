@@ -366,11 +366,15 @@ const MotorcycleDetail = () => {
                     </Button>
                     <Button 
                       className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 font-barlow uppercase tracking-wide"
-                      onClick={() => setBuyNowDialogOpen(true)}
+                      onClick={() => {
+                        calculatePayment(false);
+                        setNeedsDelivery(false);
+                        setBuyNowDialogOpen(true);
+                      }}
                       data-testid="buy-now-btn"
                     >
-                      <Zap className="w-5 h-5 mr-2" />
-                      Koop Nu voor {formatPrice(motorcycle.price)}
+                      <CreditCard className="w-5 h-5 mr-2" />
+                      Koop Nu
                     </Button>
                   </div>
                 )}
