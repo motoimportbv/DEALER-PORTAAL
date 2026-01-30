@@ -1001,6 +1001,36 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
     )
     return {"message": "All notifications marked as read"}
 
+# ============ PUSH NOTIFICATIONS ============
+
+class PushTokenCreate(BaseModel):
+    token: str
+    platform: str  # "ios", "android", or "web"
+
+@api_router.post("/push-token")
+async def register_push_token(data: PushTokenCreate, user: dict = Depends(get_current_user)):
+    """Register or update a push notification token for the current user"""
+    # Update or insert the token
+    await db.push_tokens.update_one(
+        {"user_id": user["id"], "platform": data.platform},
+        {
+            "$set": {
+                "user_id": user["id"],
+                "token": data.token,
+                "platform": data.platform,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    return {"message": "Push token registered"}
+
+@api_router.delete("/push-token")
+async def remove_push_token(user: dict = Depends(get_current_user)):
+    """Remove push token when user logs out"""
+    await db.push_tokens.delete_many({"user_id": user["id"]})
+    return {"message": "Push token removed"}
+
 # ============ STATS ENDPOINTS ============
 
 @api_router.get("/stats")
