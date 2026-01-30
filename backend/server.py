@@ -1209,6 +1209,131 @@ async def remove_push_token(user: dict = Depends(get_current_user)):
     await db.push_tokens.delete_many({"user_id": user["id"]})
     return {"message": "Push token removed"}
 
+# ============ CHAT ENDPOINTS ============
+
+@api_router.get("/chat/conversations")
+async def get_conversations(user: dict = Depends(get_current_user)):
+    """Get all conversations for admin, or single conversation for dealer"""
+    if user["role"] == "admin":
+        # Admin sees all conversations with unread counts
+        pipeline = [
+            {"$group": {
+                "_id": "$conversation_id",
+                "last_message": {"$last": "$message"},
+                "last_sender": {"$last": "$sender_name"},
+                "last_time": {"$last": "$created_at"},
+                "unread_count": {
+                    "$sum": {"$cond": [{"$and": [{"$eq": ["$is_read", False]}, {"$eq": ["$sender_role", "dealer"]}]}, 1, 0]}
+                }
+            }},
+            {"$sort": {"last_time": -1}}
+        ]
+        conversations = await db.chat_messages.aggregate(pipeline).to_list(100)
+        
+        # Enrich with dealer info
+        result = []
+        for conv in conversations:
+            dealer = await db.users.find_one({"id": conv["_id"]}, {"_id": 0, "company_name": 1, "email": 1})
+            result.append({
+                "conversation_id": conv["_id"],
+                "dealer_name": dealer.get("company_name", "Onbekend") if dealer else "Onbekend",
+                "dealer_email": dealer.get("email", "") if dealer else "",
+                "last_message": conv["last_message"][:50] + "..." if len(conv["last_message"]) > 50 else conv["last_message"],
+                "last_sender": conv["last_sender"],
+                "last_time": conv["last_time"],
+                "unread_count": conv["unread_count"]
+            })
+        return result
+    else:
+        # Dealer sees only their conversation
+        return [{"conversation_id": user["id"]}]
+
+@api_router.get("/chat/messages/{conversation_id}")
+async def get_messages(conversation_id: str, user: dict = Depends(get_current_user)):
+    """Get messages for a conversation"""
+    # Dealers can only access their own conversation
+    if user["role"] != "admin" and conversation_id != user["id"]:
+        raise HTTPException(status_code=403, detail="Geen toegang tot dit gesprek")
+    
+    messages = await db.chat_messages.find(
+        {"conversation_id": conversation_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(500)
+    
+    # Mark messages as read
+    if user["role"] == "admin":
+        await db.chat_messages.update_many(
+            {"conversation_id": conversation_id, "sender_role": "dealer", "is_read": False},
+            {"$set": {"is_read": True}}
+        )
+    else:
+        await db.chat_messages.update_many(
+            {"conversation_id": conversation_id, "sender_role": "admin", "is_read": False},
+            {"$set": {"is_read": True}}
+        )
+    
+    return messages
+
+@api_router.post("/chat/messages")
+async def send_message(data: ChatMessageCreate, user: dict = Depends(get_current_user)):
+    """Send a chat message"""
+    # Determine conversation_id
+    if user["role"] == "admin":
+        if not data.conversation_id:
+            raise HTTPException(status_code=400, detail="conversation_id is verplicht voor admin")
+        conversation_id = data.conversation_id
+    else:
+        conversation_id = user["id"]  # Dealer's conversation is their own ID
+    
+    message = ChatMessage(
+        conversation_id=conversation_id,
+        sender_id=user["id"],
+        sender_name=user.get("company_name", user.get("email", "Admin")),
+        sender_role=user["role"],
+        message=data.message
+    )
+    
+    await db.chat_messages.insert_one(message.model_dump())
+    
+    # Send email notification if admin sends message to dealer
+    if user["role"] == "admin":
+        dealer = await db.users.find_one({"id": conversation_id}, {"_id": 0, "email": 1, "company_name": 1})
+        if dealer and dealer.get("email"):
+            try:
+                html_content = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                    <h2 style="color: #DC2626;">📩 Nieuw bericht van Moto Import</h2>
+                    <p>Beste {dealer.get('company_name', 'Dealer')},</p>
+                    <p>U heeft een nieuw bericht ontvangen:</p>
+                    <div style="background: #f4f4f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0; font-style: italic;">"{data.message}"</p>
+                    </div>
+                    <p>Log in op het platform om te reageren.</p>
+                    <p style="color: #71717a; margin-top: 30px;">
+                        Met vriendelijke groet,<br>
+                        Moto Import B.V.
+                    </p>
+                </div>
+                """
+                await send_email(dealer["email"], "📩 Nieuw bericht van Moto Import", html_content)
+            except Exception as e:
+                logger.error(f"Failed to send chat notification email: {e}")
+    
+    return {"id": message.id, "message": "Bericht verzonden"}
+
+@api_router.get("/chat/unread-count")
+async def get_unread_count(user: dict = Depends(get_current_user)):
+    """Get unread message count"""
+    if user["role"] == "admin":
+        count = await db.chat_messages.count_documents({"sender_role": "dealer", "is_read": False})
+    else:
+        count = await db.chat_messages.count_documents({
+            "conversation_id": user["id"],
+            "sender_role": "admin",
+            "is_read": False
+        })
+    return {"unread_count": count}
+
 # ============ STATS ENDPOINTS ============
 
 @api_router.get("/stats")
