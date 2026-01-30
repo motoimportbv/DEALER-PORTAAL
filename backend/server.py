@@ -207,6 +207,22 @@ async def require_admin(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
+# ============ EMAIL HELPER ============
+
+async def send_admin_notification(subject: str, html_content: str):
+    """Send email notification to admin"""
+    try:
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [ADMIN_EMAIL],
+            "subject": subject,
+            "html": html_content
+        }
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Email sent to {ADMIN_EMAIL}")
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+
 # ============ AUTH ENDPOINTS ============
 
 @api_router.post("/auth/register")
@@ -220,6 +236,8 @@ async def register(user_data: UserCreate):
         raise HTTPException(status_code=400, detail="KVK nummer is verplicht voor dealers")
     
     user_id = str(uuid.uuid4())
+    is_approved = user_data.role == "admin"  # Admins zijn direct goedgekeurd
+    
     user_doc = {
         "id": user_id,
         "email": user_data.email,
@@ -232,9 +250,50 @@ async def register(user_data: UserCreate):
         "phone": user_data.phone,
         "contact_person": user_data.contact_person,
         "role": user_data.role,
+        "is_approved": is_approved,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user_doc)
+    
+    # Stuur email naar admin bij nieuwe dealer registratie
+    if user_data.role == "dealer":
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #DC2626;">🏍️ Nieuwe Dealer Registratie</h2>
+            <p>Er heeft zich een nieuwe dealer geregistreerd op Moto Import:</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bedrijfsnaam</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.company_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>KVK Nummer</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.kvk_number}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Contactpersoon</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.contact_person}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Email</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.email}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Telefoon</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.phone}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Adres</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.address}, {user_data.postal_code} {user_data.city}</td>
+                </tr>
+            </table>
+            <p style="color: #71717a;">Log in op het admin dashboard om deze dealer goed te keuren.</p>
+        </div>
+        """
+        await send_admin_notification(
+            f"Nieuwe Dealer Registratie: {user_data.company_name}",
+            html_content
+        )
     
     token = create_token(user_id, user_data.email, user_data.role)
     return {
@@ -244,7 +303,8 @@ async def register(user_data: UserCreate):
             "email": user_data.email,
             "company_name": user_data.company_name,
             "kvk_number": user_data.kvk_number,
-            "role": user_data.role
+            "role": user_data.role,
+            "is_approved": is_approved
         }
     }
 
