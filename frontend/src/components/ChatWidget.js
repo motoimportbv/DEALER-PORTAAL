@@ -30,24 +30,35 @@ const ChatWidget = ({ isAdmin = false }) => {
   };
 
   useEffect(() => {
-    if (isOpen) {
-      if (isAdmin) {
-        fetchConversations();
-      } else {
-        fetchMessages();
-      }
+    // Admin: always fetch conversations on mount
+    if (isAdmin) {
+      fetchConversations();
     }
     fetchUnreadCount();
     
-    // Poll for new messages every 10 seconds
+    // Poll for updates every 10 seconds
     const interval = setInterval(() => {
       fetchUnreadCount();
+      if (isAdmin) {
+        fetchConversations();
+      }
       if (isOpen && (selectedConversation || !isAdmin)) {
         fetchMessages(selectedConversation);
       }
     }, 10000);
     
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Fetch messages when conversation is selected or chat is opened
+    if (isOpen) {
+      if (!isAdmin) {
+        fetchMessages();
+      } else if (selectedConversation) {
+        fetchMessages(selectedConversation);
+      }
+    }
   }, [isOpen, selectedConversation]);
 
   useEffect(() => {
