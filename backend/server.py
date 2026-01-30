@@ -495,11 +495,18 @@ async def get_orders(user: dict = Depends(get_current_user)):
     else:
         orders = await db.orders.find({"dealer_id": user["id"]}, {"_id": 0}).to_list(1000)
     
-    # Enrich with motorcycle data
+    # Batch fetch motorcycles to avoid N+1 query
+    motorcycle_ids = list(set(order["motorcycle_id"] for order in orders))
+    motorcycles_list = await db.motorcycles.find(
+        {"id": {"$in": motorcycle_ids}}, 
+        {"_id": 0}
+    ).to_list(1000)
+    motorcycles_map = {m["id"]: m for m in motorcycles_list}
+    
+    # Enrich orders with motorcycle data
     result = []
     for order in orders:
-        motorcycle = await db.motorcycles.find_one({"id": order["motorcycle_id"]}, {"_id": 0})
-        order["motorcycle"] = motorcycle
+        order["motorcycle"] = motorcycles_map.get(order["motorcycle_id"])
         result.append(order)
     
     return result
