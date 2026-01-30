@@ -77,6 +77,42 @@ const MotorcycleForm = () => {
     }));
   };
 
+  const handleFileUpload = async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const uploadedUrls = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      try {
+        const response = await axios.post(`${API}/upload`, formDataUpload, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        uploadedUrls.push(response.data.url);
+      } catch (error) {
+        toast.error(`Kon ${file.name} niet uploaden`);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls]
+      }));
+      toast.success(`${uploadedUrls.length} foto('s) geüpload`);
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
