@@ -353,14 +353,62 @@ const MotorcycleForm = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Upload buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      className="hidden"
+                      data-testid="file-input"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-12"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      data-testid="upload-btn"
+                    >
+                      {uploading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-2" />
+                      )}
+                      Upload Foto
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-12"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.capture = 'environment';
+                        input.onchange = (e) => handleFileUpload(e);
+                        input.click();
+                      }}
+                      disabled={uploading}
+                      data-testid="camera-btn"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Maak Foto
+                    </Button>
+                  </div>
+
+                  {/* URL input (optional) */}
                   <div className="flex gap-2">
                     <Input
                       value={newImageUrl}
                       onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="Afbeelding URL"
+                      placeholder="Of plak een URL..."
+                      className="text-sm"
                       data-testid="image-url-input"
                     />
-                    <Button type="button" onClick={addImage} variant="outline" data-testid="add-image-btn">
+                    <Button type="button" onClick={addImage} variant="outline" size="icon" data-testid="add-image-btn">
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
@@ -383,8 +431,9 @@ const MotorcycleForm = () => {
                     </div>
                   ) : (
                     <div className="aspect-square rounded-lg border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-400">
-                      <ImageIcon className="w-10 h-10 mb-2" />
+                      <Camera className="w-10 h-10 mb-2" />
                       <p className="text-sm">Nog geen afbeeldingen</p>
+                      <p className="text-xs mt-1">Upload of maak een foto</p>
                     </div>
                   )}
                 </CardContent>
