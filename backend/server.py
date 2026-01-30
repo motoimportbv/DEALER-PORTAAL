@@ -37,6 +37,11 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'Motoimportbv@gmail.com')
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', 'Motoimportbv@gmail.com')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
+# Stripe Config
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
+DELIVERY_COST = 50.0  # €50 bezorgkosten
+DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
+
 # Create the main app
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
