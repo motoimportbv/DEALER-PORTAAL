@@ -395,17 +395,20 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
     
-    # Create notifications for all dealers
+    # Create notifications for all dealers (batch insert for efficiency)
     dealers = await db.users.find({"role": "dealer"}, {"_id": 0, "id": 1}).to_list(1000)
-    for dealer in dealers:
-        notification = Notification(
-            user_id=dealer["id"],
-            type="new_motorcycle",
-            title="Nieuwe motor toegevoegd",
-            message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - Bied vanaf €{motorcycle.starting_price:,.0f} of Koop Nu voor €{motorcycle.price:,.0f}",
-            motorcycle_id=motorcycle.id
-        )
-        await db.notifications.insert_one(notification.model_dump())
+    if dealers:
+        notifications = [
+            Notification(
+                user_id=dealer["id"],
+                type="new_motorcycle",
+                title="Nieuwe motor toegevoegd",
+                message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - Bied vanaf €{motorcycle.starting_price:,.0f} of Koop Nu voor €{motorcycle.price:,.0f}",
+                motorcycle_id=motorcycle.id
+            ).model_dump()
+            for dealer in dealers
+        ]
+        await db.notifications.insert_many(notifications)
     
     return motorcycle
 
