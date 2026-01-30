@@ -15,6 +15,7 @@ import DealerManagement from "./pages/admin/DealerManagement";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import MotorcycleDetail from "./pages/MotorcycleDetail";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 function App() {
   return (
