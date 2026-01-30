@@ -757,6 +757,9 @@ async def get_stats(user: dict = Depends(require_admin)):
 # Include the router
 app.include_router(api_router)
 
+# Mount static files for uploads AFTER router (via /api/uploads)
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
