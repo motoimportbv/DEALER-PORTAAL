@@ -632,13 +632,7 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
             </p>
         </div>
         """
-        params = {
-            "from": SENDER_EMAIL,
-            "to": [dealer["email"]],
-            "subject": "Uw Moto Import account is goedgekeurd!",
-            "html": html_content
-        }
-        await asyncio.to_thread(resend.Emails.send, params)
+        await send_email(dealer["email"], "Uw Moto Import account is goedgekeurd!", html_content)
     except Exception as e:
         logger.error(f"Failed to send approval email: {str(e)}")
     
