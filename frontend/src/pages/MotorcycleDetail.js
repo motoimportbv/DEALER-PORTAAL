@@ -492,19 +492,58 @@ const MotorcycleDetail = () => {
 
       {/* Buy Now Dialog */}
       <Dialog open={buyNowDialogOpen} onOpenChange={setBuyNowDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
-              Koop Nu Bevestigen
+              Koop Nu - Aanbetaling
             </DialogTitle>
             <DialogDescription>
-              U staat op het punt om de {motorcycle.brand} {motorcycle.model} direct te kopen.
+              {motorcycle.brand} {motorcycle.model} ({motorcycle.year})
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="p-4 bg-zinc-900 rounded-lg text-white text-center">
-              <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">Totaalprijs</p>
-              <p className="font-barlow text-4xl font-bold">{formatPrice(motorcycle.price)}</p>
+          <div className="py-4 space-y-4">
+            {/* Price Breakdown */}
+            <div className="space-y-3 p-4 bg-zinc-50 rounded-lg">
+              <div className="flex justify-between">
+                <span className="text-zinc-600">Motorprijs</span>
+                <span className="font-semibold">{formatPrice(motorcycle.price)}</span>
+              </div>
+              <div className="flex justify-between text-red-600">
+                <span>Aanbetaling (10%)</span>
+                <span className="font-semibold">{formatPrice(paymentInfo?.deposit_amount || motorcycle.price * 0.1)}</span>
+              </div>
+            </div>
+
+            {/* Delivery Option */}
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="delivery"
+                  checked={needsDelivery}
+                  onCheckedChange={handleDeliveryChange}
+                  data-testid="delivery-checkbox"
+                />
+                <div className="flex-1">
+                  <label htmlFor="delivery" className="font-semibold text-zinc-900 cursor-pointer flex items-center gap-2">
+                    <Truck className="w-4 h-4" />
+                    Bezorging gewenst
+                  </label>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Wij bezorgen de motor bij u. Kosten: <strong>€50,00</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Total to Pay */}
+            <div className="p-4 bg-zinc-900 rounded-lg text-white">
+              <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">Nu te betalen</p>
+              <p className="font-barlow text-3xl font-bold">
+                {formatPrice(paymentInfo?.total_to_pay || (motorcycle.price * 0.1 + (needsDelivery ? 50 : 0)))}
+              </p>
+              <p className="text-sm text-zinc-400 mt-2">
+                Restbedrag: {formatPrice(motorcycle.price - (paymentInfo?.deposit_amount || motorcycle.price * 0.1))} bij levering
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -517,7 +556,8 @@ const MotorcycleDetail = () => {
               disabled={submitting}
               data-testid="confirm-buy-btn"
             >
-              {submitting ? 'Bezig...' : 'Bevestig Koop'}
+              <CreditCard className="w-4 h-4 mr-2" />
+              {submitting ? 'Bezig...' : 'Betalen'}
             </Button>
           </DialogFooter>
         </DialogContent>
