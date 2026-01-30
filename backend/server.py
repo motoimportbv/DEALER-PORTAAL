@@ -67,6 +67,7 @@ class User(BaseModel):
     phone: str = ""
     contact_person: str = ""
     role: str
+    is_approved: bool = False  # Dealer moet goedgekeurd worden
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class MotorcycleCreate(BaseModel):
