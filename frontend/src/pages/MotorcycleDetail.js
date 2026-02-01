@@ -373,13 +373,12 @@ const MotorcycleDetail = () => {
                     <Button 
                       className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 font-barlow uppercase tracking-wide"
                       onClick={() => {
-                        calculatePayment(false);
                         setNeedsDelivery(false);
                         setBuyNowDialogOpen(true);
                       }}
                       data-testid="buy-now-btn"
                     >
-                      <CreditCard className="w-5 h-5 mr-2" />
+                      <ShoppingCart className="w-5 h-5 mr-2" />
                       Koop Nu
                     </Button>
                   </div>
