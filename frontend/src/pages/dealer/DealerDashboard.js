@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
+import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -10,20 +11,30 @@ import {
   Bike, 
   Search,
   Eye,
-  ShoppingCart
+  ShoppingCart,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerDashboard = () => {
+  const { user } = useAuth();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   useEffect(() => {
-    fetchMotorcycles();
-  }, []);
+    // Check if user is approved
+    if (user && user.role === 'dealer' && !user.is_approved) {
+      setPendingApproval(true);
+      setLoading(false);
+    } else {
+      fetchMotorcycles();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (searchTerm) {
@@ -44,11 +55,62 @@ const DealerDashboard = () => {
       setMotorcycles(response.data);
       setFilteredMotorcycles(response.data);
     } catch (error) {
+      // Check if it's a 403 (not approved)
+      if (error.response?.status === 403) {
+        setPendingApproval(true);
+      }
       console.error('Failed to fetch motorcycles:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Show pending approval screen
+  if (pendingApproval) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Card className="max-w-lg w-full">
+            <CardContent className="pt-8 pb-8 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-amber-100 rounded-full flex items-center justify-center">
+                <Clock className="w-10 h-10 text-amber-600" />
+              </div>
+              <h2 className="font-barlow text-2xl font-bold uppercase tracking-tight text-zinc-900 mb-3">
+                Account in Afwachting
+              </h2>
+              <p className="text-zinc-600 mb-6">
+                Uw account wacht nog op goedkeuring door Moto Import. 
+                U ontvangt een e-mail zodra uw account is geactiveerd.
+              </p>
+              <div className="p-4 bg-zinc-50 rounded-lg text-left">
+                <h4 className="font-semibold text-sm text-zinc-700 mb-2">Wat gebeurt er nu?</h4>
+                <ul className="text-sm text-zinc-600 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Uw registratie is ontvangen</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Clock className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <span>Moto Import controleert uw gegevens</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Clock className="w-4 h-4 text-zinc-300 mt-0.5 flex-shrink-0" />
+                    <span>Na goedkeuring kunt u motorfietsen bekijken en bestellen</span>
+                  </li>
+                </ul>
+              </div>
+              <p className="text-sm text-zinc-500 mt-6">
+                Vragen? Neem contact op via{' '}
+                <a href="mailto:Motoimportbv@gmail.com" className="text-red-600 hover:underline">
+                  Motoimportbv@gmail.com
+                </a>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   const getConditionBadge = (condition) => {
     const styles = {
