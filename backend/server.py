@@ -628,6 +628,164 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
     
     return {"message": f"Order status updated to {status}"}
 
+# ============ DIRECT ORDER ENDPOINTS ============
+
+class BuyNowRequest(BaseModel):
+    motorcycle_id: str
+    needs_delivery: bool = False
+
+@api_router.post("/orders/buy-now")
+async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_current_user)):
+    """Create a direct order without payment - sends emails to dealer and admin"""
+    
+    # Get motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if not motorcycle.get("is_available", True):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+    
+    # Calculate delivery cost
+    delivery_cost = DELIVERY_COST if data.needs_delivery else 0.0
+    total_price = motorcycle["price"] + delivery_cost
+    
+    # Create order
+    order = Order(
+        motorcycle_id=data.motorcycle_id,
+        dealer_id=user["id"],
+        dealer_email=user["email"],
+        dealer_company=user.get("company_name", ""),
+        status="pending",
+        needs_delivery=data.needs_delivery,
+        delivery_cost=delivery_cost,
+        total_price=total_price,
+        deposit_amount=0,
+        payment_status="niet_vereist"
+    )
+    
+    await db.orders.insert_one(order.model_dump())
+    
+    # Mark motorcycle as unavailable
+    await db.motorcycles.update_one(
+        {"id": data.motorcycle_id},
+        {"$set": {"is_available": False}}
+    )
+    
+    # Get dealer info
+    dealer = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    delivery_text = "Ja (€50 bezorging)" if data.needs_delivery else "Nee (ophalen)"
+    
+    # Send email to Dealer
+    dealer_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #DC2626; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">MOTO IMPORT</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+            <h2 style="color: #16a34a; margin-top: 0;">✅ Bestelling Bevestigd!</h2>
+            <p>Beste {user.get('company_name', 'Dealer')},</p>
+            <p>Bedankt voor uw bestelling! Hieronder vindt u de details.</p>
+            
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #18181b;">Uw Motorfiets</h3>
+                <p style="font-size: 20px; font-weight: bold; color: #DC2626; margin: 10px 0;">
+                    {motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})
+                </p>
+                <p style="color: #6b7280; margin: 5px 0;">Kleur: {motorcycle.get('color', 'N/A')}</p>
+                <p style="color: #6b7280; margin: 5px 0;">Kilometerstand: {motorcycle.get('mileage', 0):,} km</p>
+            </div>
+            
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #18181b;">Prijsoverzicht</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Motorprijs</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">€{motorcycle['price']:,.2f}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Bezorging</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{delivery_text}</td>
+                    </tr>
+                    <tr style="font-weight: bold; font-size: 18px;">
+                        <td style="padding: 12px 0;">Totaal</td>
+                        <td style="padding: 12px 0; text-align: right; color: #DC2626;">€{total_price:,.2f}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <p style="color: #6b7280;">Wij nemen zo snel mogelijk contact met u op voor de verdere afhandeling.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                Order ID: {order.id}<br>
+                Datum: {datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')}
+            </p>
+        </div>
+        <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+            <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+            <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+        </div>
+    </div>
+    """
+    
+    try:
+        await send_email(user["email"], "✅ Bestelling Bevestigd - Moto Import", dealer_html)
+    except Exception as e:
+        logger.error(f"Failed to send dealer confirmation email: {e}")
+    
+    # Send email to Admin
+    admin_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <h2 style="color: #DC2626;">🏍️ Nieuwe Bestelling!</h2>
+        <p>Er is een nieuwe bestelling geplaatst.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Prijs</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">€{motorcycle['price']:,.2f}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Dealer</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{user.get('company_name', 'N/A')}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Email</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{user['email']}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Telefoon</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{dealer.get('phone', 'N/A') if dealer else 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Adres</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{dealer.get('address', 'N/A') if dealer else 'N/A'}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bezorging</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{delivery_text}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Order ID</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{order.id}</td>
+            </tr>
+        </table>
+        
+        <p style="color: #71717a;">Log in op het platform om de bestelling te beheren.</p>
+    </div>
+    """
+    
+    try:
+        await send_admin_notification("🏍️ Nieuwe Bestelling!", admin_html)
+    except Exception as e:
+        logger.error(f"Failed to send admin notification email: {e}")
+    
+    return {"order_id": order.id, "message": "Bestelling geplaatst"}
+
 # ============ PAYMENT ENDPOINTS ============
 
 class PaymentRequest(BaseModel):
