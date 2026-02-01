@@ -495,25 +495,81 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
     
-    # Create in-app notifications for all dealers (batch insert for efficiency)
-    dealers = await db.users.find({"role": "dealer"}, {"_id": 0, "id": 1}).to_list(1000)
+    # Get all approved dealers
+    dealers = await db.users.find({"role": "dealer", "is_approved": True}, {"_id": 0}).to_list(1000)
+    
     if dealers:
+        # Create in-app notifications (batch insert for efficiency)
         notifications = [
             Notification(
                 user_id=dealer["id"],
                 type="new_motorcycle",
                 title="Nieuwe motor toegevoegd",
-                message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - Bied vanaf €{motorcycle.starting_price:,.0f} of Koop Nu voor €{motorcycle.price:,.0f}",
+                message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - Koop Nu voor €{motorcycle.price:,.0f}",
                 motorcycle_id=motorcycle.id
             ).model_dump()
             for dealer in dealers
         ]
         await db.notifications.insert_many(notifications)
-    
-    # Send SMS notifications to dealers (runs in background)
-    asyncio.create_task(notify_dealers_new_motorcycle(motorcycle))
+        
+        # Send email notifications to all approved dealers
+        asyncio.create_task(notify_dealers_new_motorcycle_email(motorcycle, dealers))
     
     return motorcycle
+
+async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
+    """Send email notifications to all approved dealers about a new motorcycle"""
+    base_url = os.environ.get("BASE_URL", "")
+    
+    for dealer in dealers:
+        if not dealer.get("email"):
+            continue
+            
+        try:
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #DC2626; padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🏍️ NIEUWE MOTOR!</h1>
+                </div>
+                <div style="padding: 30px; background: #f9fafb;">
+                    <p>Beste {dealer.get('company_name', 'Dealer')},</p>
+                    <p>Er is een nieuwe motorfiets toegevoegd aan ons aanbod:</p>
+                    
+                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <h2 style="margin: 0 0 10px 0; color: #DC2626;">
+                            {motorcycle.brand} {motorcycle.model}
+                        </h2>
+                        <p style="color: #6b7280; margin: 5px 0;">Bouwjaar: {motorcycle.year}</p>
+                        <p style="color: #6b7280; margin: 5px 0;">Kleur: {motorcycle.color}</p>
+                        <p style="color: #6b7280; margin: 5px 0;">Kilometerstand: {motorcycle.mileage:,} km</p>
+                        <p style="font-size: 28px; font-weight: bold; color: #18181b; margin: 15px 0;">
+                            €{motorcycle.price:,.0f}
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 25px 0;">
+                        <a href="{base_url}/motorcycle/{motorcycle.id}" 
+                           style="background: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                            BEKIJK MOTOR
+                        </a>
+                    </div>
+                    
+                    <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                        Wees er snel bij - op is op!
+                    </p>
+                </div>
+                <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+                    <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+                    <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+                </div>
+            </div>
+            """
+            await send_email(dealer["email"], f"🏍️ Nieuwe motor: {motorcycle.brand} {motorcycle.model}", html_content)
+            # Small delay to avoid rate limiting
+            await asyncio.sleep(0.3)
+        except Exception as e:
+            logger.error(f"Failed to send new motorcycle email to {dealer.get('email')}: {e}")
 
 @api_router.get("/motorcycles", response_model=List[Motorcycle])
 async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
