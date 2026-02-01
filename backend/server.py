@@ -265,6 +265,12 @@ async def require_admin(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
+async def require_approved_dealer(user: dict = Depends(get_current_user)):
+    """Helper to check if a dealer is approved"""
+    if user["role"] == "dealer" and not user.get("is_approved", False):
+        raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+    return user
+
 # ============ EMAIL HELPER ============
 
 async def send_email(to_email: str, subject: str, html_content: str):
