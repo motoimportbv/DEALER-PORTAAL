@@ -19,8 +19,15 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const user = await login(email, password);
-      toast.success('Succesvol ingelogd!');
-      navigate(user.role === 'admin' ? '/admin' : '/dealer');
+      
+      // Check if dealer is approved
+      if (user.role === 'dealer' && !user.is_approved) {
+        toast.info('Uw account wacht op goedkeuring');
+        navigate('/dealer');  // Will show pending approval screen
+      } else {
+        toast.success('Succesvol ingelogd!');
+        navigate(user.role === 'admin' ? '/admin' : '/dealer');
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Inloggen mislukt');
     } finally {
