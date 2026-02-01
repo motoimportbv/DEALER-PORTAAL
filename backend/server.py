@@ -516,7 +516,7 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     return motorcycle
 
 @api_router.get("/motorcycles", response_model=List[Motorcycle])
-async def get_motorcycles(user: dict = Depends(get_current_user)):
+async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
     # Add default starting_price if missing
     for m in motorcycles:
@@ -525,7 +525,7 @@ async def get_motorcycles(user: dict = Depends(get_current_user)):
     return motorcycles
 
 @api_router.get("/motorcycles/available", response_model=List[Motorcycle])
-async def get_available_motorcycles(user: dict = Depends(get_current_user)):
+async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
     motorcycles = await db.motorcycles.find({"is_available": True}, {"_id": 0}).to_list(1000)
     # Add default starting_price if missing
     for m in motorcycles:
@@ -534,7 +534,7 @@ async def get_available_motorcycles(user: dict = Depends(get_current_user)):
     return motorcycles
 
 @api_router.get("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
-async def get_motorcycle(motorcycle_id: str, user: dict = Depends(get_current_user)):
+async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
