@@ -501,23 +501,19 @@ const MotorcycleDetail = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
-              Koop Nu - Aanbetaling
+              Bestelling Plaatsen
             </DialogTitle>
             <DialogDescription>
               {motorcycle.brand} {motorcycle.model} ({motorcycle.year})
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            {/* Price Breakdown */}
-            <div className="space-y-3 p-4 bg-zinc-50 rounded-lg">
-              <div className="flex justify-between">
-                <span className="text-zinc-600">Motorprijs</span>
-                <span className="font-semibold">{formatPrice(motorcycle.price)}</span>
-              </div>
-              <div className="flex justify-between text-red-600">
-                <span>Aanbetaling (10%)</span>
-                <span className="font-semibold">{formatPrice(paymentInfo?.deposit_amount || motorcycle.price * 0.1)}</span>
-              </div>
+            {/* Price */}
+            <div className="p-4 bg-zinc-900 rounded-lg text-white text-center">
+              <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">Prijs</p>
+              <p className="font-barlow text-3xl font-bold">
+                {formatPrice(motorcycle.price)}
+              </p>
             </div>
 
             {/* Delivery Option */}
@@ -526,7 +522,7 @@ const MotorcycleDetail = () => {
                 <Checkbox
                   id="delivery"
                   checked={needsDelivery}
-                  onCheckedChange={handleDeliveryChange}
+                  onCheckedChange={(checked) => setNeedsDelivery(checked)}
                   data-testid="delivery-checkbox"
                 />
                 <div className="flex-1">
@@ -544,21 +540,9 @@ const MotorcycleDetail = () => {
               </div>
             </div>
 
-            {/* Total to Pay */}
-            <div className="p-4 bg-zinc-900 rounded-lg text-white">
-              <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">Nu te betalen</p>
-              <p className="font-barlow text-3xl font-bold">
-                {formatPrice(paymentInfo?.total_to_pay || (motorcycle.price * 0.1 + (needsDelivery ? 50 : 0)))}
-              </p>
-              <p className="text-sm text-zinc-400 mt-2">
-                Restbedrag: {formatPrice(motorcycle.price - (paymentInfo?.deposit_amount || motorcycle.price * 0.1))} binnen 5 werkdagen na factuur
-              </p>
-            </div>
-
-            {/* Bank info */}
-            <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 text-xs text-zinc-600">
-              <p>Het restbedrag dient na ontvangst van de factuur te worden overgemaakt naar:</p>
-              <p className="font-mono mt-1"><strong>IBAN:</strong> NL23INGB0107076063 t.n.v. Moto Import B.V.</p>
+            {/* Info */}
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-800">
+              <p>Na uw bestelling ontvangt u een bevestigingsmail met verdere instructies.</p>
             </div>
           </div>
           <DialogFooter>
@@ -571,8 +555,8 @@ const MotorcycleDetail = () => {
               disabled={submitting}
               data-testid="confirm-buy-btn"
             >
-              <CreditCard className="w-4 h-4 mr-2" />
-              {submitting ? 'Bezig...' : 'Betalen'}
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              {submitting ? 'Bezig...' : 'Bestellen'}
             </Button>
           </DialogFooter>
         </DialogContent>
