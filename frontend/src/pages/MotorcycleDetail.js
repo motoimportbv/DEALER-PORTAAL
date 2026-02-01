@@ -141,17 +141,21 @@ const MotorcycleDetail = () => {
   const handleBuyNow = async () => {
     setSubmitting(true);
     try {
-      const response = await axios.post(`${API}/payments/create-checkout`, {
+      const response = await axios.post(`${API}/orders/buy-now`, {
         motorcycle_id: id,
-        needs_delivery: needsDelivery,
-        order_type: "buy_now",
-        origin_url: window.location.origin
+        needs_delivery: needsDelivery
       });
       
-      // Redirect to Stripe checkout
-      window.location.href = response.data.checkout_url;
+      toast.success('Bestelling geplaatst! U ontvangt een bevestigingsmail.');
+      setShowBuyDialog(false);
+      
+      // Redirect to orders page
+      setTimeout(() => {
+        window.location.href = '/dealer/orders';
+      }, 2000);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Kon betaling niet starten');
+      toast.error(error.response?.data?.detail || 'Kon bestelling niet plaatsen');
+    } finally {
       setSubmitting(false);
     }
   };
