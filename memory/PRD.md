@@ -49,6 +49,12 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - ✅ Installatie prompt component
 - ✅ Offline fallback pagina
 - ✅ Push notification ondersteuning
+- ✅ **iOS ondersteuning compleet:**
+  - 9 iOS splash screens (iPhone X t/m iPhone 15 Pro Max + iPads)
+  - Apple touch icons
+  - Apple mobile web app meta tags
+  - Stap-voor-stap iOS installatie instructies in app
+  - Dealer handleiding met iOS/Android installatie gids
 
 ### Verwijderde Functionaliteit
 - ❌ Stripe betalingen (verwijderd per gebruikersverzoek)
@@ -118,4 +124,9 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - Twilio SMS functionaliteit volledig verwijderd
 - PWA functionaliteit geverifieerd en werkend
 - Service Worker geregistreerd en actief
+- **iOS PWA ondersteuning toegevoegd:**
+  - 9 iOS splash screens voor alle iPhone/iPad modellen
+  - Verbeterde InstallPrompt met stap-voor-stap iOS instructies
+  - Apple touch startup images
+  - Dealer handleiding bijgewerkt met iOS/Android installatie instructies
 - Test accounts bijgewerkt
