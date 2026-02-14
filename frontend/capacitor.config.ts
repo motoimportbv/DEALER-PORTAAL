@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     // For development, use the preview URL
     // For production, comment this out to use the bundled web assets
     url: process.env.NODE_ENV === 'development' 
-      ? 'https://bike-dealer-1.preview.emergentagent.com' 
+      ? 'https://motoimport.preview.emergentagent.com' 
       : undefined,
     cleartext: true
   },
