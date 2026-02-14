@@ -4,82 +4,83 @@
 Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een dealer netwerk met:
 - Admin en Dealer rollen
 - Dealer registratie met KVK-nummer verificatie
-- Bied- en Koop Nu systeem met veilingen (max 3 uur)
-- 10% aanbetaling via Stripe/iDEAL
+- Direct bestelsysteem (betalingen verwijderd per gebruikersverzoek)
 - €50 bezorgoptie of gratis ophalen
-- Email notificaties voor registraties en goedkeuringen
+- Email notificaties voor registraties, goedkeuringen en bestellingen
+- Real-time chat tussen dealers en admin
+- Progressive Web App (PWA) voor offline toegang en installatie
 
 ## Gebruikersrollen
-1. **Admin** - Motorfietsen beheren, orders bekijken, dealers goedkeuren
-2. **Dealer** - Catalogus bekijken, bieden, kopen, orders volgen
+1. **Admin** - Motorfietsen beheren, orders bekijken, dealers goedkeuren, chat met dealers
+2. **Dealer** - Catalogus bekijken, bestellen, orders volgen, chat met admin
 
-## Kernvereisten
-- JWT authenticatie met bcrypt password hashing
-- Dealer goedkeuring workflow met email notificaties
-- Motorfiets CRUD met foto uploads
-- Biedsysteem met minimum verhogingen (€100)
-- Koop Nu met Stripe betalingsintegratie
-- In-app notificaties (bell icon) voor nieuwe motoren
-
-## Wat is Geïmplementeerd (30 Jan 2025)
+## Wat is Geïmplementeerd
 
 ### Backend (FastAPI + MongoDB)
 - ✅ JWT authenticatie met bcrypt
 - ✅ Gebruikersregistratie met KVK validatie
-- ✅ Dealer goedkeuring workflow
+- ✅ Dealer goedkeuring workflow (nieuwe dealers kunnen niet inloggen tot goedgekeurd)
 - ✅ Gmail SMTP email notificaties
 - ✅ Motorfiets CRUD endpoints
-- ✅ Bidsysteem met veiling timer
-- ✅ Stripe checkout integratie (10% aanbetaling)
+- ✅ Direct bestelsysteem (Buy Now zonder betaling)
+- ✅ Email bevestiging naar dealer én admin bij bestelling
 - ✅ Bezorgkosten berekening (€50)
 - ✅ Foto upload endpoint
-- ✅ Notificaties systeem
+- ✅ Notificaties systeem (in-app + email bij nieuwe motoren)
 - ✅ Order management
+- ✅ Real-time chat systeem
 
 ### Frontend (React + Shadcn UI)
 - ✅ Login en registratie pagina's (met KVK veld)
 - ✅ Admin Dashboard met KPI's
 - ✅ Motorfiets lijst en detail pagina's
-- ✅ Bied en Koop Nu dialogs
+- ✅ Direct bestellen dialogs
 - ✅ Dealer management voor admin
-- ✅ Order overzicht
+- ✅ Order overzicht met details
 - ✅ Notificaties bell icon
-- ✅ Payment success pagina
+- ✅ Chat widget voor communicatie
 - ✅ Nederlandse interface
 - ✅ Moto Import branding
 
-### Betalingssysteem (Stripe)
-- ✅ 10% aanbetaling berekening
-- ✅ €50 bezorgkosten optie
-- ✅ Checkout session creatie
-- ✅ Redirect naar Stripe checkout
-- ✅ Payment status tracking
+### PWA Functionaliteit (14 Feb 2026)
+- ✅ Service Worker voor offline caching
+- ✅ Web App Manifest
+- ✅ App icons (72x72 tot 512x512)
+- ✅ Installatie prompt component
+- ✅ Offline fallback pagina
+- ✅ Push notification ondersteuning
+
+### Verwijderde Functionaliteit
+- ❌ Stripe betalingen (verwijderd per gebruikersverzoek)
+- ❌ Twilio SMS notificaties (verwijderd per gebruikersverzoek - 14 Feb 2026)
 
 ## Test Accounts
-- **Admin**: admin@test.nl / admin123
-- **Dealer**: dealer@test.nl / dealer123
+- **Admin**: motoimportbv@gmail.com / Enolim12
 
 ## Tech Stack
 - Backend: FastAPI, MongoDB (motor), Pydantic, bcrypt, JWT
 - Frontend: React, React Router, Shadcn UI, Tailwind CSS, Axios
 - Email: Gmail SMTP
-- Payments: Stripe (via emergentintegrations)
+- PWA: Service Workers, Web App Manifest
 
 ## Geprioriteerde Backlog
 
 ### P0 (Kritiek) - ✅ Voltooid
 - [x] Basis authenticatie
 - [x] Motorfiets catalogus
-- [x] Bied- en Koop Nu systeem
-- [x] **Stripe betaling fix** (30 Jan 2025)
+- [x] Direct bestelsysteem
+- [x] Email notificaties
+- [x] Dealer goedkeuring workflow
+- [x] PWA implementatie
+- [x] Twilio SMS verwijderen
 
-### P1 (Hoog) - Volgende Sprint
-- [ ] N+1 Query fix in /api/orders endpoint
-- [ ] Stripe webhook voor betrouwbare payment confirmatie
-- [ ] iDEAL als specifieke betaalmethode toevoegen
+### P1 (Hoog) - Aanbevolen
+- [ ] Mobiele responsiviteit verbeteren
+- [ ] Backend refactoren naar routers/models structuur
+- [ ] Ongebruikte Stripe endpoints verwijderen
 
 ### P2 (Medium)
-- [ ] Backend refactoren naar routers/models structuur
+- [ ] Native app build (Capacitor) voor App Store/Play Store
 - [ ] Wachtwoord reset functionaliteit
 - [ ] Zoek/filter uitbreiden (prijs range, jaar, conditie)
 
@@ -94,19 +95,27 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 | /api/auth/register | POST | Dealer registratie |
 | /api/auth/login | POST | Inloggen |
 | /api/motorcycles | GET/POST | Motorcycles CRUD |
-| /api/bids | POST | Bod plaatsen |
-| /api/payments/create-checkout | POST | Stripe sessie maken |
-| /api/payments/calculate | GET | Bedragen berekenen |
+| /api/orders/buy-now | POST | Direct bestellen |
 | /api/dealers/{id}/approve | PUT | Dealer goedkeuren |
+| /api/chat/messages | POST | Chat bericht sturen |
+| /api/notifications | GET | Notificaties ophalen |
 
 ## Database Schema
-- **users**: email, password_hash, role, is_approved, company_name, kvk_number, ...
-- **motorcycles**: brand, model, year, price, starting_price, images[], auction_end_time, ...
-- **orders**: motorcycle_id, dealer_id, status, deposit_amount, stripe_session_id, ...
-- **bids**: motorcycle_id, dealer_id, amount, ...
+- **users**: email, password_hash, role, is_approved, company_name, kvk_number, phone, ...
+- **motorcycles**: brand, model, year, price, images[], is_available, ...
+- **orders**: motorcycle_id, dealer_id, status, total_price, delivery_option, ...
+- **chat_messages**: conversation_id, sender_id, message, is_read, ...
 - **notifications**: user_id, type, message, is_read, ...
 
 ## Configuratie Vereist
-- `STRIPE_API_KEY`: Vervang met eigen Live key voor echte betalingen
 - `GMAIL_APP_PASSWORD`: Google App Password voor emails
 - `JWT_SECRET`: Geheim voor token signing
+- `BASE_URL`: Publieke URL voor links in emails
+
+## Changelog
+
+### 14 Feb 2026
+- Twilio SMS functionaliteit volledig verwijderd
+- PWA functionaliteit geverifieerd en werkend
+- Service Worker geregistreerd en actief
+- Test accounts bijgewerkt
