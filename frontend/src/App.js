@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import "@/App.css";
+import "./i18n"; // Initialize i18n
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
