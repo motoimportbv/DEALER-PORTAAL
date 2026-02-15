@@ -18,6 +18,7 @@ import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Pakbon from "./pages/Pakbon";
 
 function App() {
   useEffect(() => {
@@ -52,6 +53,7 @@ function App() {
             {/* Shared Routes */}
             <Route path="/motorcycle/:id" element={<MotorcycleDetail />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/pakbon/:orderId" element={<Pakbon />} />
             
             {/* Default Redirect */}
             <Route path="/" element={<Navigate to="/login" replace />} />
