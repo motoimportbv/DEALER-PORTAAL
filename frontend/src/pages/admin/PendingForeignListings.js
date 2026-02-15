@@ -75,7 +75,9 @@ const PendingForeignListings = () => {
         params.append('starting_price', newStartingPrice);
       }
 
-      await axios.post(`${API}/motorcycles/${selectedMotorcycle.id}/activate?${params.toString()}`);
+      await axios.post(`${API}/motorcycles/${selectedMotorcycle.id}/activate?${params.toString()}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
       toast.success(`${selectedMotorcycle.brand} ${selectedMotorcycle.model} is geactiveerd!`);
       setActivateDialogOpen(false);
