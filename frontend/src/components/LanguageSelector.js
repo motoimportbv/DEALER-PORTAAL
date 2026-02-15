@@ -46,7 +46,7 @@ const LanguageSelector = () => {
       </button>
       
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 z-50">
+        <div className="absolute top-full left-0 mt-2 z-50">
           <div className="bg-zinc-800 rounded-lg shadow-xl overflow-hidden min-w-[140px] border border-zinc-700">
             {languages.map((lang) => (
               <button
