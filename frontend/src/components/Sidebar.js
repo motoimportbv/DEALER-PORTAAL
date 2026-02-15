@@ -33,6 +33,8 @@ const Sidebar = () => {
 
   const dealerNavItems = [
     { path: '/dealer', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/dealer/my-listings', icon: Bike, label: 'Mijn Motoren' },
+    { path: '/dealer/sell', icon: Plus, label: 'Motor Verkopen' },
     { path: '/dealer/orders', icon: ShoppingCart, label: 'Mijn Bestellingen' },
   ];
 
