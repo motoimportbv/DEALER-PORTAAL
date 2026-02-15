@@ -733,6 +733,143 @@ async def create_dealer_listing(data: MotorcycleCreate, user: dict = Depends(req
     
     return motorcycle
 
+# Foreign dealer endpoint - submit motorcycles for admin approval
+@api_router.post("/motorcycles/foreign-listing")
+async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(get_current_user)):
+    """Allow foreign dealers to submit motorcycles for admin approval"""
+    
+    # Check if user is a foreign dealer
+    if not user.get("is_foreign_dealer", False):
+        raise HTTPException(status_code=403, detail="Alleen buitenlandse dealers kunnen deze functie gebruiken")
+    
+    motorcycle = Motorcycle(
+        brand=data.brand,
+        model=data.model,
+        year=data.year,
+        price=data.price,  # Suggested price by foreign dealer
+        starting_price=data.starting_price,
+        mileage=data.mileage,
+        color=data.color,
+        description=data.description,
+        condition=data.condition,
+        images=data.images,
+        created_by=user["id"],
+        is_available=False,  # Not visible until admin activates
+        # Foreign dealer fields
+        is_foreign_listing=True,
+        is_pending_approval=True,
+        foreign_dealer_id=user["id"],
+        foreign_dealer_company=user.get("company_name", ""),
+        original_price=data.price
+    )
+    doc = motorcycle.model_dump()
+    await db.motorcycles.insert_one(doc)
+    
+    # Notify admin about new foreign dealer submission
+    admin_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <div style="background: #8B5CF6; padding: 15px; text-align: center;">
+            <h2 style="color: white; margin: 0;">🌍 Nieuwe Motor van Buitenlandse Dealer</h2>
+        </div>
+        <div style="padding: 20px; background: #f5f3ff;">
+            <p style="font-size: 16px; margin-bottom: 15px;"><strong>Actie vereist:</strong> Beoordeel en stel de prijs in.</p>
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px;">
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Buitenlandse Dealer</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7; color: #8B5CF6; font-weight: bold;">{user.get('company_name', 'Dealer')} ({user.get('country', '')})</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle.brand} {motorcycle.model} ({motorcycle.year})</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Voorgestelde Prijs</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;">€{motorcycle.price:,.0f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Kilometerstand</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle.mileage:,} km</td>
+                </tr>
+            </table>
+            <p style="margin-top: 15px; color: #6b7280;">Log in om de prijs aan te passen en de motor te activeren.</p>
+        </div>
+    </div>
+    """
+    await send_admin_notification(f"🌍 Nieuwe Motor van {user.get('company_name', 'Buitenlandse Dealer')}", admin_html)
+    
+    return {"message": "Motor ingediend voor beoordeling", "motorcycle_id": motorcycle.id}
+
+@api_router.get("/motorcycles/foreign-listings")
+async def get_foreign_listings(user: dict = Depends(get_current_user)):
+    """Get motorcycles submitted by the current foreign dealer"""
+    if not user.get("is_foreign_dealer", False):
+        raise HTTPException(status_code=403, detail="Alleen voor buitenlandse dealers")
+    
+    motorcycles = await db.motorcycles.find(
+        {"foreign_dealer_id": user["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    return motorcycles
+
+@api_router.get("/motorcycles/pending-foreign")
+async def get_pending_foreign_listings(user: dict = Depends(require_admin)):
+    """Get all pending motorcycles from foreign dealers (admin only)"""
+    motorcycles = await db.motorcycles.find(
+        {"is_foreign_listing": True, "is_pending_approval": True},
+        {"_id": 0}
+    ).to_list(100)
+    return motorcycles
+
+@api_router.post("/motorcycles/{motorcycle_id}/activate")
+async def activate_foreign_listing(motorcycle_id: str, price: float, starting_price: Optional[float] = None, user: dict = Depends(require_admin)):
+    """Activate a foreign dealer listing with new price (admin only)"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if not motorcycle.get("is_foreign_listing", False):
+        raise HTTPException(status_code=400, detail="Dit is geen buitenlandse dealer motor")
+    
+    # Update motorcycle with new price and activate it
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {
+            "price": price,
+            "starting_price": starting_price or price * 0.8,
+            "is_available": True,
+            "is_pending_approval": False
+        }}
+    )
+    
+    # Get all approved dealers for notifications
+    dealers = await db.users.find(
+        {"role": "dealer", "is_approved": True, "is_foreign_dealer": {"$ne": True}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    if dealers:
+        # Create in-app notifications
+        notifications = [
+            Notification(
+                user_id=dealer["id"],
+                type="new_motorcycle",
+                title="Nieuwe motor beschikbaar",
+                message=f"{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']}) - €{price:,.0f}",
+                motorcycle_id=motorcycle_id
+            ).model_dump()
+            for dealer in dealers
+        ]
+        await db.notifications.insert_many(notifications)
+        
+        # Send push notifications
+        asyncio.create_task(send_push_to_all_dealers(
+            title="🏍️ Nieuwe Motor!",
+            body=f"{motorcycle['brand']} {motorcycle['model']} - €{price:,.0f}",
+            url=f"/motorcycle/{motorcycle_id}"
+        ))
+    
+    return {"message": "Motor geactiveerd", "price": price}
+
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
     """Send email notifications to all approved dealers about a new motorcycle"""
     base_url = os.environ.get("BASE_URL", "")
