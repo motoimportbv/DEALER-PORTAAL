@@ -201,6 +201,17 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Toast meldingen vertaald ("Succesvol opgeslagen" → "Enregistré avec succès" etc.)
   - Status: **100% COMPLEET** - Klaar voor internationaal gebruik
 
+### 15 Feb 2026 (Update 13) ✅ VOLTOOID
+- 🌍 **APARTE LEVERANCIER REGISTRATIEPAGINA** - Voor buitenlandse leveranciers
+  - Nieuwe pagina: `/register/supplier`
+  - Vereenvoudigd formulier: Bedrijfsnaam, Land, Contactpersoon, Telefoon, Email, Wachtwoord
+  - **Geen KVK-nummer vereist** - alleen land selectie
+  - Automatisch gemarkeerd als `is_foreign_dealer: true`
+  - Backend endpoint: `POST /api/auth/register-supplier`
+  - Email notificatie naar admin met paarse styling
+  - Link op normale registratiepagina: "Bent u een buitenlandse leverancier?"
+  - Volledig vertaald in 4 talen (NL, DE, FR, IT)
+
 ### 15 Feb 2026 (Update 10)
 - 🌍 **Meertalige App** - 4 talen ondersteund
   - Nederlands (standaard), Duits, Italiaans, Frans
