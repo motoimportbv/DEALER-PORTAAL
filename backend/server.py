@@ -163,6 +163,11 @@ class Motorcycle(BaseModel):
     highest_bidder_id: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str = ""
+    # Dealer marketplace fields
+    is_dealer_listing: bool = False  # True if listed by dealer
+    seller_company: Optional[str] = None  # Company name of selling dealer
+    seller_id: Optional[str] = None  # ID of selling dealer
+    listing_fee_invoiced: bool = False  # Admin marks when €250 fee is invoiced
 
 class BidCreate(BaseModel):
     motorcycle_id: str
