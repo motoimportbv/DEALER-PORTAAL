@@ -170,12 +170,12 @@ const MotorcycleDetail = () => {
         motorcycle_id: id,
         amount: parseFloat(bidAmount)
       });
-      toast.success(`Bod van €${parseFloat(bidAmount).toLocaleString('nl-NL')} geplaatst!`);
+      toast.success(t('bid.bidSuccess'));
       setBidDialogOpen(false);
       fetchMotorcycle();
       fetchBids();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Kon bod niet plaatsen');
+      toast.error(error.response?.data?.detail || t('messages.errorOccurred'));
     } finally {
       setSubmitting(false);
     }
@@ -190,8 +190,8 @@ const MotorcycleDetail = () => {
         voucher_code: voucherValid ? voucherCode : null
       });
       
-      const discountMsg = voucherValid ? ` (inclusief €${voucherDiscount} korting!)` : '';
-      toast.success(`Bestelling geplaatst${discountMsg}`);
+      const discountMsg = voucherValid ? ` (${t('order.welcomeDiscount')}: €${voucherDiscount})` : '';
+      toast.success(t('detail.orderPlaced') + discountMsg);
       setBuyNowDialogOpen(false);
       
       // Redirect to pakbon page with auto-print
@@ -200,7 +200,7 @@ const MotorcycleDetail = () => {
         window.location.href = `/pakbon/${orderId}?print=true`;
       }, 1500);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Kon bestelling niet plaatsen');
+      toast.error(error.response?.data?.detail || t('messages.errorOccurred'));
     } finally {
       setSubmitting(false);
     }
@@ -220,10 +220,10 @@ const MotorcycleDetail = () => {
       fair: 'bg-zinc-100 text-zinc-800'
     };
     const labels = {
-      new: 'Nieuw',
-      excellent: 'Uitstekend',
-      good: 'Goed',
-      fair: 'Redelijk'
+      new: t('motorcycle.new'),
+      excellent: t('motorcycle.excellent'),
+      good: t('motorcycle.good'),
+      fair: t('motorcycle.fair')
     };
     return <Badge className={`${styles[condition]} text-sm px-3 py-1`}>{labels[condition]}</Badge>;
   };
