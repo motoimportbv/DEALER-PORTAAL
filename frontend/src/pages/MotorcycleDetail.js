@@ -295,7 +295,7 @@ const MotorcycleDetail = () => {
                 )}
                 {!motorcycle.is_available && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <Badge className="bg-red-600 text-white text-lg px-4 py-2">Verkocht</Badge>
+                    <Badge className="bg-red-600 text-white text-lg px-4 py-2">{t('motorcycle.sold')}</Badge>
                   </div>
                 )}
                 {/* Timer Badge */}
@@ -332,13 +332,13 @@ const MotorcycleDetail = () => {
                 <CardContent className="p-6">
                   <h3 className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900 mb-4 flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-red-600" />
-                    Biedingen ({bids.length})
+                    {t('motorcycle.bids')} ({bids.length})
                   </h3>
                   <div className="space-y-3">
                     {bids.slice(0, 5).map((bid, index) => (
                       <div key={bid.id} className={`flex items-center justify-between p-3 rounded-lg ${index === 0 ? 'bg-red-50 border border-red-200' : 'bg-zinc-50'}`}>
                         <div className="flex items-center gap-3">
-                          {index === 0 && <Badge className="bg-red-600 text-white">Hoogste</Badge>}
+                          {index === 0 && <Badge className="bg-red-600 text-white">{t('motorcycle.highestBid')}</Badge>}
                           <span className="text-zinc-600">{bid.dealer_company}</span>
                         </div>
                         <span className={`font-barlow font-bold ${index === 0 ? 'text-red-600 text-xl' : 'text-zinc-700'}`}>
