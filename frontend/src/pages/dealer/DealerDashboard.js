@@ -43,6 +43,11 @@ const DealerDashboard = () => {
             setLoading(false);
             return;
           }
+
+          // Check if terms are accepted
+          if (!freshUserData.terms_accepted) {
+            setShowTermsModal(true);
+          }
         } catch (error) {
           // If 403, user is not approved
           if (error.response?.status === 403) {
@@ -61,6 +66,15 @@ const DealerDashboard = () => {
       checkApprovalAndLoadData();
     }
   }, [user]);
+
+  // Handle terms acceptance
+  const handleTermsAccepted = async () => {
+    setShowTermsModal(false);
+    // Refresh user data to update terms_accepted status
+    if (refreshUser) {
+      await refreshUser();
+    }
+  };
 
   // Auto-refresh elke 10 minuten voor dealers
   useEffect(() => {
