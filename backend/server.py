@@ -602,6 +602,36 @@ async def reset_password(data: PasswordResetConfirm):
     
     return {"message": "Wachtwoord succesvol gewijzigd. U kunt nu inloggen met uw nieuwe wachtwoord."}
 
+# ============ DEALER MANAGEMENT ============
+
+@api_router.post("/dealers/{dealer_id}/set-foreign")
+async def set_foreign_dealer(dealer_id: str, country: str, user: dict = Depends(require_admin)):
+    """Mark a dealer as foreign dealer (supplier)"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_foreign_dealer": True, "country": country}}
+    )
+    
+    return {"message": f"Dealer gemarkeerd als buitenlandse dealer ({country})"}
+
+@api_router.post("/dealers/{dealer_id}/unset-foreign")
+async def unset_foreign_dealer(dealer_id: str, user: dict = Depends(require_admin)):
+    """Remove foreign dealer status"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_foreign_dealer": False, "country": ""}}
+    )
+    
+    return {"message": "Buitenlandse dealer status verwijderd"}
+
 # ============ MOTORCYCLE ENDPOINTS ============
 
 @api_router.post("/motorcycles", response_model=Motorcycle)
