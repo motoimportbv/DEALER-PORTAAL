@@ -1834,18 +1834,53 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
     if not sub:
         return {"success": False, "error": "Geen push subscription gevonden. Klik eerst op Inschakelen."}
     
-    # Try to send test notification
-    result = await send_push_notification_to_user(
-        user["id"],
-        "🧪 Test Notificatie",
-        "Push notificaties werken!",
-        "/"
-    )
+    # Check subscription details
+    subscription = sub.get("subscription", {})
+    endpoint = subscription.get("endpoint", "")
     
-    if result:
+    if not endpoint:
+        return {"success": False, "error": "Subscription heeft geen endpoint"}
+    
+    # Check VAPID key
+    private_key = None
+    if VAPID_PRIVATE_KEY_B64:
+        import base64
+        try:
+            private_key = base64.b64decode(VAPID_PRIVATE_KEY_B64).decode('utf-8')
+        except Exception as e:
+            return {"success": False, "error": f"VAPID key decode error: {str(e)}"}
+    
+    if not private_key and VAPID_PRIVATE_KEY_PATH:
+        if os.path.exists(VAPID_PRIVATE_KEY_PATH):
+            with open(VAPID_PRIVATE_KEY_PATH, 'r') as f:
+                private_key = f.read().strip()
+    
+    if not private_key:
+        return {"success": False, "error": "VAPID private key niet geconfigureerd"}
+    
+    # Try to send
+    try:
+        payload = json.dumps({
+            "title": "🧪 Test Notificatie",
+            "body": "Push notificaties werken!",
+            "icon": "/icons/icon-192x192.png",
+            "url": "/"
+        })
+        
+        webpush(
+            subscription_info=subscription,
+            data=payload,
+            vapid_private_key=private_key,
+            vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+        )
         return {"success": True, "message": "Test notificatie verzonden!"}
-    else:
-        return {"success": False, "error": "Kon notificatie niet verzenden. Controleer browser instellingen."}
+    except WebPushException as e:
+        error_msg = str(e)
+        if e.response:
+            error_msg = f"Status {e.response.status_code}: {e.response.text[:200]}"
+        return {"success": False, "error": f"Push fout: {error_msg}"}
+    except Exception as e:
+        return {"success": False, "error": f"Onverwachte fout: {str(e)}"}
 
 @api_router.delete("/push/subscribe")
 async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
