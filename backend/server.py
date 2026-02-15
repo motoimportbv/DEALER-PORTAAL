@@ -443,13 +443,23 @@ async def login(credentials: UserLogin):
             "email": user["email"],
             "company_name": user["company_name"],
             "role": user["role"],
-            "is_approved": is_approved
+            "is_approved": is_approved,
+            "terms_accepted": user.get("terms_accepted", False)
         }
     }
 
 @api_router.get("/auth/me")
 async def get_me(user: dict = Depends(get_current_user)):
     return user
+
+@api_router.post("/auth/accept-terms")
+async def accept_terms(user: dict = Depends(get_current_user)):
+    """Accept terms and conditions"""
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"terms_accepted": True, "terms_accepted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Voorwaarden geaccepteerd", "terms_accepted": True}
 
 class PasswordResetRequest(BaseModel):
     email: str
