@@ -64,7 +64,7 @@ const PushNotificationToggle = ({ token }) => {
       setPermission(permission);
       
       if (permission !== 'granted') {
-        toast.error('U heeft notificaties geweigerd. Schakel deze in via uw browserinstellingen.');
+        toast.error(t('pushNotifications.denied'));
         return;
       }
 
