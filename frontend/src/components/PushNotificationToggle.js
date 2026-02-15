@@ -105,22 +105,22 @@ const PushNotificationToggle = ({ token }) => {
       });
       console.log('Push test response:', response.data);
       if (response.data.success) {
-        toast.success('Test notificatie verzonden! Check uw telefoon.');
+        toast.success(t('pushNotifications.testSent'));
       } else {
         // Show detailed error with debug info
-        const errorMsg = response.data.error || 'Test mislukt';
+        const errorMsg = response.data.error || t('pushNotifications.testError');
         const debug = response.data.debug;
         toast.error(errorMsg);
         if (debug) {
           console.log('Debug info:', debug);
           if (!debug.has_valid_keys) {
-            toast.error('Subscription keys zijn ongeldig. Klik op "Uit" en dan "Inschakelen".');
+            toast.error(t('pushNotifications.invalidKeys'));
           }
         }
       }
     } catch (error) {
       console.error('Test push error:', error);
-      const errorMsg = error.response?.data?.error || error.message || 'Kon test niet uitvoeren';
+      const errorMsg = error.response?.data?.error || error.message || t('pushNotifications.testError');
       toast.error(errorMsg);
     }
   };
