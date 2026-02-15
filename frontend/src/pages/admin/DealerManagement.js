@@ -416,6 +416,54 @@ const DealerManagement = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Foreign Dealer Dialog */}
+        <Dialog open={foreignDialogOpen} onOpenChange={setForeignDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-purple-600" />
+                Buitenlandse Dealer Instellen
+              </DialogTitle>
+              <DialogDescription>
+                Markeer {selectedDealer?.company_name} als buitenlandse dealer (leverancier).
+                Deze dealer kan dan motors indienen die u eerst beoordeelt voordat ze zichtbaar worden.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <label className="text-sm font-medium text-zinc-700 block mb-2">
+                Land
+              </label>
+              <select
+                value={countryInput}
+                onChange={(e) => setCountryInput(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background"
+              >
+                <option value="">Selecteer land...</option>
+                <option value="Duitsland">🇩🇪 Duitsland</option>
+                <option value="Italië">🇮🇹 Italië</option>
+                <option value="Frankrijk">🇫🇷 Frankrijk</option>
+                <option value="België">🇧🇪 België</option>
+                <option value="Oostenrijk">🇦🇹 Oostenrijk</option>
+                <option value="Spanje">🇪🇸 Spanje</option>
+                <option value="Polen">🇵🇱 Polen</option>
+                <option value="Anders">🌍 Anders</option>
+              </select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setForeignDialogOpen(false)}>
+                Annuleren
+              </Button>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={setForeignDealer}
+                disabled={!countryInput}
+              >
+                Bevestigen
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
