@@ -5,11 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Moto Import',
   webDir: 'build',
   server: {
-    // For development, use the preview URL
-    // For production, comment this out to use the bundled web assets
-    url: process.env.NODE_ENV === 'development' 
-      ? 'https://motoimport.preview.emergentagent.com' 
-      : undefined,
+    // Use bundled web assets - no external URL needed
     cleartext: true
   },
   plugins: {
