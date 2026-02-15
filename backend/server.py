@@ -125,11 +125,11 @@ class MotorcycleCreate(BaseModel):
     model: str
     year: int
     price: float  # Koop nu prijs
-    starting_price: float  # Vanaf prijs voor bieden
-    mileage: int
-    color: str
-    description: str
-    condition: str  # "new", "excellent", "good", "fair"
+    starting_price: Optional[float] = None  # Vanaf prijs voor bieden
+    mileage: int = 0
+    color: str = ""
+    description: str = ""
+    condition: str = "good"  # "new", "excellent", "good", "fair"
     images: List[str] = []
     auction_duration_hours: int = 3  # Standaard 3 uur
 
