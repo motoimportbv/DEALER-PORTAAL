@@ -419,6 +419,115 @@ async def login(credentials: UserLogin):
 async def get_me(user: dict = Depends(get_current_user)):
     return user
 
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: PasswordResetRequest):
+    """Send password reset email"""
+    user = await db.users.find_one({"email": data.email})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "Als dit e-mailadres bij ons bekend is, ontvangt u een e-mail met instructies."}
+    
+    # Generate reset token (valid for 1 hour)
+    import secrets
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Store reset token
+    await db.password_resets.delete_many({"email": data.email})  # Remove old tokens
+    await db.password_resets.insert_one({
+        "email": data.email,
+        "token": reset_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Send reset email
+    base_url = os.environ.get("BASE_URL", "")
+    reset_link = f"{base_url}/reset-password?token={reset_token}"
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #18181b; padding: 25px; text-align: center;">
+            <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+        </div>
+        
+        <div style="padding: 30px; background: #f9fafb;">
+            <h2 style="color: #18181b; margin-top: 0;">Wachtwoord Resetten</h2>
+            <p>Beste {user.get('contact_person', user.get('company_name', 'Klant'))},</p>
+            <p>U heeft een verzoek ingediend om uw wachtwoord te resetten.</p>
+            <p>Klik op de onderstaande knop om een nieuw wachtwoord in te stellen:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_link}" 
+                   style="display: inline-block; background: #DC2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    Nieuw Wachtwoord Instellen
+                </a>
+            </div>
+            
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    <strong>⚠️ Let op:</strong> Deze link is 1 uur geldig. Als u dit verzoek niet heeft gedaan, kunt u deze email negeren.
+                </p>
+            </div>
+            
+            <p style="color: #71717a; font-size: 12px; margin-top: 20px;">
+                Werkt de knop niet? Kopieer deze link naar uw browser:<br>
+                <span style="word-break: break-all; color: #DC2626;">{reset_link}</span>
+            </p>
+        </div>
+        
+        <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+            <p style="margin: 5px 0;">Moto Import B.V. | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+        </div>
+    </div>
+    """
+    
+    try:
+        await send_email(data.email, "🔐 Wachtwoord Resetten - Moto Import", html_content)
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+    
+    return {"message": "Als dit e-mailadres bij ons bekend is, ontvangt u een e-mail met instructies."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: PasswordResetConfirm):
+    """Reset password using token"""
+    # Find reset token
+    reset_doc = await db.password_resets.find_one({"token": data.token})
+    
+    if not reset_doc:
+        raise HTTPException(status_code=400, detail="Ongeldige of verlopen reset link")
+    
+    # Check if expired
+    expires_at = datetime.fromisoformat(reset_doc["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires_at:
+        await db.password_resets.delete_one({"token": data.token})
+        raise HTTPException(status_code=400, detail="Reset link is verlopen. Vraag een nieuwe aan.")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minimaal 6 tekens zijn")
+    
+    # Update password
+    password_hash = hash_password(data.new_password)
+    await db.users.update_one(
+        {"email": reset_doc["email"]},
+        {"$set": {"password_hash": password_hash}}
+    )
+    
+    # Delete used token
+    await db.password_resets.delete_one({"token": data.token})
+    
+    return {"message": "Wachtwoord succesvol gewijzigd. U kunt nu inloggen met uw nieuwe wachtwoord."}
+
 # ============ MOTORCYCLE ENDPOINTS ============
 
 @api_router.post("/motorcycles", response_model=Motorcycle)
