@@ -1483,7 +1483,7 @@ async def upload_multiple_images(request: Request, files: List[UploadFile] = Fil
 # ============ BID ENDPOINTS ============
 
 @api_router.post("/bids")
-async def place_bid(data: BidCreate, user: dict = Depends(get_current_user)):
+async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_current_user)):
     # Get motorcycle
     motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
     if not motorcycle:
@@ -1522,6 +1522,66 @@ async def place_bid(data: BidCreate, user: dict = Depends(get_current_user)):
         {"id": data.motorcycle_id},
         {"$set": {"highest_bid": data.amount, "highest_bidder_id": user["id"]}}
     )
+    
+    # Send notification to admin about new bid
+    try:
+        # Get base URL for email links
+        base_url = str(request.base_url).rstrip('/')
+        if 'preview.emergentagent.com' in base_url:
+            base_url = os.environ.get('BASE_URL', base_url)
+        
+        # Create in-app notification for admin
+        admin_user = await db.users.find_one({"role": "admin"}, {"_id": 0})
+        if admin_user:
+            notification = {
+                "id": str(uuid.uuid4()),
+                "user_id": admin_user["id"],
+                "title": "Nieuw bod ontvangen!",
+                "message": f"{user['company_name']} heeft €{data.amount:,.0f} geboden op {motorcycle['brand']} {motorcycle['model']}",
+                "type": "bid",
+                "read": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "link": f"/admin/motorcycles"
+            }
+            await db.notifications.insert_one(notification)
+            
+            # Send email to admin
+            email_body = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #18181b; color: white; padding: 20px; text-align: center;">
+                    <h1 style="margin: 0;">🏍️ MOTO IMPORT</h1>
+                </div>
+                <div style="padding: 30px; background: #f4f4f5;">
+                    <h2 style="color: #dc2626;">💰 Nieuw Bod Ontvangen!</h2>
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <p><strong>Motor:</strong> {motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</p>
+                        <p><strong>Dealer:</strong> {user['company_name']}</p>
+                        <p><strong>Bod:</strong> <span style="color: #dc2626; font-size: 24px; font-weight: bold;">€{data.amount:,.0f}</span></p>
+                        <p><strong>Vraagprijs:</strong> €{motorcycle['price']:,.0f}</p>
+                        <p><strong>Vorig hoogste bod:</strong> €{current_highest:,.0f}</p>
+                    </div>
+                    <a href="{base_url}/admin/motorcycles" style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Bekijk in Dashboard</a>
+                </div>
+                <div style="padding: 20px; text-align: center; color: #71717a; font-size: 12px;">
+                    <p>Moto Import B.V. | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                </div>
+            </div>
+            """
+            await send_email(
+                to_email=ADMIN_EMAIL,
+                subject=f"💰 Nieuw bod: €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
+                html_content=email_body
+            )
+            
+            # Send push notification to admin
+            await send_push_notification_to_user(
+                admin_user["id"],
+                "💰 Nieuw Bod!",
+                f"{user['company_name']} biedt €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
+                "/admin/motorcycles"
+            )
+    except Exception as e:
+        logger.error(f"Error sending bid notification: {e}")
     
     return {"message": f"Bod van €{data.amount:,.0f} geplaatst", "bid": bid.model_dump()}
 
