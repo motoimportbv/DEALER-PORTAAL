@@ -61,6 +61,10 @@ function App() {
             <Route path="/dealer/sell" element={<DealerSellMotorcycle />} />
             <Route path="/dealer/my-listings" element={<DealerMyListings />} />
             
+            {/* Foreign Dealer Routes */}
+            <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
+            <Route path="/foreign-dealer/add" element={<ForeignDealerAddMotorcycle />} />
+            
             {/* Shared Routes */}
             <Route path="/motorcycle/:id" element={<MotorcycleDetail />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
