@@ -141,10 +141,10 @@ const PushNotificationToggle = ({ token }) => {
       });
 
       setIsSubscribed(false);
-      toast.success('Push notificaties uitgeschakeld');
+      toast.success(t('pushNotifications.disabled'));
     } catch (error) {
       console.error('Error unsubscribing:', error);
-      toast.error('Kon push notificaties niet uitschakelen');
+      toast.error(t('pushNotifications.disableError'));
     } finally {
       setIsLoading(false);
     }
