@@ -122,6 +122,7 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 | /api/push/subscribe | POST | Push notificaties inschakelen |
 | /api/push/vapid_public_key | GET | VAPID publieke sleutel |
 | /api/auth/accept-terms | POST | Voorwaarden accepteren |
+| /api/stats/top-dealers | GET | Meest actieve dealers |
 
 ## Database Schema
 - **users**: email, password_hash, role, is_approved, company_name, kvk_number, phone, **terms_accepted**, **terms_accepted_at**, **login_count**, **last_login**, ...
