@@ -120,6 +120,12 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 15 Feb 2026
+- 🎁 **Voucher systeem toegevoegd** - Nieuwe dealers krijgen automatisch €250 welkomstkorting
+- 📧 **Pakbon per email** - Admin ontvangt volledige pakbon bij elke bestelling
+- 📱 **Mobiele bestellingen** - Kaart-layout voor bestellingen op telefoon
+- 🔔 **Push notificaties** - Dealers kunnen meldingen ontvangen op hun telefoon
+
 ### 14 Feb 2026
 - Twilio SMS functionaliteit volledig verwijderd
 - PWA functionaliteit geverifieerd en werkend
