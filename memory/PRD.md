@@ -109,6 +109,7 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 | Endpoint | Method | Beschrijving |
 |----------|--------|--------------|
 | /api/auth/register | POST | Dealer registratie |
+| /api/auth/register-supplier | POST | Leverancier registratie (buitenland) |
 | /api/auth/login | POST | Inloggen |
 | /api/motorcycles | GET/POST | Motorcycles CRUD |
 | /api/orders/buy-now | POST | Direct bestellen |
