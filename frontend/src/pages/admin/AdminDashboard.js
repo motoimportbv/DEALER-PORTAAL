@@ -25,8 +25,8 @@ const AdminDashboard = () => {
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [topDealers, setTopDealers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -34,14 +34,14 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [statsRes, ordersRes, chatRes] = await Promise.all([
+      const [statsRes, ordersRes, topDealersRes] = await Promise.all([
         axios.get(`${API}/stats`),
         axios.get(`${API}/orders`),
-        axios.get(`${API}/chat/unread-count`).catch(() => ({ data: { unread_count: 0 } }))
+        axios.get(`${API}/stats/top-dealers`).catch(() => ({ data: [] }))
       ]);
       setStats(statsRes.data);
       setRecentOrders(ordersRes.data.slice(0, 5));
-      setUnreadMessages(chatRes.data.unread_count);
+      setTopDealers(topDealersRes.data);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
