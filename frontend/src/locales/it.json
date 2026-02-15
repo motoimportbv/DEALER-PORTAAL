@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Caricamento...",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "back": "Indietro",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "all": "Tutti",
+    "yes": "Sì",
+    "no": "No",
+    "confirm": "Conferma",
+    "close": "Chiudi",
+    "submit": "Invia",
+    "logout": "Esci",
+    "login": "Accedi",
+    "register": "Registrati"
+  },
+  "auth": {
+    "email": "Indirizzo email",
+    "password": "Password",
+    "confirmPassword": "Conferma password",
+    "companyName": "Nome azienda",
+    "kvkNumber": "Partita IVA",
+    "phone": "Numero di telefono",
+    "forgotPassword": "Password dimenticata?",
+    "resetPassword": "Reimposta password",
+    "noAccount": "Non hai un account?",
+    "hasAccount": "Hai già un account?",
+    "loginTitle": "Accedi",
+    "registerTitle": "Crea account",
+    "registerSubtitle": "Diventa rivenditore di Moto Import",
+    "pendingApproval": "Il tuo account è in attesa di approvazione",
+    "pendingMessage": "Ti contatteremo il prima possibile."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "motorcycles": "Moto",
+    "orders": "Ordini",
+    "dealers": "Rivenditori",
+    "myMotorcycles": "Le mie moto",
+    "sellMotorcycle": "Vendi moto",
+    "myOrders": "I miei ordini",
+    "pendingListings": "Moto in attesa"
+  },
+  "motorcycle": {
+    "brand": "Marca",
+    "model": "Modello",
+    "year": "Anno",
+    "price": "Prezzo",
+    "askingPrice": "Prezzo richiesto",
+    "buyNowPrice": "Prezzo Compra Ora",
+    "startingPrice": "Prezzo di partenza",
+    "mileage": "Chilometraggio",
+    "color": "Colore",
+    "condition": "Condizione",
+    "description": "Descrizione",
+    "images": "Immagini",
+    "new": "Nuovo",
+    "excellent": "Eccellente",
+    "good": "Buono",
+    "fair": "Discreto",
+    "available": "Disponibile",
+    "sold": "Venduto",
+    "pending": "In attesa",
+    "addMotorcycle": "Aggiungi moto",
+    "editMotorcycle": "Modifica moto",
+    "viewDetails": "Vedi dettagli",
+    "placeBid": "Fai un'offerta",
+    "buyNow": "Compra Ora",
+    "currentBid": "Offerta attuale",
+    "noBids": "Nessuna offerta",
+    "dealerListing": "Offerto dal rivenditore",
+    "buyerFeeWarning": "Nota: €250 costi acquirente all'acquisto"
+  },
+  "order": {
+    "orderNumber": "Numero ordine",
+    "status": "Stato",
+    "totalPrice": "Prezzo totale",
+    "deliveryOption": "Opzione di consegna",
+    "pickup": "Ritiro",
+    "delivery": "Consegna",
+    "deliveryCost": "Costi di consegna",
+    "orderPlaced": "Ordine effettuato",
+    "orderConfirmed": "Ordine confermato",
+    "viewPakbon": "Vedi bolla",
+    "printPakbon": "Stampa bolla"
+  },
+  "dealer": {
+    "companyName": "Nome azienda",
+    "approved": "Approvato",
+    "pending": "In attesa",
+    "approve": "Approva",
+    "reject": "Rifiuta",
+    "deleteDealer": "Elimina rivenditore",
+    "topDealers": "Rivenditori più attivi",
+    "loginCount": "Accessi",
+    "lastActive": "Ultimo accesso",
+    "neverLoggedIn": "Mai connesso"
+  },
+  "foreignDealer": {
+    "title": "Rivenditore estero",
+    "addMotorcycle": "Aggiungi moto",
+    "pendingReview": "In attesa di revisione",
+    "infoMessage": "La tua moto sarà valutata da Moto Import. Dopo l'approvazione e la determinazione del prezzo, sarà visibile.",
+    "myListings": "Le mie moto inviate"
+  },
+  "admin": {
+    "pendingListings": "Moto in attesa",
+    "activateListing": "Attiva",
+    "setPrice": "Imposta prezzo",
+    "fromForeignDealer": "Da rivenditore estero"
+  },
+  "notifications": {
+    "enable": "Abilita notifiche",
+    "enabled": "Notifiche abilitate",
+    "disabled": "Notifiche disabilitate"
+  },
+  "fees": {
+    "listingFee": "Costi di inserzione",
+    "buyerFee": "Costi acquirente",
+    "feeAmount": "€250"
+  },
+  "messages": {
+    "successSaved": "Salvato con successo",
+    "successDeleted": "Eliminato con successo",
+    "errorOccurred": "Si è verificato un errore",
+    "confirmDelete": "Sei sicuro di voler eliminare?"
+  }
+}
