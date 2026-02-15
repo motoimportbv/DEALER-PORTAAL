@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +22,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerDashboard = () => {
+  const { t } = useTranslation();
   const { user, token, refreshUser } = useAuth();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
