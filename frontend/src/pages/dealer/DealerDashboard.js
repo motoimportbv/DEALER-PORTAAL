@@ -149,16 +149,16 @@ const DealerDashboard = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <Clock className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <span>Moto Import controleert uw gegevens</span>
+                    <span>{t('pending.checkingDetails')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Clock className="w-4 h-4 text-zinc-300 mt-0.5 flex-shrink-0" />
-                    <span>Na goedkeuring kunt u motorfietsen bekijken en bestellen</span>
+                    <span>{t('pending.afterApproval')}</span>
                   </li>
                 </ul>
               </div>
               <p className="text-sm text-zinc-500 mt-6">
-                Vragen? Neem contact op via{' '}
+                {t('pending.questions')}{' '}
                 <a href="mailto:Motoimportbv@gmail.com" className="text-red-600 hover:underline">
                   Motoimportbv@gmail.com
                 </a>
@@ -229,7 +229,7 @@ const DealerDashboard = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <Input
               type="text"
-              placeholder="Zoek op merk, model, kleur of bouwjaar..."
+              placeholder={t('search.placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-12 pr-4 py-3 text-base border-2 border-zinc-200 focus:border-red-500 rounded-lg shadow-sm"
@@ -260,10 +260,10 @@ const DealerDashboard = () => {
               <div className="empty-state">
                 <Bike className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  {searchTerm ? 'Geen resultaten gevonden' : 'Geen motoren beschikbaar'}
+                  {searchTerm ? t('search.noResults') : t('motorcycle.noAvailable')}
                 </h3>
                 <p className="text-zinc-500">
-                  {searchTerm ? 'Probeer een andere zoekterm' : 'Er zijn momenteel geen motoren beschikbaar'}
+                  {searchTerm ? t('search.tryAnother') : t('motorcycle.noAvailableDesc')}
                 </p>
               </div>
             </CardContent>
@@ -312,13 +312,13 @@ const DealerDashboard = () => {
 
                   <div className="space-y-1 mb-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-zinc-500">Vanaf</span>
+                      <span className="text-sm text-zinc-500">{t('motorcycle.startingPrice')}</span>
                       <span className="font-barlow font-bold text-zinc-700">
                         {formatPrice(motorcycle.starting_price || motorcycle.price * 0.8)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-zinc-500">Koop Nu</span>
+                      <span className="text-sm text-zinc-500">{t('motorcycle.buyNow')}</span>
                       <span className="font-barlow text-xl font-bold text-red-600">
                         {formatPrice(motorcycle.price)}
                       </span>
@@ -328,7 +328,7 @@ const DealerDashboard = () => {
                   <Link to={`/motorcycle/${motorcycle.id}`}>
                     <Button className="w-full bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid={`view-btn-${motorcycle.id}`}>
                       <Eye className="w-4 h-4 mr-2" />
-                      Bekijk & Bied
+                      {t('motorcycle.viewAndBid')}
                     </Button>
                   </Link>
                 </CardContent>
