@@ -467,7 +467,9 @@ async def login(credentials: UserLogin):
             "company_name": user["company_name"],
             "role": user["role"],
             "is_approved": is_approved,
-            "terms_accepted": user.get("terms_accepted", False)
+            "terms_accepted": user.get("terms_accepted", False),
+            "is_foreign_dealer": user.get("is_foreign_dealer", False),
+            "country": user.get("country", "")
         }
     }
 
