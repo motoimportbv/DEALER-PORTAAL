@@ -238,7 +238,33 @@ const DealerManagement = () => {
 
         {/* Delete button for approved dealers */}
         {showDelete && dealer.is_approved && (
-          <div className="pt-4 border-t border-zinc-100">
+          <div className="pt-4 border-t border-zinc-100 space-y-2">
+            {/* Foreign dealer toggle */}
+            {!dealer.is_foreign_dealer ? (
+              <Button
+                variant="outline"
+                className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                onClick={() => {
+                  setSelectedDealer(dealer);
+                  setForeignDialogOpen(true);
+                }}
+                data-testid={`set-foreign-btn-${dealer.id}`}
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                Markeer als Buitenlandse Dealer
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full text-zinc-600 hover:text-zinc-700 hover:bg-zinc-50"
+                onClick={() => removeForeignDealer(dealer.id)}
+                data-testid={`unset-foreign-btn-${dealer.id}`}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Verwijder Buitenlandse Status
+              </Button>
+            )}
+            
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
