@@ -46,42 +46,43 @@ STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
 DELIVERY_COST = 50.0  # €50 bezorgkosten
 DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
 
-# VAPID Config for Push Notifications
-VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+# VAPID Config for Push Notifications - HARDCODED to ensure consistency across deployments
+# These keys MUST match - public key is sent to browser, private key is used to sign
+VAPID_PUBLIC_KEY_HARDCODED = "BDVDg84JgYjD10VTovA4da7oXRi0GAQ7Exk_woSSP2R5t9I-TG5tpMsSpSkACaUC-3XxFKqVE5O9Q8nuxOyVSrU"
+VAPID_PRIVATE_KEY_DER_HARDCODED = "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgetbgPlFqO/NomQmXcYexcYlBvS4fKNUD8aF0a2dJbiWhRANCAAQ1Q4POCYGIw9dFU6LwOHWu6F0YtBgEOxMZP8KEkj9kebfSPkxubaTLEqUpAAmlAvt18RSqlROTvUPJ7sTslUq1"
+
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', VAPID_PUBLIC_KEY_HARDCODED)
+VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', VAPID_PRIVATE_KEY_DER_HARDCODED)
 VAPID_PRIVATE_KEY_PATH = os.environ.get('VAPID_PRIVATE_KEY_PATH', '')
-VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', '')  # DER format base64 encoded (no newlines)
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
     """Get VAPID private key - returns a file path that pywebpush can use"""
     import base64
-    import tempfile
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.backends import default_backend
     
-    # Option 1: Use existing file if it exists
+    # Always use the hardcoded DER key to ensure consistency
+    try:
+        der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
+        private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
+        pem_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        
+        # Write to temp file (pywebpush needs a file path)
+        temp_key_path = '/tmp/vapid_private.pem'
+        with open(temp_key_path, 'wb') as f:
+            f.write(pem_bytes)
+        return temp_key_path
+    except Exception as e:
+        logger.error(f"Failed to load VAPID private key: {e}")
+    
+    # Fallback to file path if DER fails
     if VAPID_PRIVATE_KEY_PATH and os.path.exists(VAPID_PRIVATE_KEY_PATH):
         return VAPID_PRIVATE_KEY_PATH
-    
-    # Option 2: Create temp file from DER env var
-    if VAPID_PRIVATE_KEY_DER:
-        try:
-            der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
-            # Load the DER key and convert to PEM
-            private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
-            pem_bytes = private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            )
-            
-            # Write to a temp file (pywebpush needs a file path, not content)
-            temp_key_path = '/tmp/vapid_private.pem'
-            with open(temp_key_path, 'wb') as f:
-                f.write(pem_bytes)
-            return temp_key_path
-        except Exception as e:
-            logger.error(f"Failed to load VAPID_PRIVATE_KEY_DER: {e}")
     
     return None
 
