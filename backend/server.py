@@ -1783,14 +1783,29 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
         if not subscription:
             return False
         
-        # Read private key
-        private_key_path = VAPID_PRIVATE_KEY_PATH
-        if not private_key_path or not os.path.exists(private_key_path):
-            logger.warning("VAPID private key not found")
-            return False
+        # Get private key - try environment variable first, then file
+        private_key = None
         
-        with open(private_key_path, 'r') as f:
-            private_key = f.read()
+        # Option 1: Direct key from environment variable
+        if VAPID_PRIVATE_KEY:
+            private_key = VAPID_PRIVATE_KEY
+            # Handle base64 encoded key if needed
+            if not private_key.startswith('-----BEGIN'):
+                import base64
+                try:
+                    private_key = base64.b64decode(VAPID_PRIVATE_KEY).decode('utf-8')
+                except:
+                    pass
+        
+        # Option 2: Read from file path
+        if not private_key and VAPID_PRIVATE_KEY_PATH:
+            if os.path.exists(VAPID_PRIVATE_KEY_PATH):
+                with open(VAPID_PRIVATE_KEY_PATH, 'r') as f:
+                    private_key = f.read().strip()
+        
+        if not private_key:
+            logger.warning("VAPID private key not configured - push notifications disabled")
+            return False
         
         # Prepare notification payload
         payload = json.dumps({
