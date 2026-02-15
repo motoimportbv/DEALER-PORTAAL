@@ -494,6 +494,19 @@ const MotorcycleDetail = () => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Seller info for dealer listings */}
+                  {motorcycle.is_dealer_listing && motorcycle.seller_company && (
+                    <div className="flex items-center gap-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <div className="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center">
+                        <Store className="w-5 h-5 text-amber-700" />
+                      </div>
+                      <div>
+                        <p className="font-barlow uppercase tracking-wider text-xs text-amber-600">Aangeboden door dealer</p>
+                        <p className="font-semibold text-amber-900">{motorcycle.seller_company}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
