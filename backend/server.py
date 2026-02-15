@@ -170,6 +170,12 @@ class Motorcycle(BaseModel):
     seller_company: Optional[str] = None  # Company name of selling dealer
     seller_id: Optional[str] = None  # ID of selling dealer
     listing_fee_invoiced: bool = False  # Admin marks when €250 fee is invoiced
+    # Foreign dealer fields
+    is_foreign_listing: bool = False  # True if from foreign dealer
+    is_pending_approval: bool = False  # True if waiting for admin to set price/activate
+    foreign_dealer_id: Optional[str] = None  # ID of foreign dealer
+    foreign_dealer_company: Optional[str] = None  # Company name of foreign dealer
+    original_price: Optional[float] = None  # Price suggested by foreign dealer
 
 class BidCreate(BaseModel):
     motorcycle_id: str
