@@ -56,6 +56,8 @@ const MotorcycleDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
   const [needsDelivery, setNeedsDelivery] = useState(false);
+  const [needsInspection, setNeedsInspection] = useState(false);
+  const [needsValuation, setNeedsValuation] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherDiscount, setVoucherDiscount] = useState(0);
