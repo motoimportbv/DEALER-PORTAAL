@@ -96,6 +96,22 @@ const PushNotificationToggle = ({ token }) => {
     }
   };
 
+  const testPush = async () => {
+    try {
+      const response = await axios.get(`${API}/api/push/test`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        toast.success('Test notificatie verzonden! Check uw telefoon.');
+      } else {
+        toast.error(response.data.error || 'Test mislukt');
+      }
+    } catch (error) {
+      console.error('Test push error:', error);
+      toast.error('Kon test niet uitvoeren');
+    }
+  };
+
   const unsubscribe = async () => {
     setIsLoading(true);
     try {
