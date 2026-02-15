@@ -555,12 +555,85 @@ const MotorcycleDetail = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            {/* Price */}
-            <div className="p-4 bg-zinc-900 rounded-lg text-white text-center">
-              <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">Prijs</p>
-              <p className="font-barlow text-3xl font-bold">
-                {formatPrice(motorcycle.price)}
-              </p>
+            {/* Price Summary */}
+            <div className="p-4 bg-zinc-900 rounded-lg text-white">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Motorprijs</span>
+                  <span>{formatPrice(motorcycle.price)}</span>
+                </div>
+                {needsDelivery && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Bezorgkosten</span>
+                    <span>€50,00</span>
+                  </div>
+                )}
+                {voucherValid && voucherDiscount > 0 && (
+                  <div className="flex justify-between items-center text-green-400">
+                    <span className="flex items-center gap-1">
+                      <Gift className="w-4 h-4" />
+                      Welkomstkorting
+                    </span>
+                    <span>-€{voucherDiscount.toLocaleString('nl-NL')}</span>
+                  </div>
+                )}
+                <div className="border-t border-zinc-700 pt-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold">Totaal</span>
+                    <span className="font-barlow text-2xl font-bold text-red-500">
+                      {formatPrice(getTotalPrice())}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Voucher Input */}
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Gift className="w-5 h-5 text-red-600" />
+                <label className="font-semibold text-zinc-900">Voucher Code</label>
+              </div>
+              {myVoucher && !myVoucher.is_used ? (
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-600 font-medium">🎁 Welkomstvoucher actief!</p>
+                      <p className="font-mono font-bold text-lg">{myVoucher.code}</p>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">-€{myVoucher.amount}</Badge>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Bijv. WELKOM-ABC123"
+                    value={voucherCode}
+                    onChange={(e) => {
+                      setVoucherCode(e.target.value.toUpperCase());
+                      if (voucherValid) {
+                        setVoucherValid(false);
+                        setVoucherDiscount(0);
+                      }
+                    }}
+                    className="font-mono uppercase"
+                    data-testid="voucher-input"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={checkVoucher}
+                    disabled={checkingVoucher || !voucherCode.trim()}
+                  >
+                    {checkingVoucher ? '...' : 'Toepassen'}
+                  </Button>
+                </div>
+              )}
+              {voucherValid && !myVoucher && (
+                <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Voucher toegepast: €{voucherDiscount} korting!
+                </p>
+              )}
             </div>
 
             {/* Delivery Option */}
@@ -603,7 +676,7 @@ const MotorcycleDetail = () => {
               data-testid="confirm-buy-btn"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              {submitting ? 'Bezig...' : 'Bestellen'}
+              {submitting ? 'Bezig...' : `Bestellen (${formatPrice(getTotalPrice())})`}
             </Button>
           </DialogFooter>
         </DialogContent>
