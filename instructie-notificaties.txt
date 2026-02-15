@@ -31,6 +31,37 @@ Op iPhone moet u eerst de app installeren:
 
 ─────────────────────────────────────────
 
+🚫 NOTIFICATIES GEBLOKKEERD?
+
+Heeft u per ongeluk op "Blokkeren" geklikt? Zo herstelt u dit:
+
+📱 ANDROID (Chrome):
+1. Open Chrome → Tik op ⋮ → Instellingen
+2. Ga naar Site-instellingen → Meldingen
+3. Zoek motoimportbv.nl → Zet op "Toestaan"
+4. Herlaad de app en klik op "Inschakelen"
+
+🍎 iPHONE (Safari):
+1. Open Instellingen → Safari → Websites
+2. Tik op Meldingen
+3. Zoek Moto Import → Zet op "Toestaan"
+4. Herlaad de app en klik op "Inschakelen"
+
+💻 DESKTOP (Chrome):
+1. Klik op het 🔒 slotje links van de URL
+2. Klik op "Site-instellingen"
+3. Zet Meldingen op "Toestaan"
+4. Ververs de pagina (F5)
+
+─────────────────────────────────────────
+
+📖 UITGEBREIDE HANDLEIDING:
+
+Bekijk de volledige handleiding met afbeeldingen:
+👉 www.motoimportbv.nl/handleiding-notificaties.html
+
+─────────────────────────────────────────
+
 ❓ Vragen? Neem contact op:
 📧 Motoimportbv@gmail.com
 📞 +31 6 81792660
