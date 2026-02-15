@@ -1254,8 +1254,10 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     if not motorcycle.get("is_available", True):
         raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
     
-    # Calculate delivery cost
+    # Calculate costs
     delivery_cost = DELIVERY_COST if data.needs_delivery else 0.0
+    inspection_cost = INSPECTION_COST if data.needs_inspection else 0.0
+    valuation_cost = VALUATION_COST if data.needs_valuation else 0.0
     
     # Check and apply voucher
     voucher_discount = 0.0
@@ -1280,7 +1282,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
                 }
             )
     
-    total_price = max(0, motorcycle["price"] + delivery_cost - voucher_discount)
+    total_price = max(0, motorcycle["price"] + delivery_cost + inspection_cost + valuation_cost - voucher_discount)
     
     # Create order
     order = Order(
@@ -1301,6 +1303,12 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     if voucher_applied:
         order_dict["voucher_code"] = voucher_applied
         order_dict["voucher_discount"] = voucher_discount
+    
+    # Add inspection and valuation info
+    order_dict["needs_inspection"] = data.needs_inspection
+    order_dict["inspection_cost"] = inspection_cost
+    order_dict["needs_valuation"] = data.needs_valuation
+    order_dict["valuation_cost"] = valuation_cost
     
     # Check if this is a dealer-to-dealer sale
     is_dealer_listing = motorcycle.get("is_dealer_listing", False)
