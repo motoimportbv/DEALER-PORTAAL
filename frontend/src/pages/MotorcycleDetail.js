@@ -356,7 +356,7 @@ const MotorcycleDetail = () => {
               <Card className="mt-6">
                 <CardContent className="p-6">
                   <h3 className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900 mb-4">
-                    Beschrijving
+                    {t('motorcycle.description')}
                   </h3>
                   <p className="text-zinc-600 whitespace-pre-wrap">{motorcycle.description}</p>
                 </CardContent>
@@ -373,26 +373,26 @@ const MotorcycleDetail = () => {
                   {getConditionBadge(motorcycle.condition)}
                   {motorcycle.is_available ? (
                     timeLeft?.expired ? (
-                      <Badge className="bg-zinc-500 text-white">Veiling Afgelopen</Badge>
+                      <Badge className="bg-zinc-500 text-white">{t('motorcycle.auctionEnded')}</Badge>
                     ) : (
-                      <Badge className="bg-green-100 text-green-800">Actief</Badge>
+                      <Badge className="bg-green-100 text-green-800">{t('motorcycle.active')}</Badge>
                     )
                   ) : (
-                    <Badge className="bg-red-100 text-red-800">Verkocht</Badge>
+                    <Badge className="bg-red-100 text-red-800">{t('motorcycle.sold')}</Badge>
                   )}
                 </div>
 
                 {/* Current Bid */}
                 <div className="mb-4 p-4 bg-white rounded-lg border border-red-200">
                   <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500 mb-1">
-                    {motorcycle.highest_bid ? 'Huidig Bod' : 'Vanaf Prijs'}
+                    {motorcycle.highest_bid ? t('motorcycle.currentBidLabel') : t('motorcycle.fromPrice')}
                   </p>
                   <p className="font-barlow text-4xl font-bold text-red-600">
                     {formatPrice(currentBid)}
                   </p>
                   {motorcycle.highest_bid && (
                     <p className="text-sm text-zinc-500 mt-1">
-                      {bids.length} {bids.length === 1 ? 'bod' : 'biedingen'}
+                      {bids.length} {t('motorcycle.bids')}
                     </p>
                   )}
                 </div>
@@ -402,7 +402,7 @@ const MotorcycleDetail = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <Zap className="w-4 h-4 text-yellow-400" />
                     <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400">
-                      Koop Nu
+                      {t('motorcycle.buyNow')}
                     </p>
                   </div>
                   <p className="font-barlow text-3xl font-bold">
@@ -417,7 +417,7 @@ const MotorcycleDetail = () => {
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-amber-800 text-sm font-medium flex items-center gap-2">
                           <Tag className="w-4 h-4" />
-                          Let op: €250 koperskosten bij aankoop
+                          {t('motorcycle.buyerFeeWarning')}
                         </p>
                       </div>
                     )}
@@ -429,7 +429,7 @@ const MotorcycleDetail = () => {
                         data-testid="bid-btn"
                       >
                         <Gavel className="w-5 h-5 mr-2" />
-                        Plaats Bod
+                        {t('bid.placeBid')}
                       </Button>
                     )}
                     <Button 
@@ -441,7 +441,7 @@ const MotorcycleDetail = () => {
                       data-testid="buy-now-btn"
                     >
                       <ShoppingCart className="w-5 h-5 mr-2" />
-                      Koop Nu
+                      {t('motorcycle.buyNow')}
                     </Button>
                   </div>
                 )}
