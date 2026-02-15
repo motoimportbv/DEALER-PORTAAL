@@ -18,6 +18,22 @@
     "login": "Connexion",
     "register": "S'inscrire"
   },
+  "supplierRegister": {
+    "badge": "Fournisseur Étranger",
+    "title": "Inscription Fournisseur",
+    "subtitle": "Inscrivez-vous en tant que fournisseur étranger",
+    "heroText": "Devenez fournisseur pour Moto Import et vendez vos motos à notre réseau de revendeurs.",
+    "companyDetails": "Détails de l'entreprise",
+    "companyPlaceholder": "Nom de votre entreprise",
+    "companyRequired": "Le nom de l'entreprise est requis",
+    "country": "Pays",
+    "selectCountry": "Sélectionnez votre pays",
+    "countryRequired": "Le pays est requis",
+    "submit": "S'inscrire comme fournisseur",
+    "success": "Inscription réussie ! Nous vous contacterons.",
+    "dealerLink": "Êtes-vous un revendeur néerlandais ?",
+    "dealerRegister": "Inscrivez-vous ici"
+  },
   "auth": {
     "email": "Adresse e-mail",
     "password": "Mot de passe",
