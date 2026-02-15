@@ -213,5 +213,33 @@
     "apply": "Toepassen",
     "applied": "Voucher toegepast",
     "discount": "korting"
+  },
+  "sell": {
+    "subtitle": "Plaats uw motor te koop voor andere dealers",
+    "feeInfo": "Bij verkoop van uw motor ontvangt u een factuur van €250. Het plaatsen is gratis.",
+    "motorcycleDetails": "Motor Gegevens",
+    "brandPlaceholder": "bijv. Kawasaki",
+    "modelPlaceholder": "bijv. Ninja ZX-6R",
+    "mileagePlaceholder": "bijv. 15000",
+    "colorPlaceholder": "bijv. Groen",
+    "pricePlaceholder": "bijv. 8500",
+    "minimumBid": "Minimum bod",
+    "minimumBidPlaceholder": "Optioneel - standaard 80% van vraagprijs",
+    "descriptionPlaceholder": "Beschrijf de motor, eventuele opties, onderhoud, etc.",
+    "uploading": "Uploaden...",
+    "clickToUpload": "Klik om foto's te uploaden",
+    "submitListing": "Motor Plaatsen",
+    "success": "Motor succesvol geplaatst!",
+    "fillRequired": "Vul alle verplichte velden in",
+    "uploadFailed": "Kon niet uploaden"
+  },
+  "myListings": {
+    "listed": "motoren geplaatst",
+    "forSale": "Te Koop",
+    "noListings": "Nog geen motoren geplaatst",
+    "firstListing": "Plaats uw eerste motor te koop voor andere dealers",
+    "listedOn": "Geplaatst op",
+    "feeNotice": "Let op",
+    "feeInfo": "Bij verkoop van uw motor ontvangt u een factuur van €250."
   }
 }
