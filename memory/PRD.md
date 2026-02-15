@@ -146,6 +146,20 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Backend endpoint: `POST /api/auth/accept-terms`
   - Frontend component: `TermsModal.js`
 
+### 15 Feb 2026 (Update 7)
+- 📊 **Dealer Activiteit Tracking** - Admin kan nu zien welke dealer het vaakst actief is
+  - Login count en laatste login worden bijgehouden per dealer
+  - "Meest Actieve Dealers" sectie toegevoegd aan Admin Dashboard
+  - Top 5 dealers getoond met ranking (goud, zilver, brons)
+  - Backend endpoint: `GET /api/stats/top-dealers`
+- 🗑️ **Chat Functie Verwijderd** - Volledig verwijderd per gebruikersverzoek
+  - ChatWidget.js verwijderd
+  - Chat endpoints verwijderd uit backend
+- 💬 **WhatsApp Button Toegevoegd** - Directe communicatie via WhatsApp
+  - Floating groene WhatsApp knop rechtsonder
+  - Telefoonnummer: +31638525541
+  - Opent WhatsApp met vooringevuld bericht
+
 ### 15 Feb 2026 (Update 5)
 - 🔔 **Push notificaties volledig werkend!**
   - VAPID keys hardcoded voor consistentie tussen deployments
