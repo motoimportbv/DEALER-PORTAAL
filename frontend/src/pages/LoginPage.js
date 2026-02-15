@@ -20,7 +20,16 @@ const LoginPage = () => {
     try {
       const user = await login(email, password);
       toast.success('Succesvol ingelogd!');
-      navigate(user.role === 'admin' ? '/admin' : '/dealer');
+      
+      // Determine redirect based on user type
+      let redirectPath = '/dealer';
+      if (user.role === 'admin') {
+        redirectPath = '/admin';
+      } else if (user.is_foreign_dealer) {
+        redirectPath = '/foreign-dealer';
+      }
+      
+      navigate(redirectPath);
     } catch (error) {
       const errorMessage = error.response?.data?.detail || 'Inloggen mislukt';
       
