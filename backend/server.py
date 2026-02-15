@@ -427,7 +427,7 @@ class PasswordResetConfirm(BaseModel):
     new_password: str
 
 @api_router.post("/auth/forgot-password")
-async def forgot_password(data: PasswordResetRequest):
+async def forgot_password(request: Request, data: PasswordResetRequest):
     """Send password reset email"""
     user = await db.users.find_one({"email": data.email})
     
@@ -449,8 +449,15 @@ async def forgot_password(data: PasswordResetRequest):
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     
-    # Send reset email
-    base_url = os.environ.get("BASE_URL", "")
+    # Get base URL from request origin or fallback to env
+    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
+    if origin:
+        from urllib.parse import urlparse
+        parsed = urlparse(origin)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    
     reset_link = f"{base_url}/reset-password?token={reset_token}"
     
     html_content = f"""
