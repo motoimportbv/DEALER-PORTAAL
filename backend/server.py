@@ -114,8 +114,10 @@ class User(BaseModel):
     city: str = ""
     phone: str = ""
     contact_person: str = ""
-    role: str
+    role: str  # "admin", "dealer", or "foreign_dealer"
     is_approved: bool = False  # Dealer moet goedgekeurd worden
+    is_foreign_dealer: bool = False  # Buitenlandse dealer (leverancier)
+    country: str = ""  # Land van buitenlandse dealer
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class MotorcycleCreate(BaseModel):
