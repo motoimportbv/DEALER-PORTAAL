@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -9,10 +9,12 @@ const API = process.env.REACT_APP_BACKEND_URL;
 
 const Pakbon = () => {
   const { orderId } = useParams();
+  const [searchParams] = useSearchParams();
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasPrinted, setHasPrinted] = useState(false);
   const printRef = useRef();
 
   useEffect(() => {
@@ -36,6 +38,17 @@ const Pakbon = () => {
       fetchOrder();
     }
   }, [token, orderId]);
+
+  // Auto-print when order is loaded and print=true parameter is present
+  useEffect(() => {
+    if (order && searchParams.get('print') === 'true' && !hasPrinted) {
+      setHasPrinted(true);
+      // Small delay to ensure the page is fully rendered
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  }, [order, searchParams, hasPrinted]);
 
   const handlePrint = () => {
     window.print();
