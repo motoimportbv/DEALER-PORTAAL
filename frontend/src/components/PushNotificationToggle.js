@@ -156,22 +156,32 @@ const PushNotificationToggle = ({ token }) => {
       </div>
       
       {isSubscribed ? (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={unsubscribe}
-          disabled={isLoading}
-          className="text-zinc-600"
-        >
-          {isLoading ? (
-            <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <BellOff className="w-4 h-4 mr-2" />
-              Uitschakelen
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={testPush}
+            className="text-green-600 border-green-600 hover:bg-green-50"
+          >
+            Test
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={unsubscribe}
+            disabled={isLoading}
+            className="text-zinc-600"
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <BellOff className="w-4 h-4 mr-2" />
+                Uit
+              </>
+            )}
+          </Button>
+        </div>
       ) : (
         <Button
           size="sm"
