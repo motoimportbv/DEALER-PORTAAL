@@ -95,6 +95,11 @@ const AdminDashboard = () => {
       </div>
 
       <div className="content-body" data-testid="admin-dashboard">
+        {/* Push Notifications Toggle for Admin */}
+        <div className="mb-6">
+          <PushNotificationToggle token={token} />
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="kpi-card">
