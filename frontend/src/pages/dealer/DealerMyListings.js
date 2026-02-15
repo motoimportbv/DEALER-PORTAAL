@@ -175,7 +175,7 @@ const DealerMyListings = () => {
         {/* Info about fees */}
         <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-amber-800 text-sm">
-            <strong>Let op:</strong> Bij verkoop van uw motor ontvangt u een factuur van €250 voor de plaatsingskosten.
+            <strong>Kosten bij verkoop:</strong> Verkoper betaalt €250, koper betaalt €250 (totaal €500 per transactie).
           </p>
         </div>
       </div>
