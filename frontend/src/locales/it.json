@@ -30,10 +30,32 @@
     "noAccount": "Non hai un account?",
     "hasAccount": "Hai già un account?",
     "loginTitle": "Accedi",
-    "registerTitle": "Crea account",
+    "registerTitle": "Crea account rivenditore",
     "registerSubtitle": "Diventa rivenditore di Moto Import",
     "pendingApproval": "Il tuo account è in attesa di approvazione",
     "pendingMessage": "Ti contatteremo il prima possibile."
+  },
+  "register": {
+    "heroText": "Entra a far parte della nostra rete esclusiva di rivenditori e accedi alle moto premium.",
+    "fillDetails": "Compila i dati aziendali per registrarti",
+    "companyDetails": "Dati aziendali",
+    "companyPlaceholder": "Nome della tua azienda",
+    "addressDetails": "Indirizzo",
+    "streetAddress": "Via e numero civico",
+    "streetPlaceholder": "Via Esempio 123",
+    "postalCode": "CAP",
+    "city": "Città",
+    "cityPlaceholder": "Milano",
+    "accountDetails": "Informazioni account",
+    "contactPerson": "Persona di contatto",
+    "contactPlaceholder": "Mario Rossi",
+    "emailPlaceholder": "tua@email.it",
+    "passwordPlaceholder": "Minimo 6 caratteri",
+    "createAccount": "Crea account",
+    "passwordMinLength": "La password deve contenere almeno 6 caratteri",
+    "kvkRequired": "La Partita IVA è obbligatoria",
+    "success": "Account creato con successo!",
+    "failed": "Registrazione fallita"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -45,7 +67,18 @@
     "myOrders": "I miei ordini",
     "pendingListings": "Moto in attesa"
   },
+  "search": {
+    "placeholder": "Cerca per marca, modello, colore o anno...",
+    "noResults": "Nessun risultato trovato",
+    "tryAnother": "Prova con un altro termine di ricerca"
+  },
+  "pending": {
+    "checkingDetails": "Moto Import sta verificando i tuoi dati",
+    "afterApproval": "Dopo l'approvazione potrai visualizzare e ordinare moto",
+    "questions": "Domande? Contattaci a"
+  },
   "motorcycle": {
+    "singular": "Moto",
     "brand": "Marca",
     "model": "Modello",
     "year": "Anno",
@@ -73,7 +106,19 @@
     "currentBid": "Offerta attuale",
     "noBids": "Nessuna offerta",
     "dealerListing": "Offerto dal rivenditore",
-    "buyerFeeWarning": "Nota: €250 costi acquirente all'acquisto"
+    "buyerFeeWarning": "Nota: €250 costi acquirente all'acquisto",
+    "noAvailable": "Nessuna moto disponibile",
+    "noAvailableDesc": "Al momento non sono disponibili moto",
+    "viewAndBid": "Visualizza & Offri",
+    "deleted": "Moto eliminata",
+    "specifications": "Specifiche",
+    "brandModel": "Marca & Modello",
+    "auctionEnded": "Asta terminata",
+    "active": "Attiva",
+    "bids": "Offerte",
+    "currentBidLabel": "Offerta attuale",
+    "fromPrice": "A partire da",
+    "highestBid": "Più alta"
   },
   "order": {
     "orderNumber": "Numero ordine",
@@ -86,7 +131,24 @@
     "orderPlaced": "Ordine effettuato",
     "orderConfirmed": "Ordine confermato",
     "viewPakbon": "Vedi bolla",
-    "printPakbon": "Stampa bolla"
+    "printPakbon": "Stampa bolla",
+    "pending": "In attesa",
+    "approved": "Approvato",
+    "rejected": "Rifiutato",
+    "completed": "Completato",
+    "paid": "Pagato",
+    "noOrders": "Nessun ordine",
+    "date": "Data",
+    "placeOrder": "Effettua ordine",
+    "motorcyclePrice": "Prezzo moto",
+    "deliveryCosts": "Costi di consegna",
+    "total": "Totale",
+    "welcomeDiscount": "Sconto benvenuto",
+    "deliveryWanted": "Consegna desiderata",
+    "deliveryInfo": "Consegniamo la moto a casa tua. Costo:",
+    "pickupFree": "Il ritiro presso Moto Import è gratuito!",
+    "orderConfirmation": "Dopo l'ordine riceverai un'e-mail di conferma con istruzioni.",
+    "orderButton": "Ordina"
   },
   "dealer": {
     "companyName": "Nome azienda",
@@ -98,7 +160,9 @@
     "topDealers": "Rivenditori più attivi",
     "loginCount": "Accessi",
     "lastActive": "Ultimo accesso",
-    "neverLoggedIn": "Mai connesso"
+    "neverLoggedIn": "Mai connesso",
+    "times": "volte",
+    "noActivity": "Nessuna attività rivenditore"
   },
   "foreignDealer": {
     "title": "Rivenditore estero",
@@ -111,7 +175,14 @@
     "pendingListings": "Moto in attesa",
     "activateListing": "Attiva",
     "setPrice": "Imposta prezzo",
-    "fromForeignDealer": "Da rivenditore estero"
+    "fromForeignDealer": "Da rivenditore estero",
+    "portalOverview": "Panoramica del tuo portale rivenditori",
+    "newMotorcycle": "Nuova moto",
+    "totalMotorcycles": "Totale moto",
+    "pendingOrders": "Ordini in sospeso",
+    "recentOrders": "Ordini recenti",
+    "viewAll": "Vedi tutti",
+    "allDealers": "Tutti i rivenditori"
   },
   "notifications": {
     "enable": "Abilita notifiche",
@@ -128,5 +199,19 @@
     "successDeleted": "Eliminato con successo",
     "errorOccurred": "Si è verificato un errore",
     "confirmDelete": "Sei sicuro di voler eliminare?"
+  },
+  "bid": {
+    "placeBid": "Fai un'offerta",
+    "yourBid": "La tua offerta",
+    "minimumBid": "Offerta minima",
+    "bidSuccess": "Offerta effettuata!"
+  },
+  "voucher": {
+    "title": "Codice sconto",
+    "activeWelcome": "Buono benvenuto attivo!",
+    "placeholder": "Es: BENVENUTO-ABC123",
+    "apply": "Applica",
+    "applied": "Buono applicato",
+    "discount": "sconto"
   }
 }
