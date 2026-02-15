@@ -70,6 +70,13 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
+        {/* Trustpilot Badge - alleen voor dealers */}
+        {user?.role === 'dealer' && (
+          <div className="mb-4 px-1">
+            <TrustpilotBadge />
+          </div>
+        )}
+        
         <div className="mb-4 px-1 pb-4 border-b border-zinc-800">
           <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500 mb-1">Ingelogd als</p>
           <p className="text-white font-semibold truncate">{user?.company_name}</p>
