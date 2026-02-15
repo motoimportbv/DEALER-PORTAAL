@@ -169,7 +169,7 @@ const DealerOrders = () => {
                       <div className="mt-4 p-4 bg-zinc-50 rounded-lg">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
-                            <p className="text-xs text-zinc-500 uppercase">Totaalprijs</p>
+                            <p className="text-xs text-zinc-500 uppercase">{t('order.totalPrice')}</p>
                             <p className="font-barlow text-lg font-bold text-zinc-900">
                               {formatPrice(order.total_price || order.motorcycle?.price)}
                             </p>
@@ -177,7 +177,7 @@ const DealerOrders = () => {
                           <div>
                             <p className="text-xs text-zinc-500 uppercase flex items-center gap-1">
                               <CreditCard className="w-3 h-3" />
-                              Aanbetaling
+                              {t('orders.deposit')}
                             </p>
                             <p className="font-barlow text-lg font-bold text-green-600">
                               {formatPrice(order.deposit_amount)}
@@ -187,7 +187,7 @@ const DealerOrders = () => {
                           <div>
                             <p className="text-xs text-zinc-500 uppercase flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              Restbedrag
+                              {t('orders.remainingAmount')}
                             </p>
                             <p className="font-barlow text-lg font-bold text-red-600">
                               {formatPrice((order.total_price || order.motorcycle?.price || 0) - (order.deposit_amount || 0))}
@@ -196,10 +196,10 @@ const DealerOrders = () => {
                           <div>
                             <p className="text-xs text-zinc-500 uppercase flex items-center gap-1">
                               <Truck className="w-3 h-3" />
-                              Bezorging
+                              {t('order.delivery')}
                             </p>
                             <p className="font-semibold text-zinc-700">
-                              {order.needs_delivery ? '€50 (bezorgen)' : 'Gratis (ophalen)'}
+                              {order.needs_delivery ? t('orders.deliveryPrice') : t('orders.pickupFree')}
                             </p>
                           </div>
                         </div>
@@ -211,7 +211,7 @@ const DealerOrders = () => {
                           <p className="text-sm text-amber-800 flex items-start gap-2">
                             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                             <span>
-                              <strong>Restbedrag:</strong> Maak {formatPrice((order.total_price || 0) - (order.deposit_amount || 0))} binnen 5 werkdagen over naar <strong>NL23 INGB 0107 0760 63</strong> t.n.v. Moto Import B.V. met kenmerk <strong>{order.id?.slice(0, 8).toUpperCase()}</strong>
+                              <strong>{t('orders.remainingAmount')}:</strong> {t('orders.transferInfo', { amount: formatPrice((order.total_price || 0) - (order.deposit_amount || 0)), reference: order.id?.slice(0, 8).toUpperCase() })}
                             </span>
                           </p>
                         </div>
@@ -220,7 +220,7 @@ const DealerOrders = () => {
                       {order.notes && (
                         <div className="mt-4 p-3 bg-zinc-50 rounded-lg">
                           <p className="text-sm text-zinc-600">
-                            <span className="font-semibold">Uw notitie:</span> {order.notes}
+                            <span className="font-semibold">{t('orders.yourNote')}:</span> {order.notes}
                           </p>
                         </div>
                       )}
@@ -230,7 +230,7 @@ const DealerOrders = () => {
                           <Link to={`/motorcycle/${order.motorcycle.id}`}>
                             <Button variant="outline" data-testid={`view-motorcycle-btn-${order.id}`}>
                               <Eye className="w-4 h-4 mr-2" />
-                              Bekijk Motor
+                              {t('orders.viewMotorcycleBtn')}
                             </Button>
                           </Link>
                         </div>
