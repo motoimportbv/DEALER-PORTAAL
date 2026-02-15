@@ -24,7 +24,8 @@ import {
   Truck,
   CreditCard,
   Gift,
-  Tag
+  Tag,
+  Store
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
