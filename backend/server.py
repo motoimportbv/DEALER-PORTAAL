@@ -1854,19 +1854,8 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
     if not endpoint:
         return {"success": False, "error": "Subscription heeft geen endpoint"}
     
-    # Check VAPID key
-    private_key = None
-    if VAPID_PRIVATE_KEY_B64:
-        import base64
-        try:
-            private_key = base64.b64decode(VAPID_PRIVATE_KEY_B64).decode('utf-8')
-        except Exception as e:
-            return {"success": False, "error": f"VAPID key decode error: {str(e)}"}
-    
-    if not private_key and VAPID_PRIVATE_KEY_PATH:
-        if os.path.exists(VAPID_PRIVATE_KEY_PATH):
-            with open(VAPID_PRIVATE_KEY_PATH, 'r') as f:
-                private_key = f.read().strip()
+    # Get VAPID private key
+    private_key = get_vapid_private_key()
     
     if not private_key:
         return {"success": False, "error": "VAPID private key niet geconfigureerd"}
