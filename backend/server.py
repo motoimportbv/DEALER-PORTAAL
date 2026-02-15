@@ -217,6 +217,10 @@ class ChatMessageCreate(BaseModel):
     message: str
     conversation_id: Optional[str] = None  # Optional for dealers (defaults to their own ID)
 
+class PushSubscription(BaseModel):
+    endpoint: str
+    keys: dict  # Contains p256dh and auth keys
+
 # ============ ROOT ENDPOINT ============
 
 @api_router.get("/")
