@@ -45,6 +45,11 @@ const ResetPasswordPage = () => {
         token,
         new_password: password
       });
+      
+      // Clear any old login data to force fresh login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
       setSuccess(true);
       toast.success('Wachtwoord succesvol gewijzigd!');
     } catch (error) {
