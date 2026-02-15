@@ -89,11 +89,12 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - [x] PWA implementatie
 - [x] Twilio SMS verwijderen
 - [x] Algemene Voorwaarden accepteren (dealers)
+- [x] **Volledige app vertaling (NL, DE, FR, IT)** ✅
 
 ### P1 (Hoog) - Aanbevolen
+- [ ] Native app build (Capacitor) voor App Store/Play Store
 - [ ] Backend refactoren naar routers/models structuur
 - [ ] Ongebruikte Stripe endpoints verwijderen (`/api/create-checkout-session`)
-- [ ] Native app build (Capacitor) voor App Store/Play Store
 
 ### P2 (Medium)
 - [x] ~~Wachtwoord reset functionaliteit~~ ✅ Voltooid
