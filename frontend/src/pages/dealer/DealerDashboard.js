@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
+import TermsModal from '../../components/TermsModal';
 import { 
   Bike, 
   Search,
@@ -20,12 +21,13 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerDashboard = () => {
-  const { user, token } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     const checkApprovalAndLoadData = async () => {
