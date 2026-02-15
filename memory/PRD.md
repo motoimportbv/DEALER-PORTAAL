@@ -135,6 +135,14 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 15 Feb 2026 (Update 5)
+- 🔔 **Push notificaties volledig werkend!**
+  - VAPID keys hardcoded voor consistentie tussen deployments
+  - Admin ontvangt meldingen bij nieuwe biedingen
+  - Dealers ontvangen meldingen bij nieuwe motoren
+  - Test knop toegevoegd om notificaties te verifiëren
+  - Debug endpoint toegevoegd (/api/push/debug)
+
 ### 15 Feb 2026 (Update 4)
 - 🐛 **Bug fixes voor 3 openstaande issues:**
   1. **"Spinning server" bug** - Opgelost met axios timeout (15s) en error state handling
