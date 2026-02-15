@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -9,7 +10,8 @@ import {
   Check,
   X,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -24,6 +26,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const OrderList = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchOrders();
