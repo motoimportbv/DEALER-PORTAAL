@@ -221,6 +221,17 @@ class PushSubscription(BaseModel):
     endpoint: str
     keys: dict  # Contains p256dh and auth keys
 
+class Voucher(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    code: str  # Unique voucher code like "WELKOM-XXXXX"
+    dealer_id: str
+    amount: float = 250.0  # €250 voucher
+    is_used: bool = False
+    used_on_order_id: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    used_at: Optional[str] = None
+
 # ============ ROOT ENDPOINT ============
 
 @api_router.get("/")
