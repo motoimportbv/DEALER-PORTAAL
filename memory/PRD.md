@@ -88,6 +88,7 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - [x] Dealer goedkeuring workflow
 - [x] PWA implementatie
 - [x] Twilio SMS verwijderen
+- [x] Algemene Voorwaarden accepteren (dealers)
 
 ### P1 (Hoog) - Aanbevolen
 - [ ] Backend refactoren naar routers/models structuur
