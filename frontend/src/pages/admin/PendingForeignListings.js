@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,6 +29,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const PendingForeignListings = () => {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
