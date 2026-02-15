@@ -99,6 +99,14 @@ class UserCreate(BaseModel):
     contact_person: str = ""
     role: str = "dealer"  # "admin" or "dealer"
 
+class SupplierCreate(BaseModel):
+    email: str
+    password: str
+    company_name: str
+    country: str
+    contact_person: str = ""
+    phone: str = ""
+
 class UserLogin(BaseModel):
     email: str
     password: str
