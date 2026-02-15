@@ -18,6 +18,22 @@
     "login": "Anmelden",
     "register": "Registrieren"
   },
+  "supplierRegister": {
+    "badge": "Ausländischer Lieferant",
+    "title": "Lieferanten Registrierung",
+    "subtitle": "Registrieren Sie sich als ausländischer Lieferant",
+    "heroText": "Werden Sie Lieferant für Moto Import und verkaufen Sie Ihre Motorräder an unser Händlernetzwerk.",
+    "companyDetails": "Unternehmensdetails",
+    "companyPlaceholder": "Ihr Firmenname",
+    "companyRequired": "Firmenname ist erforderlich",
+    "country": "Land",
+    "selectCountry": "Wählen Sie Ihr Land",
+    "countryRequired": "Land ist erforderlich",
+    "submit": "Als Lieferant registrieren",
+    "success": "Registrierung erfolgreich! Wir werden Sie kontaktieren.",
+    "dealerLink": "Sind Sie ein niederländischer Händler?",
+    "dealerRegister": "Hier registrieren"
+  },
   "auth": {
     "email": "E-Mail-Adresse",
     "password": "Passwort",
