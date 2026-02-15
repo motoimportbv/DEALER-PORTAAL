@@ -116,115 +116,206 @@ const OrderList = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full data-table">
-                <thead>
-                  <tr>
-                    <th>Datum</th>
-                    <th>Dealer</th>
-                    <th>Motor</th>
-                    <th>Prijs</th>
-                    <th>Notities</th>
-                    <th>Status</th>
-                    <th>Acties</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} data-testid={`order-row-${order.id}`}>
-                      <td className="text-zinc-500">
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {orders.map((order) => (
+                <Card key={order.id} data-testid={`order-card-${order.id}`}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-semibold text-zinc-900">{order.dealer_company}</p>
+                        <p className="text-sm text-zinc-500">{order.dealer_email}</p>
+                      </div>
+                      {getStatusBadge(order.status)}
+                    </div>
+                    
+                    <div className="bg-zinc-50 rounded-lg p-3 mb-3">
+                      {order.motorcycle ? (
+                        <>
+                          <p className="font-medium text-zinc-900">
+                            {order.motorcycle.brand} {order.motorcycle.model}
+                          </p>
+                          <p className="text-sm text-zinc-500">
+                            {order.motorcycle.year} • {order.motorcycle.color}
+                          </p>
+                          <p className="font-barlow font-bold text-red-600 text-lg mt-1">
+                            {formatPrice(order.motorcycle.price)}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-zinc-400">Motor verwijderd</span>
+                      )}
+                    </div>
+                    
+                    {order.notes && (
+                      <p className="text-sm text-zinc-600 mb-3 line-clamp-2">{order.notes}</p>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-zinc-400">
                         {new Date(order.created_at).toLocaleDateString('nl-NL', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric'
                         })}
-                      </td>
-                      <td>
-                        <div>
-                          <p className="font-semibold text-zinc-900">{order.dealer_company}</p>
-                          <p className="text-sm text-zinc-500">{order.dealer_email}</p>
-                        </div>
-                      </td>
-                      <td>
-                        {order.motorcycle ? (
-                          <div>
-                            <p className="font-medium text-zinc-900">
-                              {order.motorcycle.brand} {order.motorcycle.model}
-                            </p>
-                            <p className="text-sm text-zinc-500">
-                              {order.motorcycle.year} • {order.motorcycle.color}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-zinc-400">Motor verwijderd</span>
-                        )}
-                      </td>
-                      <td>
-                        {order.motorcycle ? (
-                          <span className="font-barlow font-bold text-red-600">
-                            {formatPrice(order.motorcycle.price)}
-                          </span>
-                        ) : '-'}
-                      </td>
-                      <td className="max-w-xs">
-                        <p className="text-sm text-zinc-600 truncate">
-                          {order.notes || '-'}
-                        </p>
-                      </td>
-                      <td>{getStatusBadge(order.status)}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          {order.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() => updateStatus(order.id, 'approved')}
-                                data-testid={`approve-btn-${order.id}`}
-                              >
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => updateStatus(order.id, 'rejected')}
-                                data-testid={`reject-btn-${order.id}`}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                          {order.status === 'approved' && (
+                      </p>
+                      <div className="flex gap-2">
+                        {order.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => updateStatus(order.id, 'approved')}
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateStatus(order.id, 'completed')}
-                              data-testid={`complete-btn-${order.id}`}
+                              className="text-red-600 border-red-200"
+                              onClick={() => updateStatus(order.id, 'rejected')}
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Voltooien
+                              <X className="w-4 h-4" />
                             </Button>
-                          )}
+                          </>
+                        )}
+                        {order.status === 'approved' && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => navigate(`/pakbon/${order.id}`)}
-                            data-testid={`pakbon-btn-${order.id}`}
-                            title="Print Pakbon"
+                            onClick={() => updateStatus(order.id, 'completed')}
                           >
-                            <Printer className="w-4 h-4" />
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Voltooien
                           </Button>
-                        </div>
-                      </td>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/pakbon/${order.id}`)}
+                          title="Print Pakbon"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <Card className="hidden md:block">
+              <CardContent className="p-0">
+                <table className="w-full data-table">
+                  <thead>
+                    <tr>
+                      <th>Datum</th>
+                      <th>Dealer</th>
+                      <th>Motor</th>
+                      <th>Prijs</th>
+                      <th>Notities</th>
+                      <th>Status</th>
+                      <th>Acties</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id} data-testid={`order-row-${order.id}`}>
+                        <td className="text-zinc-500">
+                          {new Date(order.created_at).toLocaleDateString('nl-NL', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </td>
+                        <td>
+                          <div>
+                            <p className="font-semibold text-zinc-900">{order.dealer_company}</p>
+                            <p className="text-sm text-zinc-500">{order.dealer_email}</p>
+                          </div>
+                        </td>
+                        <td>
+                          {order.motorcycle ? (
+                            <div>
+                              <p className="font-medium text-zinc-900">
+                                {order.motorcycle.brand} {order.motorcycle.model}
+                              </p>
+                              <p className="text-sm text-zinc-500">
+                                {order.motorcycle.year} • {order.motorcycle.color}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-zinc-400">Motor verwijderd</span>
+                          )}
+                        </td>
+                        <td>
+                          {order.motorcycle ? (
+                            <span className="font-barlow font-bold text-red-600">
+                              {formatPrice(order.motorcycle.price)}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="max-w-xs">
+                          <p className="text-sm text-zinc-600 truncate">
+                            {order.notes || '-'}
+                          </p>
+                        </td>
+                        <td>{getStatusBadge(order.status)}</td>
+                        <td>
+                          <div className="flex gap-2">
+                            {order.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={() => updateStatus(order.id, 'approved')}
+                                  data-testid={`approve-btn-${order.id}`}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => updateStatus(order.id, 'rejected')}
+                                  data-testid={`reject-btn-${order.id}`}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                            {order.status === 'approved' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateStatus(order.id, 'completed')}
+                                data-testid={`complete-btn-${order.id}`}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Voltooien
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/pakbon/${order.id}`)}
+                              data-testid={`pakbon-btn-${order.id}`}
+                              title="Print Pakbon"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
     </Layout>
