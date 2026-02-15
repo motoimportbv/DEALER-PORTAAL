@@ -134,6 +134,7 @@ const TermsModal = ({ isOpen, onAccept, token }) => {
           <div className="flex items-start gap-3 mb-4">
             <Checkbox 
               id="terms-checkbox"
+              data-testid="terms-checkbox"
               checked={agreed}
               onCheckedChange={setAgreed}
               className="mt-1"
