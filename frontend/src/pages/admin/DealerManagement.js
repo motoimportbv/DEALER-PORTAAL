@@ -104,13 +104,44 @@ const DealerManagement = () => {
     }
   };
 
+  const setForeignDealer = async () => {
+    if (!selectedDealer || !countryInput.trim()) {
+      toast.error('Selecteer een land');
+      return;
+    }
+    try {
+      await axios.post(`${API}/dealers/${selectedDealer.id}/set-foreign?country=${encodeURIComponent(countryInput)}`);
+      toast.success(`${selectedDealer.company_name} is nu een buitenlandse dealer (${countryInput})`);
+      setForeignDialogOpen(false);
+      setCountryInput('');
+      setSelectedDealer(null);
+      fetchDealers();
+    } catch (error) {
+      toast.error('Kon dealer niet markeren als buitenlands');
+    }
+  };
+
+  const removeForeignDealer = async (dealerId) => {
+    try {
+      await axios.post(`${API}/dealers/${dealerId}/unset-foreign`);
+      toast.success('Buitenlandse dealer status verwijderd');
+      fetchDealers();
+    } catch (error) {
+      toast.error('Kon status niet verwijderen');
+    }
+  };
+
   const DealerCard = ({ dealer, showActions = false, showDelete = false }) => (
     <Card className="overflow-hidden" data-testid={`dealer-card-${dealer.id}`}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-zinc-100 rounded-lg flex items-center justify-center">
-              <Building className="w-6 h-6 text-zinc-600" />
+            <div className={`w-12 h-12 ${dealer.is_foreign_dealer ? 'bg-purple-100' : 'bg-zinc-100'} rounded-lg flex items-center justify-center`}>
+              {dealer.is_foreign_dealer ? (
+                <Globe className="w-6 h-6 text-purple-600" />
+              ) : (
+                <Building className="w-6 h-6 text-zinc-600" />
+              )}
             </div>
             <div>
               <h3 className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
@@ -119,11 +150,19 @@ const DealerManagement = () => {
               <p className="text-sm text-zinc-500">{dealer.contact_person}</p>
             </div>
           </div>
-          {dealer.is_approved ? (
-            <Badge className="bg-green-100 text-green-800">Goedgekeurd</Badge>
-          ) : (
-            <Badge className="bg-amber-100 text-amber-800">Wacht op goedkeuring</Badge>
-          )}
+          <div className="flex flex-col gap-1 items-end">
+            {dealer.is_approved ? (
+              <Badge className="bg-green-100 text-green-800">Goedgekeurd</Badge>
+            ) : (
+              <Badge className="bg-amber-100 text-amber-800">Wacht op goedkeuring</Badge>
+            )}
+            {dealer.is_foreign_dealer && (
+              <Badge className="bg-purple-100 text-purple-800 flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                {dealer.country || 'Buitenland'}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="space-y-3 mb-4">
