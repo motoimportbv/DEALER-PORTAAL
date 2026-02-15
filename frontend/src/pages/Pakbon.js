@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -8,6 +9,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const Pakbon = () => {
+  const { t } = useTranslation();
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const { user, token } = useAuth();
@@ -66,10 +68,10 @@ const Pakbon = () => {
     return (
       <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-zinc-600 mb-4">Order niet gevonden</p>
+          <p className="text-zinc-600 mb-4">{t('pakbon.notFound')}</p>
           <Button onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Terug
+            {t('common.back')}
           </Button>
         </div>
       </div>
@@ -90,11 +92,11 @@ const Pakbon = () => {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Terug
+            {t('common.back')}
           </Button>
           <Button onClick={handlePrint} className="bg-red-600 hover:bg-red-700">
             <Printer className="w-4 h-4 mr-2" />
-            Print Pakbon
+            {t('pakbon.print')}
           </Button>
         </div>
       </div>
@@ -106,13 +108,13 @@ const Pakbon = () => {
           <div className="bg-zinc-900 text-white p-8 print:bg-zinc-900 print:text-white">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">PAKBON</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{t('pakbon.title')}</h1>
                 <p className="text-zinc-400 mt-1">Moto Import B.V.</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-zinc-400">Ordernummer</p>
+                <p className="text-sm text-zinc-400">{t('order.orderNumber')}</p>
                 <p className="font-mono text-lg">{order.id.slice(0, 8).toUpperCase()}</p>
-                <p className="text-sm text-zinc-400 mt-2">Datum</p>
+                <p className="text-sm text-zinc-400 mt-2">{t('order.date')}</p>
                 <p>{orderDate}</p>
               </div>
             </div>
@@ -124,7 +126,7 @@ const Pakbon = () => {
             <div className="grid grid-cols-2 gap-8 mb-8">
               {/* From */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Afzender</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{t('pakbon.sender')}</h3>
                 <div className="text-sm">
                   <p className="font-bold text-lg">Moto Import B.V.</p>
                   <p className="text-zinc-600">Horsterhoekweg 11</p>
@@ -136,18 +138,18 @@ const Pakbon = () => {
 
               {/* To */}
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Ontvanger</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{t('pakbon.recipient')}</h3>
                 <div className="text-sm">
                   <p className="font-bold text-lg">{order.dealer_company || 'Dealer'}</p>
                   <p className="text-zinc-600">{order.dealer_email}</p>
                   {order.needs_delivery && (
                     <p className="mt-2 inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-medium">
-                      BEZORGING
+                      {t('order.delivery').toUpperCase()}
                     </p>
                   )}
                   {!order.needs_delivery && (
                     <p className="mt-2 inline-block bg-zinc-100 text-zinc-700 px-2 py-1 rounded text-xs font-medium">
-                      OPHALEN
+                      {t('order.pickup').toUpperCase()}
                     </p>
                   )}
                 </div>
@@ -156,14 +158,14 @@ const Pakbon = () => {
 
             {/* Motorcycle Details */}
             <div className="border-t border-b border-zinc-200 py-6 my-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">Motorfiets</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">{t('motorcycle.singular')}</h3>
               
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-200">
-                    <th className="text-left py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Omschrijving</th>
-                    <th className="text-right py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Aantal</th>
-                    <th className="text-right py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Prijs</th>
+                    <th className="text-left py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">{t('pakbon.description')}</th>
+                    <th className="text-right py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">{t('pakbon.quantity')}</th>
+                    <th className="text-right py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">{t('motorcycle.price')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -171,9 +173,9 @@ const Pakbon = () => {
                     <td className="py-4">
                       <p className="font-bold text-lg">{motorcycle.brand} {motorcycle.model}</p>
                       <p className="text-sm text-zinc-500">
-                        Bouwjaar: {motorcycle.year} | Kleur: {motorcycle.color} | KM: {motorcycle.mileage?.toLocaleString('nl-NL')}
+                        {t('motorcycle.year')}: {motorcycle.year} | {t('motorcycle.color')}: {motorcycle.color} | KM: {motorcycle.mileage?.toLocaleString('nl-NL')}
                       </p>
-                      <p className="text-sm text-zinc-500">Conditie: {motorcycle.condition}</p>
+                      <p className="text-sm text-zinc-500">{t('motorcycle.condition')}: {motorcycle.condition}</p>
                     </td>
                     <td className="py-4 text-right align-top">1</td>
                     <td className="py-4 text-right align-top font-medium">
@@ -183,8 +185,8 @@ const Pakbon = () => {
                   {order.needs_delivery && order.delivery_cost > 0 && (
                     <tr className="border-b border-zinc-100">
                       <td className="py-4">
-                        <p className="font-medium">Bezorgkosten</p>
-                        <p className="text-sm text-zinc-500">Levering aan bovenstaand adres</p>
+                        <p className="font-medium">{t('order.deliveryCost')}</p>
+                        <p className="text-sm text-zinc-500">{t('pakbon.deliveryToAddress')}</p>
                       </td>
                       <td className="py-4 text-right align-top">1</td>
                       <td className="py-4 text-right align-top font-medium">
@@ -195,7 +197,7 @@ const Pakbon = () => {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan="2" className="py-4 text-right font-bold text-lg">Totaal</td>
+                    <td colSpan="2" className="py-4 text-right font-bold text-lg">{t('order.total')}</td>
                     <td className="py-4 text-right font-bold text-xl text-red-600">
                       € {order.total_price.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                     </td>
@@ -207,7 +209,7 @@ const Pakbon = () => {
             {/* Notes */}
             {order.notes && (
               <div className="mb-6">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Opmerkingen</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">{t('pakbon.notes')}</h3>
                 <p className="text-sm text-zinc-600 bg-zinc-50 p-4 rounded">{order.notes}</p>
               </div>
             )}
@@ -215,14 +217,14 @@ const Pakbon = () => {
             {/* Signature Area */}
             <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t border-zinc-200">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-12">Handtekening Afzender</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-12">{t('pakbon.senderSignature')}</p>
                 <div className="border-b border-zinc-300 mb-2"></div>
-                <p className="text-xs text-zinc-400">Datum: _______________</p>
+                <p className="text-xs text-zinc-400">{t('order.date')}: _______________</p>
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-12">Handtekening Ontvanger</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-12">{t('pakbon.recipientSignature')}</p>
                 <div className="border-b border-zinc-300 mb-2"></div>
-                <p className="text-xs text-zinc-400">Datum: _______________</p>
+                <p className="text-xs text-zinc-400">{t('order.date')}: _______________</p>
               </div>
             </div>
 
