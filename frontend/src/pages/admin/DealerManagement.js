@@ -154,14 +154,14 @@ const DealerManagement = () => {
           </div>
           <div className="flex flex-col gap-1 items-end">
             {dealer.is_approved ? (
-              <Badge className="bg-green-100 text-green-800">Goedgekeurd</Badge>
+              <Badge className="bg-green-100 text-green-800">{t('dealer.approved')}</Badge>
             ) : (
-              <Badge className="bg-amber-100 text-amber-800">Wacht op goedkeuring</Badge>
+              <Badge className="bg-amber-100 text-amber-800">{t('adminDealers.waitingApproval')}</Badge>
             )}
             {dealer.is_foreign_dealer && (
               <Badge className="bg-purple-100 text-purple-800 flex items-center gap-1">
                 <Globe className="w-3 h-3" />
-                {dealer.country || 'Buitenland'}
+                {dealer.country || t('adminDealers.foreign')}
               </Badge>
             )}
           </div>
@@ -170,7 +170,7 @@ const DealerManagement = () => {
         <div className="space-y-3 mb-4">
           <div className="flex items-center gap-3 text-sm">
             <FileText className="w-4 h-4 text-zinc-400" />
-            <span className="text-zinc-600">KVK: {dealer.kvk_number || '-'}</span>
+            <span className="text-zinc-600">{t('auth.kvkNumber')}: {dealer.kvk_number || '-'}</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Mail className="w-4 h-4 text-zinc-400" />
@@ -189,7 +189,7 @@ const DealerManagement = () => {
           <div className="flex items-center gap-3 text-sm">
             <Clock className="w-4 h-4 text-zinc-400" />
             <span className="text-zinc-600">
-              Geregistreerd: {new Date(dealer.created_at).toLocaleDateString('nl-NL')}
+              {t('adminDealers.registered')}: {new Date(dealer.created_at).toLocaleDateString('nl-NL')}
             </span>
           </div>
         </div>
@@ -203,7 +203,7 @@ const DealerManagement = () => {
               data-testid={`approve-btn-${dealer.id}`}
             >
               <Check className="w-4 h-4 mr-2" />
-              Goedkeuren
+              {t('dealer.approve')}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -213,24 +213,23 @@ const DealerManagement = () => {
                   data-testid={`reject-btn-${dealer.id}`}
                 >
                   <X className="w-4 h-4 mr-2" />
-                  Afwijzen
+                  {t('dealer.reject')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Dealer Afwijzen?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('adminDealers.rejectTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Weet u zeker dat u {dealer.company_name} wilt afwijzen? 
-                    Het account wordt permanent verwijderd.
+                    {t('adminDealers.rejectConfirm', { company: dealer.company_name })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction 
                     onClick={() => rejectDealer(dealer.id)}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    Afwijzen
+                    {t('dealer.reject')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -253,7 +252,7 @@ const DealerManagement = () => {
                 data-testid={`set-foreign-btn-${dealer.id}`}
               >
                 <Globe className="w-4 h-4 mr-2" />
-                Markeer als Buitenlandse Dealer
+                {t('adminDealers.markForeign')}
               </Button>
             ) : (
               <Button
@@ -263,7 +262,7 @@ const DealerManagement = () => {
                 data-testid={`unset-foreign-btn-${dealer.id}`}
               >
                 <X className="w-4 h-4 mr-2" />
-                Verwijder Buitenlandse Status
+                {t('adminDealers.removeForeignStatus')}
               </Button>
             )}
             
@@ -275,24 +274,23 @@ const DealerManagement = () => {
                   data-testid={`delete-btn-${dealer.id}`}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Dealer Verwijderen
+                  {t('dealer.deleteDealer')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Dealer Verwijderen?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('adminDealers.deleteTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Weet u zeker dat u <strong>{dealer.company_name}</strong> wilt verwijderen? 
-                    Dit kan niet ongedaan worden gemaakt. Alle gegevens van deze dealer worden permanent verwijderd.
+                    {t('adminDealers.deleteConfirm', { company: dealer.company_name })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction 
                     onClick={() => deleteDealer(dealer.id, dealer.company_name)}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    Verwijderen
+                    {t('common.delete')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
