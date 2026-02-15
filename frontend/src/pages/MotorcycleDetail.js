@@ -189,6 +189,8 @@ const MotorcycleDetail = () => {
       const response = await axios.post(`${API}/orders/buy-now`, {
         motorcycle_id: id,
         needs_delivery: needsDelivery,
+        needs_inspection: needsInspection,
+        needs_valuation: needsValuation,
         voucher_code: voucherValid ? voucherCode : null
       });
       
@@ -210,7 +212,10 @@ const MotorcycleDetail = () => {
 
   const getTotalPrice = () => {
     if (!motorcycle) return 0;
-    const basePrice = motorcycle.price + (needsDelivery ? 50 : 0);
+    const basePrice = motorcycle.price + 
+      (needsDelivery ? 50 : 0) + 
+      (needsInspection ? 125 : 0) + 
+      (needsValuation ? 160 : 0);
     return Math.max(0, basePrice - (voucherValid ? voucherDiscount : 0));
   };
 
