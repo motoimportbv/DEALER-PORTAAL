@@ -72,7 +72,7 @@ class TestTermsAndConditions:
             pytest.skip("Dealer not registered")
         
         response = requests.put(
-            f"{BASE_URL}/api/admin/dealers/{test_dealer['user_id']}/approve",
+            f"{BASE_URL}/api/dealers/{test_dealer['user_id']}/approve",
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         
