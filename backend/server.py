@@ -2015,7 +2015,7 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
                 "type": "bid",
                 "read": False,
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "link": f"/admin/motorcycles"
+                "link": "/admin/motorcycles"
             }
             await db.notifications.insert_one(notification)
             
