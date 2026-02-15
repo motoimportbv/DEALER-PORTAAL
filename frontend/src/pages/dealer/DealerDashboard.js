@@ -153,23 +153,36 @@ const DealerDashboard = () => {
   return (
     <Layout>
       <div className="content-header">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-              Beschikbare Motoren
-            </h1>
-            <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} motoren beschikbaar</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
+                Beschikbare Motoren
+              </h1>
+              <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} motoren beschikbaar</p>
+            </div>
           </div>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+          
+          {/* Prominent Search Bar */}
+          <div className="relative w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <Input
               type="text"
-              placeholder="Zoeken op merk, model of kleur..."
+              placeholder="Zoek op merk, model, kleur of bouwjaar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11"
+              className="pl-12 pr-4 py-3 text-base border-2 border-zinc-200 focus:border-red-500 rounded-lg shadow-sm"
               data-testid="search-input"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                data-testid="clear-search-btn"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
       </div>
