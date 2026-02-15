@@ -49,14 +49,15 @@ DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
 # VAPID Config for Push Notifications
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY_PATH = os.environ.get('VAPID_PRIVATE_KEY_PATH', '')
-VAPID_PRIVATE_KEY_RAW = os.environ.get('VAPID_PRIVATE_KEY_RAW', '')  # Single line with | as newline
+VAPID_PRIVATE_KEY_B64 = os.environ.get('VAPID_PRIVATE_KEY_B64', '')  # Base64 key content without PEM headers
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
     """Get VAPID private key from env var or file"""
-    # Option 1: Raw key with | as newline separator (for production)
-    if VAPID_PRIVATE_KEY_RAW:
-        return VAPID_PRIVATE_KEY_RAW.replace('|', '\n')
+    # Option 1: Base64 key without headers - reconstruct PEM format
+    if VAPID_PRIVATE_KEY_B64:
+        pem_key = f"-----BEGIN PRIVATE KEY-----\n{VAPID_PRIVATE_KEY_B64}\n-----END PRIVATE KEY-----"
+        return pem_key
     
     # Option 2: Read from file (for local development)
     if VAPID_PRIVATE_KEY_PATH and os.path.exists(VAPID_PRIVATE_KEY_PATH):
