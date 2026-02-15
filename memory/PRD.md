@@ -135,6 +135,15 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 15 Feb 2026 (Update 6)
+- 📜 **Algemene Voorwaarden feature** - Dealers moeten eenmalig de voorwaarden accepteren
+  - Modal verschijnt automatisch na eerste login
+  - Checkbox verplicht voordat accepteren mogelijk is
+  - `terms_accepted` en `terms_accepted_at` opgeslagen in database
+  - Modal verschijnt niet meer na accepteren
+  - Backend endpoint: `POST /api/auth/accept-terms`
+  - Frontend component: `TermsModal.js`
+
 ### 15 Feb 2026 (Update 5)
 - 🔔 **Push notificaties volledig werkend!**
   - VAPID keys hardcoded voor consistentie tussen deployments
