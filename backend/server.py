@@ -1189,9 +1189,14 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
 
 # ============ DIRECT ORDER ENDPOINTS ============
 
+INSPECTION_COST = 125.0  # Keuring kosten
+VALUATION_COST = 160.0   # Taxatie kosten (excl. BTW)
+
 class BuyNowRequest(BaseModel):
     motorcycle_id: str
     needs_delivery: bool = False
+    needs_inspection: bool = False  # Keuring
+    needs_valuation: bool = False   # Taxatie
     voucher_code: Optional[str] = None
 
 @api_router.get("/voucher/check/{code}")
