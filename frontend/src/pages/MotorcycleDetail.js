@@ -22,7 +22,9 @@ import {
   TrendingUp,
   Zap,
   Truck,
-  CreditCard
+  CreditCard,
+  Gift,
+  Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -52,10 +54,16 @@ const MotorcycleDetail = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [needsDelivery, setNeedsDelivery] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const [voucherValid, setVoucherValid] = useState(false);
+  const [checkingVoucher, setCheckingVoucher] = useState(false);
+  const [myVoucher, setMyVoucher] = useState(null);
 
   useEffect(() => {
     fetchMotorcycle();
     fetchBids();
+    fetchMyVoucher();
   }, [id]);
 
   useEffect(() => {
