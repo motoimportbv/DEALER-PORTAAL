@@ -49,15 +49,29 @@ DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
 # VAPID Config for Push Notifications
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY_PATH = os.environ.get('VAPID_PRIVATE_KEY_PATH', '')
-VAPID_PRIVATE_KEY_B64 = os.environ.get('VAPID_PRIVATE_KEY_B64', '')  # Base64 key content without PEM headers
+VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', '')  # DER format base64 encoded (no newlines)
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
     """Get VAPID private key from env var or file"""
-    # Option 1: Base64 key without headers - reconstruct PEM format
-    if VAPID_PRIVATE_KEY_B64:
-        pem_key = f"-----BEGIN PRIVATE KEY-----\n{VAPID_PRIVATE_KEY_B64}\n-----END PRIVATE KEY-----"
-        return pem_key
+    import base64
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.backends import default_backend
+    
+    # Option 1: DER format from env var - convert to PEM
+    if VAPID_PRIVATE_KEY_DER:
+        try:
+            der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
+            # Load the DER key and convert to PEM
+            private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
+            pem_bytes = private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+            return pem_bytes.decode('utf-8')
+        except Exception as e:
+            logger.error(f"Failed to load VAPID_PRIVATE_KEY_DER: {e}")
     
     # Option 2: Read from file (for local development)
     if VAPID_PRIVATE_KEY_PATH and os.path.exists(VAPID_PRIVATE_KEY_PATH):
