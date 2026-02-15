@@ -67,11 +67,14 @@
     "contactPlaceholder": "Max Mustermann",
     "emailPlaceholder": "ihre@email.de",
     "passwordPlaceholder": "Mindestens 6 Zeichen",
+    "passwordHint": "Mindestens 6 Zeichen",
     "createAccount": "Konto erstellen",
     "passwordMinLength": "Passwort muss mindestens 6 Zeichen enthalten",
     "kvkRequired": "Handelsregisternummer ist erforderlich",
     "success": "Konto erfolgreich erstellt!",
-    "failed": "Registrierung fehlgeschlagen"
+    "failed": "Registrierung fehlgeschlagen",
+    "supplierLink": "Sind Sie ein ausländischer Lieferant?",
+    "supplierRegister": "Hier registrieren"
   },
   "nav": {
     "dashboard": "Dashboard",
