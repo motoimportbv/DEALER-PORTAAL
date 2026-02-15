@@ -188,13 +188,14 @@ const MotorcycleDetail = () => {
       });
       
       const discountMsg = voucherValid ? ` (inclusief €${voucherDiscount} korting!)` : '';
-      toast.success(`Bestelling geplaatst${discountMsg} U ontvangt een bevestigingsmail.`);
+      toast.success(`Bestelling geplaatst${discountMsg}`);
       setBuyNowDialogOpen(false);
       
-      // Redirect to orders page
+      // Redirect to pakbon page with auto-print
+      const orderId = response.data.order_id;
       setTimeout(() => {
-        window.location.href = '/dealer/orders';
-      }, 2000);
+        window.location.href = `/pakbon/${orderId}?print=true`;
+      }, 1500);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Kon bestelling niet plaatsen');
     } finally {
