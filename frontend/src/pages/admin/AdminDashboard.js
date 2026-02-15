@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import WhatsAppButton from '../../components/WhatsAppButton';
@@ -22,6 +23,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -57,10 +59,10 @@ const AdminDashboard = () => {
       completed: 'bg-blue-100 text-blue-800'
     };
     const labels = {
-      pending: 'In afwachting',
-      approved: 'Goedgekeurd',
-      rejected: 'Afgewezen',
-      completed: 'Voltooid'
+      pending: t('order.pending'),
+      approved: t('order.approved'),
+      rejected: t('order.rejected'),
+      completed: t('order.completed')
     };
     return <Badge className={styles[status]}>{labels[status]}</Badge>;
   };
@@ -81,14 +83,14 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-              Dashboard
+              {t('nav.dashboard')}
             </h1>
-            <p className="text-zinc-500 mt-1">Overzicht van uw dealer portaal</p>
+            <p className="text-zinc-500 mt-1">{t('admin.portalOverview')}</p>
           </div>
           <Link to="/admin/motorcycles/new">
             <Button className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid="add-motorcycle-btn">
               <Plus className="w-5 h-5 mr-2" />
-              Nieuwe Motor
+              {t('admin.newMotorcycle')}
             </Button>
           </Link>
         </div>
@@ -107,7 +109,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    Totaal Motoren
+                    {t('admin.totalMotorcycles')}
                   </p>
                   <p className="font-barlow text-4xl font-bold text-zinc-900">
                     {stats?.total_motorcycles || 0}
@@ -125,7 +127,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    Beschikbaar
+                    {t('motorcycle.available')}
                   </p>
                   <p className="font-barlow text-4xl font-bold text-zinc-900">
                     {stats?.available_motorcycles || 0}
@@ -143,7 +145,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    Openstaande Orders
+                    {t('admin.pendingOrders')}
                   </p>
                   <p className="font-barlow text-4xl font-bold text-zinc-900">
                     {stats?.pending_orders || 0}
@@ -161,7 +163,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    Dealers
+                    {t('nav.dealers')}
                   </p>
                   <p className="font-barlow text-4xl font-bold text-zinc-900">
                     {stats?.total_dealers || 0}
@@ -180,11 +182,11 @@ const AdminDashboard = () => {
           <CardHeader className="border-b border-zinc-100">
             <div className="flex items-center justify-between">
               <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
-                Recente Bestellingen
+                {t('admin.recentOrders')}
               </CardTitle>
               <Link to="/admin/orders">
                 <Button variant="ghost" className="text-red-600 hover:text-red-700" data-testid="view-all-orders-btn">
-                  Bekijk alle
+                  {t('admin.viewAll')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -194,16 +196,16 @@ const AdminDashboard = () => {
             {recentOrders.length === 0 ? (
               <div className="empty-state">
                 <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
-                <p className="text-zinc-500">Nog geen bestellingen</p>
+                <p className="text-zinc-500">{t('order.noOrders')}</p>
               </div>
             ) : (
               <table className="w-full data-table">
                 <thead>
                   <tr>
-                    <th>Dealer</th>
-                    <th>Motor</th>
-                    <th>Status</th>
-                    <th>Datum</th>
+                    <th>{t('nav.dealers')}</th>
+                    <th>{t('motorcycle.singular')}</th>
+                    <th>{t('order.status')}</th>
+                    <th>{t('order.date')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,7 +223,7 @@ const AdminDashboard = () => {
                             {order.motorcycle.brand} {order.motorcycle.model}
                           </span>
                         ) : (
-                          <span className="text-zinc-400">Motor verwijderd</span>
+                          <span className="text-zinc-400">{t('motorcycle.deleted')}</span>
                         )}
                       </td>
                       <td>{getStatusBadge(order.status)}</td>
@@ -242,11 +244,11 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
-                Meest Actieve Dealers
+                {t('dealer.topDealers')}
               </CardTitle>
               <Link to="/admin/dealers">
                 <Button variant="ghost" className="text-red-600 hover:text-red-700" data-testid="view-all-dealers-btn">
-                  Alle dealers
+                  {t('admin.allDealers')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -256,16 +258,16 @@ const AdminDashboard = () => {
             {topDealers.length === 0 ? (
               <div className="empty-state py-8">
                 <Users className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
-                <p className="text-zinc-500">Nog geen dealer activiteit</p>
+                <p className="text-zinc-500">{t('dealer.noActivity')}</p>
               </div>
             ) : (
               <table className="w-full data-table">
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Dealer</th>
-                    <th>Aantal Logins</th>
-                    <th>Laatst Actief</th>
+                    <th>{t('nav.dealers')}</th>
+                    <th>{t('dealer.loginCount')}</th>
+                    <th>{t('dealer.lastActive')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,7 +293,7 @@ const AdminDashboard = () => {
                         <span className="font-barlow font-bold text-lg text-zinc-900">
                           {dealer.login_count || 0}
                         </span>
-                        <span className="text-zinc-500 text-sm ml-1">keer</span>
+                        <span className="text-zinc-500 text-sm ml-1">{t('dealer.times')}</span>
                       </td>
                       <td className="text-zinc-500">
                         {dealer.last_login 
@@ -301,7 +303,7 @@ const AdminDashboard = () => {
                               hour: '2-digit',
                               minute: '2-digit'
                             })
-                          : 'Nooit ingelogd'
+                          : t('dealer.neverLoggedIn')
                         }
                       </td>
                     </tr>
