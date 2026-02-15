@@ -740,53 +740,146 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     except Exception as e:
         logger.error(f"Failed to send dealer confirmation email: {e}")
     
-    # Send email to Admin
+    # Send email to Admin with Pakbon
+    base_url = os.environ.get("BASE_URL", "")
+    order_date = datetime.now(timezone.utc).strftime('%d-%m-%Y')
+    order_time = datetime.now(timezone.utc).strftime('%H:%M')
+    
     admin_html = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px;">
-        <h2 style="color: #DC2626;">🏍️ Nieuwe Bestelling!</h2>
-        <p>Er is een nieuwe bestelling geplaatst.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <div style="background: #18181b; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">🏍️ NIEUWE BESTELLING!</h1>
+        </div>
         
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr style="background: #f4f4f5;">
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Prijs</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">€{motorcycle['price']:,.2f}</td>
-            </tr>
-            <tr style="background: #f4f4f5;">
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Dealer</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{user.get('company_name', 'N/A')}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Email</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{user['email']}</td>
-            </tr>
-            <tr style="background: #f4f4f5;">
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Telefoon</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{dealer.get('phone', 'N/A') if dealer else 'N/A'}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Adres</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{dealer.get('address', 'N/A') if dealer else 'N/A'}</td>
-            </tr>
-            <tr style="background: #f4f4f5;">
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bezorging</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{delivery_text}</td>
-            </tr>
-            <tr>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Order ID</strong></td>
-                <td style="padding: 10px; border: 1px solid #e4e4e7;">{order.id}</td>
-            </tr>
-        </table>
+        <div style="padding: 20px; background: #f9fafb;">
+            <p style="color: #16a34a; font-weight: bold; font-size: 18px;">Er is een nieuwe bestelling geplaatst!</p>
+            
+            <!-- Quick Summary -->
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: white; border-radius: 8px;">
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Dealer</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;">{user.get('company_name', 'N/A')}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Totaal</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7; color: #DC2626; font-weight: bold; font-size: 18px;">€{total_price:,.2f}</td>
+                </tr>
+            </table>
+        </div>
         
-        <p style="color: #71717a;">Log in op het platform om de bestelling te beheren.</p>
+        <!-- PAKBON -->
+        <div style="background: white; margin: 20px; border: 2px solid #18181b;">
+            <div style="background: #18181b; color: white; padding: 20px;">
+                <table style="width: 100%;">
+                    <tr>
+                        <td>
+                            <h2 style="margin: 0; font-size: 28px; letter-spacing: 2px;">PAKBON</h2>
+                            <p style="margin: 5px 0 0 0; color: #a1a1aa;">Moto Import B.V.</p>
+                        </td>
+                        <td style="text-align: right;">
+                            <p style="margin: 0; color: #a1a1aa; font-size: 12px;">Ordernummer</p>
+                            <p style="margin: 0; font-family: monospace; font-size: 16px;">{order.id[:8].upper()}</p>
+                            <p style="margin: 10px 0 0 0; color: #a1a1aa; font-size: 12px;">Datum</p>
+                            <p style="margin: 0;">{order_date}</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="padding: 25px;">
+                <!-- Afzender en Ontvanger -->
+                <table style="width: 100%; margin-bottom: 25px;">
+                    <tr>
+                        <td style="width: 50%; vertical-align: top;">
+                            <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>AFZENDER</strong></p>
+                            <p style="margin: 0; font-weight: bold; font-size: 16px;">Moto Import B.V.</p>
+                            <p style="margin: 5px 0; color: #52525b;">Horsterhoekweg 11</p>
+                            <p style="margin: 5px 0; color: #52525b;">7433 SV Schalkhaar</p>
+                            <p style="margin: 10px 0 0 0; color: #52525b;">Tel: +31 6 81792660</p>
+                            <p style="margin: 5px 0; color: #52525b;">Motoimportbv@gmail.com</p>
+                        </td>
+                        <td style="width: 50%; vertical-align: top;">
+                            <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>ONTVANGER</strong></p>
+                            <p style="margin: 0; font-weight: bold; font-size: 16px;">{user.get('company_name', 'Dealer')}</p>
+                            <p style="margin: 5px 0; color: #52525b;">{dealer.get('address', '') if dealer else ''}</p>
+                            <p style="margin: 5px 0; color: #52525b;">{dealer.get('postal_code', '')} {dealer.get('city', '') if dealer else ''}</p>
+                            <p style="margin: 10px 0 0 0; color: #52525b;">Tel: {dealer.get('phone', 'N/A') if dealer else 'N/A'}</p>
+                            <p style="margin: 5px 0; color: #52525b;">{user['email']}</p>
+                            <p style="margin: 10px 0 0 0; display: inline-block; background: {'#DC2626' if data.needs_delivery else '#71717a'}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px;">
+                                {'BEZORGING' if data.needs_delivery else 'OPHALEN'}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Motor Details Tabel -->
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="background: #f4f4f5;">
+                        <th style="padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #71717a; border-bottom: 2px solid #e4e4e7;">Omschrijving</th>
+                        <th style="padding: 12px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #71717a; border-bottom: 2px solid #e4e4e7;">Aantal</th>
+                        <th style="padding: 12px; text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #71717a; border-bottom: 2px solid #e4e4e7;">Prijs</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px 12px; border-bottom: 1px solid #e4e4e7;">
+                            <p style="margin: 0; font-weight: bold; font-size: 16px;">{motorcycle['brand']} {motorcycle['model']}</p>
+                            <p style="margin: 5px 0 0 0; color: #71717a; font-size: 13px;">
+                                Bouwjaar: {motorcycle['year']} | Kleur: {motorcycle.get('color', 'N/A')} | KM: {motorcycle.get('mileage', 0):,}
+                            </p>
+                            <p style="margin: 3px 0 0 0; color: #71717a; font-size: 13px;">Conditie: {motorcycle.get('condition', 'N/A')}</p>
+                        </td>
+                        <td style="padding: 15px 12px; border-bottom: 1px solid #e4e4e7; text-align: right; vertical-align: top;">1</td>
+                        <td style="padding: 15px 12px; border-bottom: 1px solid #e4e4e7; text-align: right; vertical-align: top; font-weight: 500;">€{motorcycle['price']:,.2f}</td>
+                    </tr>
+                    {'<tr><td style="padding: 15px 12px; border-bottom: 1px solid #e4e4e7;"><p style="margin: 0; font-weight: 500;">Bezorgkosten</p><p style="margin: 3px 0 0 0; color: #71717a; font-size: 13px;">Levering aan bovenstaand adres</p></td><td style="padding: 15px 12px; border-bottom: 1px solid #e4e4e7; text-align: right; vertical-align: top;">1</td><td style="padding: 15px 12px; border-bottom: 1px solid #e4e4e7; text-align: right; vertical-align: top; font-weight: 500;">€50,00</td></tr>' if data.needs_delivery else ''}
+                    <tr>
+                        <td colspan="2" style="padding: 15px 12px; text-align: right; font-weight: bold; font-size: 18px;">TOTAAL</td>
+                        <td style="padding: 15px 12px; text-align: right; font-weight: bold; font-size: 22px; color: #DC2626;">€{total_price:,.2f}</td>
+                    </tr>
+                </table>
+                
+                <!-- Handtekening vakken -->
+                <table style="width: 100%; margin-top: 40px;">
+                    <tr>
+                        <td style="width: 50%; padding-right: 20px;">
+                            <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 50px 0;"><strong>HANDTEKENING AFZENDER</strong></p>
+                            <div style="border-bottom: 1px solid #d4d4d8; margin-bottom: 5px;"></div>
+                            <p style="color: #a1a1aa; font-size: 11px; margin: 0;">Datum: _______________</p>
+                        </td>
+                        <td style="width: 50%; padding-left: 20px;">
+                            <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 50px 0;"><strong>HANDTEKENING ONTVANGER</strong></p>
+                            <div style="border-bottom: 1px solid #d4d4d8; margin-bottom: 5px;"></div>
+                            <p style="color: #a1a1aa; font-size: 11px; margin: 0;">Datum: _______________</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Footer -->
+            <div style="border-top: 1px solid #e4e4e7; padding: 15px; text-align: center; color: #a1a1aa; font-size: 11px;">
+                <p style="margin: 0;">Moto Import B.V. | KVK: 94622086 | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            </div>
+        </div>
+        
+        <!-- Link naar online pakbon -->
+        <div style="padding: 20px; text-align: center;">
+            <a href="{base_url}/pakbon/{order.id}" style="display: inline-block; background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                Bekijk Pakbon Online
+            </a>
+            <p style="color: #71717a; font-size: 12px; margin-top: 10px;">Of print deze email direct uit</p>
+        </div>
+        
+        <div style="background: #18181b; padding: 15px; text-align: center; color: #a1a1aa; font-size: 11px;">
+            <p style="margin: 0;">Deze email is automatisch gegenereerd door Moto Import B.V.</p>
+        </div>
     </div>
     """
     
     try:
-        await send_admin_notification("🏍️ Nieuwe Bestelling!", admin_html)
+        await send_admin_notification("🏍️ Nieuwe Bestelling + Pakbon!", admin_html)
     except Exception as e:
         logger.error(f"Failed to send admin notification email: {e}")
     
