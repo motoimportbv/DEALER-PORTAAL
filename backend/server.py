@@ -1008,6 +1008,16 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
         order_dict["voucher_code"] = voucher_applied
         order_dict["voucher_discount"] = voucher_discount
     
+    # Check if this is a dealer-to-dealer sale
+    is_dealer_listing = motorcycle.get("is_dealer_listing", False)
+    seller_company = motorcycle.get("seller_company", "")
+    seller_id = motorcycle.get("seller_id", "")
+    
+    if is_dealer_listing:
+        order_dict["is_dealer_to_dealer"] = True
+        order_dict["seller_company"] = seller_company
+        order_dict["seller_id"] = seller_id
+    
     await db.orders.insert_one(order_dict)
     
     # Mark motorcycle as unavailable
@@ -1020,6 +1030,38 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     dealer = await db.users.find_one({"id": user["id"]}, {"_id": 0})
     delivery_text = "Ja (€50 bezorging)" if data.needs_delivery else "Nee (ophalen)"
     voucher_text = f"€{voucher_discount:,.2f} korting (code: {voucher_applied})" if voucher_applied else "Geen"
+    
+    # If dealer-to-dealer sale, send special admin notification about €250 fee
+    if is_dealer_listing:
+        fee_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px;">
+            <div style="background: #f59e0b; padding: 15px; text-align: center;">
+                <h2 style="color: white; margin: 0;">💰 DEALER MOTOR VERKOCHT - €250 FACTUREREN!</h2>
+            </div>
+            <div style="padding: 20px; background: #fef3c7;">
+                <p style="font-size: 16px; margin-bottom: 15px;"><strong>Actie vereist:</strong> Factureer €250 plaatsingskosten aan de verkopende dealer.</p>
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px;">
+                    <tr style="background: #f4f4f5;">
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Verkoper (€250 factuur)</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7; color: #DC2626; font-weight: bold;">{seller_company}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Koper</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;">{user.get('company_name', 'Dealer')}</td>
+                    </tr>
+                    <tr style="background: #f4f4f5;">
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Verkoopprijs</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;">€{motorcycle['price']:,.0f}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        """
+        await send_admin_notification(f"💰 DEALER VERKOOP: €250 factureren aan {seller_company}", fee_html)
     
     # Send email to Dealer
     dealer_html = f"""
