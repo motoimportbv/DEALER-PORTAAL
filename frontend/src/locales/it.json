@@ -166,6 +166,11 @@
     "deliveryWanted": "Consegna desiderata",
     "deliveryInfo": "Consegniamo la moto a casa tua. Costo:",
     "pickupFree": "Il ritiro presso Moto Import è gratuito!",
+    "inspectionWanted": "Ispezione desiderata",
+    "inspectionInfo": "Controlliamo la moto per te. Costo:",
+    "valuationWanted": "Valutazione desiderata",
+    "valuationInfo": "Valutiamo la moto per te. Costo:",
+    "exclVat": "(IVA esclusa)",
     "orderConfirmation": "Dopo l'ordine riceverai un'e-mail di conferma con istruzioni.",
     "orderButton": "Ordina"
   },
