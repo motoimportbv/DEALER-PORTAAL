@@ -21,6 +21,8 @@ import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import DealerSellMotorcycle from "./pages/dealer/DealerSellMotorcycle";
 import DealerMyListings from "./pages/dealer/DealerMyListings";
+import ForeignDealerDashboard from "./pages/foreign-dealer/ForeignDealerDashboard";
+import ForeignDealerAddMotorcycle from "./pages/foreign-dealer/ForeignDealerAddMotorcycle";
 import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Pakbon from "./pages/Pakbon";
