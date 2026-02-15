@@ -410,6 +410,16 @@ const MotorcycleDetail = () => {
 
                 {user?.role === 'dealer' && motorcycle.is_available && (
                   <div className="space-y-3">
+                    {/* Warning for dealer listings - buyer fee */}
+                    {motorcycle.is_dealer_listing && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-amber-800 text-sm font-medium flex items-center gap-2">
+                          <Tag className="w-4 h-4" />
+                          Let op: €250 koperskosten bij aankoop
+                        </p>
+                      </div>
+                    )}
+                    
                     {!timeLeft?.expired && (
                       <Button 
                         className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
