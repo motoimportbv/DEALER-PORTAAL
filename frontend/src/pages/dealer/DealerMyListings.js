@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,6 +12,7 @@ import { Bike, Plus, Eye, CheckCircle, Clock, XCircle } from 'lucide-react';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerMyListings = () => {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,14 +39,14 @@ const DealerMyListings = () => {
       return (
         <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
           <Clock className="w-3 h-3" />
-          Te Koop
+          {t('myListings.forSale')}
         </Badge>
       );
     } else {
       return (
         <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1">
           <CheckCircle className="w-3 h-3" />
-          Verkocht
+          {t('motorcycle.sold')}
         </Badge>
       );
     }
@@ -52,10 +54,10 @@ const DealerMyListings = () => {
 
   const getConditionLabel = (condition) => {
     const labels = {
-      new: 'Nieuw',
-      excellent: 'Uitstekend',
-      good: 'Goed',
-      fair: 'Redelijk'
+      new: t('motorcycle.new'),
+      excellent: t('motorcycle.excellent'),
+      good: t('motorcycle.good'),
+      fair: t('motorcycle.fair')
     };
     return labels[condition] || condition;
   };
@@ -84,16 +86,16 @@ const DealerMyListings = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-              Mijn Motoren
+              {t('nav.myMotorcycles')}
             </h1>
             <p className="text-zinc-500 mt-1">
-              {listings.length} motor{listings.length !== 1 ? 'en' : ''} geplaatst
+              {listings.length} {t('myListings.listed')}
             </p>
           </div>
           <Link to="/dealer/sell">
             <Button className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide">
               <Plus className="w-5 h-5 mr-2" />
-              Motor Verkopen
+              {t('nav.sellMotorcycle')}
             </Button>
           </Link>
         </div>
@@ -106,15 +108,15 @@ const DealerMyListings = () => {
               <div className="text-center">
                 <Bike className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  Nog geen motoren geplaatst
+                  {t('myListings.noListings')}
                 </h3>
                 <p className="text-zinc-500 mb-6">
-                  Plaats uw eerste motor te koop voor andere dealers
+                  {t('myListings.firstListing')}
                 </p>
                 <Link to="/dealer/sell">
                   <Button className="bg-red-600 hover:bg-red-700">
                     <Plus className="w-4 h-4 mr-2" />
-                    Motor Verkopen
+                    {t('nav.sellMotorcycle')}
                   </Button>
                 </Link>
               </div>
@@ -157,14 +159,14 @@ const DealerMyListings = () => {
                   </div>
 
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-zinc-500">Vraagprijs</span>
+                    <span className="text-sm text-zinc-500">{t('motorcycle.askingPrice')}</span>
                     <span className="font-barlow text-xl font-bold text-red-600">
                       {formatPrice(motorcycle.price)}
                     </span>
                   </div>
 
                   <div className="text-xs text-zinc-400">
-                    Geplaatst op {new Date(motorcycle.created_at).toLocaleDateString('nl-NL')}
+                    {t('myListings.listedOn')} {new Date(motorcycle.created_at).toLocaleDateString('nl-NL')}
                   </div>
                 </CardContent>
               </Card>
@@ -175,7 +177,7 @@ const DealerMyListings = () => {
         {/* Info about fees */}
         <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <p className="text-amber-800 text-sm">
-            <strong>Let op:</strong> Bij verkoop van uw motor ontvangt u een factuur van €250.
+            <strong>{t('myListings.feeNotice')}:</strong> {t('myListings.feeInfo')}
           </p>
         </div>
       </div>
