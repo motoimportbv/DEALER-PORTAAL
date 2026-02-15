@@ -43,11 +43,12 @@ const PendingForeignListings = () => {
 
   const fetchPendingListings = async () => {
     try {
-      const response = await axios.get(`${API}/motorcycles/pending-foreign`);
+      const response = await axios.get(`${API}/motorcycles/pending-foreign`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setListings(response.data);
     } catch (error) {
       console.error('Error fetching pending listings:', error);
-      toast.error('Kon wachtende motors niet laden');
     } finally {
       setLoading(false);
     }
