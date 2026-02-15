@@ -694,6 +694,48 @@ const MotorcycleDetail = () => {
               </div>
             </div>
 
+            {/* Inspection Option */}
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="inspection"
+                  checked={needsInspection}
+                  onCheckedChange={(checked) => setNeedsInspection(checked)}
+                  data-testid="inspection-checkbox"
+                />
+                <div className="flex-1">
+                  <label htmlFor="inspection" className="font-semibold text-zinc-900 cursor-pointer flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    {t('order.inspectionWanted')}
+                  </label>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    {t('order.inspectionInfo')} <strong>€125,00</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Valuation Option */}
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="valuation"
+                  checked={needsValuation}
+                  onCheckedChange={(checked) => setNeedsValuation(checked)}
+                  data-testid="valuation-checkbox"
+                />
+                <div className="flex-1">
+                  <label htmlFor="valuation" className="font-semibold text-zinc-900 cursor-pointer flex items-center gap-2">
+                    <Tag className="w-4 h-4" />
+                    {t('order.valuationWanted')}
+                  </label>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    {t('order.valuationInfo')} <strong>€160,00</strong> <span className="text-xs text-zinc-400">{t('order.exclVat')}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Info */}
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-800">
               <p>{t('order.orderConfirmation')}</p>
