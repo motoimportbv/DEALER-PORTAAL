@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +15,7 @@ import { Upload, Bike, ArrowLeft, Info } from 'lucide-react';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerSellMotorcycle = () => {
+  const { t } = useTranslation();
   const { token } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -117,9 +119,9 @@ const DealerSellMotorcycle = () => {
           </Button>
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-              Motor Verkopen
+              {t('nav.sellMotorcycle')}
             </h1>
-            <p className="text-zinc-500 mt-1">Plaats uw motor te koop voor andere dealers</p>
+            <p className="text-zinc-500 mt-1">{t('sell.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -129,10 +131,9 @@ const DealerSellMotorcycle = () => {
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
           <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-amber-800 font-medium">Plaatsingskosten: €250</p>
+            <p className="text-amber-800 font-medium">{t('fees.listingFee')}: {t('fees.feeAmount')}</p>
             <p className="text-amber-700 text-sm">
-              Bij verkoop van uw motor ontvangt u een factuur van €250. 
-              Het plaatsen is gratis.
+              {t('sell.feeInfo')}
             </p>
           </div>
         </div>
@@ -141,36 +142,36 @@ const DealerSellMotorcycle = () => {
           <CardHeader>
             <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
               <Bike className="w-5 h-5" />
-              Motor Gegevens
+              {t('sell.motorcycleDetails')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="brand">Merk *</Label>
+                  <Label htmlFor="brand">{t('motorcycle.brand')} *</Label>
                   <Input
                     id="brand"
                     name="brand"
                     value={formData.brand}
                     onChange={handleChange}
-                    placeholder="bijv. Kawasaki"
+                    placeholder={t('sell.brandPlaceholder')}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="model">Model *</Label>
+                  <Label htmlFor="model">{t('motorcycle.model')} *</Label>
                   <Input
                     id="model"
                     name="model"
                     value={formData.model}
                     onChange={handleChange}
-                    placeholder="bijv. Ninja ZX-6R"
+                    placeholder={t('sell.modelPlaceholder')}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="year">Bouwjaar *</Label>
+                  <Label htmlFor="year">{t('motorcycle.year')} *</Label>
                   <Input
                     id="year"
                     name="year"
@@ -183,7 +184,7 @@ const DealerSellMotorcycle = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="mileage">Kilometerstand</Label>
+                  <Label htmlFor="mileage">{t('motorcycle.mileage')}</Label>
                   <Input
                     id="mileage"
                     name="mileage"
@@ -191,21 +192,21 @@ const DealerSellMotorcycle = () => {
                     min="0"
                     value={formData.mileage}
                     onChange={handleChange}
-                    placeholder="bijv. 15000"
+                    placeholder={t('sell.mileagePlaceholder')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="color">Kleur</Label>
+                  <Label htmlFor="color">{t('motorcycle.color')}</Label>
                   <Input
                     id="color"
                     name="color"
                     value={formData.color}
                     onChange={handleChange}
-                    placeholder="bijv. Groen"
+                    placeholder={t('sell.colorPlaceholder')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="condition">Conditie</Label>
+                  <Label htmlFor="condition">{t('motorcycle.condition')}</Label>
                   <select
                     id="condition"
                     name="condition"
@@ -213,14 +214,14 @@ const DealerSellMotorcycle = () => {
                     onChange={handleChange}
                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
                   >
-                    <option value="new">Nieuw</option>
-                    <option value="excellent">Uitstekend</option>
-                    <option value="good">Goed</option>
-                    <option value="fair">Redelijk</option>
+                    <option value="new">{t('motorcycle.new')}</option>
+                    <option value="excellent">{t('motorcycle.excellent')}</option>
+                    <option value="good">{t('motorcycle.good')}</option>
+                    <option value="fair">{t('motorcycle.fair')}</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="price">Vraagprijs (€) *</Label>
+                  <Label htmlFor="price">{t('motorcycle.askingPrice')} (€) *</Label>
                   <Input
                     id="price"
                     name="price"
@@ -229,12 +230,12 @@ const DealerSellMotorcycle = () => {
                     step="0.01"
                     value={formData.price}
                     onChange={handleChange}
-                    placeholder="bijv. 8500"
+                    placeholder={t('sell.pricePlaceholder')}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="starting_price">Minimum bod (€)</Label>
+                  <Label htmlFor="starting_price">{t('sell.minimumBid')} (€)</Label>
                   <Input
                     id="starting_price"
                     name="starting_price"
@@ -243,26 +244,26 @@ const DealerSellMotorcycle = () => {
                     step="0.01"
                     value={formData.starting_price}
                     onChange={handleChange}
-                    placeholder="Optioneel - standaard 80% van vraagprijs"
+                    placeholder={t('sell.minimumBidPlaceholder')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Beschrijving</Label>
+                <Label htmlFor="description">{t('motorcycle.description')}</Label>
                 <Textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Beschrijf de motor, eventuele opties, onderhoud, etc."
+                  placeholder={t('sell.descriptionPlaceholder')}
                   rows={4}
                 />
               </div>
 
               {/* Image Upload */}
               <div className="space-y-2">
-                <Label>Foto's</Label>
+                <Label>{t('motorcycle.images')}</Label>
                 <div className="border-2 border-dashed border-zinc-200 rounded-lg p-6 text-center">
                   <input
                     type="file"
@@ -279,7 +280,7 @@ const DealerSellMotorcycle = () => {
                   >
                     <Upload className={`w-8 h-8 ${uploadingImage ? 'text-zinc-300 animate-pulse' : 'text-zinc-400'}`} />
                     <span className="text-zinc-600">
-                      {uploadingImage ? 'Uploaden...' : 'Klik om foto\'s te uploaden'}
+                      {uploadingImage ? t('sell.uploading') : t('sell.clickToUpload')}
                     </span>
                   </label>
                 </div>
@@ -313,7 +314,7 @@ const DealerSellMotorcycle = () => {
                   onClick={() => navigate('/dealer')}
                   className="flex-1"
                 >
-                  Annuleren
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -323,7 +324,7 @@ const DealerSellMotorcycle = () => {
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    'Motor Plaatsen'
+                    t('sell.submitListing')
                   )}
                 </Button>
               </div>
