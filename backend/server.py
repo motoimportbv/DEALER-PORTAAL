@@ -1330,7 +1330,9 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     
     # Get dealer info
     dealer = await db.users.find_one({"id": user["id"]}, {"_id": 0})
-    delivery_text = "Ja (€50 bezorging)" if data.needs_delivery else "Nee (ophalen)"
+    delivery_text = "Ja (€50)" if data.needs_delivery else "Nee (ophalen)"
+    inspection_text = "Ja (€125)" if data.needs_inspection else "Nee"
+    valuation_text = "Ja (€160 excl. BTW)" if data.needs_valuation else "Nee"
     voucher_text = f"€{voucher_discount:,.2f} korting (code: {voucher_applied})" if voucher_applied else "Geen"
     
     # If dealer-to-dealer sale, send special admin notification about €250 fee
