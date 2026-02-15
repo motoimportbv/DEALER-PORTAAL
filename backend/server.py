@@ -435,6 +435,16 @@ async def login(credentials: UserLogin):
     if user["role"] == "dealer" and not is_approved:
         raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
     
+    # Track login activity for dealers
+    if user["role"] == "dealer":
+        await db.users.update_one(
+            {"id": user["id"]},
+            {
+                "$inc": {"login_count": 1},
+                "$set": {"last_login": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+    
     token = create_token(user["id"], user["email"], user["role"])
     return {
         "token": token,
