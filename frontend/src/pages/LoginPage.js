@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Bike, Mail, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import LanguageSelector from '../components/LanguageSelector';
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +22,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const user = await login(email, password);
-      toast.success('Succesvol ingelogd!');
+      toast.success(t('messages.successSaved'));
       
       // Determine redirect based on user type
       let redirectPath = '/dealer';
@@ -31,7 +34,7 @@ const LoginPage = () => {
       
       navigate(redirectPath);
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 'Inloggen mislukt';
+      const errorMessage = error.response?.data?.detail || t('messages.errorOccurred');
       
       // Check if it's a pending approval error
       if (error.response?.status === 403 && errorMessage.includes('goedkeuring')) {
@@ -70,6 +73,11 @@ const LoginPage = () => {
       </div>
       
       <div className="auth-form-container">
+        {/* Language Selector in top right */}
+        <div className="absolute top-4 right-4">
+          <LanguageSelector />
+        </div>
+
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
@@ -78,15 +86,15 @@ const LoginPage = () => {
             <span className="font-barlow text-2xl font-bold uppercase tracking-tight">Moto Import</span>
           </div>
           <h2 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-            Welkom terug
+            {t('auth.loginTitle')}
           </h2>
-          <p className="text-zinc-500 mt-2">Log in om toegang te krijgen tot uw account</p>
+          <p className="text-zinc-500 mt-2">{t('auth.registerSubtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              Email
+              {t('auth.email')}
             </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -95,7 +103,7 @@ const LoginPage = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="uw@email.nl"
+                placeholder="your@email.com"
                 className="pl-11 h-12"
                 data-testid="login-email-input"
                 required
@@ -106,10 +114,10 @@ const LoginPage = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password" className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-                Wachtwoord
+                {t('auth.password')}
               </Label>
               <Link to="/forgot-password" className="text-xs text-red-600 hover:text-red-700 font-medium" data-testid="forgot-password-link">
-                Wachtwoord vergeten?
+                {t('auth.forgotPassword')}
               </Link>
             </div>
             <div className="relative">
@@ -133,15 +141,15 @@ const LoginPage = () => {
             disabled={loading}
             data-testid="login-submit-btn"
           >
-            {loading ? 'Bezig...' : 'Inloggen'}
+            {loading ? t('common.loading') : t('common.login')}
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </form>
 
         <p className="mt-8 text-center text-zinc-500">
-          Nog geen account?{' '}
+          {t('auth.noAccount')}{' '}
           <Link to="/register" className="text-red-600 hover:text-red-700 font-semibold" data-testid="register-link">
-            Registreren
+            {t('common.register')}
           </Link>
         </p>
       </div>
