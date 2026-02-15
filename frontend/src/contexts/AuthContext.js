@@ -22,13 +22,30 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       const response = await axios.get(`${API}/auth/me`);
+      // Always use fresh data from server
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
+      // Token is invalid or expired, clear it
       logout();
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to refresh user data (can be called manually)
+  const refreshUser = async () => {
+    if (token) {
+      try {
+        const response = await axios.get(`${API}/auth/me`);
+        setUser(response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Failed to refresh user:', error);
+        logout();
+      }
+    }
+    return null;
   };
 
   const login = async (email, password) => {
@@ -64,13 +81,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
