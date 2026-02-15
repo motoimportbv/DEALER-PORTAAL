@@ -160,6 +160,22 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Telefoonnummer: +31638525541
   - Opent WhatsApp met vooringevuld bericht
 
+### 15 Feb 2026 (Update 8)
+- 🖨️ **Auto-Print Pakbon** - Na bestelling opent automatisch print dialoog
+  - Redirect naar pakbon pagina na succesvolle bestelling
+  - Print dialoog opent automatisch met `?print=true` parameter
+
+### 15 Feb 2026 (Update 9)
+- 🏪 **Dealer Marketplace** - Dealers kunnen nu eigen motoren verkopen
+  - Nieuwe menu items: "Mijn Motoren" en "Motor Verkopen"
+  - Dealers kunnen motors plaatsen voor andere dealers
+  - €250 plaatsingskosten bij verkoop (admin factureert handmatig)
+  - Verkoper naam zichtbaar op listing (gele badge)
+  - Admin krijgt email notificatie bij nieuwe dealer listing
+  - Admin krijgt speciale notificatie bij verkoop met €250 factuur reminder
+  - Backend endpoints: `POST /api/motorcycles/dealer-listing`, `GET /api/motorcycles/my-listings`
+  - Frontend pagina's: `DealerSellMotorcycle.js`, `DealerMyListings.js`
+
 ### 15 Feb 2026 (Update 5)
 - 🔔 **Push notificaties volledig werkend!**
   - VAPID keys hardcoded voor consistentie tussen deployments
