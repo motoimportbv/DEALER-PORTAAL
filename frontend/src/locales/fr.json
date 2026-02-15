@@ -257,5 +257,23 @@
   },
   "detail": {
     "orderPlaced": "Commande passée"
+  },
+  "adminPending": {
+    "title": "Motos Étrangères en Attente",
+    "waitingReview": "motos en attente de révision",
+    "noPending": "Aucune moto en attente",
+    "allReviewed": "Toutes les motos des revendeurs étrangers ont été examinées",
+    "suggestedPrice": "Prix suggéré",
+    "setPriceActivate": "Définir le prix & Activer",
+    "activateMotorcycle": "Activer la moto",
+    "setPrice": "Définir le prix de vente pour",
+    "dealerSuggestedPrice": "Prix suggéré par le revendeur",
+    "salePrice": "Prix de vente",
+    "pricePlaceholder": "ex: 12500",
+    "minBidPrice": "Prix d'enchère minimum",
+    "minBidPlaceholder": "Optionnel - par défaut 80% du prix de vente",
+    "enterValidPrice": "Veuillez entrer un prix valide",
+    "activated": "{{brand}} {{model}} a été activé !",
+    "activateFailed": "Impossible d'activer la moto"
   }
 }

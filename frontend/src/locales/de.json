@@ -257,5 +257,23 @@
   },
   "detail": {
     "orderPlaced": "Bestellung aufgegeben"
+  },
+  "adminPending": {
+    "title": "Ausstehende Ausländische Motorräder",
+    "waitingReview": "Motorräder warten auf Überprüfung",
+    "noPending": "Keine ausstehenden Motorräder",
+    "allReviewed": "Alle Motorräder von ausländischen Händlern wurden überprüft",
+    "suggestedPrice": "Vorgeschlagener Preis",
+    "setPriceActivate": "Preis festlegen & Aktivieren",
+    "activateMotorcycle": "Motorrad aktivieren",
+    "setPrice": "Verkaufspreis festlegen für",
+    "dealerSuggestedPrice": "Vom Händler vorgeschlagener Preis",
+    "salePrice": "Verkaufspreis",
+    "pricePlaceholder": "z.B. 12500",
+    "minBidPrice": "Mindestgebotspreis",
+    "minBidPlaceholder": "Optional - Standard 80% des Verkaufspreises",
+    "enterValidPrice": "Bitte geben Sie einen gültigen Preis ein",
+    "activated": "{{brand}} {{model}} wurde aktiviert!",
+    "activateFailed": "Motorrad konnte nicht aktiviert werden"
   }
 }

@@ -257,5 +257,23 @@
   },
   "detail": {
     "orderPlaced": "Bestelling geplaatst"
+  },
+  "adminPending": {
+    "title": "Wachtende Buitenlandse Motors",
+    "waitingReview": "motors wachten op beoordeling",
+    "noPending": "Geen wachtende motors",
+    "allReviewed": "Alle motors van buitenlandse dealers zijn beoordeeld",
+    "suggestedPrice": "Voorgestelde prijs",
+    "setPriceActivate": "Prijs Instellen & Activeren",
+    "activateMotorcycle": "Motor Activeren",
+    "setPrice": "Stel de verkoopprijs in voor",
+    "dealerSuggestedPrice": "Voorgestelde prijs door dealer",
+    "salePrice": "Verkoopprijs",
+    "pricePlaceholder": "bijv. 12500",
+    "minBidPrice": "Minimum biedprijs",
+    "minBidPlaceholder": "Optioneel - standaard 80% van verkoopprijs",
+    "enterValidPrice": "Voer een geldige prijs in",
+    "activated": "{{brand}} {{model}} is geactiveerd!",
+    "activateFailed": "Kon motor niet activeren"
   }
 }
