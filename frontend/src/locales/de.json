@@ -387,5 +387,21 @@
     "deliveryToAddress": "Lieferung an obige Adresse",
     "senderSignature": "Unterschrift Absender",
     "recipientSignature": "Unterschrift Empfänger"
+  },
+  "pushNotifications": {
+    "title": "Push-Benachrichtigungen",
+    "subscribedMessage": "Sie erhalten Benachrichtigungen bei neuen Motorrädern",
+    "unsubscribedMessage": "Erhalten Sie sofort eine Benachrichtigung auf Ihrem Telefon",
+    "enable": "Aktivieren",
+    "disable": "Aus",
+    "test": "Test",
+    "enabled": "Push-Benachrichtigungen aktiviert! Sie erhalten jetzt Benachrichtigungen bei neuen Motorrädern.",
+    "disabled": "Push-Benachrichtigungen deaktiviert",
+    "denied": "Sie haben Benachrichtigungen abgelehnt. Aktivieren Sie diese in Ihren Browsereinstellungen.",
+    "enableError": "Push-Benachrichtigungen konnten nicht aktiviert werden",
+    "disableError": "Push-Benachrichtigungen konnten nicht deaktiviert werden",
+    "testSent": "Testbenachrichtigung gesendet! Überprüfen Sie Ihr Telefon.",
+    "testError": "Test konnte nicht ausgeführt werden",
+    "invalidKeys": "Subscription-Schlüssel sind ungültig. Klicken Sie auf \"Aus\" und dann \"Aktivieren\"."
   }
 }

@@ -387,5 +387,21 @@
     "deliveryToAddress": "Consegna all'indirizzo sopra",
     "senderSignature": "Firma Mittente",
     "recipientSignature": "Firma Destinatario"
+  },
+  "pushNotifications": {
+    "title": "Notifiche Push",
+    "subscribedMessage": "Ricevi notifiche per le nuove moto",
+    "unsubscribedMessage": "Ricevi una notifica direttamente sul tuo telefono",
+    "enable": "Attiva",
+    "disable": "Disattiva",
+    "test": "Test",
+    "enabled": "Notifiche push attivate! Riceverai notifiche per le nuove moto.",
+    "disabled": "Notifiche push disattivate",
+    "denied": "Hai rifiutato le notifiche. Attivale nelle impostazioni del browser.",
+    "enableError": "Impossibile attivare le notifiche push",
+    "disableError": "Impossibile disattivare le notifiche push",
+    "testSent": "Notifica di test inviata! Controlla il tuo telefono.",
+    "testError": "Impossibile eseguire il test",
+    "invalidKeys": "Le chiavi di sottoscrizione non sono valide. Clicca su \"Disattiva\" e poi \"Attiva\"."
   }
 }

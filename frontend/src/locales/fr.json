@@ -387,5 +387,21 @@
     "deliveryToAddress": "Livraison à l'adresse ci-dessus",
     "senderSignature": "Signature Expéditeur",
     "recipientSignature": "Signature Destinataire"
+  },
+  "pushNotifications": {
+    "title": "Notifications Push",
+    "subscribedMessage": "Vous recevez des notifications pour les nouvelles motos",
+    "unsubscribedMessage": "Recevez une notification directement sur votre téléphone",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "test": "Test",
+    "enabled": "Notifications push activées ! Vous recevez maintenant des notifications pour les nouvelles motos.",
+    "disabled": "Notifications push désactivées",
+    "denied": "Vous avez refusé les notifications. Activez-les dans les paramètres de votre navigateur.",
+    "enableError": "Impossible d'activer les notifications push",
+    "disableError": "Impossible de désactiver les notifications push",
+    "testSent": "Notification de test envoyée ! Vérifiez votre téléphone.",
+    "testError": "Impossible d'exécuter le test",
+    "invalidKeys": "Les clés d'abonnement sont invalides. Cliquez sur \"Désactiver\" puis \"Activer\"."
   }
 }
