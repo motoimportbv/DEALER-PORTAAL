@@ -1783,21 +1783,18 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
         if not subscription:
             return False
         
-        # Get private key - try environment variable first, then file
+        # Get private key - try base64 env var first, then file
         private_key = None
         
-        # Option 1: Direct key from environment variable
-        if VAPID_PRIVATE_KEY:
-            private_key = VAPID_PRIVATE_KEY
-            # Handle base64 encoded key if needed
-            if not private_key.startswith('-----BEGIN'):
-                import base64
-                try:
-                    private_key = base64.b64decode(VAPID_PRIVATE_KEY).decode('utf-8')
-                except:
-                    pass
+        # Option 1: Base64 encoded key from environment variable (for production)
+        if VAPID_PRIVATE_KEY_B64:
+            import base64
+            try:
+                private_key = base64.b64decode(VAPID_PRIVATE_KEY_B64).decode('utf-8')
+            except Exception as e:
+                logger.warning(f"Failed to decode VAPID_PRIVATE_KEY_B64: {e}")
         
-        # Option 2: Read from file path
+        # Option 2: Read from file path (for local development)
         if not private_key and VAPID_PRIVATE_KEY_PATH:
             if os.path.exists(VAPID_PRIVATE_KEY_PATH):
                 with open(VAPID_PRIVATE_KEY_PATH, 'r') as f:
