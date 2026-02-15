@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
+import TrustpilotBadge from './TrustpilotBadge';
 import { 
   Bike, 
   LayoutDashboard, 
