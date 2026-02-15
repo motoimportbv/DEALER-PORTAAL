@@ -104,11 +104,14 @@ const PushNotificationToggle = ({ token }) => {
       if (response.data.success) {
         toast.success('Test notificatie verzonden! Check uw telefoon.');
       } else {
+        // Show detailed error
         toast.error(response.data.error || 'Test mislukt');
+        console.error('Push test error:', response.data.error);
       }
     } catch (error) {
       console.error('Test push error:', error);
-      toast.error('Kon test niet uitvoeren');
+      const errorMsg = error.response?.data?.error || error.message || 'Kon test niet uitvoeren';
+      toast.error(errorMsg);
     }
   };
 
