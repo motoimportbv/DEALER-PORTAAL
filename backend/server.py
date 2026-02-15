@@ -1901,22 +1901,8 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
         if not subscription:
             return False
         
-        # Get private key - try base64 env var first, then file
-        private_key = None
-        
-        # Option 1: Base64 encoded key from environment variable (for production)
-        if VAPID_PRIVATE_KEY_B64:
-            import base64
-            try:
-                private_key = base64.b64decode(VAPID_PRIVATE_KEY_B64).decode('utf-8')
-            except Exception as e:
-                logger.warning(f"Failed to decode VAPID_PRIVATE_KEY_B64: {e}")
-        
-        # Option 2: Read from file path (for local development)
-        if not private_key and VAPID_PRIVATE_KEY_PATH:
-            if os.path.exists(VAPID_PRIVATE_KEY_PATH):
-                with open(VAPID_PRIVATE_KEY_PATH, 'r') as f:
-                    private_key = f.read().strip()
+        # Get private key using helper function
+        private_key = get_vapid_private_key()
         
         if not private_key:
             logger.warning("VAPID private key not configured - push notifications disabled")
