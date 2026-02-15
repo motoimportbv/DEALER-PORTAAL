@@ -4,101 +4,89 @@ The user wants to build an application for their motorcycle dealership network, 
 **PRODUCT REQUIREMENTS:**
 -   **Core Functionality:** An application for an admin to offer motorcycles to a network of dealers.
 -   **User Roles:** Admin and Dealer.
--   **Admin Capabilities:** Add/manage motorcycles, view orders, manage dealer registrations (including approval and deletion).
--   **Dealer Capabilities:** Register, view the catalog, order motorcycles, and reset their password.
--   **Order System:** Dealers can place orders for motorcycles directly. An email confirmation with a full packing slip is sent to the admin, and a confirmation is sent to the dealer.
+-   **Admin Capabilities:** Add/manage motorcycles, view orders, manage dealer registrations (including approval and deletion), receive notifications on new bids.
+-   **Dealer Capabilities:** Register, view the catalog, order motorcycles, reset their password, accept terms and conditions, stay logged in persistently.
+-   **Order & Bidding System:** Dealers can place orders or bid on motorcycles. An email confirmation is sent to the admin, and a push notification is sent to the admin on new bids.
 -   **Notifications:**
     -   Dealers receive in-app and email notifications when new motorcycles are added.
-    -   Dealers can opt-in to receive real-time push notifications on their devices (phone/desktop) when a new motorcycle is added.
+    -   Dealers can opt-in to receive real-time push notifications on their devices when a new motorcycle is added.
+    -   Admin receives a push notification when a new bid is placed.
 -   **Chat:** A real-time chat system for dealers to communicate directly with the admin.
--   **Welcome Gift:** New dealers receive a €250 voucher via email upon admin approval, which can be used on their first purchase.
--   **Packing Slips:** After an order is placed, a printable packing slip (Pakbon) is generated. A link is available in the admin order list, and the full slip is emailed to the admin.
--   **Mobile App:** The application is a Progressive Web App (PWA) that is installable on iOS and Android and has offline capabilities.
+-   **Welcome Gift:** New dealers receive a €250 voucher via email upon admin approval.
+-   **Packing Slips:** After an order is placed, a printable packing slip (Pakbon) is generated.
+-   **Mobile App:** The application is a Progressive Web App (PWA) that is installable on iOS and Android.
+-   **Auto-Refresh:** The dealer dashboard should auto-refresh periodically.
 
 **User's preferred language**: Dutch. The next agent MUST respond in Dutch.
 
 **what currently exists?**
-A full-stack application with a FastAPI backend and a React frontend, which has been deployed and is live on the user's custom domain. The app includes a complete admin/dealer management system with an approval workflow. Major features include direct ordering (payment system removed), a real-time chat, email notifications, a printable packing slip (Pakbon) system, web push notifications for dealers, and a welcome voucher system for new dealers. The application is a fully functional Progressive Web App (PWA) optimized for both Android and iOS installation. The user is actively using the live application and reporting issues or requesting new features.
+A full-stack application with a FastAPI backend and a React frontend, which has been deployed and is live on the user's custom domain. The app includes a complete admin/dealer management system. Major features include direct ordering, a bidding system, real-time chat, email notifications, printable packing slips, a fully functional web push notification system for both dealers and admins, a welcome voucher system, a search bar for dealers, and an auto-refreshing dealer dashboard. The JWT token lifetime has been extended to keep users logged in for longer.
 
 **Last working item**:
--   **Last item agent was working:** Implementing a feature for the admin to delete dealers from the  page. The agent added the backend endpoint and the frontend button with a confirmation dialog.
+-   **Last item agent was working:** Implementing a feature that requires dealers to accept the Terms and Conditions once after logging in. The agent added the backend logic (a new  field on the user model and an API endpoint) and the frontend modal () which is displayed on the  if the terms have not been accepted.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?**: frontend testing agent. The agent should log in as admin, navigate to the Dealer Management page, and verify that the delete button appears and functions correctly for each dealer, including the confirmation modal.
+-   **Which testing method agent to use?**: frontend testing agent. The agent must:
+    1.  Register a new dealer.
+    2.  Approve the dealer as admin.
+    3.  Log in as the new dealer and verify the Terms and Conditions modal appears automatically.
+    4.  Click the Accept button and verify the modal closes.
+    5.  Refresh the page and verify the modal does NOT reappear.
+    6.  Check the database or an API response to confirm the dealer's  status is .
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Spinning server issue for customers (P0)**
-    -   **Description**: The user reported that their customers see an infinite loading spinner (spinning server) when they open the live application, preventing them from using it.
-    -   **Attempted fixes:** The agent found and fixed a hardcoded preview URL in  and asked the user to re-deploy. The fix is not yet verified.
+-   **Issue 1: Complete and Test Terms and Conditions Feature (P0)**
+    -   **Description**: The feature requires dealers to accept terms and conditions. The code has been implemented but has not been tested.
+    -   **Attempted fixes:** None needed yet, implementation is fresh.
     -   **Next debug checklist:**
-        1.  Confirm with the user if the last deployment was completed and if the issue persists.
-        2.  Ask for specific details: Which users? On what device/browser? Does it happen before or after login? A screenshot would be ideal.
-        3.  Inspect the browser's console logs on the live site for errors.
-        4.  Review the initial data fetching logic in  and  for potential race conditions or unhandled errors causing the loader to get stuck.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical P0 bug as it blocks users from accessing the application.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on other issue:** None.
--   **Issue 2: After password reset, dealers see waiting for approval (P1)**
-    -   **Description**: A dealer who resets their password is shown the pending approval screen, even though they are already approved and active in the admin panel.
-    -   **Attempted fixes:** The agent identified this as a stale browser cache issue. The code was updated to clear  after a successful password reset () and to force a fresh user data fetch when the app loads ().
-    -   **Next debug checklist:**
-        1.  Confirm the user has deployed these changes.
-        2.  Ask the user to have a dealer test the password reset flow again. Instruct them to clear their browser cache as a first step.
-        3.  If the issue persists, verify that the  function correctly updates the user state in  with the fresh  status from the API.
-    -   **Why fix this issue and what will be achieved with the fix?**: This bug incorrectly blocks approved users from accessing the app, causing major user friction.
+        1.  Follow the testing steps outlined in the Last working item section.
+        2.  Check  for the  endpoint logic.
+        3.  Check  to see how the  state is controlled based on the  property.
+        4.  Check  for the API call logic.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a required legal/business feature for the user.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?**: both
     -   **Blocked on other issue:** None.
--   **Issue 3: Pakbon (Packing Slip) button not visible on mobile (P2)**
-    -   **Description**: The user reported that the print icon for the packing slip is not visible on their phone in the admin's order list.
-    -   **Attempted fixes:** The agent refactored the admin order list () to use a responsive, mobile-friendly card layout instead of a rigid table.
-    -   **Next debug checklist:**
-        1.  Confirm the user has deployed this change.
-        2.  Use the screenshot tool with mobile emulation to view the  page on the preview URL and check if the card layout and printer icon are now correctly displayed.
-        3.  Ask the user to re-verify on their phone.
-    -   **Why fix this issue and what will be achieved with the fix?**: Ensures full admin functionality is available on mobile devices.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on other issue:** None.
 
 **In progress Task List**:
--   **Task 1: Complete and Test Delete Dealer Feature (P0)**
-    -   **Where to resume:** The code is written in  and . The next step is to test it in the preview environment before asking the user to deploy.
-    -   **What will be achieved with this?**: Admins will be able to permanently delete dealer accounts from the system.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on something:** None.
+None other than the last working item.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Native App Build (Capacitor) (P1):** The user explicitly confirmed they want to publish the app in the Apple App Store and Google Play Store. The initial Capacitor setup exists. The next step is to create a plan to build and guide the user through the submission process.
+    -   **Native App Build (Capacitor) (P1):** The user wants to publish the app in the Apple App Store and Google Play Store. The initial Capacitor setup exists, but the next step is to create a plan to build and guide the user through the submission process.
 -   **Future Tasks:**
     -   **Backend Refactoring (P2):** The  file is monolithic and should be split into a more maintainable structure (e.g., routers, models, services).
-    -   **Remove Unused API Endpoint (P2):** The  endpoint from the old Stripe integration is still in  and should be removed to avoid confusion.
+    -   **Remove Unused API Endpoint (P2):** The  endpoint from the old Stripe integration is still in  and should be removed.
 
 **Completed work in this session**
--   **Twilio Removal:** The entire Twilio SMS functionality was removed from the backend,  file, and  at the user's request.
--   **PWA Enhancements:** Added iOS-specific splash screens and meta tags for a better native-like experience on Apple devices.
--   **Packing Slip (Pakbon) Feature:**
-    -   Created a printable packing slip page.
-    -   Added a Print Pakbon button to the admin order list.
-    -   Automated the process so the admin receives the full packing slip in an email upon a new order.
--   **Web Push Notifications:** Implemented a full web push notification system so dealers receive an instant notification on their device when a new motorcycle is added.
--   **€250 Welcome Voucher:** Built a system that automatically generates and emails a €250 voucher to new dealers upon approval. The voucher can be applied during the checkout process.
--   **Password Reset:** Implemented a Forgot Password flow for users.
--   **Bug Fixes & Live Deployment:**
-    -   Fixed multiple bugs on the live production site related to invalid email links and broken image URLs by making URL generation dynamic based on the request host.
-    -   Removed the Made with Emergent branding badge.
-    -   Made the admin order list mobile-responsive.
-    -   Guided the user through multiple deployments to their custom domain.
+-   **Delete Dealer Feature:** Implemented and tested the functionality for admins to delete dealer accounts.
+-   **Dealer Search Bar Enhancement:** Improved the existing search bar on the dealer dashboard to allow searching by motorcycle .
+-   **Critical Bug Fixes (from previous handoff):**
+    -   Resolved the spinning server issue by improving loading and error states in  and .
+    -   Fixed the bug where dealers saw a pending approval screen after a password reset.
+    -   Verified that the Pakbon (packing slip) button is visible on mobile devices.
+-   **Push Notification System Overhaul:**
+    -   Diagnosed and fixed a critical, recurring issue where push notifications failed on the live server due to VAPID key mismatches between the preview and production environments.
+    -   The final fix involved hardcoding a matching VAPID key pair directly into  to ensure consistency.
+    -   Created an HTML/text guide () for dealers on how to enable and troubleshoot notifications.
+-   **Admin Push Notifications:** Implemented a feature to send a push notification to the admin whenever a dealer places a new bid.
+-   **Auto-Refresh & Always Logged In:**
+    -   Added a 10-minute auto-refresh to the dealer dashboard.
+    -   Extended the JWT token expiration to 1 year to keep dealers logged in persistently.
 
 **Earlier issues found/mentioned but not fixed**
--   None. All major issues from the previous handoff or raised during the session were either resolved, removed by request, or are listed in the pending issues above.
+-   **Issue 1: Unused Stripe Endpoint**
+    -   **Debug checklist:** Search for  in  and remove the entire endpoint definition.
+    -   **Why to solve this issue and what will be achieved with this?**: Code cleanup and removal of dead code to prevent confusion.
+    -   **Should Test frontend/backend/both after fix?**: backend (ensure removal doesn't break app startup).
+    -   **Is recurring issue?** Y
+-   **Issue 2: Monolithic Backend File**
+    -   **Debug checklist:** Plan a refactoring strategy to split  into multiple files (e.g., , , ). This is a larger task.
+    -   **Why to solve this issue and what will be achieved with this?**: Improves code maintainability and scalability.
+    -   **Should Test frontend/backend/both after fix?**: both (regression testing).
+    -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -109,83 +97,85 @@ A full-stack application with a FastAPI backend and a React frontend, which has 
 **Key Technical Concepts**
 -   **Backend**: FastAPI, MongoDB (motor), Pydantic, JWT Auth, Gmail SMTP, Web Push ().
 -   **Frontend**: React, React Router, TailwindCSS, Axios, PWA (Service Workers).
--   **Deployment**: The app is live on a custom domain, managed via the Emergent deployment platform. Changes require a re-deploy.
+-   **Critical Concept**: The session involved extensive debugging of  and VAPID key handling. The production environment was found to have conflicting environment variables, forcing a solution where the keys were hardcoded into the application () to guarantee they are used during deployment.
 
 **key DB schema**
--   **users**: {email, hashed_password, role, is_approved, ...}
+-   **users**: {email, hashed_password, role, is_approved, **terms_accepted: bool**, ...}
 -   **motorcycles**: {make, model, year, price, ...}
--   **orders**: {motorcycle_id, dealer_id, final_price, voucher_used, ...}
+-   **orders**: {motorcycle_id, dealer_id, ...}
 -   **push_subscriptions**: {user_id, subscription_json}
--   **vouchers**: {code, user_id, amount, is_used, expires_at}
+-   **vouchers**: {code, user_id, ...}
+-   **bids**: {motorcycle_id, dealer_id, amount, ...}
 
 **changes in tech stack**
--    and its dependencies (, ) were added to the backend for web push notifications.
+-   None.
 
 **All files of reference**
--   : Heavily modified to add vouchers, web push, dynamic URL generation for emails, and the dealer deletion endpoint.
--   : New file for the packing slip UI.
--   : New file for the password reset request form.
--   : New file for the new password form.
--   : New component for dealers to subscribe to notifications.
--   : Modified to include a voucher code input in the Buy Now flow.
--   : Modified to add a Delete button and confirmation modal.
--   : Refactored with a responsive card layout for mobile and a Print Pakbon button.
--   : Improved to force fresh user data on load to prevent caching issues.
--   : Updated with VAPID keys for web push.
--   : Updated with .
+-   : Heavily modified for terms acceptance, bid notifications, JWT expiry extension, and multiple VAPID key fixes (including the final hardcoded key solution).
+-   : Modified to add an auto-refresh interval and integrate the new .
+-   : Modified to add the  component for the admin.
+-   : New component for displaying terms and conditions.
+-   : New file created as a guide for users.
+-   : New file with plain text instructions.
+-   : Modified to add a visibility listener for refreshing user state.
+-   : VAPID keys were frequently changed during debugging.
 
 **Areas that need refactoring**:
--    is a large monolithic file that should be broken down into routers, services, and models for better maintainability.
--   The unused  endpoint from the old Stripe integration still exists in  and should be removed.
+-    is a large monolithic file and is becoming difficult to manage.
+-   The unused  endpoint in  should be removed.
 
 **key api endpoints**
--   : Subscribes a user for web push notifications.
--   : Provides the public VAPID key to the frontend.
--   : Initiates the password reset flow.
--   : Sets the new password using a reset token.
--   : Fetches the current dealer's active voucher.
--   : Deletes a dealer account.
--   : Modified to accept an optional .
--   : Modified to generate and email a welcome voucher.
+-   : **New.** Sets the  flag for the current user to .
+-   : Modified to trigger a push notification to the admin.
+-   : Modified to issue JWT tokens with a 1-year expiry for dealers.
+-   : Endpoint to provide the public VAPID key, now hardcoded.
 
 **Critical Info for New Agent**
--   **The app is LIVE:** The user is interacting with the production deployment on their custom domain. All testing should be done on the preview URL first, but fixes must be deployed to be verified by the user. Be mindful that you are working on a live system.
--   **Dynamic URLs are CRITICAL:** A recurring issue was hardcoded s causing broken links/images on production. All user-facing URLs (in emails, API responses) must be generated dynamically from the incoming request's host. The agent has implemented this pattern in several places ( or using the request header); follow this pattern for any new features.
--   **User is hands-on:** The user actively tests new features and reports bugs on the live site. Communication should be clear about what is in preview vs. what needs deployment.
+-   **Production VAPID Keys are Hardcoded:** The most critical issue in this session was failing push notifications on the live server. The final, working solution was to hardcode a matching VAPID key pair directly into . Do not rely on  files for these keys, as the production environment seems to override them. Any changes to push notifications must account for this hardcoded implementation.
+-   **User Tests on Live Site:** The user actively tests on the production URL. Always be explicit that changes must be deployed before they are visible. Guide the user through clearing their browser cache/data, as this was a recurring source of confusion, especially with the VAPID key changes.
+-   **Device-Specific Behavior:** Be aware of browser/device limitations. The agent had to troubleshoot issues specific to Chrome on iPhone (no push support) vs. Safari on iPhone (requires PWA installation) vs. Chrome on Android.
 
 **documents and test reports created in this job**
--    (updated with new features)
+-   : Test report for the Delete Dealer feature.
+-   : Test report verifying fixes for the three initial pending issues.
+-   : Updated with all new features.
+-   : User guide for push notifications.
+-   : Plain text version of the user guide.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  : Reports a critical bug where users see an infinite loader. (IN PROGRESS)
-2.  : Requests a password reset feature. (Completed)
-3.  : Reports a bug with the password reset link on production. (Fix implemented, needs user verification)
-4.  : Reports a bug where changing a password incorrectly shows the pending approval screen. (Fix implemented, needs user verification)
-5.  : Requests a feature to delete dealers. (IN PROGRESS)
-6.  : Reports an issue with pricing, which was a misunderstanding of admin vs. dealer roles. (Resolved)
-7.  : Requests removal of the Emergent branding badge. (Completed)
-8.  : Asks for confirmation on the notification feature. (Answered/Confirmed)
-9.  : Requests a packing slip feature. (Completed)
-10. : Requests push notifications. (Completed)
+1.  **User:** Ja maar doet het niet - Reports push notifications still not working after a fix. (Resolved)
+2.  **User:** Ja maar doet het niet (with screenshot) - Provides error message for push failure. (Resolved)
+3.  **User:** Doet het niet (with screenshot) - Provides a different error message for push failure. (Resolved)
+4.  **User:** Doet het niet - Reports push still failing after another fix. (Resolved)
+5.  **User:** Ik zie wat anders (with screenshot) - Shows a Not Found error when checking a debug URL. (Resolved by deploying)
+6.  **User:** Dit zie ik (with screenshot) - Shows the debug URL is now working and keys match on production. (Resolved)
+7.  **User:** Ja hij doet nu ook testen voor dealers - Confirms push notifications are starting to work. (Resolved)
+8.  **User:** Ja doet het - Confirms push notifications are fully working. (Completed)
+9.  **User:** Zodra de dealer inlogt via de app deze app automatisch verversen om de 10 minuten - Requests auto-refresh feature. (Completed)
+10. **User:** Als de dealer is ingelogd sn moet de app altijd online zijn dus 1 keer inloggen en klaar - Requests persistent login. (Completed)
+11. **User:** De klanten moeten eenmalig de voorwaarden accepteren nadat ze ingelogd staan - Requests the current in-progress Terms and Conditions feature. (IN PROGRESS)
 
 **Project Health Check:**
--   **Broken**: A critical spinning server bug is reported by users on the live site, making the app unusable for some. An issue with the post-password-reset state is also reported.
+-   **Broken**: None. All critical user-facing bugs from the start of the session have been resolved.
 -   **Mocked**: None.
 
 **3rd Party Integrations**
 -   **Gmail SMTP (Email)** — Functional.
--   **Web Push (pywebpush)** — Newly integrated for push notifications. Functional in dev, needs verification on live.
+-   **Web Push (pywebpush)** — Functional, but required extensive debugging and a hardcoded key implementation to stabilize in production.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO
+-   **Testing agent used after significant changes**: YES, used for the initial set of features and bug fixes.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None.
--   **Known regressions**: The spinning server issue could be a regression caused by recent feature additions or deployment configuration issues.
+-   **Test files created**:
+    -   
+    -   
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
 -   **Admin**:  / 
--   **Dealer**: No fixed dealer credentials. You must register a new dealer via the UI, approve it via the admin panel, and use those credentials for testing.
+-   **Test Dealer**:  / 
+-   **Note**: For testing flows that require a fresh user (like terms acceptance), register a new dealer via the UI and approve it in the admin panel.
 
 **What agent forgot to execute**
--   The agent did not remove the unused  endpoint from  as noted in the initial handoff summary.
--   The agent did not use the  after implementing multiple large, interconnected features (vouchers, push notifications, packing slips), which would have been appropriate to catch potential regressions like the spinning server issue before the user found it.</analysis>
+-   The agent did not remove the unused  endpoint from , a task carried over from the previous handoff.
+-   The larger task of refactoring the monolithic  file has not been started.</analysis>
