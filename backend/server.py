@@ -799,6 +799,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Bezorging</td>
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{delivery_text}</td>
                     </tr>
+                    {"<tr style='color: #16a34a;'><td style='padding: 8px 0; border-bottom: 1px solid #e5e7eb;'>🎁 Welkomstkorting</td><td style='padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;'>-€" + f"{voucher_discount:,.2f}" + "</td></tr>" if voucher_applied else ""}
                     <tr style="font-weight: bold; font-size: 18px;">
                         <td style="padding: 12px 0;">Totaal</td>
                         <td style="padding: 12px 0; text-align: right; color: #DC2626;">€{total_price:,.2f}</td>
