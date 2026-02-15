@@ -174,42 +174,50 @@ const OrderList = () => {
                       </td>
                       <td>{getStatusBadge(order.status)}</td>
                       <td>
-                        {order.status === 'pending' && (
-                          <div className="flex gap-2">
+                        <div className="flex gap-2">
+                          {order.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => updateStatus(order.id, 'approved')}
+                                data-testid={`approve-btn-${order.id}`}
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => updateStatus(order.id, 'rejected')}
+                                data-testid={`reject-btn-${order.id}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          {order.status === 'approved' && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              onClick={() => updateStatus(order.id, 'approved')}
-                              data-testid={`approve-btn-${order.id}`}
+                              onClick={() => updateStatus(order.id, 'completed')}
+                              data-testid={`complete-btn-${order.id}`}
                             >
-                              <Check className="w-4 h-4" />
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Voltooien
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => updateStatus(order.id, 'rejected')}
-                              data-testid={`reject-btn-${order.id}`}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                        {order.status === 'approved' && (
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateStatus(order.id, 'completed')}
-                            data-testid={`complete-btn-${order.id}`}
+                            onClick={() => navigate(`/pakbon/${order.id}`)}
+                            data-testid={`pakbon-btn-${order.id}`}
+                            title="Print Pakbon"
                           >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Voltooien
+                            <Printer className="w-4 h-4" />
                           </Button>
-                        )}
-                        {(order.status === 'rejected' || order.status === 'completed') && (
-                          <span className="text-sm text-zinc-400">-</span>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   ))}
