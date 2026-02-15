@@ -67,11 +67,14 @@
     "contactPlaceholder": "Jean Dupont",
     "emailPlaceholder": "votre@email.fr",
     "passwordPlaceholder": "Minimum 6 caractères",
+    "passwordHint": "Minimum 6 caractères",
     "createAccount": "Créer un compte",
     "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
     "kvkRequired": "Le numéro SIRET est requis",
     "success": "Compte créé avec succès !",
-    "failed": "Échec de l'inscription"
+    "failed": "Échec de l'inscription",
+    "supplierLink": "Êtes-vous un fournisseur étranger ?",
+    "supplierRegister": "Inscrivez-vous ici"
   },
   "nav": {
     "dashboard": "Tableau de bord",
