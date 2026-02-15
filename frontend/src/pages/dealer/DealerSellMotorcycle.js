@@ -129,10 +129,10 @@ const DealerSellMotorcycle = () => {
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
           <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-amber-800 font-medium">Plaatsingskosten: €250</p>
+            <p className="text-amber-800 font-medium">Transactiekosten bij verkoop</p>
             <p className="text-amber-700 text-sm">
-              Bij verkoop van uw motor ontvangt u een factuur van €250 voor de plaatsingskosten. 
-              Het plaatsen zelf is gratis.
+              Bij verkoop betaalt de verkoper €250 en de koper €250. 
+              Het plaatsen van uw motor is gratis.
             </p>
           </div>
         </div>
