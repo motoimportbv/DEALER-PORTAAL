@@ -236,10 +236,84 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Chat Section */}
-        <div className="mt-8">
-          <ChatWidget isAdmin={true} />
-        </div>
+        {/* Top Dealers Section */}
+        <Card className="mt-8">
+          <CardHeader className="border-b border-zinc-100">
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                Meest Actieve Dealers
+              </CardTitle>
+              <Link to="/admin/dealers">
+                <Button variant="ghost" className="text-red-600 hover:text-red-700" data-testid="view-all-dealers-btn">
+                  Alle dealers
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {topDealers.length === 0 ? (
+              <div className="empty-state py-8">
+                <Users className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
+                <p className="text-zinc-500">Nog geen dealer activiteit</p>
+              </div>
+            ) : (
+              <table className="w-full data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Dealer</th>
+                    <th>Aantal Logins</th>
+                    <th>Laatst Actief</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topDealers.slice(0, 5).map((dealer, index) => (
+                    <tr key={dealer.id} data-testid={`top-dealer-row-${dealer.id}`}>
+                      <td>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                          index === 0 ? 'bg-amber-100 text-amber-700' :
+                          index === 1 ? 'bg-zinc-200 text-zinc-700' :
+                          index === 2 ? 'bg-orange-100 text-orange-700' :
+                          'bg-zinc-100 text-zinc-500'
+                        }`}>
+                          {index + 1}
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <p className="font-semibold text-zinc-900">{dealer.company_name}</p>
+                          <p className="text-sm text-zinc-500">{dealer.email}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="font-barlow font-bold text-lg text-zinc-900">
+                          {dealer.login_count || 0}
+                        </span>
+                        <span className="text-zinc-500 text-sm ml-1">keer</span>
+                      </td>
+                      <td className="text-zinc-500">
+                        {dealer.last_login 
+                          ? new Date(dealer.last_login).toLocaleDateString('nl-NL', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'Nooit ingelogd'
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* WhatsApp Button */}
+        <WhatsAppButton />
       </div>
     </Layout>
   );
