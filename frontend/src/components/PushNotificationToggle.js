@@ -101,12 +101,20 @@ const PushNotificationToggle = ({ token }) => {
       const response = await axios.get(`${API}/api/push/test`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('Push test response:', response.data);
       if (response.data.success) {
         toast.success('Test notificatie verzonden! Check uw telefoon.');
       } else {
-        // Show detailed error
-        toast.error(response.data.error || 'Test mislukt');
-        console.error('Push test error:', response.data.error);
+        // Show detailed error with debug info
+        const errorMsg = response.data.error || 'Test mislukt';
+        const debug = response.data.debug;
+        toast.error(errorMsg);
+        if (debug) {
+          console.log('Debug info:', debug);
+          if (!debug.has_valid_keys) {
+            toast.error('Subscription keys zijn ongeldig. Klik op "Uit" en dan "Inschakelen".');
+          }
+        }
       }
     } catch (error) {
       console.error('Test push error:', error);
