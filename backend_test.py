@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class MotorcycleDealerAPITester:
-    def __init__(self, base_url="https://motoimport.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://dealership-portal-7.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_token = None
         self.dealer_token = None
