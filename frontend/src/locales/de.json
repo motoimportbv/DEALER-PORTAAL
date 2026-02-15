@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "all": "Alle",
+    "yes": "Ja",
+    "no": "Nein",
+    "confirm": "Bestätigen",
+    "close": "Schließen",
+    "submit": "Absenden",
+    "logout": "Abmelden",
+    "login": "Anmelden",
+    "register": "Registrieren"
+  },
+  "auth": {
+    "email": "E-Mail-Adresse",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "companyName": "Firmenname",
+    "kvkNumber": "Handelsregisternummer",
+    "phone": "Telefonnummer",
+    "forgotPassword": "Passwort vergessen?",
+    "resetPassword": "Passwort zurücksetzen",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "loginTitle": "Anmelden",
+    "registerTitle": "Konto erstellen",
+    "registerSubtitle": "Werden Sie Händler bei Moto Import",
+    "pendingApproval": "Ihr Konto wartet auf Genehmigung",
+    "pendingMessage": "Wir werden uns so schnell wie möglich bei Ihnen melden."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "motorcycles": "Motorräder",
+    "orders": "Bestellungen",
+    "dealers": "Händler",
+    "myMotorcycles": "Meine Motorräder",
+    "sellMotorcycle": "Motorrad verkaufen",
+    "myOrders": "Meine Bestellungen",
+    "pendingListings": "Ausstehende Motorräder"
+  },
+  "motorcycle": {
+    "brand": "Marke",
+    "model": "Modell",
+    "year": "Baujahr",
+    "price": "Preis",
+    "askingPrice": "Angebotspreis",
+    "buyNowPrice": "Sofortkauf-Preis",
+    "startingPrice": "Startpreis",
+    "mileage": "Kilometerstand",
+    "color": "Farbe",
+    "condition": "Zustand",
+    "description": "Beschreibung",
+    "images": "Bilder",
+    "new": "Neu",
+    "excellent": "Ausgezeichnet",
+    "good": "Gut",
+    "fair": "Akzeptabel",
+    "available": "Verfügbar",
+    "sold": "Verkauft",
+    "pending": "Ausstehend",
+    "addMotorcycle": "Motorrad hinzufügen",
+    "editMotorcycle": "Motorrad bearbeiten",
+    "viewDetails": "Details ansehen",
+    "placeBid": "Gebot abgeben",
+    "buyNow": "Sofort kaufen",
+    "currentBid": "Aktuelles Gebot",
+    "noBids": "Noch keine Gebote",
+    "dealerListing": "Angeboten von Händler",
+    "buyerFeeWarning": "Hinweis: €250 Käufergebühr beim Kauf"
+  },
+  "order": {
+    "orderNumber": "Bestellnummer",
+    "status": "Status",
+    "totalPrice": "Gesamtpreis",
+    "deliveryOption": "Lieferoption",
+    "pickup": "Abholung",
+    "delivery": "Lieferung",
+    "deliveryCost": "Lieferkosten",
+    "orderPlaced": "Bestellung aufgegeben",
+    "orderConfirmed": "Bestellung bestätigt",
+    "viewPakbon": "Lieferschein anzeigen",
+    "printPakbon": "Lieferschein drucken"
+  },
+  "dealer": {
+    "companyName": "Firmenname",
+    "approved": "Genehmigt",
+    "pending": "Ausstehend",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "deleteDealer": "Händler löschen",
+    "topDealers": "Aktivste Händler",
+    "loginCount": "Anmeldungen",
+    "lastActive": "Zuletzt aktiv",
+    "neverLoggedIn": "Nie angemeldet"
+  },
+  "foreignDealer": {
+    "title": "Ausländischer Händler",
+    "addMotorcycle": "Motorrad hinzufügen",
+    "pendingReview": "Wartet auf Überprüfung",
+    "infoMessage": "Ihr Motorrad wird von Moto Import geprüft. Nach Genehmigung und Preisfestlegung wird es sichtbar.",
+    "myListings": "Meine eingereichten Motorräder"
+  },
+  "admin": {
+    "pendingListings": "Ausstehende Motorräder",
+    "activateListing": "Aktivieren",
+    "setPrice": "Preis festlegen",
+    "fromForeignDealer": "Von ausländischem Händler"
+  },
+  "notifications": {
+    "enable": "Benachrichtigungen aktivieren",
+    "enabled": "Benachrichtigungen aktiviert",
+    "disabled": "Benachrichtigungen deaktiviert"
+  },
+  "fees": {
+    "listingFee": "Einstellgebühr",
+    "buyerFee": "Käufergebühr",
+    "feeAmount": "€250"
+  },
+  "messages": {
+    "successSaved": "Erfolgreich gespeichert",
+    "successDeleted": "Erfolgreich gelöscht",
+    "errorOccurred": "Ein Fehler ist aufgetreten",
+    "confirmDelete": "Sind Sie sicher, dass Sie dies löschen möchten?"
+  }
+}
