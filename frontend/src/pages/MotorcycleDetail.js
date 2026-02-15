@@ -678,23 +678,23 @@ const MotorcycleDetail = () => {
                     {t('order.deliveryWanted')}
                   </label>
                   <p className="text-sm text-zinc-500 mt-1">
-                    Wij bezorgen de motor bij u. Kosten: <strong>€50,00</strong>
+                    {t('order.deliveryInfo')} <strong>€50,00</strong>
                   </p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-zinc-100 text-sm text-green-600 font-medium">
-                ✓ Ophalen bij Moto Import is gratis!
+                ✓ {t('order.pickupFree')}
               </div>
             </div>
 
             {/* Info */}
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-800">
-              <p>Na uw bestelling ontvangt u een bevestigingsmail met verdere instructies.</p>
+              <p>{t('order.orderConfirmation')}</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBuyNowDialogOpen(false)} data-testid="cancel-buy-btn">
-              Annuleren
+              {t('common.cancel')}
             </Button>
             <Button 
               className="bg-red-600 hover:bg-red-700"
@@ -703,7 +703,7 @@ const MotorcycleDetail = () => {
               data-testid="confirm-buy-btn"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              {submitting ? 'Bezig...' : `Bestellen (${formatPrice(getTotalPrice())})`}
+              {submitting ? t('common.loading') : `${t('order.orderButton')} (${formatPrice(getTotalPrice())})`}
             </Button>
           </DialogFooter>
         </DialogContent>
