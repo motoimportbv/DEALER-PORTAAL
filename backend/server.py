@@ -53,12 +53,17 @@ VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', '')  # DER forma
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
-    """Get VAPID private key from env var or file"""
+    """Get VAPID private key - returns a file path that pywebpush can use"""
     import base64
+    import tempfile
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.backends import default_backend
     
-    # Option 1: DER format from env var - convert to PEM
+    # Option 1: Use existing file if it exists
+    if VAPID_PRIVATE_KEY_PATH and os.path.exists(VAPID_PRIVATE_KEY_PATH):
+        return VAPID_PRIVATE_KEY_PATH
+    
+    # Option 2: Create temp file from DER env var
     if VAPID_PRIVATE_KEY_DER:
         try:
             der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
@@ -69,14 +74,14 @@ def get_vapid_private_key():
                 format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=serialization.NoEncryption()
             )
-            return pem_bytes.decode('utf-8')
+            
+            # Write to a temp file (pywebpush needs a file path, not content)
+            temp_key_path = '/tmp/vapid_private.pem'
+            with open(temp_key_path, 'wb') as f:
+                f.write(pem_bytes)
+            return temp_key_path
         except Exception as e:
             logger.error(f"Failed to load VAPID_PRIVATE_KEY_DER: {e}")
-    
-    # Option 2: Read from file (for local development)
-    if VAPID_PRIVATE_KEY_PATH and os.path.exists(VAPID_PRIVATE_KEY_PATH):
-        with open(VAPID_PRIVATE_KEY_PATH, 'r') as f:
-            return f.read().strip()
     
     return None
 
