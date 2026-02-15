@@ -148,10 +148,10 @@ const PendingForeignListings = () => {
               <div className="text-center">
                 <Check className="w-20 h-20 mx-auto mb-4 text-green-500" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  Geen wachtende motors
+                  {t('adminPending.noPending')}
                 </h3>
                 <p className="text-zinc-500">
-                  Alle motors van buitenlandse dealers zijn beoordeeld
+                  {t('adminPending.allReviewed')}
                 </p>
               </div>
             </CardContent>
@@ -189,7 +189,7 @@ const PendingForeignListings = () => {
                       </div>
                       <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        Wachtend
+                        {t('order.pending')}
                       </Badge>
                     </div>
 
@@ -203,7 +203,7 @@ const PendingForeignListings = () => {
 
                     {/* Suggested Price */}
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm text-zinc-500">Voorgestelde prijs:</span>
+                      <span className="text-sm text-zinc-500">{t('adminPending.suggestedPrice')}:</span>
                       <span className="font-barlow text-xl font-bold text-amber-600">
                         {formatPrice(motorcycle.original_price || motorcycle.price)}
                       </span>
@@ -215,7 +215,7 @@ const PendingForeignListings = () => {
                       onClick={() => openActivateDialog(motorcycle)}
                     >
                       <DollarSign className="w-4 h-4 mr-2" />
-                      Prijs Instellen & Activeren
+                      {t('adminPending.setPriceActivate')}
                     </Button>
                   </CardContent>
                 </div>
@@ -230,10 +230,10 @@ const PendingForeignListings = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-purple-600" />
-                Motor Activeren
+                {t('adminPending.activateMotorcycle')}
               </DialogTitle>
               <DialogDescription>
-                Stel de verkoopprijs in voor{' '}
+                {t('adminPending.setPrice')}{' '}
                 <strong>{selectedMotorcycle?.brand} {selectedMotorcycle?.model}</strong>
               </DialogDescription>
             </DialogHeader>
@@ -242,7 +242,7 @@ const PendingForeignListings = () => {
               {/* Original price info */}
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800">
-                  <strong>Voorgestelde prijs door dealer:</strong>{' '}
+                  <strong>{t('adminPending.dealerSuggestedPrice')}:</strong>{' '}
                   {formatPrice(selectedMotorcycle?.original_price || selectedMotorcycle?.price || 0)}
                 </p>
               </div>
