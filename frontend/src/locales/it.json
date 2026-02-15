@@ -18,6 +18,22 @@
     "login": "Accedi",
     "register": "Registrati"
   },
+  "supplierRegister": {
+    "badge": "Fornitore Estero",
+    "title": "Registrazione Fornitore",
+    "subtitle": "Registrati come fornitore estero",
+    "heroText": "Diventa fornitore per Moto Import e vendi le tue moto alla nostra rete di rivenditori.",
+    "companyDetails": "Dettagli azienda",
+    "companyPlaceholder": "Nome della tua azienda",
+    "companyRequired": "Il nome dell'azienda è obbligatorio",
+    "country": "Paese",
+    "selectCountry": "Seleziona il tuo paese",
+    "countryRequired": "Il paese è obbligatorio",
+    "submit": "Registrati come fornitore",
+    "success": "Registrazione completata! Ti contatteremo.",
+    "dealerLink": "Sei un rivenditore olandese?",
+    "dealerRegister": "Registrati qui"
+  },
   "auth": {
     "email": "Indirizzo email",
     "password": "Password",
