@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "back": "Terug",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "all": "Alle",
+    "yes": "Ja",
+    "no": "Nee",
+    "confirm": "Bevestigen",
+    "close": "Sluiten",
+    "submit": "Verzenden",
+    "logout": "Uitloggen",
+    "login": "Inloggen",
+    "register": "Registreren"
+  },
+  "auth": {
+    "email": "E-mailadres",
+    "password": "Wachtwoord",
+    "confirmPassword": "Bevestig wachtwoord",
+    "companyName": "Bedrijfsnaam",
+    "kvkNumber": "KVK-nummer",
+    "phone": "Telefoonnummer",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "resetPassword": "Wachtwoord resetten",
+    "noAccount": "Nog geen account?",
+    "hasAccount": "Al een account?",
+    "loginTitle": "Inloggen",
+    "registerTitle": "Account aanmaken",
+    "registerSubtitle": "Word dealer bij Moto Import",
+    "pendingApproval": "Uw account wacht op goedkeuring",
+    "pendingMessage": "Wij nemen zo snel mogelijk contact met u op."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "motorcycles": "Motoren",
+    "orders": "Bestellingen",
+    "dealers": "Dealers",
+    "myMotorcycles": "Mijn Motoren",
+    "sellMotorcycle": "Motor Verkopen",
+    "myOrders": "Mijn Bestellingen",
+    "pendingListings": "Wachtende Motors"
+  },
+  "motorcycle": {
+    "brand": "Merk",
+    "model": "Model",
+    "year": "Bouwjaar",
+    "price": "Prijs",
+    "askingPrice": "Vraagprijs",
+    "buyNowPrice": "Koop Nu Prijs",
+    "startingPrice": "Vanaf prijs",
+    "mileage": "Kilometerstand",
+    "color": "Kleur",
+    "condition": "Conditie",
+    "description": "Beschrijving",
+    "images": "Foto's",
+    "new": "Nieuw",
+    "excellent": "Uitstekend",
+    "good": "Goed",
+    "fair": "Redelijk",
+    "available": "Beschikbaar",
+    "sold": "Verkocht",
+    "pending": "In afwachting",
+    "addMotorcycle": "Motor toevoegen",
+    "editMotorcycle": "Motor bewerken",
+    "viewDetails": "Bekijk details",
+    "placeBid": "Plaats bod",
+    "buyNow": "Koop Nu",
+    "currentBid": "Huidig bod",
+    "noBids": "Nog geen biedingen",
+    "dealerListing": "Aangeboden door dealer",
+    "buyerFeeWarning": "Let op: €250 koperskosten bij aankoop"
+  },
+  "order": {
+    "orderNumber": "Bestelnummer",
+    "status": "Status",
+    "totalPrice": "Totaalprijs",
+    "deliveryOption": "Bezorgoptie",
+    "pickup": "Ophalen",
+    "delivery": "Bezorging",
+    "deliveryCost": "Bezorgkosten",
+    "orderPlaced": "Bestelling geplaatst",
+    "orderConfirmed": "Bestelling bevestigd",
+    "viewPakbon": "Bekijk Pakbon",
+    "printPakbon": "Print Pakbon"
+  },
+  "dealer": {
+    "companyName": "Bedrijfsnaam",
+    "approved": "Goedgekeurd",
+    "pending": "In afwachting",
+    "approve": "Goedkeuren",
+    "reject": "Afwijzen",
+    "deleteDealer": "Dealer verwijderen",
+    "topDealers": "Meest Actieve Dealers",
+    "loginCount": "Aantal logins",
+    "lastActive": "Laatst actief",
+    "neverLoggedIn": "Nooit ingelogd"
+  },
+  "foreignDealer": {
+    "title": "Buitenlandse Dealer",
+    "addMotorcycle": "Motor Toevoegen",
+    "pendingReview": "Wacht op beoordeling",
+    "infoMessage": "Uw motor wordt beoordeeld door Moto Import. Na goedkeuring en prijsbepaling wordt deze zichtbaar.",
+    "myListings": "Mijn Ingezonden Motors"
+  },
+  "admin": {
+    "pendingListings": "Wachtende Motors",
+    "activateListing": "Activeren",
+    "setPrice": "Prijs instellen",
+    "fromForeignDealer": "Van buitenlandse dealer"
+  },
+  "notifications": {
+    "enable": "Notificaties inschakelen",
+    "enabled": "Notificaties ingeschakeld",
+    "disabled": "Notificaties uitgeschakeld"
+  },
+  "fees": {
+    "listingFee": "Plaatsingskosten",
+    "buyerFee": "Koperskosten",
+    "feeAmount": "€250"
+  },
+  "messages": {
+    "successSaved": "Succesvol opgeslagen",
+    "successDeleted": "Succesvol verwijderd",
+    "errorOccurred": "Er is een fout opgetreden",
+    "confirmDelete": "Weet u zeker dat u dit wilt verwijderen?"
+  }
+}
