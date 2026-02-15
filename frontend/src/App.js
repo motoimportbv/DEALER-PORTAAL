@@ -55,6 +55,7 @@ function App() {
             <Route path="/admin/motorcycles/:id/edit" element={<MotorcycleForm />} />
             <Route path="/admin/orders" element={<OrderList />} />
             <Route path="/admin/dealers" element={<DealerManagement />} />
+            <Route path="/admin/pending-foreign" element={<PendingForeignListings />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
