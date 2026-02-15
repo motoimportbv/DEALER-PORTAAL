@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,6 +9,7 @@ import { Bike, Mail, Lock, Building, ArrowRight, MapPin, Phone, User, FileText }
 import { toast } from 'sonner';
 
 const RegisterPage = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -30,11 +32,11 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password.length < 6) {
-      toast.error('Wachtwoord moet minimaal 6 tekens bevatten');
+      toast.error(t('register.passwordMinLength'));
       return;
     }
     if (!formData.kvk_number) {
-      toast.error('KVK nummer is verplicht');
+      toast.error(t('register.kvkRequired'));
       return;
     }
     setLoading(true);
@@ -51,10 +53,10 @@ const RegisterPage = () => {
         formData.phone,
         formData.contact_person
       );
-      toast.success('Account succesvol aangemaakt!');
+      toast.success(t('register.success'));
       navigate('/dealer');
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Registratie mislukt');
+      toast.error(error.response?.data?.detail || t('register.failed'));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ const RegisterPage = () => {
             Moto Import Portal
           </h1>
           <p className="text-lg text-zinc-300 max-w-md mb-8">
-            Word onderdeel van ons exclusieve dealer netwerk en krijg toegang tot premium motorfietsen.
+            {t('register.heroText')}
           </p>
           <div className="text-sm text-zinc-400 space-y-1">
             <p className="font-semibold text-zinc-300">Moto Import B.V.</p>
@@ -94,21 +96,21 @@ const RegisterPage = () => {
             <span className="font-barlow text-2xl font-bold uppercase tracking-tight">Moto Import</span>
           </div>
           <h2 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-            Dealer Account Aanmaken
+            {t('auth.registerTitle')}
           </h2>
-          <p className="text-zinc-500 mt-2">Vul uw bedrijfsgegevens in om te registreren</p>
+          <p className="text-zinc-500 mt-2">{t('register.fillDetails')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Bedrijfsgegevens */}
           <div className="p-4 bg-zinc-50 rounded-lg space-y-4">
             <h3 className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              Bedrijfsgegevens
+              {t('register.companyDetails')}
             </h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="company" className="text-xs text-zinc-500">Bedrijfsnaam *</Label>
+                <Label htmlFor="company" className="text-xs text-zinc-500">{t('auth.companyName')} *</Label>
                 <div className="relative">
                   <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <Input
@@ -116,7 +118,7 @@ const RegisterPage = () => {
                     type="text"
                     value={formData.company_name}
                     onChange={(e) => handleChange('company_name', e.target.value)}
-                    placeholder="Uw bedrijfsnaam"
+                    placeholder={t('register.companyPlaceholder')}
                     className="pl-10 h-11"
                     data-testid="register-company-input"
                     required
@@ -125,7 +127,7 @@ const RegisterPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="kvk" className="text-xs text-zinc-500">KVK Nummer *</Label>
+                <Label htmlFor="kvk" className="text-xs text-zinc-500">{t('auth.kvkNumber')} *</Label>
                 <div className="relative">
                   <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <Input
@@ -142,7 +144,7 @@ const RegisterPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-xs text-zinc-500">Telefoonnummer</Label>
+                <Label htmlFor="phone" className="text-xs text-zinc-500">{t('auth.phone')}</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <Input
@@ -162,11 +164,11 @@ const RegisterPage = () => {
           {/* Adresgegevens */}
           <div className="p-4 bg-zinc-50 rounded-lg space-y-4">
             <h3 className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              Adresgegevens
+              {t('register.addressDetails')}
             </h3>
             
             <div className="space-y-2">
-              <Label htmlFor="address" className="text-xs text-zinc-500">Straat en huisnummer</Label>
+              <Label htmlFor="address" className="text-xs text-zinc-500">{t('register.streetAddress')}</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
@@ -174,7 +176,7 @@ const RegisterPage = () => {
                   type="text"
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
-                  placeholder="Voorbeeldstraat 123"
+                  placeholder={t('register.streetPlaceholder')}
                   className="pl-10 h-11"
                   data-testid="register-address-input"
                 />
@@ -183,7 +185,7 @@ const RegisterPage = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="postal" className="text-xs text-zinc-500">Postcode</Label>
+                <Label htmlFor="postal" className="text-xs text-zinc-500">{t('register.postalCode')}</Label>
                 <Input
                   id="postal"
                   type="text"
@@ -195,13 +197,13 @@ const RegisterPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city" className="text-xs text-zinc-500">Plaats</Label>
+                <Label htmlFor="city" className="text-xs text-zinc-500">{t('register.city')}</Label>
                 <Input
                   id="city"
                   type="text"
                   value={formData.city}
                   onChange={(e) => handleChange('city', e.target.value)}
-                  placeholder="Amsterdam"
+                  placeholder={t('register.cityPlaceholder')}
                   className="h-11"
                   data-testid="register-city-input"
                 />
@@ -212,11 +214,11 @@ const RegisterPage = () => {
           {/* Contactpersoon & Account */}
           <div className="p-4 bg-zinc-50 rounded-lg space-y-4">
             <h3 className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              Accountgegevens
+              {t('register.accountDetails')}
             </h3>
 
             <div className="space-y-2">
-              <Label htmlFor="contact" className="text-xs text-zinc-500">Contactpersoon</Label>
+              <Label htmlFor="contact" className="text-xs text-zinc-500">{t('register.contactPerson')}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
@@ -224,7 +226,7 @@ const RegisterPage = () => {
                   type="text"
                   value={formData.contact_person}
                   onChange={(e) => handleChange('contact_person', e.target.value)}
-                  placeholder="Jan Jansen"
+                  placeholder={t('register.contactPlaceholder')}
                   className="pl-10 h-11"
                   data-testid="register-contact-input"
                 />
@@ -232,7 +234,7 @@ const RegisterPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs text-zinc-500">Email *</Label>
+              <Label htmlFor="email" className="text-xs text-zinc-500">{t('auth.email')} *</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
@@ -240,7 +242,7 @@ const RegisterPage = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="uw@email.nl"
+                  placeholder={t('register.emailPlaceholder')}
                   className="pl-10 h-11"
                   data-testid="register-email-input"
                   required
@@ -249,7 +251,7 @@ const RegisterPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs text-zinc-500">Wachtwoord *</Label>
+              <Label htmlFor="password" className="text-xs text-zinc-500">{t('auth.password')} *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
@@ -257,7 +259,7 @@ const RegisterPage = () => {
                   type="password"
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
-                  placeholder="Minimaal 6 tekens"
+                  placeholder={t('register.passwordPlaceholder')}
                   className="pl-10 h-11"
                   data-testid="register-password-input"
                   required
@@ -272,15 +274,15 @@ const RegisterPage = () => {
             disabled={loading}
             data-testid="register-submit-btn"
           >
-            {loading ? 'Bezig...' : 'Account Aanmaken'}
+            {loading ? t('common.loading') : t('register.createAccount')}
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </form>
 
         <p className="mt-6 text-center text-zinc-500">
-          Heeft u al een account?{' '}
+          {t('auth.hasAccount')}{' '}
           <Link to="/login" className="text-red-600 hover:text-red-700 font-semibold" data-testid="login-link">
-            Inloggen
+            {t('common.login')}
           </Link>
         </p>
       </div>
