@@ -188,6 +188,18 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Alle locale bestanden uitgebreid met 150+ nieuwe keys
   - Status: **BIJNA COMPLEET** - Nog enkele admin pagina's te vertalen
 
+### 15 Feb 2026 (Update 12) ✅ VOLTOOID
+- 🌍 **VOLLEDIGE APP VERTALING COMPLEET** - Alle pagina's vertaald in 4 talen
+  - Nederlands, Duits, Frans, Italiaans volledig ondersteund
+  - Admin pagina's vertaald: MotorcycleList, OrderList, DealerManagement
+  - Pakbon pagina volledig vertaald
+  - **PushNotificationToggle component vertaald** (nieuw)
+    - "Push Notificaties" → "Push-Benachrichtigungen" (DE) / "Notifications Push" (FR) / "Notifiche Push" (IT)
+    - Alle knoppen en foutmeldingen vertaald
+  - Taalwisselaar werkt perfect met vlag + taal naam
+  - Toast meldingen vertaald ("Succesvol opgeslagen" → "Enregistré avec succès" etc.)
+  - Status: **100% COMPLEET** - Klaar voor internationaal gebruik
+
 ### 15 Feb 2026 (Update 10)
 - 🌍 **Meertalige App** - 4 talen ondersteund
   - Nederlands (standaard), Duits, Italiaans, Frans
