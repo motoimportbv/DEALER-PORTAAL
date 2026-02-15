@@ -18,6 +18,22 @@
     "login": "Inloggen",
     "register": "Registreren"
   },
+  "supplierRegister": {
+    "badge": "Buitenlandse Leverancier",
+    "title": "Leverancier Registratie",
+    "subtitle": "Registreer als buitenlandse leverancier",
+    "heroText": "Word leverancier voor Moto Import en verkoop uw motoren aan ons dealernetwerk.",
+    "companyDetails": "Bedrijfsgegevens",
+    "companyPlaceholder": "Uw bedrijfsnaam",
+    "companyRequired": "Bedrijfsnaam is verplicht",
+    "country": "Land",
+    "selectCountry": "Selecteer uw land",
+    "countryRequired": "Land is verplicht",
+    "submit": "Registreren als Leverancier",
+    "success": "Registratie succesvol! Wij nemen contact met u op.",
+    "dealerLink": "Bent u een Nederlandse dealer?",
+    "dealerRegister": "Registreer hier"
+  },
   "auth": {
     "email": "E-mailadres",
     "password": "Wachtwoord",
