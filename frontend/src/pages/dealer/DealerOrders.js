@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent } from '../../components/ui/card';
@@ -19,6 +20,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerOrders = () => {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
