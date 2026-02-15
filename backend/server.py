@@ -645,6 +645,86 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     
     return motorcycle
 
+# Dealer marketplace - dealers can list their own motorcycles
+@api_router.post("/motorcycles/dealer-listing", response_model=Motorcycle)
+async def create_dealer_listing(data: MotorcycleCreate, user: dict = Depends(require_approved_dealer)):
+    """Allow dealers to list their own motorcycles for sale to other dealers"""
+    
+    motorcycle = Motorcycle(
+        brand=data.brand,
+        model=data.model,
+        year=data.year,
+        price=data.price,
+        starting_price=data.starting_price,
+        mileage=data.mileage,
+        color=data.color,
+        description=data.description,
+        condition=data.condition,
+        images=data.images,
+        created_by=user["id"],
+        # Dealer marketplace fields
+        is_dealer_listing=True,
+        seller_company=user.get("company_name", ""),
+        seller_id=user["id"]
+    )
+    doc = motorcycle.model_dump()
+    await db.motorcycles.insert_one(doc)
+    
+    # Get all OTHER approved dealers (not the seller)
+    dealers = await db.users.find({
+        "role": "dealer", 
+        "is_approved": True,
+        "id": {"$ne": user["id"]}  # Exclude the seller
+    }, {"_id": 0}).to_list(1000)
+    
+    if dealers:
+        # Create in-app notifications
+        notifications = [
+            Notification(
+                user_id=dealer["id"],
+                type="new_motorcycle",
+                title="Nieuwe dealer motor",
+                message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - €{motorcycle.price:,.0f} (van {user.get('company_name', 'dealer')})",
+                motorcycle_id=motorcycle.id
+            ).model_dump()
+            for dealer in dealers
+        ]
+        await db.notifications.insert_many(notifications)
+        
+        # Send push notifications
+        asyncio.create_task(send_push_to_all_dealers(
+            title="🏍️ Nieuwe Dealer Motor!",
+            body=f"{motorcycle.brand} {motorcycle.model} - €{motorcycle.price:,.0f}",
+            url=f"/motorcycle/{motorcycle.id}",
+            exclude_user_id=user["id"]
+        ))
+    
+    # Notify admin about new dealer listing
+    admin_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <h2 style="color: #DC2626;">🏍️ Nieuwe Dealer Motor Geplaatst</h2>
+        <p>Een dealer heeft een motor te koop aangeboden:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Verkoper</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{user.get('company_name', 'Dealer')}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{motorcycle.brand} {motorcycle.model} ({motorcycle.year})</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Prijs</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">€{motorcycle.price:,.0f}</td>
+            </tr>
+        </table>
+        <p style="color: #71717a;">Bij verkoop: €250 plaatsingskosten factureren aan {user.get('company_name', 'dealer')}.</p>
+    </div>
+    """
+    await send_admin_notification(f"🏍️ Nieuwe Dealer Motor: {motorcycle.brand} {motorcycle.model}", admin_html)
+    
+    return motorcycle
+
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
     """Send email notifications to all approved dealers about a new motorcycle"""
     base_url = os.environ.get("BASE_URL", "")
