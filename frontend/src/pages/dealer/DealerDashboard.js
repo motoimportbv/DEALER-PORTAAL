@@ -7,6 +7,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
+import PushNotificationToggle from '../../components/PushNotificationToggle';
 import { 
   Bike, 
   Search,
@@ -19,7 +20,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerDashboard = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
