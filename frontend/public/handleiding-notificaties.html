@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push Notificaties Inschakelen - Moto Import</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f4f4f5;
+            color: #18181b;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #18181b;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            margin: -20px -20px 30px -20px;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: #DC2626;
+            border-radius: 12px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #DC2626;
+        }
+        .step {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e4e4e7;
+        }
+        .step:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: #DC2626;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step-content h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .step-content p {
+            color: #71717a;
+            font-size: 14px;
+        }
+        .highlight {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+        }
+        .highlight p {
+            color: #92400e;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            background: #DC2626;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .platform-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .platform-tab {
+            flex: 1;
+            padding: 12px;
+            background: #f4f4f5;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .platform-tab.active {
+            background: #DC2626;
+            color: white;
+        }
+        .platform-content {
+            display: none;
+        }
+        .platform-content.active {
+            display: block;
+        }
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #71717a;
+            font-size: 12px;
+        }
+        .icon {
+            font-size: 20px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏍️</div>
+            <h1>MOTO IMPORT</h1>
+            <p>Push Notificaties Handleiding</p>
+        </div>
+
+        <div class="card">
+            <h2>🔔 Waarom Push Notificaties?</h2>
+            <p>Ontvang direct een melding op uw telefoon zodra er een nieuwe motor is toegevoegd. Zo bent u altijd als eerste op de hoogte en mist u nooit een goede deal!</p>
+        </div>
+
+        <div class="card">
+            <h2>📱 Stap-voor-stap Instructie</h2>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Open de Moto Import app</h3>
+                    <p>Ga naar <strong>www.motoimportbv.nl</strong> en log in met uw account.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Zoek de "Push Notificaties" sectie</h3>
+                    <p>Op uw dashboard ziet u bovenaan een balk met "Push Notificaties - Ontvang direct een melding op uw telefoon".</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Klik op "Inschakelen"</h3>
+                    <p>Klik op de rode <strong>"Inschakelen"</strong> knop aan de rechterkant.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Sta notificaties toe</h3>
+                    <p>Uw browser vraagt om toestemming. Klik op <strong>"Toestaan"</strong> of <strong>"Allow"</strong>.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">✓</div>
+                <div class="step-content">
+                    <h3>Klaar!</h3>
+                    <p>U ontvangt nu automatisch een melding zodra er een nieuwe motor wordt toegevoegd.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📲 Speciaal voor iPhone gebruikers</h2>
+            
+            <div class="highlight">
+                <p><strong>Let op:</strong> Op iPhone werken push notificaties alleen als u de app heeft geïnstalleerd op uw beginscherm.</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Open Safari</h3>
+                    <p>Ga naar <strong>www.motoimportbv.nl</strong> in Safari (niet Chrome).</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Tik op het "Deel" icoon</h3>
+                    <p>Tik onderaan op het vierkantje met het pijltje omhoog.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Kies "Zet op beginscherm"</h3>
+                    <p>Scroll naar beneden en tik op "Zet op beginscherm".</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Open de app vanaf uw beginscherm</h3>
+                    <p>Open de Moto Import app vanaf uw beginscherm en volg de stappen hierboven om notificaties in te schakelen.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>❓ Problemen?</h2>
+            <p>Lukt het niet om notificaties in te schakelen? Neem contact met ons op:</p>
+            <p style="margin-top: 15px;">
+                <strong>📧 Email:</strong> Motoimportbv@gmail.com<br>
+                <strong>📞 Telefoon:</strong> +31 6 81792660
+            </p>
+        </div>
+
+        <div class="footer">
+            <p><strong>Moto Import B.V.</strong></p>
+            <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            <p style="margin-top: 10px;">© 2026 Moto Import B.V. Alle rechten voorbehouden.</p>
+        </div>
+    </div>
+</body>
+</html>
