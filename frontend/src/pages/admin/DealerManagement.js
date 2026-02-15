@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -48,6 +49,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerManagement = () => {
+  const { t } = useTranslation();
   const [dealers, setDealers] = useState([]);
   const [pendingDealers, setPendingDealers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,7 @@ const DealerManagement = () => {
       setDealers(allRes.data);
       setPendingDealers(pendingRes.data);
     } catch (error) {
-      toast.error('Kon dealers niet laden');
+      toast.error(t('adminDealers.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -77,57 +79,57 @@ const DealerManagement = () => {
   const approveDealer = async (dealerId) => {
     try {
       await axios.put(`${API}/dealers/${dealerId}/approve`);
-      toast.success('Dealer goedgekeurd! Een email is verstuurd.');
+      toast.success(t('adminDealers.approved'));
       fetchDealers();
     } catch (error) {
-      toast.error('Kon dealer niet goedkeuren');
+      toast.error(t('adminDealers.approveFailed'));
     }
   };
 
   const rejectDealer = async (dealerId) => {
     try {
       await axios.put(`${API}/dealers/${dealerId}/reject`);
-      toast.success('Dealer afgewezen en verwijderd');
+      toast.success(t('adminDealers.rejected'));
       fetchDealers();
     } catch (error) {
-      toast.error('Kon dealer niet afwijzen');
+      toast.error(t('adminDealers.rejectFailed'));
     }
   };
 
   const deleteDealer = async (dealerId, companyName) => {
     try {
       await axios.delete(`${API}/dealers/${dealerId}`);
-      toast.success(`Dealer ${companyName} is verwijderd`);
+      toast.success(t('adminDealers.deleted', { company: companyName }));
       fetchDealers();
     } catch (error) {
-      toast.error('Kon dealer niet verwijderen');
+      toast.error(t('adminDealers.deleteFailed'));
     }
   };
 
   const setForeignDealer = async () => {
     if (!selectedDealer || !countryInput.trim()) {
-      toast.error('Selecteer een land');
+      toast.error(t('adminDealers.selectCountry'));
       return;
     }
     try {
       await axios.post(`${API}/dealers/${selectedDealer.id}/set-foreign?country=${encodeURIComponent(countryInput)}`);
-      toast.success(`${selectedDealer.company_name} is nu een buitenlandse dealer (${countryInput})`);
+      toast.success(t('adminDealers.foreignSet', { company: selectedDealer.company_name, country: countryInput }));
       setForeignDialogOpen(false);
       setCountryInput('');
       setSelectedDealer(null);
       fetchDealers();
     } catch (error) {
-      toast.error('Kon dealer niet markeren als buitenlands');
+      toast.error(t('adminDealers.foreignSetFailed'));
     }
   };
 
   const removeForeignDealer = async (dealerId) => {
     try {
       await axios.post(`${API}/dealers/${dealerId}/unset-foreign`);
-      toast.success('Buitenlandse dealer status verwijderd');
+      toast.success(t('adminDealers.foreignRemoved'));
       fetchDealers();
     } catch (error) {
-      toast.error('Kon status niet verwijderen');
+      toast.error(t('adminDealers.foreignRemoveFailed'));
     }
   };
 
