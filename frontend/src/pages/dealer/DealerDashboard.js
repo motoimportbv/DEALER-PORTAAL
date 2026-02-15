@@ -60,6 +60,18 @@ const DealerDashboard = () => {
     }
   }, [user]);
 
+  // Auto-refresh elke 10 minuten voor dealers
+  useEffect(() => {
+    if (user && user.role === 'dealer' && !pendingApproval) {
+      const refreshInterval = setInterval(() => {
+        console.log('Auto-refresh: nieuwe motoren ophalen...');
+        fetchMotorcycles();
+      }, 10 * 60 * 1000); // 10 minuten in milliseconden
+
+      return () => clearInterval(refreshInterval);
+    }
+  }, [user, pendingApproval]);
+
   useEffect(() => {
     if (searchTerm) {
       const search = searchTerm.toLowerCase().trim();
