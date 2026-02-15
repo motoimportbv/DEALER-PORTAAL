@@ -1869,11 +1869,23 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
     if not endpoint:
         return {"success": False, "error": "Subscription heeft geen endpoint"}
     
+    # Debug info
+    keys = subscription.get("keys", {})
+    p256dh = keys.get("p256dh", "")
+    auth = keys.get("auth", "")
+    
+    debug_info = {
+        "endpoint_preview": endpoint[:60] + "..." if len(endpoint) > 60 else endpoint,
+        "p256dh_length": len(p256dh),
+        "auth_length": len(auth),
+        "has_valid_keys": bool(p256dh and auth and len(p256dh) > 50)
+    }
+    
     # Get VAPID private key
     private_key = get_vapid_private_key()
     
     if not private_key:
-        return {"success": False, "error": "VAPID private key niet geconfigureerd"}
+        return {"success": False, "error": "VAPID private key niet geconfigureerd", "debug": debug_info}
     
     # Try to send
     try:
@@ -1890,14 +1902,14 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
             vapid_private_key=private_key,
             vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
         )
-        return {"success": True, "message": "Test notificatie verzonden!"}
+        return {"success": True, "message": "Test notificatie verzonden!", "debug": debug_info}
     except WebPushException as e:
         error_msg = str(e)
         if e.response:
             error_msg = f"Status {e.response.status_code}: {e.response.text[:200]}"
-        return {"success": False, "error": f"Push fout: {error_msg}"}
+        return {"success": False, "error": f"Push fout: {error_msg}", "debug": debug_info}
     except Exception as e:
-        return {"success": False, "error": f"Onverwachte fout: {str(e)}"}
+        return {"success": False, "error": f"Fout: {str(e)[:150]}", "debug": debug_info}
 
 @api_router.delete("/push/subscribe")
 async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
