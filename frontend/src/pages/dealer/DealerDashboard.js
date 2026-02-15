@@ -283,6 +283,12 @@ const DealerDashboard = () => {
                       <Bike className="w-16 h-16 text-zinc-300" />
                     </div>
                   )}
+                  {/* Dealer listing badge */}
+                  {motorcycle.is_dealer_listing && motorcycle.seller_company && (
+                    <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-md font-medium">
+                      {motorcycle.seller_company}
+                    </div>
+                  )}
                 </div>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
