@@ -55,6 +55,8 @@ function App() {
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
             <Route path="/dealer/orders" element={<DealerOrders />} />
+            <Route path="/dealer/sell" element={<DealerSellMotorcycle />} />
+            <Route path="/dealer/my-listings" element={<DealerMyListings />} />
             
             {/* Shared Routes */}
             <Route path="/motorcycle/:id" element={<MotorcycleDetail />} />
