@@ -89,9 +89,9 @@ const DealerOrders = () => {
       <div className="content-header">
         <div>
           <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-            Mijn Bestellingen
+            {t('nav.myOrders')}
           </h1>
-          <p className="text-zinc-500 mt-1">{orders.length} bestellingen totaal</p>
+          <p className="text-zinc-500 mt-1">{orders.length} {t('orders.totalOrders')}</p>
         </div>
       </div>
 
@@ -102,13 +102,13 @@ const DealerOrders = () => {
               <div className="empty-state">
                 <ShoppingCart className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  Nog geen bestellingen
+                  {t('order.noOrders')}
                 </h3>
-                <p className="text-zinc-500 mb-6">Bekijk beschikbare motoren en plaats uw eerste bestelling</p>
+                <p className="text-zinc-500 mb-6">{t('orders.viewMotorcycles')}</p>
                 <Link to="/dealer">
                   <Button className="bg-red-600 hover:bg-red-700">
                     <Bike className="w-5 h-5 mr-2" />
-                    Bekijk Motoren
+                    {t('orders.viewMotorcyclesBtn')}
                   </Button>
                 </Link>
               </div>
@@ -149,14 +149,14 @@ const DealerOrders = () => {
                               </p>
                             </>
                           ) : (
-                            <p className="text-zinc-400">Motor niet meer beschikbaar</p>
+                            <p className="text-zinc-400">{t('motorcycle.deleted')}</p>
                           )}
                         </div>
                         
                         <div className="flex flex-col items-start md:items-end gap-2">
                           {getStatusBadge(order.status, order.payment_status)}
                           <p className="text-sm text-zinc-500">
-                            Besteld op {new Date(order.created_at).toLocaleDateString('nl-NL', {
+                            {t('orders.orderedOn')} {new Date(order.created_at).toLocaleDateString('nl-NL', {
                               day: 'numeric',
                               month: 'long',
                               year: 'numeric'
