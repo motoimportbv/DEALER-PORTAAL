@@ -318,10 +318,10 @@ const DealerManagement = () => {
       <div className="content-header">
         <div>
           <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-            Dealer Beheer
+            {t('adminDealers.title')}
           </h1>
           <p className="text-zinc-500 mt-1">
-            {pendingDealers.length} wachtend op goedkeuring • {approvedDealers.length} actieve dealers
+            {pendingDealers.length} {t('adminDealers.waitingApproval')} • {approvedDealers.length} {t('adminDealers.activeDealers')}
           </p>
         </div>
       </div>
@@ -330,7 +330,7 @@ const DealerManagement = () => {
         <Tabs defaultValue="pending" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="pending" className="relative">
-              Wachtend op Goedkeuring
+              {t('adminDealers.waitingApproval')}
               {pendingDealers.length > 0 && (
                 <span className="ml-2 px-2 py-0.5 bg-red-600 text-white text-xs rounded-full">
                   {pendingDealers.length}
@@ -338,10 +338,10 @@ const DealerManagement = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="approved">
-              Goedgekeurde Dealers ({approvedDealers.length})
+              {t('adminDealers.approvedDealers')} ({approvedDealers.length})
             </TabsTrigger>
             <TabsTrigger value="all">
-              Alle Dealers ({dealers.length})
+              {t('adminDealers.allDealers')} ({dealers.length})
             </TabsTrigger>
           </TabsList>
 
@@ -352,9 +352,9 @@ const DealerManagement = () => {
                   <div className="text-center">
                     <Check className="w-16 h-16 mx-auto mb-4 text-green-500" />
                     <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                      Geen openstaande aanvragen
+                      {t('adminDealers.noOpenRequests')}
                     </h3>
-                    <p className="text-zinc-500">Alle dealers zijn beoordeeld</p>
+                    <p className="text-zinc-500">{t('adminDealers.allReviewed')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -374,9 +374,9 @@ const DealerManagement = () => {
                   <div className="text-center">
                     <Users className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
                     <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                      Nog geen goedgekeurde dealers
+                      {t('adminDealers.noApprovedYet')}
                     </h3>
-                    <p className="text-zinc-500">Goedgekeurde dealers verschijnen hier</p>
+                    <p className="text-zinc-500">{t('adminDealers.approvedAppearHere')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -396,9 +396,9 @@ const DealerManagement = () => {
                   <div className="text-center">
                     <Users className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
                     <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                      Nog geen dealers
+                      {t('adminDealers.noDealersYet')}
                     </h3>
-                    <p className="text-zinc-500">Geregistreerde dealers verschijnen hier</p>
+                    <p className="text-zinc-500">{t('adminDealers.registeredAppearHere')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -423,43 +423,42 @@ const DealerManagement = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Globe className="w-5 h-5 text-purple-600" />
-                Buitenlandse Dealer Instellen
+                {t('adminDealers.setForeignTitle')}
               </DialogTitle>
               <DialogDescription>
-                Markeer {selectedDealer?.company_name} als buitenlandse dealer (leverancier).
-                Deze dealer kan dan motors indienen die u eerst beoordeelt voordat ze zichtbaar worden.
+                {t('adminDealers.setForeignDesc', { company: selectedDealer?.company_name })}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
               <label className="text-sm font-medium text-zinc-700 block mb-2">
-                Land
+                {t('adminDealers.country')}
               </label>
               <select
                 value={countryInput}
                 onChange={(e) => setCountryInput(e.target.value)}
                 className="w-full h-10 px-3 rounded-md border border-input bg-background"
               >
-                <option value="">Selecteer land...</option>
-                <option value="Duitsland">🇩🇪 Duitsland</option>
-                <option value="Italië">🇮🇹 Italië</option>
-                <option value="Frankrijk">🇫🇷 Frankrijk</option>
-                <option value="België">🇧🇪 België</option>
-                <option value="Oostenrijk">🇦🇹 Oostenrijk</option>
-                <option value="Spanje">🇪🇸 Spanje</option>
-                <option value="Polen">🇵🇱 Polen</option>
-                <option value="Anders">🌍 Anders</option>
+                <option value="">{t('adminDealers.selectCountry')}...</option>
+                <option value="Duitsland">🇩🇪 {t('adminDealers.germany')}</option>
+                <option value="Italië">🇮🇹 {t('adminDealers.italy')}</option>
+                <option value="Frankrijk">🇫🇷 {t('adminDealers.france')}</option>
+                <option value="België">🇧🇪 {t('adminDealers.belgium')}</option>
+                <option value="Oostenrijk">🇦🇹 {t('adminDealers.austria')}</option>
+                <option value="Spanje">🇪🇸 {t('adminDealers.spain')}</option>
+                <option value="Polen">🇵🇱 {t('adminDealers.poland')}</option>
+                <option value="Anders">🌍 {t('adminDealers.other')}</option>
               </select>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setForeignDialogOpen(false)}>
-                Annuleren
+                {t('common.cancel')}
               </Button>
               <Button 
                 className="bg-purple-600 hover:bg-purple-700"
                 onClick={setForeignDealer}
                 disabled={!countryInput}
               >
-                Bevestigen
+                {t('common.confirm')}
               </Button>
             </DialogFooter>
           </DialogContent>
