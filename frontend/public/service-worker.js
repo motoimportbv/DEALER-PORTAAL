@@ -125,7 +125,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   console.log('[SW] Push notification received');
   
-  let data = { title: 'Moto Import', body: 'Nieuwe update beschikbaar' };
+  let data = { title: 'Moto Import', body: 'Nieuwe update beschikbaar', url: '/' };
   
   if (event.data) {
     try {
@@ -137,10 +137,16 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    vibrate: [100, 50, 100],
-    data: data.data || {},
+    icon: data.icon || '/icons/icon-192x192.png',
+    badge: data.badge || '/icons/icon-72x72.png',
+    vibrate: [200, 100, 200],
+    tag: 'moto-import-notification',
+    renotify: true,
+    requireInteraction: true,
+    data: {
+      url: data.url || '/',
+      timestamp: data.timestamp
+    },
     actions: [
       { action: 'open', title: 'Bekijken' },
       { action: 'close', title: 'Sluiten' }
