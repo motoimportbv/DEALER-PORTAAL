@@ -135,6 +135,12 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 15 Feb 2026 (Update 4)
+- 🐛 **Bug fixes voor 3 openstaande issues:**
+  1. **"Spinning server" bug** - Opgelost met axios timeout (15s) en error state handling
+  2. **Wachtwoord reset "wachten op goedkeuring"** - DealerDashboard haalt nu verse user data op
+  3. **Pakbon knop op mobiel** - Bevestigd dat de printer knop zichtbaar is in mobiele kaartweergave
+
 ### 15 Feb 2026 (Update 3)
 - 🔍 **Zoekbalk voor dealers verbeterd**
   - Prominente zoekbalk bovenaan catalogus pagina
