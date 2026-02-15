@@ -551,12 +551,12 @@ const MotorcycleDetail = () => {
               data-testid="bid-amount-input"
             />
             <p className="text-sm text-zinc-500 mt-2">
-              Minimum bod: {formatPrice(minNextBid)} • Koop nu prijs: {formatPrice(motorcycle.price)}
+              {t('bid.minimumBid')}: {formatPrice(minNextBid)} • {t('motorcycle.buyNowPrice')}: {formatPrice(motorcycle.price)}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBidDialogOpen(false)} data-testid="cancel-bid-btn">
-              Annuleren
+              {t('common.cancel')}
             </Button>
             <Button 
               className="bg-red-600 hover:bg-red-700"
@@ -564,7 +564,7 @@ const MotorcycleDetail = () => {
               disabled={submitting || parseFloat(bidAmount) < minNextBid}
               data-testid="confirm-bid-btn"
             >
-              {submitting ? 'Bezig...' : `Bied ${formatPrice(parseFloat(bidAmount) || 0)}`}
+              {submitting ? t('common.loading') : `${t('bid.placeBid')} ${formatPrice(parseFloat(bidAmount) || 0)}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -575,7 +575,7 @@ const MotorcycleDetail = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
-              Bestelling Plaatsen
+              {t('order.placeOrder')}
             </DialogTitle>
             <DialogDescription>
               {motorcycle.brand} {motorcycle.model} ({motorcycle.year})
@@ -586,12 +586,12 @@ const MotorcycleDetail = () => {
             <div className="p-4 bg-zinc-900 rounded-lg text-white">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Motorprijs</span>
+                  <span className="text-zinc-400">{t('order.motorcyclePrice')}</span>
                   <span>{formatPrice(motorcycle.price)}</span>
                 </div>
                 {needsDelivery && (
                   <div className="flex justify-between items-center">
-                    <span className="text-zinc-400">Bezorgkosten</span>
+                    <span className="text-zinc-400">{t('order.deliveryCosts')}</span>
                     <span>€50,00</span>
                   </div>
                 )}
@@ -599,14 +599,14 @@ const MotorcycleDetail = () => {
                   <div className="flex justify-between items-center text-green-400">
                     <span className="flex items-center gap-1">
                       <Gift className="w-4 h-4" />
-                      Welkomstkorting
+                      {t('order.welcomeDiscount')}
                     </span>
                     <span>-€{voucherDiscount.toLocaleString('nl-NL')}</span>
                   </div>
                 )}
                 <div className="border-t border-zinc-700 pt-2 mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold">Totaal</span>
+                    <span className="font-bold">{t('order.total')}</span>
                     <span className="font-barlow text-2xl font-bold text-red-500">
                       {formatPrice(getTotalPrice())}
                     </span>
@@ -619,13 +619,13 @@ const MotorcycleDetail = () => {
             <div className="p-4 border rounded-lg bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-red-600" />
-                <label className="font-semibold text-zinc-900">Voucher Code</label>
+                <label className="font-semibold text-zinc-900">{t('voucher.title')}</label>
               </div>
               {myVoucher && !myVoucher.is_used ? (
                 <div className="bg-white rounded-lg p-3 border border-green-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-green-600 font-medium">🎁 Welkomstvoucher actief!</p>
+                      <p className="text-sm text-green-600 font-medium">{t('voucher.activeWelcome')}</p>
                       <p className="font-mono font-bold text-lg">{myVoucher.code}</p>
                     </div>
                     <Badge className="bg-green-100 text-green-800">-€{myVoucher.amount}</Badge>
@@ -634,7 +634,7 @@ const MotorcycleDetail = () => {
               ) : (
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Bijv. WELKOM-ABC123"
+                    placeholder={t('voucher.placeholder')}
                     value={voucherCode}
                     onChange={(e) => {
                       setVoucherCode(e.target.value.toUpperCase());
@@ -651,14 +651,14 @@ const MotorcycleDetail = () => {
                     onClick={checkVoucher}
                     disabled={checkingVoucher || !voucherCode.trim()}
                   >
-                    {checkingVoucher ? '...' : 'Toepassen'}
+                    {checkingVoucher ? '...' : t('voucher.apply')}
                   </Button>
                 </div>
               )}
               {voucherValid && !myVoucher && (
                 <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
                   <CheckCircle className="w-4 h-4" />
-                  Voucher toegepast: €{voucherDiscount} korting!
+                  {t('voucher.applied')}: €{voucherDiscount} {t('voucher.discount')}!
                 </p>
               )}
             </div>
@@ -675,7 +675,7 @@ const MotorcycleDetail = () => {
                 <div className="flex-1">
                   <label htmlFor="delivery" className="font-semibold text-zinc-900 cursor-pointer flex items-center gap-2">
                     <Truck className="w-4 h-4" />
-                    Bezorging gewenst
+                    {t('order.deliveryWanted')}
                   </label>
                   <p className="text-sm text-zinc-500 mt-1">
                     Wij bezorgen de motor bij u. Kosten: <strong>€50,00</strong>
