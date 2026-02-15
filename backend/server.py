@@ -790,11 +790,25 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
 
 @api_router.get("/motorcycles/available", response_model=List[Motorcycle])
 async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
-    motorcycles = await db.motorcycles.find({"is_available": True}, {"_id": 0}).to_list(1000)
+    # For dealers, exclude their own listings from the available motorcycles
+    query = {"is_available": True}
+    if user["role"] == "dealer":
+        query["seller_id"] = {"$ne": user["id"]}  # Don't show own listings
+    
+    motorcycles = await db.motorcycles.find(query, {"_id": 0}).to_list(1000)
     # Add default starting_price if missing
     for m in motorcycles:
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
+    return motorcycles
+
+@api_router.get("/motorcycles/my-listings")
+async def get_my_listings(user: dict = Depends(require_approved_dealer)):
+    """Get motorcycles listed by the current dealer"""
+    motorcycles = await db.motorcycles.find(
+        {"seller_id": user["id"]},
+        {"_id": 0}
+    ).to_list(100)
     return motorcycles
 
 @api_router.get("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
