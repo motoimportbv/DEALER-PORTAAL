@@ -135,18 +135,17 @@ const DealerDashboard = () => {
                 <Clock className="w-10 h-10 text-amber-600" />
               </div>
               <h2 className="font-barlow text-2xl font-bold uppercase tracking-tight text-zinc-900 mb-3">
-                Account in Afwachting
+                {t('auth.pendingApproval')}
               </h2>
               <p className="text-zinc-600 mb-6">
-                Uw account wacht nog op goedkeuring door Moto Import. 
-                U ontvangt een e-mail zodra uw account is geactiveerd.
+                {t('auth.pendingMessage')}
               </p>
               <div className="p-4 bg-zinc-50 rounded-lg text-left">
-                <h4 className="font-semibold text-sm text-zinc-700 mb-2">Wat gebeurt er nu?</h4>
+                <h4 className="font-semibold text-sm text-zinc-700 mb-2">Status</h4>
                 <ul className="text-sm text-zinc-600 space-y-2">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Uw registratie is ontvangen</span>
+                    <span>{t('dealer.pending')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Clock className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
