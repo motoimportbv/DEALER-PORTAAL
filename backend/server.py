@@ -1098,7 +1098,7 @@ async def calculate_payment(motorcycle_id: str, needs_delivery: bool = False, us
 # ============ UPLOAD ENDPOINT ============
 
 @api_router.post("/upload")
-async def upload_image(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+async def upload_image(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
     # Check file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
     if file.content_type not in allowed_types:
@@ -1116,18 +1116,36 @@ async def upload_image(file: UploadFile = File(...), user: dict = Depends(get_cu
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Kon bestand niet opslaan: {str(e)}")
     
-    # Return URL - use BASE_URL from environment
-    base_url = os.environ.get("BASE_URL", "")
+    # Return URL - use request origin or BASE_URL as fallback
+    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
+    if origin:
+        # Extract base URL from origin/referer
+        from urllib.parse import urlparse
+        parsed = urlparse(origin)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        base_url = os.environ.get("BASE_URL", "")
+    
     if not base_url:
         raise HTTPException(status_code=500, detail="BASE_URL niet geconfigureerd")
+    
     image_url = f"{base_url}/api/uploads/{filename}"
     
     return {"url": image_url, "filename": filename}
 
 @api_router.post("/upload/multiple")
-async def upload_multiple_images(files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
+async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
     urls = []
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
+    
+    # Get base URL from request
+    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
+    if origin:
+        from urllib.parse import urlparse
+        parsed = urlparse(origin)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        base_url = os.environ.get("BASE_URL", "")
     
     for file in files:
         if file.content_type not in allowed_types:
@@ -1140,7 +1158,6 @@ async def upload_multiple_images(files: List[UploadFile] = File(...), user: dict
         try:
             with open(filepath, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            base_url = os.environ.get("BASE_URL", "")
             if base_url:
                 urls.append(f"{base_url}/api/uploads/{filename}")
         except:
