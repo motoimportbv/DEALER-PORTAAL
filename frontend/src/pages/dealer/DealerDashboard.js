@@ -218,9 +218,9 @@ const DealerDashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-                Beschikbare Motoren
+                {t('nav.motorcycles')}
               </h1>
-              <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} motoren beschikbaar</p>
+              <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} {t('motorcycle.available')}</p>
             </div>
           </div>
           
