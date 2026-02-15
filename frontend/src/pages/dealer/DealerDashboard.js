@@ -172,6 +172,11 @@ const DealerDashboard = () => {
       </div>
 
       <div className="content-body" data-testid="dealer-dashboard">
+        {/* Push Notification Toggle */}
+        <div className="mb-6">
+          <PushNotificationToggle token={token} />
+        </div>
+        
         {filteredMotorcycles.length === 0 ? (
           <Card>
             <CardContent className="py-16">
