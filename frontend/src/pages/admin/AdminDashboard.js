@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
-import ChatWidget from '../../components/ChatWidget';
+import WhatsAppButton from '../../components/WhatsAppButton';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -16,7 +16,7 @@ import {
   Plus,
   ArrowRight,
   Package,
-  MessageCircle
+  Trophy
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
