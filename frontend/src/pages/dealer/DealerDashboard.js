@@ -39,10 +39,13 @@ const DealerDashboard = () => {
 
   useEffect(() => {
     if (searchTerm) {
+      const search = searchTerm.toLowerCase().trim();
       const filtered = motorcycles.filter(m => 
-        m.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.color.toLowerCase().includes(searchTerm.toLowerCase())
+        m.brand.toLowerCase().includes(search) ||
+        m.model.toLowerCase().includes(search) ||
+        m.color.toLowerCase().includes(search) ||
+        m.year.toString().includes(search) ||
+        `${m.brand} ${m.model}`.toLowerCase().includes(search)
       );
       setFilteredMotorcycles(filtered);
     } else {
