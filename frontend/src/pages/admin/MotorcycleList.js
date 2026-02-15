@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent } from '../../components/ui/card';
@@ -28,6 +29,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const MotorcycleList = () => {
+  const { t } = useTranslation();
   const [motorcycles, setMotorcycles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +42,7 @@ const MotorcycleList = () => {
       const response = await axios.get(`${API}/motorcycles`);
       setMotorcycles(response.data);
     } catch (error) {
-      toast.error('Kon motorfietsen niet laden');
+      toast.error(t('adminMotorcycles.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -49,10 +51,10 @@ const MotorcycleList = () => {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API}/motorcycles/${id}`);
-      toast.success('Motor verwijderd');
+      toast.success(t('adminMotorcycles.deleted'));
       fetchMotorcycles();
     } catch (error) {
-      toast.error('Kon motor niet verwijderen');
+      toast.error(t('adminMotorcycles.deleteFailed'));
     }
   };
 
@@ -64,10 +66,10 @@ const MotorcycleList = () => {
       fair: 'bg-zinc-100 text-zinc-800'
     };
     const labels = {
-      new: 'Nieuw',
-      excellent: 'Uitstekend',
-      good: 'Goed',
-      fair: 'Redelijk'
+      new: t('motorcycle.new'),
+      excellent: t('motorcycle.excellent'),
+      good: t('motorcycle.good'),
+      fair: t('motorcycle.fair')
     };
     return <Badge className={styles[condition]}>{labels[condition]}</Badge>;
   };
@@ -96,14 +98,14 @@ const MotorcycleList = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-              Motorfietsen
+              {t('nav.motorcycles')}
             </h1>
-            <p className="text-zinc-500 mt-1">{motorcycles.length} motoren in voorraad</p>
+            <p className="text-zinc-500 mt-1">{motorcycles.length} {t('adminMotorcycles.inStock')}</p>
           </div>
           <Link to="/admin/motorcycles/new">
             <Button className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid="add-motorcycle-btn">
               <Plus className="w-5 h-5 mr-2" />
-              Nieuwe Motor
+              {t('admin.newMotorcycle')}
             </Button>
           </Link>
         </div>
@@ -116,13 +118,13 @@ const MotorcycleList = () => {
               <div className="empty-state">
                 <Bike className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  Geen motoren gevonden
+                  {t('adminMotorcycles.noMotorcycles')}
                 </h3>
-                <p className="text-zinc-500 mb-6">Voeg uw eerste motor toe om te beginnen</p>
+                <p className="text-zinc-500 mb-6">{t('adminMotorcycles.addFirst')}</p>
                 <Link to="/admin/motorcycles/new">
                   <Button className="bg-red-600 hover:bg-red-700">
                     <Plus className="w-5 h-5 mr-2" />
-                    Eerste Motor Toevoegen
+                    {t('adminMotorcycles.addFirstBtn')}
                   </Button>
                 </Link>
               </div>
@@ -146,7 +148,7 @@ const MotorcycleList = () => {
                   )}
                   {!motorcycle.is_available && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Badge className="bg-red-600 text-white text-sm">Niet Beschikbaar</Badge>
+                      <Badge className="bg-red-600 text-white text-sm">{t('adminMotorcycles.notAvailable')}</Badge>
                     </div>
                   )}
                 </div>
@@ -175,7 +177,7 @@ const MotorcycleList = () => {
                     <Link to={`/motorcycle/${motorcycle.id}`} className="flex-1">
                       <Button variant="outline" className="w-full" data-testid={`view-btn-${motorcycle.id}`}>
                         <Eye className="w-4 h-4 mr-2" />
-                        Bekijk
+                        {t('adminMotorcycles.view')}
                       </Button>
                     </Link>
                     <Link to={`/admin/motorcycles/${motorcycle.id}/edit`}>
@@ -191,19 +193,18 @@ const MotorcycleList = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Motor verwijderen?</AlertDialogTitle>
+                          <AlertDialogTitle>{t('adminMotorcycles.deleteTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Weet u zeker dat u deze {motorcycle.brand} {motorcycle.model} wilt verwijderen? 
-                            Dit kan niet ongedaan worden gemaakt.
+                            {t('adminMotorcycles.deleteConfirm', { brand: motorcycle.brand, model: motorcycle.model })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                           <AlertDialogAction 
                             onClick={() => handleDelete(motorcycle.id)}
                             className="bg-red-600 hover:bg-red-700"
                           >
-                            Verwijderen
+                            {t('common.delete')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
