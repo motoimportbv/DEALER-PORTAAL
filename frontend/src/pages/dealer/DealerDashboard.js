@@ -32,10 +32,12 @@ const DealerDashboard = () => {
   useEffect(() => {
     const checkApprovalAndLoadData = async () => {
       // Always refresh user data to get latest is_approved status
-      if (user && user.role === 'dealer') {
+      if (user && user.role === 'dealer' && token) {
         try {
           // Fetch fresh user data from backend
-          const response = await axios.get(`${API}/auth/me`);
+          const response = await axios.get(`${API}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           const freshUserData = response.data;
           
           if (!freshUserData.is_approved) {
