@@ -387,5 +387,21 @@
     "deliveryToAddress": "Levering aan bovenstaand adres",
     "senderSignature": "Handtekening Afzender",
     "recipientSignature": "Handtekening Ontvanger"
+  },
+  "pushNotifications": {
+    "title": "Push Notificaties",
+    "subscribedMessage": "U ontvangt meldingen bij nieuwe motoren",
+    "unsubscribedMessage": "Ontvang direct een melding op uw telefoon",
+    "enable": "Inschakelen",
+    "disable": "Uit",
+    "test": "Test",
+    "enabled": "Push notificaties ingeschakeld! U ontvangt nu meldingen bij nieuwe motoren.",
+    "disabled": "Push notificaties uitgeschakeld",
+    "denied": "U heeft notificaties geweigerd. Schakel deze in via uw browserinstellingen.",
+    "enableError": "Kon push notificaties niet inschakelen",
+    "disableError": "Kon push notificaties niet uitschakelen",
+    "testSent": "Test notificatie verzonden! Check uw telefoon.",
+    "testError": "Kon test niet uitvoeren",
+    "invalidKeys": "Subscription keys zijn ongeldig. Klik op \"Uit\" en dan \"Inschakelen\"."
   }
 }
