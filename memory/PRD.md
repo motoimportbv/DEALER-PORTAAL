@@ -179,15 +179,14 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Frontend pagina's: `DealerSellMotorcycle.js`, `DealerMyListings.js`
 
 ### 15 Feb 2026 (Update 11)
-- 🌐 **Uitgebreide vertalingen** - Meer pagina's vertaald
-  - DealerDashboard volledig vertaald
-  - AdminDashboard volledig vertaald
-  - RegisterPage volledig vertaald
-  - DealerSellMotorcycle volledig vertaald
-  - DealerMyListings volledig vertaald
-  - Alle locale bestanden uitgebreid met nieuwe keys
-  - Sidebar, zoekbalk, knoppen en berichten vertaald in alle 4 talen
-  - Status: **IN PROGRESS** - Nog meer pagina's moeten vertaald worden
+- 🌐 **Uitgebreide vertalingen** - Bijna volledige app vertaald
+  - DealerDashboard, AdminDashboard, RegisterPage volledig vertaald
+  - DealerSellMotorcycle, DealerMyListings, DealerOrders volledig vertaald
+  - MotorcycleDetail pagina volledig vertaald (inclusief dialogen)
+  - PendingForeignListings (admin) volledig vertaald
+  - TermsModal (Algemene Voorwaarden) volledig vertaald in alle 4 talen
+  - Alle locale bestanden uitgebreid met 150+ nieuwe keys
+  - Status: **BIJNA COMPLEET** - Nog enkele admin pagina's te vertalen
 
 ### 15 Feb 2026 (Update 10)
 - 🌍 **Meertalige App** - 4 talen ondersteund
