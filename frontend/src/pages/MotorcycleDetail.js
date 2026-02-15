@@ -114,6 +114,38 @@ const MotorcycleDetail = () => {
     }
   };
 
+  const fetchMyVoucher = async () => {
+    try {
+      const response = await axios.get(`${API}/voucher/my-voucher`);
+      if (response.data.has_voucher && !response.data.is_used) {
+        setMyVoucher(response.data);
+        setVoucherCode(response.data.code);
+        setVoucherDiscount(response.data.amount);
+        setVoucherValid(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch voucher:', error);
+    }
+  };
+
+  const checkVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    
+    setCheckingVoucher(true);
+    try {
+      const response = await axios.get(`${API}/voucher/check/${voucherCode}`);
+      setVoucherDiscount(response.data.amount);
+      setVoucherValid(true);
+      toast.success(`Voucher geldig! €${response.data.amount} korting wordt toegepast.`);
+    } catch (error) {
+      setVoucherDiscount(0);
+      setVoucherValid(false);
+      toast.error(error.response?.data?.detail || 'Ongeldige voucher');
+    } finally {
+      setCheckingVoucher(false);
+    }
+  };
+
   const calculatePayment = async (delivery = needsDelivery) => {
     try {
       const response = await axios.get(`${API}/payments/calculate?motorcycle_id=${id}&needs_delivery=${delivery}`);
@@ -151,11 +183,13 @@ const MotorcycleDetail = () => {
     try {
       const response = await axios.post(`${API}/orders/buy-now`, {
         motorcycle_id: id,
-        needs_delivery: needsDelivery
+        needs_delivery: needsDelivery,
+        voucher_code: voucherValid ? voucherCode : null
       });
       
-      toast.success('Bestelling geplaatst! U ontvangt een bevestigingsmail.');
-      setShowBuyDialog(false);
+      const discountMsg = voucherValid ? ` (inclusief €${voucherDiscount} korting!)` : '';
+      toast.success(`Bestelling geplaatst${discountMsg} U ontvangt een bevestigingsmail.`);
+      setBuyNowDialogOpen(false);
       
       // Redirect to orders page
       setTimeout(() => {
@@ -166,6 +200,12 @@ const MotorcycleDetail = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const getTotalPrice = () => {
+    if (!motorcycle) return 0;
+    const basePrice = motorcycle.price + (needsDelivery ? 50 : 0);
+    return Math.max(0, basePrice - (voucherValid ? voucherDiscount : 0));
   };
 
   const getConditionBadge = (condition) => {
