@@ -17,6 +17,7 @@ import MotorcycleList from "./pages/admin/MotorcycleList";
 import MotorcycleForm from "./pages/admin/MotorcycleForm";
 import OrderList from "./pages/admin/OrderList";
 import DealerManagement from "./pages/admin/DealerManagement";
+import PendingForeignListings from "./pages/admin/PendingForeignListings";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import DealerSellMotorcycle from "./pages/dealer/DealerSellMotorcycle";
