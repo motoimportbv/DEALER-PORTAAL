@@ -65,7 +65,7 @@ const PendingForeignListings = () => {
 
   const activateMotorcycle = async () => {
     if (!newPrice || parseFloat(newPrice) <= 0) {
-      toast.error('Voer een geldige prijs in');
+      toast.error(t('adminPending.enterValidPrice'));
       return;
     }
 
@@ -81,7 +81,7 @@ const PendingForeignListings = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      toast.success(`${selectedMotorcycle.brand} ${selectedMotorcycle.model} is geactiveerd!`);
+      toast.success(t('adminPending.activated', { brand: selectedMotorcycle.brand, model: selectedMotorcycle.model }));
       setActivateDialogOpen(false);
       setSelectedMotorcycle(null);
       setNewPrice('');
@@ -89,7 +89,7 @@ const PendingForeignListings = () => {
       fetchPendingListings();
     } catch (error) {
       console.error('Error activating:', error);
-      toast.error('Kon motor niet activeren');
+      toast.error(t('adminPending.activateFailed'));
     } finally {
       setActivating(false);
     }
@@ -105,10 +105,10 @@ const PendingForeignListings = () => {
 
   const getConditionLabel = (condition) => {
     const labels = {
-      new: 'Nieuw',
-      excellent: 'Uitstekend',
-      good: 'Goed',
-      fair: 'Redelijk'
+      new: t('motorcycle.new'),
+      excellent: t('motorcycle.excellent'),
+      good: t('motorcycle.good'),
+      fair: t('motorcycle.fair')
     };
     return labels[condition] || condition;
   };
@@ -132,10 +132,10 @@ const PendingForeignListings = () => {
           </div>
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-              Wachtende Buitenlandse Motors
+              {t('adminPending.title')}
             </h1>
             <p className="text-zinc-500 mt-1">
-              {listings.length} motor{listings.length !== 1 ? 's' : ''} wacht{listings.length === 1 ? '' : 'en'} op beoordeling
+              {listings.length} {t('adminPending.waitingReview')}
             </p>
           </div>
         </div>
