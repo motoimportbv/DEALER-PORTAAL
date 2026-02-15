@@ -1682,6 +1682,24 @@ async def reject_dealer(dealer_id: str, user: dict = Depends(require_admin)):
     
     return {"message": f"Dealer {dealer['company_name']} is afgewezen en verwijderd"}
 
+@api_router.delete("/dealers/{dealer_id}")
+async def delete_dealer(dealer_id: str, user: dict = Depends(require_admin)):
+    """Verwijder een dealer volledig uit het systeem"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    # Verwijder de dealer
+    await db.users.delete_one({"id": dealer_id})
+    
+    # Verwijder ook gerelateerde data
+    await db.vouchers.delete_many({"dealer_id": dealer_id})
+    await db.notifications.delete_many({"user_id": dealer_id})
+    await db.push_subscriptions.delete_many({"user_id": dealer_id})
+    await db.chat_messages.delete_many({"sender_id": dealer_id})
+    
+    return {"message": f"Dealer {dealer['company_name']} is verwijderd"}
+
 # ============ NOTIFICATION ENDPOINTS ============
 
 @api_router.get("/notifications", response_model=List[Notification])
