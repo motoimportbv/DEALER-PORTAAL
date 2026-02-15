@@ -2104,14 +2104,15 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
         logger.error(f"Error sending push notification: {e}")
         return False
 
-async def send_push_to_all_dealers(title: str, body: str, url: str = "/"):
+async def send_push_to_all_dealers(title: str, body: str, url: str = "/", exclude_user_id: str = None):
     """Send push notification to all approved dealers"""
     try:
         # Get all approved dealers
-        dealers = await db.users.find(
-            {"role": "dealer", "is_approved": True},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
+        query = {"role": "dealer", "is_approved": True}
+        if exclude_user_id:
+            query["id"] = {"$ne": exclude_user_id}
+        
+        dealers = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         
         sent_count = 0
         for dealer in dealers:
