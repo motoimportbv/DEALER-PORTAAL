@@ -30,10 +30,32 @@
     "noAccount": "Noch kein Konto?",
     "hasAccount": "Bereits ein Konto?",
     "loginTitle": "Anmelden",
-    "registerTitle": "Konto erstellen",
+    "registerTitle": "Händlerkonto erstellen",
     "registerSubtitle": "Werden Sie Händler bei Moto Import",
     "pendingApproval": "Ihr Konto wartet auf Genehmigung",
     "pendingMessage": "Wir werden uns so schnell wie möglich bei Ihnen melden."
+  },
+  "register": {
+    "heroText": "Werden Sie Teil unseres exklusiven Händlernetzwerks und erhalten Sie Zugang zu Premium-Motorrädern.",
+    "fillDetails": "Füllen Sie Ihre Firmendaten aus, um sich zu registrieren",
+    "companyDetails": "Firmendaten",
+    "companyPlaceholder": "Ihr Firmenname",
+    "addressDetails": "Adressdaten",
+    "streetAddress": "Straße und Hausnummer",
+    "streetPlaceholder": "Beispielstraße 123",
+    "postalCode": "Postleitzahl",
+    "city": "Stadt",
+    "cityPlaceholder": "Berlin",
+    "accountDetails": "Kontodaten",
+    "contactPerson": "Kontaktperson",
+    "contactPlaceholder": "Max Mustermann",
+    "emailPlaceholder": "ihre@email.de",
+    "passwordPlaceholder": "Mindestens 6 Zeichen",
+    "createAccount": "Konto erstellen",
+    "passwordMinLength": "Passwort muss mindestens 6 Zeichen enthalten",
+    "kvkRequired": "Handelsregisternummer ist erforderlich",
+    "success": "Konto erfolgreich erstellt!",
+    "failed": "Registrierung fehlgeschlagen"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -45,7 +67,18 @@
     "myOrders": "Meine Bestellungen",
     "pendingListings": "Ausstehende Motorräder"
   },
+  "search": {
+    "placeholder": "Suche nach Marke, Modell, Farbe oder Baujahr...",
+    "noResults": "Keine Ergebnisse gefunden",
+    "tryAnother": "Versuchen Sie einen anderen Suchbegriff"
+  },
+  "pending": {
+    "checkingDetails": "Moto Import überprüft Ihre Daten",
+    "afterApproval": "Nach Genehmigung können Sie Motorräder ansehen und bestellen",
+    "questions": "Fragen? Kontaktieren Sie uns unter"
+  },
   "motorcycle": {
+    "singular": "Motorrad",
     "brand": "Marke",
     "model": "Modell",
     "year": "Baujahr",
@@ -73,7 +106,19 @@
     "currentBid": "Aktuelles Gebot",
     "noBids": "Noch keine Gebote",
     "dealerListing": "Angeboten von Händler",
-    "buyerFeeWarning": "Hinweis: €250 Käufergebühr beim Kauf"
+    "buyerFeeWarning": "Hinweis: €250 Käufergebühr beim Kauf",
+    "noAvailable": "Keine Motorräder verfügbar",
+    "noAvailableDesc": "Derzeit sind keine Motorräder verfügbar",
+    "viewAndBid": "Ansehen & Bieten",
+    "deleted": "Motorrad gelöscht",
+    "specifications": "Spezifikationen",
+    "brandModel": "Marke & Modell",
+    "auctionEnded": "Auktion beendet",
+    "active": "Aktiv",
+    "bids": "Gebote",
+    "currentBidLabel": "Aktuelles Gebot",
+    "fromPrice": "Ab Preis",
+    "highestBid": "Höchstes"
   },
   "order": {
     "orderNumber": "Bestellnummer",
@@ -86,7 +131,24 @@
     "orderPlaced": "Bestellung aufgegeben",
     "orderConfirmed": "Bestellung bestätigt",
     "viewPakbon": "Lieferschein anzeigen",
-    "printPakbon": "Lieferschein drucken"
+    "printPakbon": "Lieferschein drucken",
+    "pending": "Ausstehend",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt",
+    "completed": "Abgeschlossen",
+    "paid": "Bezahlt",
+    "noOrders": "Noch keine Bestellungen",
+    "date": "Datum",
+    "placeOrder": "Bestellung aufgeben",
+    "motorcyclePrice": "Motorradpreis",
+    "deliveryCosts": "Lieferkosten",
+    "total": "Gesamt",
+    "welcomeDiscount": "Willkommensrabatt",
+    "deliveryWanted": "Lieferung gewünscht",
+    "deliveryInfo": "Wir liefern das Motorrad zu Ihnen. Kosten:",
+    "pickupFree": "Abholung bei Moto Import ist kostenlos!",
+    "orderConfirmation": "Nach Ihrer Bestellung erhalten Sie eine Bestätigungs-E-Mail mit weiteren Anweisungen.",
+    "orderButton": "Bestellen"
   },
   "dealer": {
     "companyName": "Firmenname",
@@ -98,7 +160,9 @@
     "topDealers": "Aktivste Händler",
     "loginCount": "Anmeldungen",
     "lastActive": "Zuletzt aktiv",
-    "neverLoggedIn": "Nie angemeldet"
+    "neverLoggedIn": "Nie angemeldet",
+    "times": "mal",
+    "noActivity": "Noch keine Händleraktivität"
   },
   "foreignDealer": {
     "title": "Ausländischer Händler",
@@ -111,7 +175,14 @@
     "pendingListings": "Ausstehende Motorräder",
     "activateListing": "Aktivieren",
     "setPrice": "Preis festlegen",
-    "fromForeignDealer": "Von ausländischem Händler"
+    "fromForeignDealer": "Von ausländischem Händler",
+    "portalOverview": "Übersicht Ihres Händlerportals",
+    "newMotorcycle": "Neues Motorrad",
+    "totalMotorcycles": "Motorräder gesamt",
+    "pendingOrders": "Offene Bestellungen",
+    "recentOrders": "Letzte Bestellungen",
+    "viewAll": "Alle anzeigen",
+    "allDealers": "Alle Händler"
   },
   "notifications": {
     "enable": "Benachrichtigungen aktivieren",
@@ -128,5 +199,19 @@
     "successDeleted": "Erfolgreich gelöscht",
     "errorOccurred": "Ein Fehler ist aufgetreten",
     "confirmDelete": "Sind Sie sicher, dass Sie dies löschen möchten?"
+  },
+  "bid": {
+    "placeBid": "Gebot abgeben",
+    "yourBid": "Ihr Gebot",
+    "minimumBid": "Mindestgebot",
+    "bidSuccess": "Gebot platziert!"
+  },
+  "voucher": {
+    "title": "Gutscheincode",
+    "activeWelcome": "Willkommensgutschein aktiv!",
+    "placeholder": "z.B. WILLKOMMEN-ABC123",
+    "apply": "Anwenden",
+    "applied": "Gutschein angewendet",
+    "discount": "Rabatt"
   }
 }
