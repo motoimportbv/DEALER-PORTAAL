@@ -272,11 +272,18 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 def create_token(user_id: str, email: str, role: str) -> str:
+    # Dealers krijgen een lang geldig token (1 jaar) zodat ze altijd ingelogd blijven
+    # Admins krijgen een korter token (30 dagen) voor extra veiligheid
+    if role == 'dealer':
+        expiry_days = 365  # 1 jaar voor dealers
+    else:
+        expiry_days = 30   # 30 dagen voor admins
+    
     payload = {
         "user_id": user_id,
         "email": email,
         "role": role,
-        "exp": datetime.now(timezone.utc).timestamp() + 86400 * 7  # 7 days
+        "exp": datetime.now(timezone.utc).timestamp() + 86400 * expiry_days
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
