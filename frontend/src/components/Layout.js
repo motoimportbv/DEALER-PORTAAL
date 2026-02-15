@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
-import ChatWidget from './ChatWidget';
+import WhatsAppButton from './WhatsAppButton';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 
