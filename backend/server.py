@@ -1826,6 +1826,27 @@ async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depend
     )
     return {"message": "Subscribed to push notifications"}
 
+@api_router.get("/push/test")
+async def test_push_notification(user: dict = Depends(get_current_user)):
+    """Test push notification for current user"""
+    # Check if user has subscription
+    sub = await db.push_subscriptions.find_one({"user_id": user["id"]})
+    if not sub:
+        return {"success": False, "error": "Geen push subscription gevonden. Klik eerst op Inschakelen."}
+    
+    # Try to send test notification
+    result = await send_push_notification_to_user(
+        user["id"],
+        "🧪 Test Notificatie",
+        "Push notificaties werken!",
+        "/"
+    )
+    
+    if result:
+        return {"success": True, "message": "Test notificatie verzonden!"}
+    else:
+        return {"success": False, "error": "Kon notificatie niet verzenden. Controleer browser instellingen."}
+
 @api_router.delete("/push/subscribe")
 async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
     """Unsubscribe from web push notifications"""
