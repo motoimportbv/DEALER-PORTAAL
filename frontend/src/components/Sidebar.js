@@ -9,7 +9,8 @@ import {
   ShoppingCart, 
   Plus, 
   LogOut,
-  Package
+  Package,
+  Globe
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -39,15 +40,30 @@ const Sidebar = () => {
     { path: '/dealer/orders', icon: ShoppingCart, label: 'Mijn Bestellingen' },
   ];
 
-  const navItems = user?.role === 'admin' ? adminNavItems : dealerNavItems;
+  const foreignDealerNavItems = [
+    { path: '/foreign-dealer', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/foreign-dealer/add', icon: Plus, label: 'Motor Toevoegen' },
+  ];
+
+  // Determine nav items based on user type
+  let navItems = dealerNavItems;
+  let dashboardPath = '/dealer';
+  
+  if (user?.role === 'admin') {
+    navItems = adminNavItems;
+    dashboardPath = '/admin';
+  } else if (user?.is_foreign_dealer) {
+    navItems = foreignDealerNavItems;
+    dashboardPath = '/foreign-dealer';
+  }
 
   return (
     <aside className="sidebar sidebar-texture">
       <div className="sidebar-header">
         <div className="flex items-center justify-between">
-          <Link to={user?.role === 'admin' ? '/admin' : '/dealer'} className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-              <Bike className="w-6 h-6 text-white" />
+          <Link to={dashboardPath} className="flex items-center gap-3">
+            <div className={`w-10 h-10 ${user?.is_foreign_dealer ? 'bg-purple-600' : 'bg-red-600'} rounded-lg flex items-center justify-center`}>
+              {user?.is_foreign_dealer ? <Globe className="w-6 h-6 text-white" /> : <Bike className="w-6 h-6 text-white" />}
             </div>
             <span className="font-barlow text-xl font-bold uppercase tracking-tight text-white">
               Moto Import
