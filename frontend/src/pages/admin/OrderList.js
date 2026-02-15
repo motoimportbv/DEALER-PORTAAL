@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -24,6 +25,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const OrderList = () => {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ const OrderList = () => {
       const response = await axios.get(`${API}/orders`);
       setOrders(response.data);
     } catch (error) {
-      toast.error('Kon bestellingen niet laden');
+      toast.error(t('adminOrders.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -46,10 +48,10 @@ const OrderList = () => {
   const updateStatus = async (orderId, status) => {
     try {
       await axios.put(`${API}/orders/${orderId}/status?status=${status}`);
-      toast.success(`Status bijgewerkt naar ${getStatusLabel(status)}`);
+      toast.success(t('adminOrders.statusUpdated', { status: getStatusLabel(status) }));
       fetchOrders();
     } catch (error) {
-      toast.error('Kon status niet bijwerken');
+      toast.error(t('adminOrders.statusUpdateFailed'));
     }
   };
 
@@ -65,10 +67,10 @@ const OrderList = () => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      pending: 'In afwachting',
-      approved: 'Goedgekeurd',
-      rejected: 'Afgewezen',
-      completed: 'Voltooid'
+      pending: t('order.pending'),
+      approved: t('order.approved'),
+      rejected: t('order.rejected'),
+      completed: t('order.completed')
     };
     return labels[status];
   };
@@ -96,9 +98,9 @@ const OrderList = () => {
       <div className="content-header">
         <div>
           <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-            Bestellingen
+            {t('nav.orders')}
           </h1>
-          <p className="text-zinc-500 mt-1">{orders.length} bestellingen totaal</p>
+          <p className="text-zinc-500 mt-1">{orders.length} {t('orders.totalOrders')}</p>
         </div>
       </div>
 
@@ -109,9 +111,9 @@ const OrderList = () => {
               <div className="empty-state">
                 <ShoppingCart className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  Nog geen bestellingen
+                  {t('order.noOrders')}
                 </h3>
-                <p className="text-zinc-500">Bestellingen van dealers verschijnen hier</p>
+                <p className="text-zinc-500">{t('adminOrders.ordersAppearHere')}</p>
               </div>
             </CardContent>
           </Card>
@@ -144,7 +146,7 @@ const OrderList = () => {
                           </p>
                         </>
                       ) : (
-                        <span className="text-zinc-400">Motor verwijderd</span>
+                        <span className="text-zinc-400">{t('motorcycle.deleted')}</span>
                       )}
                     </div>
                     
@@ -187,14 +189,14 @@ const OrderList = () => {
                             onClick={() => updateStatus(order.id, 'completed')}
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
-                            Voltooien
+                            {t('adminOrders.complete')}
                           </Button>
                         )}
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => navigate(`/pakbon/${order.id}`)}
-                          title="Print Pakbon"
+                          title={t('adminOrders.printPakbon')}
                         >
                           <Printer className="w-4 h-4" />
                         </Button>
@@ -211,13 +213,13 @@ const OrderList = () => {
                 <table className="w-full data-table">
                   <thead>
                     <tr>
-                      <th>Datum</th>
-                      <th>Dealer</th>
-                      <th>Motor</th>
-                      <th>Prijs</th>
-                      <th>Notities</th>
-                      <th>Status</th>
-                      <th>Acties</th>
+                      <th>{t('order.date')}</th>
+                      <th>{t('nav.dealers')}</th>
+                      <th>{t('motorcycle.singular')}</th>
+                      <th>{t('motorcycle.price')}</th>
+                      <th>{t('adminOrders.notes')}</th>
+                      <th>{t('order.status')}</th>
+                      <th>{t('adminOrders.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -247,7 +249,7 @@ const OrderList = () => {
                               </p>
                             </div>
                           ) : (
-                            <span className="text-zinc-400">Motor verwijderd</span>
+                            <span className="text-zinc-400">{t('motorcycle.deleted')}</span>
                           )}
                         </td>
                         <td>
@@ -295,7 +297,7 @@ const OrderList = () => {
                                 data-testid={`complete-btn-${order.id}`}
                               >
                                 <CheckCircle className="w-4 h-4 mr-1" />
-                                Voltooien
+                                {t('adminOrders.complete')}
                               </Button>
                             )}
                             <Button
@@ -303,7 +305,7 @@ const OrderList = () => {
                               variant="outline"
                               onClick={() => navigate(`/pakbon/${order.id}`)}
                               data-testid={`pakbon-btn-${order.id}`}
-                              title="Print Pakbon"
+                              title={t('adminOrders.printPakbon')}
                             >
                               <Printer className="w-4 h-4" />
                             </Button>
