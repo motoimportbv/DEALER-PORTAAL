@@ -445,6 +445,96 @@ async def register(user_data: UserCreate):
         }
     }
 
+@api_router.post("/auth/register-supplier")
+async def register_supplier(supplier_data: SupplierCreate):
+    """Registratie voor buitenlandse leveranciers - vereenvoudigd formulier"""
+    existing = await db.users.find_one({"email": supplier_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    
+    user_doc = {
+        "id": user_id,
+        "email": supplier_data.email,
+        "password_hash": hash_password(supplier_data.password),
+        "company_name": supplier_data.company_name,
+        "kvk_number": "",
+        "address": "",
+        "postal_code": "",
+        "city": "",
+        "phone": supplier_data.phone,
+        "contact_person": supplier_data.contact_person,
+        "role": "dealer",
+        "is_approved": False,
+        "is_foreign_dealer": True,
+        "country": supplier_data.country,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user_doc)
+    
+    # Stuur email naar admin bij nieuwe leverancier registratie
+    country_names = {
+        "germany": "Duitsland",
+        "italy": "Italië",
+        "france": "Frankrijk",
+        "belgium": "België",
+        "austria": "Oostenrijk",
+        "spain": "Spanje",
+        "poland": "Polen",
+        "other": "Anders"
+    }
+    country_display = country_names.get(supplier_data.country, supplier_data.country)
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #7C3AED;">🌍 Nieuwe Buitenlandse Leverancier</h2>
+        <p>Er heeft zich een nieuwe buitenlandse leverancier geregistreerd op Moto Import:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bedrijfsnaam</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.company_name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Land</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">🌍 {country_display}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Contactpersoon</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.contact_person}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Email</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.email}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Telefoon</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.phone or '-'}</td>
+            </tr>
+        </table>
+        <p style="color: #71717a;">Log in op het admin dashboard om deze leverancier goed te keuren.</p>
+        <p style="color: #7C3AED;"><strong>Let op:</strong> Dit is een buitenlandse leverancier. Na goedkeuring kunnen zij direct motoren toevoegen.</p>
+    </div>
+    """
+    await send_admin_notification(
+        f"🌍 Nieuwe Leverancier: {supplier_data.company_name} ({country_display})",
+        html_content
+    )
+    
+    token = create_token(user_id, supplier_data.email, "dealer")
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": supplier_data.email,
+            "company_name": supplier_data.company_name,
+            "role": "dealer",
+            "is_approved": False,
+            "is_foreign_dealer": True,
+            "country": supplier_data.country
+        }
+    }
+
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email})
