@@ -1364,6 +1364,111 @@ class PushTokenCreate(BaseModel):
     token: str
     platform: str  # "ios", "android", or "web"
 
+class WebPushSubscriptionCreate(BaseModel):
+    subscription: dict  # Contains endpoint, keys (p256dh, auth)
+
+@api_router.get("/push/vapid-key")
+async def get_vapid_key():
+    """Get the public VAPID key for web push subscriptions"""
+    return {"vapidKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depends(get_current_user)):
+    """Subscribe to web push notifications"""
+    subscription = data.subscription
+    
+    # Store subscription in database
+    await db.push_subscriptions.update_one(
+        {"user_id": user["id"]},
+        {
+            "$set": {
+                "user_id": user["id"],
+                "subscription": subscription,
+                "platform": "web",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    return {"message": "Subscribed to push notifications"}
+
+@api_router.delete("/push/subscribe")
+async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
+    """Unsubscribe from web push notifications"""
+    await db.push_subscriptions.delete_many({"user_id": user["id"]})
+    return {"message": "Unsubscribed from push notifications"}
+
+async def send_push_notification_to_user(user_id: str, title: str, body: str, url: str = "/"):
+    """Send a web push notification to a specific user"""
+    try:
+        subscription_doc = await db.push_subscriptions.find_one({"user_id": user_id})
+        if not subscription_doc:
+            return False
+        
+        subscription = subscription_doc.get("subscription")
+        if not subscription:
+            return False
+        
+        # Read private key
+        private_key_path = VAPID_PRIVATE_KEY_PATH
+        if not private_key_path or not os.path.exists(private_key_path):
+            logger.warning("VAPID private key not found")
+            return False
+        
+        with open(private_key_path, 'r') as f:
+            private_key = f.read()
+        
+        # Prepare notification payload
+        payload = json.dumps({
+            "title": title,
+            "body": body,
+            "icon": "/icons/icon-192x192.png",
+            "badge": "/icons/icon-72x72.png",
+            "url": url,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Send notification
+        webpush(
+            subscription_info=subscription,
+            data=payload,
+            vapid_private_key=private_key,
+            vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+        )
+        
+        logger.info(f"Push notification sent to user {user_id}")
+        return True
+    except WebPushException as e:
+        logger.error(f"Web push failed for user {user_id}: {e}")
+        # If subscription is expired/invalid, remove it
+        if e.response and e.response.status_code in [404, 410]:
+            await db.push_subscriptions.delete_one({"user_id": user_id})
+        return False
+    except Exception as e:
+        logger.error(f"Error sending push notification: {e}")
+        return False
+
+async def send_push_to_all_dealers(title: str, body: str, url: str = "/"):
+    """Send push notification to all approved dealers"""
+    try:
+        # Get all approved dealers
+        dealers = await db.users.find(
+            {"role": "dealer", "is_approved": True},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        
+        sent_count = 0
+        for dealer in dealers:
+            success = await send_push_notification_to_user(dealer["id"], title, body, url)
+            if success:
+                sent_count += 1
+        
+        logger.info(f"Push notifications sent to {sent_count} dealers")
+        return sent_count
+    except Exception as e:
+        logger.error(f"Error sending push to all dealers: {e}")
+        return 0
+
 @api_router.post("/push-token")
 async def register_push_token(data: PushTokenCreate, user: dict = Depends(get_current_user)):
     """Register or update a push notification token for the current user"""
