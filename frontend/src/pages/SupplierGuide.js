@@ -16,7 +16,7 @@ const SupplierGuide = () => {
 
   const content = {
     nl: {
-      tagline: "Kom bij het grote motor netwerk van Nederland",
+      tagline: "Kom bij het grootste motor netwerk van Nederland",
       title: "Leverancier Handleiding",
       subtitle: "Stap-voor-stap gids voor registratie en app installatie",
       intro: "Welkom bij Moto Import! Als buitenlandse leverancier kunt u eenvoudig uw motoren aanbieden aan ons uitgebreide dealernetwerk in Nederland. Volg deze handleiding om te starten.",
