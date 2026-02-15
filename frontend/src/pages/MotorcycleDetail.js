@@ -452,7 +452,7 @@ const MotorcycleDetail = () => {
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900 mb-4">
-                  Specificaties
+                  {t('motorcycle.specifications')}
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 p-3 bg-zinc-50 rounded-lg">
@@ -460,7 +460,7 @@ const MotorcycleDetail = () => {
                       <Bike className="w-5 h-5 text-zinc-600" />
                     </div>
                     <div>
-                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">Merk & Model</p>
+                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">{t('motorcycle.brandModel')}</p>
                       <p className="font-semibold text-zinc-900">{motorcycle.brand} {motorcycle.model}</p>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ const MotorcycleDetail = () => {
                       <Calendar className="w-5 h-5 text-zinc-600" />
                     </div>
                     <div>
-                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">Bouwjaar</p>
+                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">{t('motorcycle.year')}</p>
                       <p className="font-semibold text-zinc-900">{motorcycle.year}</p>
                     </div>
                   </div>
@@ -480,7 +480,7 @@ const MotorcycleDetail = () => {
                       <Gauge className="w-5 h-5 text-zinc-600" />
                     </div>
                     <div>
-                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">Kilometerstand</p>
+                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">{t('motorcycle.mileage')}</p>
                       <p className="font-semibold text-zinc-900">{motorcycle.mileage.toLocaleString('nl-NL')} km</p>
                     </div>
                   </div>
@@ -490,7 +490,7 @@ const MotorcycleDetail = () => {
                       <Palette className="w-5 h-5 text-zinc-600" />
                     </div>
                     <div>
-                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">Kleur</p>
+                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">{t('motorcycle.color')}</p>
                       <p className="font-semibold text-zinc-900">{motorcycle.color}</p>
                     </div>
                   </div>
@@ -500,9 +500,9 @@ const MotorcycleDetail = () => {
                       <CheckCircle className="w-5 h-5 text-zinc-600" />
                     </div>
                     <div>
-                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">Conditie</p>
+                      <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500">{t('motorcycle.condition')}</p>
                       <p className="font-semibold text-zinc-900">
-                        {{new: 'Nieuw', excellent: 'Uitstekend', good: 'Goed', fair: 'Redelijk'}[motorcycle.condition]}
+                        {{new: t('motorcycle.new'), excellent: t('motorcycle.excellent'), good: t('motorcycle.good'), fair: t('motorcycle.fair')}[motorcycle.condition]}
                       </p>
                     </div>
                   </div>
@@ -514,7 +514,7 @@ const MotorcycleDetail = () => {
                         <Store className="w-5 h-5 text-amber-700" />
                       </div>
                       <div>
-                        <p className="font-barlow uppercase tracking-wider text-xs text-amber-600">Aangeboden door dealer</p>
+                        <p className="font-barlow uppercase tracking-wider text-xs text-amber-600">{t('motorcycle.dealerListing')}</p>
                         <p className="font-semibold text-amber-900">{motorcycle.seller_company}</p>
                       </div>
                     </div>
@@ -531,15 +531,15 @@ const MotorcycleDetail = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
-              Plaats Bod
+              {t('bid.placeBid')}
             </DialogTitle>
             <DialogDescription>
-              Huidig bod: {formatPrice(currentBid)} • Minimum volgend bod: {formatPrice(minNextBid)}
+              {t('motorcycle.currentBid')}: {formatPrice(currentBid)} • {t('bid.minimumBid')}: {formatPrice(minNextBid)}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              Uw Bod (€)
+              {t('bid.yourBid')} (€)
             </Label>
             <Input
               type="number"
