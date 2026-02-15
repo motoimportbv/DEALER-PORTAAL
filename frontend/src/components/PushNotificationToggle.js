@@ -89,10 +89,10 @@ const PushNotificationToggle = ({ token }) => {
       });
 
       setIsSubscribed(true);
-      toast.success('Push notificaties ingeschakeld! U ontvangt nu meldingen bij nieuwe motoren.');
+      toast.success(t('pushNotifications.enabled'));
     } catch (error) {
       console.error('Error subscribing:', error);
-      toast.error('Kon push notificaties niet inschakelen');
+      toast.error(t('pushNotifications.enableError'));
     } finally {
       setIsLoading(false);
     }
