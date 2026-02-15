@@ -213,5 +213,33 @@
     "apply": "Appliquer",
     "applied": "Bon appliqué",
     "discount": "réduction"
+  },
+  "sell": {
+    "subtitle": "Mettez votre moto en vente pour d'autres revendeurs",
+    "feeInfo": "Lors de la vente de votre moto, vous recevrez une facture de €250. L'inscription est gratuite.",
+    "motorcycleDetails": "Détails de la moto",
+    "brandPlaceholder": "ex: Kawasaki",
+    "modelPlaceholder": "ex: Ninja ZX-6R",
+    "mileagePlaceholder": "ex: 15000",
+    "colorPlaceholder": "ex: Vert",
+    "pricePlaceholder": "ex: 8500",
+    "minimumBid": "Offre minimum",
+    "minimumBidPlaceholder": "Optionnel - par défaut 80% du prix demandé",
+    "descriptionPlaceholder": "Décrivez la moto, options, entretien, etc.",
+    "uploading": "Téléchargement...",
+    "clickToUpload": "Cliquez pour télécharger des photos",
+    "submitListing": "Publier la moto",
+    "success": "Moto publiée avec succès !",
+    "fillRequired": "Veuillez remplir tous les champs obligatoires",
+    "uploadFailed": "Échec du téléchargement"
+  },
+  "myListings": {
+    "listed": "motos publiées",
+    "forSale": "À vendre",
+    "noListings": "Aucune moto publiée",
+    "firstListing": "Publiez votre première moto à vendre pour d'autres revendeurs",
+    "listedOn": "Publié le",
+    "feeNotice": "Attention",
+    "feeInfo": "Lors de la vente de votre moto, vous recevrez une facture de €250."
   }
 }

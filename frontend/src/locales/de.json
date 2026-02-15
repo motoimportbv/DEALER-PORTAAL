@@ -213,5 +213,33 @@
     "apply": "Anwenden",
     "applied": "Gutschein angewendet",
     "discount": "Rabatt"
+  },
+  "sell": {
+    "subtitle": "Bieten Sie Ihr Motorrad anderen Händlern zum Verkauf an",
+    "feeInfo": "Beim Verkauf Ihres Motorrads erhalten Sie eine Rechnung über €250. Das Einstellen ist kostenlos.",
+    "motorcycleDetails": "Motorrad-Details",
+    "brandPlaceholder": "z.B. Kawasaki",
+    "modelPlaceholder": "z.B. Ninja ZX-6R",
+    "mileagePlaceholder": "z.B. 15000",
+    "colorPlaceholder": "z.B. Grün",
+    "pricePlaceholder": "z.B. 8500",
+    "minimumBid": "Mindestgebot",
+    "minimumBidPlaceholder": "Optional - Standard 80% des Angebotspreises",
+    "descriptionPlaceholder": "Beschreiben Sie das Motorrad, optionale Ausstattung, Wartung, etc.",
+    "uploading": "Hochladen...",
+    "clickToUpload": "Klicken Sie, um Fotos hochzuladen",
+    "submitListing": "Motorrad einstellen",
+    "success": "Motorrad erfolgreich eingestellt!",
+    "fillRequired": "Bitte füllen Sie alle Pflichtfelder aus",
+    "uploadFailed": "Upload fehlgeschlagen"
+  },
+  "myListings": {
+    "listed": "Motorräder eingestellt",
+    "forSale": "Zu verkaufen",
+    "noListings": "Noch keine Motorräder eingestellt",
+    "firstListing": "Stellen Sie Ihr erstes Motorrad zum Verkauf für andere Händler ein",
+    "listedOn": "Eingestellt am",
+    "feeNotice": "Hinweis",
+    "feeInfo": "Beim Verkauf Ihres Motorrads erhalten Sie eine Rechnung über €250."
   }
 }
