@@ -8,6 +8,7 @@ import axios from 'axios';
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const PushNotificationToggle = ({ token }) => {
+  const { t } = useTranslation();
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
