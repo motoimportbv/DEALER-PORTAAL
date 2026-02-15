@@ -1579,7 +1579,7 @@ async def get_pending_dealers(user: dict = Depends(require_admin)):
     return dealers
 
 @api_router.put("/dealers/{dealer_id}/approve")
-async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
+async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(require_admin)):
     dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
     if not dealer:
         raise HTTPException(status_code=404, detail="Dealer niet gevonden")
@@ -1603,10 +1603,19 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
     )
     await db.vouchers.insert_one(voucher.model_dump())
     
+    # Get base URL from request origin or fallback
+    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
+    if origin:
+        from urllib.parse import urlparse
+        parsed = urlparse(origin)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    
+    login_url = f"{base_url}/login"
+    
     # Stuur email naar dealer met voucher
     try:
-        base_url = os.environ.get("BASE_URL", "")
-        login_url = f"{base_url}/login" if base_url else "#"
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #18181b; padding: 25px; text-align: center;">
