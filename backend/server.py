@@ -49,6 +49,7 @@ DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
 # VAPID Config for Push Notifications
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY_PATH = os.environ.get('VAPID_PRIVATE_KEY_PATH', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')  # Direct key content (for production)
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 # Create the main app
