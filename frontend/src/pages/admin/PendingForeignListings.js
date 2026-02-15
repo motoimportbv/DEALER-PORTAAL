@@ -249,7 +249,7 @@ const PendingForeignListings = () => {
 
               {/* New Price Input */}
               <div className="space-y-2">
-                <Label htmlFor="newPrice">Verkoopprijs (€) *</Label>
+                <Label htmlFor="newPrice">{t('adminPending.salePrice')} (€) *</Label>
                 <Input
                   id="newPrice"
                   type="number"
@@ -257,13 +257,13 @@ const PendingForeignListings = () => {
                   step="100"
                   value={newPrice}
                   onChange={(e) => setNewPrice(e.target.value)}
-                  placeholder="bijv. 12500"
+                  placeholder={t('adminPending.pricePlaceholder')}
                 />
               </div>
 
               {/* Starting Price Input */}
               <div className="space-y-2">
-                <Label htmlFor="newStartingPrice">Minimum biedprijs (€)</Label>
+                <Label htmlFor="newStartingPrice">{t('adminPending.minBidPrice')} (€)</Label>
                 <Input
                   id="newStartingPrice"
                   type="number"
@@ -271,14 +271,14 @@ const PendingForeignListings = () => {
                   step="100"
                   value={newStartingPrice}
                   onChange={(e) => setNewStartingPrice(e.target.value)}
-                  placeholder="Optioneel - standaard 80% van verkoopprijs"
+                  placeholder={t('adminPending.minBidPlaceholder')}
                 />
               </div>
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setActivateDialogOpen(false)}>
-                Annuleren
+                {t('common.cancel')}
               </Button>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
@@ -290,7 +290,7 @@ const PendingForeignListings = () => {
                 ) : (
                   <Check className="w-4 h-4 mr-2" />
                 )}
-                Activeren
+                {t('admin.activateListing')}
               </Button>
             </DialogFooter>
           </DialogContent>
