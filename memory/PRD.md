@@ -135,6 +135,14 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 15 Feb 2026 (Update 3)
+- 🔍 **Zoekbalk voor dealers verbeterd**
+  - Prominente zoekbalk bovenaan catalogus pagina
+  - Zoeken op merk, model, kleur én bouwjaar
+  - Live filtering terwijl je typt
+  - "X" knop om zoekopdracht te wissen
+  - Duidelijke placeholder tekst
+
 ### 15 Feb 2026 (Update 2)
 - 🗑️ **Dealer verwijderen functie** - Admin kan nu dealers permanent verwijderen via Dealer Beheer
   - Verwijdert ook alle gerelateerde data (vouchers, notificaties, push subscriptions, chat berichten)
