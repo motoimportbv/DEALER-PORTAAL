@@ -28,12 +28,35 @@ const DealerDashboard = () => {
   const [pendingApproval, setPendingApproval] = useState(false);
 
   useEffect(() => {
-    // Check if user is approved
-    if (user && user.role === 'dealer' && !user.is_approved) {
-      setPendingApproval(true);
-      setLoading(false);
-    } else {
+    const checkApprovalAndLoadData = async () => {
+      // Always refresh user data to get latest is_approved status
+      if (user && user.role === 'dealer') {
+        try {
+          // Fetch fresh user data from backend
+          const response = await axios.get(`${API}/auth/me`);
+          const freshUserData = response.data;
+          
+          if (!freshUserData.is_approved) {
+            setPendingApproval(true);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          // If 403, user is not approved
+          if (error.response?.status === 403) {
+            setPendingApproval(true);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
+      // User is approved (or admin), load motorcycles
       fetchMotorcycles();
+    };
+    
+    if (user) {
+      checkApprovalAndLoadData();
     }
   }, [user]);
 
