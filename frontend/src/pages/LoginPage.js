@@ -95,9 +95,14 @@ const LoginPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              Wachtwoord
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                Wachtwoord
+              </Label>
+              <Link to="/forgot-password" className="text-xs text-red-600 hover:text-red-700 font-medium" data-testid="forgot-password-link">
+                Wachtwoord vergeten?
+              </Link>
+            </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <Input
