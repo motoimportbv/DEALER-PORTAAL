@@ -67,11 +67,14 @@
     "contactPlaceholder": "Mario Rossi",
     "emailPlaceholder": "tua@email.it",
     "passwordPlaceholder": "Minimo 6 caratteri",
+    "passwordHint": "Minimo 6 caratteri",
     "createAccount": "Crea account",
     "passwordMinLength": "La password deve contenere almeno 6 caratteri",
     "kvkRequired": "La Partita IVA è obbligatoria",
     "success": "Account creato con successo!",
-    "failed": "Registrazione fallita"
+    "failed": "Registrazione fallita",
+    "supplierLink": "Sei un fornitore estero?",
+    "supplierRegister": "Registrati qui"
   },
   "nav": {
     "dashboard": "Dashboard",
