@@ -1830,6 +1830,37 @@ async def get_vapid_key():
     """Get the public VAPID key for web push subscriptions"""
     return {"vapidKey": VAPID_PUBLIC_KEY}
 
+@api_router.get("/push/debug")
+async def debug_vapid_keys():
+    """Debug endpoint to verify VAPID key configuration"""
+    import base64
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.backends import default_backend
+    
+    try:
+        # Load private key and derive public key
+        der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
+        private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
+        public_key = private_key.public_key()
+        public_numbers = public_key.public_numbers()
+        x_bytes = public_numbers.x.to_bytes(32, 'big')
+        y_bytes = public_numbers.y.to_bytes(32, 'big')
+        uncompressed = b'\x04' + x_bytes + y_bytes
+        derived_public_key = base64.urlsafe_b64encode(uncompressed).rstrip(b'=').decode('utf-8')
+        
+        return {
+            "configured_public_key": VAPID_PUBLIC_KEY,
+            "derived_public_key": derived_public_key,
+            "keys_match": VAPID_PUBLIC_KEY == derived_public_key,
+            "private_key_loaded": True
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "configured_public_key": VAPID_PUBLIC_KEY,
+            "private_key_loaded": False
+        }
+
 @api_router.post("/push/subscribe")
 async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depends(get_current_user)):
     """Subscribe to web push notifications"""
