@@ -18,6 +18,8 @@ import OrderList from "./pages/admin/OrderList";
 import DealerManagement from "./pages/admin/DealerManagement";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
+import DealerSellMotorcycle from "./pages/dealer/DealerSellMotorcycle";
+import DealerMyListings from "./pages/dealer/DealerMyListings";
 import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Pakbon from "./pages/Pakbon";
