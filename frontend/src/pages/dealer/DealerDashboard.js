@@ -178,10 +178,10 @@ const DealerDashboard = () => {
       fair: 'bg-zinc-100 text-zinc-800'
     };
     const labels = {
-      new: 'Nieuw',
-      excellent: 'Uitstekend',
-      good: 'Goed',
-      fair: 'Redelijk'
+      new: t('motorcycle.new'),
+      excellent: t('motorcycle.excellent'),
+      good: t('motorcycle.good'),
+      fair: t('motorcycle.fair')
     };
     return <Badge className={styles[condition]}>{labels[condition]}</Badge>;
   };
