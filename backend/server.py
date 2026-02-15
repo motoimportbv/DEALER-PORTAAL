@@ -650,6 +650,50 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
 class BuyNowRequest(BaseModel):
     motorcycle_id: str
     needs_delivery: bool = False
+    voucher_code: Optional[str] = None
+
+@api_router.get("/voucher/check/{code}")
+async def check_voucher(code: str, user: dict = Depends(get_current_user)):
+    """Check if a voucher code is valid for the current user"""
+    voucher = await db.vouchers.find_one({
+        "code": code.upper(),
+        "dealer_id": user["id"],
+        "is_used": False
+    }, {"_id": 0})
+    
+    if not voucher:
+        # Check if voucher exists but belongs to someone else or is used
+        any_voucher = await db.vouchers.find_one({"code": code.upper()}, {"_id": 0})
+        if any_voucher:
+            if any_voucher.get("is_used"):
+                raise HTTPException(status_code=400, detail="Deze voucher is al gebruikt")
+            else:
+                raise HTTPException(status_code=400, detail="Deze voucher is niet geldig voor uw account")
+        raise HTTPException(status_code=404, detail="Voucher niet gevonden")
+    
+    return {
+        "valid": True,
+        "amount": voucher["amount"],
+        "code": voucher["code"]
+    }
+
+@api_router.get("/voucher/my-voucher")
+async def get_my_voucher(user: dict = Depends(get_current_user)):
+    """Get the user's voucher if they have one"""
+    voucher = await db.vouchers.find_one({
+        "dealer_id": user["id"]
+    }, {"_id": 0})
+    
+    if not voucher:
+        return {"has_voucher": False}
+    
+    return {
+        "has_voucher": True,
+        "code": voucher["code"],
+        "amount": voucher["amount"],
+        "is_used": voucher["is_used"],
+        "used_at": voucher.get("used_at")
+    }
 
 @api_router.post("/orders/buy-now")
 async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_current_user)):
@@ -665,7 +709,31 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     
     # Calculate delivery cost
     delivery_cost = DELIVERY_COST if data.needs_delivery else 0.0
-    total_price = motorcycle["price"] + delivery_cost
+    
+    # Check and apply voucher
+    voucher_discount = 0.0
+    voucher_applied = None
+    if data.voucher_code:
+        voucher = await db.vouchers.find_one({
+            "code": data.voucher_code.upper(),
+            "dealer_id": user["id"],
+            "is_used": False
+        })
+        if voucher:
+            voucher_discount = voucher["amount"]
+            voucher_applied = voucher["code"]
+            # Mark voucher as used
+            await db.vouchers.update_one(
+                {"code": data.voucher_code.upper()},
+                {
+                    "$set": {
+                        "is_used": True,
+                        "used_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+    
+    total_price = max(0, motorcycle["price"] + delivery_cost - voucher_discount)
     
     # Create order
     order = Order(
@@ -681,7 +749,13 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
         payment_status="niet_vereist"
     )
     
-    await db.orders.insert_one(order.model_dump())
+    # Add voucher info to order (store in notes or separate field)
+    order_dict = order.model_dump()
+    if voucher_applied:
+        order_dict["voucher_code"] = voucher_applied
+        order_dict["voucher_discount"] = voucher_discount
+    
+    await db.orders.insert_one(order_dict)
     
     # Mark motorcycle as unavailable
     await db.motorcycles.update_one(
@@ -692,6 +766,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     # Get dealer info
     dealer = await db.users.find_one({"id": user["id"]}, {"_id": 0})
     delivery_text = "Ja (€50 bezorging)" if data.needs_delivery else "Nee (ophalen)"
+    voucher_text = f"€{voucher_discount:,.2f} korting (code: {voucher_applied})" if voucher_applied else "Geen"
     
     # Send email to Dealer
     dealer_html = f"""
