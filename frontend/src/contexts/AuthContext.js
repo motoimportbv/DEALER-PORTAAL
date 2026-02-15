@@ -5,30 +5,41 @@ const AuthContext = createContext(null);
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Set axios timeout to prevent infinite loading
+axios.defaults.timeout = 15000;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
+    const initAuth = async () => {
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        await fetchUser();
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    initAuth();
   }, [token]);
 
   const fetchUser = async () => {
     try {
+      setError(null);
       const response = await axios.get(`${API}/auth/me`);
       // Always use fresh data from server
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
+      setError(error.message);
       // Token is invalid or expired, clear it
       logout();
     } finally {
+      // Always set loading to false, even on error
       setLoading(false);
     }
   };
@@ -54,6 +65,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', newToken);
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
+    // Ensure we use fresh user data with correct is_approved status
     setUser(userData);
     return userData;
   };
@@ -88,7 +100,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
