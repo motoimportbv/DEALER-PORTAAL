@@ -51,6 +51,9 @@ const DealerManagement = () => {
   const [dealers, setDealers] = useState([]);
   const [pendingDealers, setPendingDealers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [foreignDialogOpen, setForeignDialogOpen] = useState(false);
+  const [selectedDealer, setSelectedDealer] = useState(null);
+  const [countryInput, setCountryInput] = useState('');
 
   useEffect(() => {
     fetchDealers();
