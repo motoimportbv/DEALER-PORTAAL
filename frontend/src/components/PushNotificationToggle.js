@@ -159,12 +159,12 @@ const PushNotificationToggle = ({ token }) => {
       <div className="flex-1">
         <h4 className="font-medium text-zinc-900 flex items-center gap-2">
           <Bell className="w-4 h-4 text-red-600" />
-          Push Notificaties
+          {t('pushNotifications.title')}
         </h4>
         <p className="text-sm text-zinc-500 mt-1">
           {isSubscribed 
-            ? 'U ontvangt meldingen bij nieuwe motoren'
-            : 'Ontvang direct een melding op uw telefoon'}
+            ? t('pushNotifications.subscribedMessage')
+            : t('pushNotifications.unsubscribedMessage')}
         </p>
       </div>
       
@@ -176,7 +176,7 @@ const PushNotificationToggle = ({ token }) => {
             onClick={testPush}
             className="text-green-600 border-green-600 hover:bg-green-50"
           >
-            Test
+            {t('pushNotifications.test')}
           </Button>
           <Button
             variant="outline"
@@ -190,7 +190,7 @@ const PushNotificationToggle = ({ token }) => {
             ) : (
               <>
                 <BellOff className="w-4 h-4 mr-2" />
-                Uit
+                {t('pushNotifications.disable')}
               </>
             )}
           </Button>
@@ -207,7 +207,7 @@ const PushNotificationToggle = ({ token }) => {
           ) : (
             <>
               <Bell className="w-4 h-4 mr-2" />
-              Inschakelen
+              {t('pushNotifications.enable')}
             </>
           )}
         </Button>
