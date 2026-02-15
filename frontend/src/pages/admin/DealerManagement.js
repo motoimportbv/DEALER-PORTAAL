@@ -13,7 +13,8 @@ import {
   Mail,
   MapPin,
   FileText,
-  Clock
+  Clock,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -80,7 +81,17 @@ const DealerManagement = () => {
     }
   };
 
-  const DealerCard = ({ dealer, showActions = false }) => (
+  const deleteDealer = async (dealerId, companyName) => {
+    try {
+      await axios.delete(`${API}/dealers/${dealerId}`);
+      toast.success(`Dealer ${companyName} is verwijderd`);
+      fetchDealers();
+    } catch (error) {
+      toast.error('Kon dealer niet verwijderen');
+    }
+  };
+
+  const DealerCard = ({ dealer, showActions = false, showDelete = false }) => (
     <Card className="overflow-hidden" data-testid={`dealer-card-${dealer.id}`}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
@@ -129,6 +140,7 @@ const DealerManagement = () => {
           </div>
         </div>
 
+        {/* Actions for pending dealers */}
         {showActions && !dealer.is_approved && (
           <div className="flex gap-2 pt-4 border-t border-zinc-100">
             <Button
@@ -165,6 +177,42 @@ const DealerManagement = () => {
                     className="bg-red-600 hover:bg-red-700"
                   >
                     Afwijzen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+
+        {/* Delete button for approved dealers */}
+        {showDelete && dealer.is_approved && (
+          <div className="pt-4 border-t border-zinc-100">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  data-testid={`delete-btn-${dealer.id}`}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Dealer Verwijderen
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Dealer Verwijderen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Weet u zeker dat u <strong>{dealer.company_name}</strong> wilt verwijderen? 
+                    Dit kan niet ongedaan worden gemaakt. Alle gegevens van deze dealer worden permanent verwijderd.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => deleteDealer(dealer.id, dealer.company_name)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Verwijderen
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -257,7 +305,7 @@ const DealerManagement = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {approvedDealers.map(dealer => (
-                  <DealerCard key={dealer.id} dealer={dealer} />
+                  <DealerCard key={dealer.id} dealer={dealer} showDelete={true} />
                 ))}
               </div>
             )}
@@ -279,7 +327,12 @@ const DealerManagement = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {dealers.map(dealer => (
-                  <DealerCard key={dealer.id} dealer={dealer} showActions={!dealer.is_approved} />
+                  <DealerCard 
+                    key={dealer.id} 
+                    dealer={dealer} 
+                    showActions={!dealer.is_approved} 
+                    showDelete={dealer.is_approved}
+                  />
                 ))}
               </div>
             )}
