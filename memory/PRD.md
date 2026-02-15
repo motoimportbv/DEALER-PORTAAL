@@ -20,6 +20,7 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - ✅ JWT authenticatie met bcrypt
 - ✅ Gebruikersregistratie met KVK validatie
 - ✅ Dealer goedkeuring workflow (nieuwe dealers kunnen niet inloggen tot goedgekeurd)
+- ✅ Dealer verwijderen (inclusief gerelateerde data cleanup)
 - ✅ Gmail SMTP email notificaties
 - ✅ Motorfiets CRUD endpoints
 - ✅ Direct bestelsysteem (Buy Now zonder betaling)
@@ -29,18 +30,26 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - ✅ Notificaties systeem (in-app + email bij nieuwe motoren)
 - ✅ Order management
 - ✅ Real-time chat systeem
+- ✅ Web Push notificaties (pywebpush + VAPID)
+- ✅ €250 welkomstvoucher systeem
+- ✅ Wachtwoord reset functionaliteit
+- ✅ Pakbon generatie en email
 
 ### Frontend (React + Shadcn UI)
 - ✅ Login en registratie pagina's (met KVK veld)
 - ✅ Admin Dashboard met KPI's
 - ✅ Motorfiets lijst en detail pagina's
 - ✅ Direct bestellen dialogs
-- ✅ Dealer management voor admin
-- ✅ Order overzicht met details
+- ✅ Dealer management voor admin (inclusief verwijderen)
+- ✅ Order overzicht met details (responsive kaarten voor mobiel)
 - ✅ Notificaties bell icon
 - ✅ Chat widget voor communicatie
 - ✅ Nederlandse interface
 - ✅ Moto Import branding
+- ✅ Push notification toggle voor dealers
+- ✅ Voucher code invoer bij bestellen
+- ✅ Wachtwoord vergeten/reset pagina's
+- ✅ Pakbon pagina (printbaar)
 
 ### PWA Functionaliteit (14 Feb 2026)
 - ✅ Service Worker voor offline caching
@@ -81,13 +90,12 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - [x] Twilio SMS verwijderen
 
 ### P1 (Hoog) - Aanbevolen
-- [ ] Mobiele responsiviteit verbeteren
 - [ ] Backend refactoren naar routers/models structuur
-- [ ] Ongebruikte Stripe endpoints verwijderen
+- [ ] Ongebruikte Stripe endpoints verwijderen (`/api/create-checkout-session`)
+- [ ] Native app build (Capacitor) voor App Store/Play Store
 
 ### P2 (Medium)
-- [ ] Native app build (Capacitor) voor App Store/Play Store
-- [ ] Wachtwoord reset functionaliteit
+- [x] ~~Wachtwoord reset functionaliteit~~ ✅ Voltooid
 - [ ] Zoek/filter uitbreiden (prijs range, jaar, conditie)
 
 ### P3 (Laag)
@@ -103,8 +111,15 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 | /api/motorcycles | GET/POST | Motorcycles CRUD |
 | /api/orders/buy-now | POST | Direct bestellen |
 | /api/dealers/{id}/approve | PUT | Dealer goedkeuren |
+| /api/dealers/{id} | DELETE | Dealer verwijderen |
 | /api/chat/messages | POST | Chat bericht sturen |
 | /api/notifications | GET | Notificaties ophalen |
+| /api/auth/forgot-password | POST | Wachtwoord reset aanvragen |
+| /api/auth/reset-password | POST | Nieuw wachtwoord instellen |
+| /api/voucher/check/{code} | GET | Voucher code valideren |
+| /api/voucher/my-voucher | GET | Eigen voucher ophalen |
+| /api/push/subscribe | POST | Push notificaties inschakelen |
+| /api/push/vapid_public_key | GET | VAPID publieke sleutel |
 
 ## Database Schema
 - **users**: email, password_hash, role, is_approved, company_name, kvk_number, phone, ...
@@ -119,6 +134,12 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - `BASE_URL`: Publieke URL voor links in emails
 
 ## Changelog
+
+### 15 Feb 2026 (Update 2)
+- 🗑️ **Dealer verwijderen functie** - Admin kan nu dealers permanent verwijderen via Dealer Beheer
+  - Verwijdert ook alle gerelateerde data (vouchers, notificaties, push subscriptions, chat berichten)
+  - Bevestigingsdialoog voorkomt per ongeluk verwijderen
+  - Volledige backend en frontend tests toegevoegd
 
 ### 15 Feb 2026
 - 🎁 **Voucher systeem toegevoegd** - Nieuwe dealers krijgen automatisch €250 welkomstkorting
