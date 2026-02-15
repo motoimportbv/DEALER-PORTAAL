@@ -44,7 +44,7 @@ const DealerOrders = () => {
       return (
         <Badge className="bg-green-100 text-green-800">
           <CheckCircle className="w-3 h-3 mr-1" />
-          Betaald
+          {t('order.paid')}
         </Badge>
       );
     }
@@ -57,11 +57,11 @@ const DealerOrders = () => {
       paid: 'bg-green-100 text-green-800'
     };
     const labels = {
-      pending: 'In afwachting',
-      approved: 'Goedgekeurd',
-      rejected: 'Afgewezen',
-      completed: 'Voltooid',
-      paid: 'Betaald'
+      pending: t('order.pending'),
+      approved: t('order.approved'),
+      rejected: t('order.rejected'),
+      completed: t('order.completed'),
+      paid: t('order.paid')
     };
     return <Badge className={styles[status] || 'bg-zinc-100 text-zinc-800'}>{labels[status] || status}</Badge>;
   };
