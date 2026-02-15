@@ -29,6 +29,7 @@ const Sidebar = () => {
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/motorcycles', icon: Bike, label: 'Motorfietsen' },
     { path: '/admin/motorcycles/new', icon: Plus, label: 'Nieuwe Motor' },
+    { path: '/admin/pending-foreign', icon: Globe, label: 'Wachtende Motors' },
     { path: '/admin/orders', icon: ShoppingCart, label: 'Bestellingen' },
     { path: '/admin/dealers', icon: Package, label: 'Dealers' },
   ];
