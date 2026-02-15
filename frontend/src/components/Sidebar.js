@@ -114,7 +114,7 @@ const Sidebar = () => {
           data-testid="logout-btn"
         >
           <LogOut className="w-5 h-5" />
-          <span>Uitloggen</span>
+          <span>{t('common.logout')}</span>
         </button>
       </div>
     </aside>
