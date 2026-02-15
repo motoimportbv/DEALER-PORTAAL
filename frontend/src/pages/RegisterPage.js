@@ -285,6 +285,13 @@ const RegisterPage = () => {
             {t('common.login')}
           </Link>
         </p>
+
+        <p className="mt-3 text-center text-zinc-500">
+          {t('register.supplierLink')}{' '}
+          <Link to="/register/supplier" className="text-purple-600 hover:text-purple-700 font-semibold" data-testid="supplier-register-link">
+            {t('register.supplierRegister')}
+          </Link>
+        </p>
       </div>
     </div>
   );
