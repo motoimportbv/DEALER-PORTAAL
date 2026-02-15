@@ -27,6 +27,19 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [token]);
 
+  // Ververs user data wanneer de app weer zichtbaar wordt (bijv. na wisselen van app)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && token) {
+        // App is weer zichtbaar, ververs data
+        fetchUser();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [token]);
+
   const fetchUser = async () => {
     try {
       setError(null);
