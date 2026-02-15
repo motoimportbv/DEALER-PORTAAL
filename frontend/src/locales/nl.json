@@ -28,12 +28,34 @@
     "forgotPassword": "Wachtwoord vergeten?",
     "resetPassword": "Wachtwoord resetten",
     "noAccount": "Nog geen account?",
-    "hasAccount": "Al een account?",
+    "hasAccount": "Heeft u al een account?",
     "loginTitle": "Inloggen",
-    "registerTitle": "Account aanmaken",
+    "registerTitle": "Dealer Account Aanmaken",
     "registerSubtitle": "Word dealer bij Moto Import",
     "pendingApproval": "Uw account wacht op goedkeuring",
     "pendingMessage": "Wij nemen zo snel mogelijk contact met u op."
+  },
+  "register": {
+    "heroText": "Word onderdeel van ons exclusieve dealer netwerk en krijg toegang tot premium motorfietsen.",
+    "fillDetails": "Vul uw bedrijfsgegevens in om te registreren",
+    "companyDetails": "Bedrijfsgegevens",
+    "companyPlaceholder": "Uw bedrijfsnaam",
+    "addressDetails": "Adresgegevens",
+    "streetAddress": "Straat en huisnummer",
+    "streetPlaceholder": "Voorbeeldstraat 123",
+    "postalCode": "Postcode",
+    "city": "Plaats",
+    "cityPlaceholder": "Amsterdam",
+    "accountDetails": "Accountgegevens",
+    "contactPerson": "Contactpersoon",
+    "contactPlaceholder": "Jan Jansen",
+    "emailPlaceholder": "uw@email.nl",
+    "passwordPlaceholder": "Minimaal 6 tekens",
+    "createAccount": "Account Aanmaken",
+    "passwordMinLength": "Wachtwoord moet minimaal 6 tekens bevatten",
+    "kvkRequired": "KVK nummer is verplicht",
+    "success": "Account succesvol aangemaakt!",
+    "failed": "Registratie mislukt"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -45,7 +67,18 @@
     "myOrders": "Mijn Bestellingen",
     "pendingListings": "Wachtende Motors"
   },
+  "search": {
+    "placeholder": "Zoek op merk, model, kleur of bouwjaar...",
+    "noResults": "Geen resultaten gevonden",
+    "tryAnother": "Probeer een andere zoekterm"
+  },
+  "pending": {
+    "checkingDetails": "Moto Import controleert uw gegevens",
+    "afterApproval": "Na goedkeuring kunt u motorfietsen bekijken en bestellen",
+    "questions": "Vragen? Neem contact op via"
+  },
   "motorcycle": {
+    "singular": "Motor",
     "brand": "Merk",
     "model": "Model",
     "year": "Bouwjaar",
@@ -73,7 +106,19 @@
     "currentBid": "Huidig bod",
     "noBids": "Nog geen biedingen",
     "dealerListing": "Aangeboden door dealer",
-    "buyerFeeWarning": "Let op: €250 koperskosten bij aankoop"
+    "buyerFeeWarning": "Let op: €250 koperskosten bij aankoop",
+    "noAvailable": "Geen motoren beschikbaar",
+    "noAvailableDesc": "Er zijn momenteel geen motoren beschikbaar",
+    "viewAndBid": "Bekijk & Bied",
+    "deleted": "Motor verwijderd",
+    "specifications": "Specificaties",
+    "brandModel": "Merk & Model",
+    "auctionEnded": "Veiling Afgelopen",
+    "active": "Actief",
+    "bids": "Biedingen",
+    "currentBidLabel": "Huidig Bod",
+    "fromPrice": "Vanaf Prijs",
+    "highestBid": "Hoogste"
   },
   "order": {
     "orderNumber": "Bestelnummer",
@@ -86,7 +131,24 @@
     "orderPlaced": "Bestelling geplaatst",
     "orderConfirmed": "Bestelling bevestigd",
     "viewPakbon": "Bekijk Pakbon",
-    "printPakbon": "Print Pakbon"
+    "printPakbon": "Print Pakbon",
+    "pending": "In afwachting",
+    "approved": "Goedgekeurd",
+    "rejected": "Afgewezen",
+    "completed": "Voltooid",
+    "paid": "Betaald",
+    "noOrders": "Nog geen bestellingen",
+    "date": "Datum",
+    "placeOrder": "Bestelling Plaatsen",
+    "motorcyclePrice": "Motorprijs",
+    "deliveryCosts": "Bezorgkosten",
+    "total": "Totaal",
+    "welcomeDiscount": "Welkomstkorting",
+    "deliveryWanted": "Bezorging gewenst",
+    "deliveryInfo": "Wij bezorgen de motor bij u. Kosten:",
+    "pickupFree": "Ophalen bij Moto Import is gratis!",
+    "orderConfirmation": "Na uw bestelling ontvangt u een bevestigingsmail met verdere instructies.",
+    "orderButton": "Bestellen"
   },
   "dealer": {
     "companyName": "Bedrijfsnaam",
@@ -98,7 +160,9 @@
     "topDealers": "Meest Actieve Dealers",
     "loginCount": "Aantal logins",
     "lastActive": "Laatst actief",
-    "neverLoggedIn": "Nooit ingelogd"
+    "neverLoggedIn": "Nooit ingelogd",
+    "times": "keer",
+    "noActivity": "Nog geen dealer activiteit"
   },
   "foreignDealer": {
     "title": "Buitenlandse Dealer",
@@ -111,7 +175,14 @@
     "pendingListings": "Wachtende Motors",
     "activateListing": "Activeren",
     "setPrice": "Prijs instellen",
-    "fromForeignDealer": "Van buitenlandse dealer"
+    "fromForeignDealer": "Van buitenlandse dealer",
+    "portalOverview": "Overzicht van uw dealer portaal",
+    "newMotorcycle": "Nieuwe Motor",
+    "totalMotorcycles": "Totaal Motoren",
+    "pendingOrders": "Openstaande Orders",
+    "recentOrders": "Recente Bestellingen",
+    "viewAll": "Bekijk alle",
+    "allDealers": "Alle dealers"
   },
   "notifications": {
     "enable": "Notificaties inschakelen",
@@ -128,5 +199,19 @@
     "successDeleted": "Succesvol verwijderd",
     "errorOccurred": "Er is een fout opgetreden",
     "confirmDelete": "Weet u zeker dat u dit wilt verwijderen?"
+  },
+  "bid": {
+    "placeBid": "Plaats Bod",
+    "yourBid": "Uw Bod",
+    "minimumBid": "Minimum bod",
+    "bidSuccess": "Bod geplaatst!"
+  },
+  "voucher": {
+    "title": "Voucher Code",
+    "activeWelcome": "Welkomstvoucher actief!",
+    "placeholder": "Bijv. WELKOM-ABC123",
+    "apply": "Toepassen",
+    "applied": "Voucher toegepast",
+    "discount": "korting"
   }
 }
