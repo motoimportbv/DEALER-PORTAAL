@@ -241,5 +241,21 @@
     "listedOn": "Geplaatst op",
     "feeNotice": "Let op",
     "feeInfo": "Bij verkoop van uw motor ontvangt u een factuur van €250."
+  },
+  "orders": {
+    "totalOrders": "bestellingen totaal",
+    "viewMotorcycles": "Bekijk beschikbare motoren en plaats uw eerste bestelling",
+    "viewMotorcyclesBtn": "Bekijk Motoren",
+    "orderedOn": "Besteld op",
+    "deposit": "Aanbetaling",
+    "remainingAmount": "Restbedrag",
+    "deliveryPrice": "€50 (bezorgen)",
+    "pickupFree": "Gratis (ophalen)",
+    "transferInfo": "Maak {{amount}} binnen 5 werkdagen over naar NL23 INGB 0107 0760 63 t.n.v. Moto Import B.V. met kenmerk {{reference}}",
+    "yourNote": "Uw notitie",
+    "viewMotorcycleBtn": "Bekijk Motor"
+  },
+  "detail": {
+    "orderPlaced": "Bestelling geplaatst"
   }
 }

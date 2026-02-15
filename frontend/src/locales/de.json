@@ -241,5 +241,21 @@
     "listedOn": "Eingestellt am",
     "feeNotice": "Hinweis",
     "feeInfo": "Beim Verkauf Ihres Motorrads erhalten Sie eine Rechnung über €250."
+  },
+  "orders": {
+    "totalOrders": "Bestellungen insgesamt",
+    "viewMotorcycles": "Sehen Sie sich verfügbare Motorräder an und geben Sie Ihre erste Bestellung auf",
+    "viewMotorcyclesBtn": "Motorräder ansehen",
+    "orderedOn": "Bestellt am",
+    "deposit": "Anzahlung",
+    "remainingAmount": "Restbetrag",
+    "deliveryPrice": "€50 (Lieferung)",
+    "pickupFree": "Kostenlos (Abholung)",
+    "transferInfo": "Überweisen Sie {{amount}} innerhalb von 5 Werktagen auf NL23 INGB 0107 0760 63 an Moto Import B.V. mit Referenz {{reference}}",
+    "yourNote": "Ihre Notiz",
+    "viewMotorcycleBtn": "Motorrad ansehen"
+  },
+  "detail": {
+    "orderPlaced": "Bestellung aufgegeben"
   }
 }
