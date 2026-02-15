@@ -83,6 +83,12 @@ const Sidebar = () => {
           <p>+31 6 81792660</p>
           <p>Motoimportbv@gmail.com</p>
         </div>
+        
+        {/* Language Selector */}
+        <div className="mb-4 px-1">
+          <LanguageSelector />
+        </div>
+        
         <button
           onClick={handleLogout}
           className="sidebar-nav-item w-full text-left hover:text-red-400"
