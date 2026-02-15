@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
 import { 
   Users,
   Check,
@@ -14,7 +15,8 @@ import {
   MapPin,
   FileText,
   Clock,
-  Trash2
+  Trash2,
+  Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -28,6 +30,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../../components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import {
   Tabs,
   TabsContent,
