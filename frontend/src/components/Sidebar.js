@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
 import LanguageSelector from './LanguageSelector';
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,24 +28,24 @@ const Sidebar = () => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const adminNavItems = [
-    { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/admin/motorcycles', icon: Bike, label: 'Motorfietsen' },
-    { path: '/admin/motorcycles/new', icon: Plus, label: 'Nieuwe Motor' },
-    { path: '/admin/pending-foreign', icon: Globe, label: 'Wachtende Motors' },
-    { path: '/admin/orders', icon: ShoppingCart, label: 'Bestellingen' },
-    { path: '/admin/dealers', icon: Package, label: 'Dealers' },
+    { path: '/admin', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/admin/motorcycles', icon: Bike, label: t('nav.motorcycles') },
+    { path: '/admin/motorcycles/new', icon: Plus, label: t('motorcycle.addMotorcycle') },
+    { path: '/admin/pending-foreign', icon: Globe, label: t('nav.pendingListings') },
+    { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
+    { path: '/admin/dealers', icon: Package, label: t('nav.dealers') },
   ];
 
   const dealerNavItems = [
-    { path: '/dealer', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/dealer/my-listings', icon: Bike, label: 'Mijn Motoren' },
-    { path: '/dealer/sell', icon: Plus, label: 'Motor Verkopen' },
-    { path: '/dealer/orders', icon: ShoppingCart, label: 'Mijn Bestellingen' },
+    { path: '/dealer', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/dealer/my-listings', icon: Bike, label: t('nav.myMotorcycles') },
+    { path: '/dealer/sell', icon: Plus, label: t('nav.sellMotorcycle') },
+    { path: '/dealer/orders', icon: ShoppingCart, label: t('nav.myOrders') },
   ];
 
   const foreignDealerNavItems = [
-    { path: '/foreign-dealer', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/foreign-dealer/add', icon: Plus, label: 'Motor Toevoegen' },
+    { path: '/foreign-dealer', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/foreign-dealer/add', icon: Plus, label: t('foreignDealer.addMotorcycle') },
   ];
 
   // Determine nav items based on user type
