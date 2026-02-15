@@ -1397,35 +1397,78 @@ async def approve_dealer(dealer_id: str, user: dict = Depends(require_admin)):
         {"$set": {"is_approved": True}}
     )
     
-    # Stuur email naar dealer dat ze goedgekeurd zijn
+    # Genereer unieke voucher code voor nieuwe dealer
+    import random
+    import string
+    voucher_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    voucher_code = f"WELKOM-{voucher_suffix}"
+    
+    # Maak voucher aan
+    voucher = Voucher(
+        code=voucher_code,
+        dealer_id=dealer_id,
+        amount=250.0
+    )
+    await db.vouchers.insert_one(voucher.model_dump())
+    
+    # Stuur email naar dealer met voucher
     try:
         base_url = os.environ.get("BASE_URL", "")
         login_url = f"{base_url}/login" if base_url else "#"
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16a34a;">✅ Account Goedgekeurd!</h2>
-            <p>Beste {dealer.get('contact_person', dealer['company_name'])},</p>
-            <p>Uw dealer account bij <strong>Moto Import</strong> is goedgekeurd!</p>
-            <p>U kunt nu inloggen en direct bieden op onze motorfietsen.</p>
-            <p style="margin-top: 30px;">
-                <a href="{login_url}" 
-                   style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                    Nu Inloggen
-                </a>
-            </p>
-            <p style="color: #71717a; margin-top: 30px;">
-                Met vriendelijke groet,<br>
-                Moto Import B.V.<br>
-                Horsterhoekweg 11, 7433 SV Schalkhaar<br>
-                +31 6 81792660
-            </p>
+            <div style="background: #18181b; padding: 25px; text-align: center;">
+                <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+            </div>
+            
+            <div style="padding: 30px; background: #f9fafb;">
+                <h2 style="color: #16a34a; margin-top: 0;">✅ Account Goedgekeurd!</h2>
+                <p>Beste {dealer.get('contact_person', dealer['company_name'])},</p>
+                <p>Uw dealer account bij <strong>Moto Import</strong> is goedgekeurd!</p>
+                <p>U kunt nu inloggen en direct motorfietsen bestellen.</p>
+                
+                <!-- VOUCHER -->
+                <div style="background: linear-gradient(135deg, #DC2626 0%, #b91c1c 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center; color: white;">
+                    <p style="margin: 0 0 5px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9;">🎁 Welkomstcadeau</p>
+                    <h2 style="margin: 0; font-size: 36px; font-weight: bold;">€250 KORTING</h2>
+                    <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">op uw eerste aankoop</p>
+                    
+                    <div style="background: white; border-radius: 8px; padding: 15px; margin-top: 20px;">
+                        <p style="margin: 0 0 5px 0; color: #71717a; font-size: 12px; text-transform: uppercase;">Uw vouchercode</p>
+                        <p style="margin: 0; font-family: monospace; font-size: 28px; font-weight: bold; color: #18181b; letter-spacing: 3px;">{voucher_code}</p>
+                    </div>
+                    
+                    <p style="margin: 15px 0 0 0; font-size: 12px; opacity: 0.8;">
+                        Voer deze code in bij het bestellen van uw eerste motor
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{login_url}" 
+                       style="display: inline-block; background: #DC2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                        Nu Inloggen & Bestellen
+                    </a>
+                </div>
+                
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                    <p style="margin: 0; color: #92400e; font-size: 14px;">
+                        <strong>💡 Tip:</strong> De voucher is eenmalig geldig en wordt automatisch toegepast bij uw eerste bestelling. Bewaar deze email goed!
+                    </p>
+                </div>
+            </div>
+            
+            <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+                <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+                <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+            </div>
         </div>
         """
-        await send_email(dealer["email"], "Uw Moto Import account is goedgekeurd!", html_content)
+        await send_email(dealer["email"], "🎁 Welkom bij Moto Import + €250 Voucher!", html_content)
     except Exception as e:
         logger.error(f"Failed to send approval email: {str(e)}")
     
-    return {"message": f"Dealer {dealer['company_name']} is goedgekeurd"}
+    return {"message": f"Dealer {dealer['company_name']} is goedgekeurd", "voucher_code": voucher_code}
 
 @api_router.put("/dealers/{dealer_id}/reject")
 async def reject_dealer(dealer_id: str, user: dict = Depends(require_admin)):
