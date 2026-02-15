@@ -60,8 +60,8 @@ const Layout = ({ children, requiredRole }) => {
       <main className="main-content">
         {children}
       </main>
-      {/* Chat widget for dealers */}
-      {user.role === 'dealer' && <ChatWidget isAdmin={false} />}
+      {/* WhatsApp button for dealers */}
+      {user.role === 'dealer' && <WhatsAppButton />}
     </div>
   );
 };
