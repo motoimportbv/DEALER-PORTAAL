@@ -1050,24 +1050,31 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
         fee_html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px;">
             <div style="background: #f59e0b; padding: 15px; text-align: center;">
-                <h2 style="color: white; margin: 0;">💰 DEALER MOTOR VERKOCHT - €250 FACTUREREN!</h2>
+                <h2 style="color: white; margin: 0;">💰 DEALER MOTOR VERKOCHT - €500 FACTUREREN!</h2>
             </div>
             <div style="padding: 20px; background: #fef3c7;">
-                <p style="font-size: 16px; margin-bottom: 15px;"><strong>Actie vereist:</strong> Factureer €250 plaatsingskosten aan de verkopende dealer.</p>
+                <p style="font-size: 16px; margin-bottom: 15px;"><strong>Actie vereist:</strong> Factureer €250 aan BEIDE partijen.</p>
                 <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px;">
-                    <tr style="background: #f4f4f5;">
-                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Verkoper (€250 factuur)</strong></td>
+                    <tr style="background: #dc2626; color: white;">
+                        <td colspan="2" style="padding: 12px; font-weight: bold;">TE FACTUREREN</td>
+                    </tr>
+                    <tr style="background: #fef2f2;">
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Verkoper (€250)</strong></td>
                         <td style="padding: 12px; border: 1px solid #e4e4e7; color: #DC2626; font-weight: bold;">{seller_company}</td>
                     </tr>
-                    <tr>
-                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Koper</strong></td>
-                        <td style="padding: 12px; border: 1px solid #e4e4e7;">{user.get('company_name', 'Dealer')}</td>
+                    <tr style="background: #fef2f2;">
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Koper (€250)</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7; color: #DC2626; font-weight: bold;">{user.get('company_name', 'Dealer')}</td>
                     </tr>
                     <tr style="background: #f4f4f5;">
+                        <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Totaal te factureren</strong></td>
+                        <td style="padding: 12px; border: 1px solid #e4e4e7; color: #16a34a; font-weight: bold; font-size: 18px;">€500</td>
+                    </tr>
+                    <tr>
                         <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Motor</strong></td>
                         <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle['brand']} {motorcycle['model']} ({motorcycle['year']})</td>
                     </tr>
-                    <tr>
+                    <tr style="background: #f4f4f5;">
                         <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Verkoopprijs</strong></td>
                         <td style="padding: 12px; border: 1px solid #e4e4e7;">€{motorcycle['price']:,.0f}</td>
                     </tr>
@@ -1075,7 +1082,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
             </div>
         </div>
         """
-        await send_admin_notification(f"💰 DEALER VERKOOP: €250 factureren aan {seller_company}", fee_html)
+        await send_admin_notification(f"💰 DEALER VERKOOP: €500 factureren ({seller_company} + {user.get('company_name', 'Dealer')})", fee_html)
     
     # Send email to Dealer
     dealer_html = f"""
