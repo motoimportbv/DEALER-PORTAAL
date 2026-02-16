@@ -235,7 +235,8 @@
     "placeBid": "Plaats Bod",
     "yourBid": "Uw Bod",
     "minimumBid": "Minimum bod",
-    "bidSuccess": "Bod geplaatst!"
+    "bidSuccess": "Bod geplaatst!",
+    "alreadyHighestBidder": "U bent al hoogste bieder"
   },
   "voucher": {
     "title": "Voucher Code",
