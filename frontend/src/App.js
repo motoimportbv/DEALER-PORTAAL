@@ -87,12 +87,15 @@ function App() {
             <Route path="/admin/orders" element={<OrderList />} />
             <Route path="/admin/dealers" element={<DealerManagement />} />
             <Route path="/admin/pending-foreign" element={<PendingForeignListings />} />
+            <Route path="/admin/parts" element={<AdminParts />} />
+            <Route path="/admin/part-orders" element={<AdminPartOrders />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
             <Route path="/dealer/orders" element={<DealerOrders />} />
             <Route path="/dealer/sell" element={<DealerSellMotorcycle />} />
             <Route path="/dealer/my-listings" element={<DealerMyListings />} />
+            <Route path="/dealer/parts" element={<PartsShop />} />
             
             {/* Foreign Dealer Routes */}
             <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
