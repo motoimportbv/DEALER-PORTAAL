@@ -138,6 +138,8 @@
     "buyerFeeWarning": "Let op: €250 koperskosten bij aankoop",
     "noAvailable": "Geen motoren beschikbaar",
     "noAvailableDesc": "Er zijn momenteel geen motoren beschikbaar",
+    "notFound": "Motor niet gevonden",
+    "notFoundDesc": "Deze motor bestaat niet of is niet meer beschikbaar",
     "viewAndBid": "Bekijk & Bied",
     "deleted": "Motor verwijderd",
     "specifications": "Specificaties",
