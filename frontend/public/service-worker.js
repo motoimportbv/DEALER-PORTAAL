@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moto-import-v1';
+const CACHE_NAME = 'moto-import-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache for offline use
