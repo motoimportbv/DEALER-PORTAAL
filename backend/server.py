@@ -1169,6 +1169,63 @@ async def get_my_listings(user: dict = Depends(require_approved_dealer)):
     ).to_list(100)
     return motorcycles
 
+@api_router.put("/motorcycles/my-listings/{motorcycle_id}")
+async def update_my_listing(motorcycle_id: str, data: MotorcycleUpdate, user: dict = Depends(require_approved_dealer)):
+    """Update a dealer's own listing"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Verify ownership
+    if motorcycle.get("seller_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U kunt alleen uw eigen listings bewerken")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if update_data:
+        await db.motorcycles.update_one({"id": motorcycle_id}, {"$set": update_data})
+    
+    updated = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    return updated
+
+@api_router.put("/motorcycles/my-listings/{motorcycle_id}/pause")
+async def pause_my_listing(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
+    """Pause a dealer's own listing (make it invisible)"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Verify ownership
+    if motorcycle.get("seller_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U kunt alleen uw eigen listings pauzeren")
+    
+    # Toggle pause state
+    is_paused = motorcycle.get("is_paused", False)
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id}, 
+        {"$set": {"is_paused": not is_paused, "is_available": is_paused}}
+    )
+    
+    return {"message": "Listing hervat" if is_paused else "Listing gepauzeerd", "is_paused": not is_paused}
+
+@api_router.delete("/motorcycles/my-listings/{motorcycle_id}")
+async def delete_my_listing(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
+    """Delete a dealer's own listing"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Verify ownership
+    if motorcycle.get("seller_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U kunt alleen uw eigen listings verwijderen")
+    
+    # Delete associated bids
+    await db.bids.delete_many({"motorcycle_id": motorcycle_id})
+    
+    # Delete the motorcycle
+    await db.motorcycles.delete_one({"id": motorcycle_id})
+    
+    return {"message": "Listing verwijderd"}
+
 @api_router.get("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
 async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
