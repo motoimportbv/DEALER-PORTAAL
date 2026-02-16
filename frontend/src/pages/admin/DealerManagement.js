@@ -283,6 +283,26 @@ const DealerManagement = () => {
                 {t('adminDealers.removeForeignStatus')}
               </Button>
             )}
+
+            {/* Toggle offline/online */}
+            <Button
+              variant="outline"
+              className={`w-full ${dealer.is_offline ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'}`}
+              onClick={() => toggleOffline(dealer.id, dealer.is_offline)}
+              data-testid={`toggle-offline-btn-${dealer.id}`}
+            >
+              {dealer.is_offline ? (
+                <>
+                  <Wifi className="w-4 h-4 mr-2" />
+                  Zet Online
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4 mr-2" />
+                  Zet Offline
+                </>
+              )}
+            </Button>
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
