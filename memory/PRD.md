@@ -178,6 +178,15 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 16 Feb 2026 (Update 20) ✅ VOLTOOID
+- 🔧 **WHITE SCREEN BUG OPGELOST** - Motor detail pagina werkt weer
+  - Oorzaak: Bid Dialog JSX code was achtergebleven na verwijdering biedingssysteem
+  - Ongedefinieerde variabelen (`bidDialogOpen`, `currentBid`, etc.) veroorzaakten JavaScript crash
+  - Fix: Bid Dialog sectie volledig verwijderd uit `MotorcycleDetail.js`
+  - Verbeterd: Auth loading state wordt nu afgewacht voordat API calls worden gedaan
+  - Fix: 401 errors worden nu stil afgehandeld (geen foutmelding meer bij auth timing issues)
+  - Opgeruimd: Tijdelijk debug bestand `push-test.html` verwijderd
+
 ### 16 Feb 2026 (Update 19) ✅ VOLTOOID
 - 🔔 **PUSH NOTIFICATIE INSTRUCTIE-POPUP** - Voor geblokkeerde notificaties
   - Nieuwe `NotificationBlockedModal.js` component
