@@ -259,31 +259,6 @@ const MotorcycleDetail = () => {
               )}
             </Card>
 
-            {/* Bids History */}
-            {bids.length > 0 && (
-              <Card className="mt-6">
-                <CardContent className="p-6">
-                  <h3 className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-red-600" />
-                    {t('motorcycle.bids')} ({bids.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {bids.slice(0, 5).map((bid, index) => (
-                      <div key={bid.id} className={`flex items-center justify-between p-3 rounded-lg ${index === 0 ? 'bg-red-50 border border-red-200' : 'bg-zinc-50'}`}>
-                        <div className="flex items-center gap-3">
-                          {index === 0 && <Badge className="bg-red-600 text-white">{t('motorcycle.highestBid')}</Badge>}
-                          <span className="text-zinc-600">{bid.dealer_company}</span>
-                        </div>
-                        <span className={`font-barlow font-bold ${index === 0 ? 'text-red-600 text-xl' : 'text-zinc-700'}`}>
-                          {formatPrice(bid.amount)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Description */}
             {motorcycle.description && (
               <Card className="mt-6">
@@ -299,46 +274,24 @@ const MotorcycleDetail = () => {
 
           {/* Specs & Actions */}
           <div className="lg:col-span-4 space-y-6">
-            {/* Auction Card */}
+            {/* Price Card */}
             <Card className="border-2 border-red-200 bg-red-50/30">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   {getConditionBadge(motorcycle.condition)}
                   {motorcycle.is_available ? (
-                    timeLeft?.expired ? (
-                      <Badge className="bg-zinc-500 text-white">{t('motorcycle.auctionEnded')}</Badge>
-                    ) : (
-                      <Badge className="bg-green-100 text-green-800">{t('motorcycle.active')}</Badge>
-                    )
+                    <Badge className="bg-green-100 text-green-800">{t('motorcycle.available')}</Badge>
                   ) : (
                     <Badge className="bg-red-100 text-red-800">{t('motorcycle.sold')}</Badge>
                   )}
                 </div>
 
-                {/* Current Bid */}
-                <div className="mb-4 p-4 bg-white rounded-lg border border-red-200">
-                  <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500 mb-1">
-                    {motorcycle.highest_bid ? t('motorcycle.currentBidLabel') : t('motorcycle.fromPrice')}
-                  </p>
-                  <p className="font-barlow text-4xl font-bold text-red-600">
-                    {formatPrice(currentBid)}
-                  </p>
-                  {motorcycle.highest_bid && (
-                    <p className="text-sm text-zinc-500 mt-1">
-                      {bids.length} {t('motorcycle.bids')}
-                    </p>
-                  )}
-                </div>
-
-                {/* Buy Now Price */}
+                {/* Price */}
                 <div className="mb-6 p-4 bg-zinc-900 rounded-lg text-white">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                    <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400">
-                      {t('motorcycle.buyNow')}
-                    </p>
-                  </div>
-                  <p className="font-barlow text-3xl font-bold">
+                  <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">
+                    {t('motorcycle.price')}
+                  </p>
+                  <p className="font-barlow text-4xl font-bold">
                     {formatPrice(motorcycle.price)}
                   </p>
                 </div>
