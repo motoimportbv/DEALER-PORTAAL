@@ -17,7 +17,9 @@ import {
   FileText,
   Clock,
   Trash2,
-  Globe
+  Globe,
+  WifiOff,
+  Wifi
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
