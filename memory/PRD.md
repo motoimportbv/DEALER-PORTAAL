@@ -213,6 +213,30 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Link op normale registratiepagina: "Bent u een buitenlandse leverancier?"
   - Volledig vertaald in 4 talen (NL, DE, FR, IT)
 
+### 16 Feb 2026 (Update 14) ✅ VOLTOOID
+- ✅ **KEURING & TAXATIE OPTIES** - Bij bestellen
+  - Keuring: €125
+  - Taxatie: €160 (excl. BTW)
+  - Bezorging: €50 (bestaand)
+  - Backend en frontend aangepast
+  - Email notificatie toont alle gekozen opties
+- ✅ **PUSH NOTIFICATIE FIX** - Klik op notificatie crashte app niet meer
+  - Service worker v2 met betere click handler
+  - App.js luistert naar postMessage voor veilige navigatie
+- ✅ **PDF HANDLEIDINGEN** - Direct downloadbaar
+  - `/guides/dealer-handleiding-nl.pdf`
+  - `/guides/leverancier-handleiding-nl.pdf`
+  - `/guides/haendler-anleitung-de.pdf`
+  - `/guides/lieferanten-anleitung-de.pdf`
+- ✅ **HANDLEIDINGEN OP LOGIN PAGINA** - Zichtbaar voor nieuwe bezoekers
+  - Dealer handleiding (rood)
+  - Leverancier handleiding (paars)
+  - Links naar online versies
+- ✅ **COMPLETE CHECK** - Testing agent rapport
+  - Backend: 87.5% passed
+  - Frontend: 100% passed
+  - Alle features werken correct
+
 ### 15 Feb 2026 (Update 10)
 - 🌍 **Meertalige App** - 4 talen ondersteund
   - Nederlands (standaard), Duits, Italiaans, Frans
