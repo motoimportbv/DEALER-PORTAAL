@@ -172,6 +172,7 @@ const AdminParts = () => {
         price: parseFloat(formData.price),
         category_id: formData.category_id,
         compatible_brands: formData.compatible_brands,
+        compatible_types: formData.compatible_types,
         stock: parseInt(formData.stock) || 0,
         sku: formData.sku,
         images: formData.images
