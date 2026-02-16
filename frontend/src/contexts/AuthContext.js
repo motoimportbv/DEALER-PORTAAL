@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
     const { token: newToken, user: userData } = response.data;
     localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(userData));
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
     // Ensure we use fresh user data with correct is_approved status
