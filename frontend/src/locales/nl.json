@@ -271,11 +271,20 @@
   "myListings": {
     "listed": "motoren geplaatst",
     "forSale": "Te Koop",
+    "paused": "Gepauzeerd",
     "noListings": "Nog geen motoren geplaatst",
     "firstListing": "Plaats uw eerste motor te koop voor andere dealers",
     "listedOn": "Geplaatst op",
     "feeNotice": "Let op",
-    "feeInfo": "Bij verkoop van uw motor ontvangt u een factuur van €250."
+    "feeInfo": "Bij verkoop van uw motor ontvangt u een factuur van €250.",
+    "editListing": "Listing Bewerken",
+    "updated": "Listing bijgewerkt",
+    "deleted": "Listing verwijderd",
+    "pause": "Pauzeren",
+    "resume": "Hervatten",
+    "delete": "Verwijderen",
+    "confirmDelete": "Listing Verwijderen",
+    "deleteWarning": "Weet u zeker dat u deze listing wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
   },
   "orders": {
     "totalOrders": "bestellingen totaal",
