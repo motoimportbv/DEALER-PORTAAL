@@ -234,19 +234,6 @@ const DealerSellMotorcycle = () => {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="starting_price">{t('sell.minimumBid')} (€)</Label>
-                  <Input
-                    id="starting_price"
-                    name="starting_price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.starting_price}
-                    onChange={handleChange}
-                    placeholder={t('sell.minimumBidPlaceholder')}
-                  />
-                </div>
               </div>
 
               <div className="space-y-2">
