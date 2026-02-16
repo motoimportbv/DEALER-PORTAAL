@@ -58,9 +58,12 @@ const MotorcycleDetail = () => {
   const [myVoucher, setMyVoucher] = useState(null);
 
   useEffect(() => {
-    fetchMotorcycle();
-    fetchMyVoucher();
-  }, [id]);
+    // Wait for auth to finish loading before fetching motorcycle data
+    if (!authLoading) {
+      fetchMotorcycle();
+      fetchMyVoucher();
+    }
+  }, [id, authLoading]);
 
   const fetchMotorcycle = async () => {
     try {
