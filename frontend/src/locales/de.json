@@ -91,7 +91,10 @@
     "myMotorcycles": "Meine Motorräder",
     "sellMotorcycle": "Motorrad verkaufen",
     "myOrders": "Meine Bestellungen",
-    "pendingListings": "Ausstehende Motorräder"
+    "pendingListings": "Ausstehende Motorräder",
+    "partsShop": "Ersatzteile",
+    "partsManagement": "Ersatzteile Verwaltung",
+    "partOrders": "Ersatzteile Bestellungen"
   },
   "search": {
     "placeholder": "Suche nach Marke, Modell, Farbe oder Baujahr...",
