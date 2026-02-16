@@ -446,7 +446,53 @@
     "disableError": "Kon push notificaties niet uitschakelen",
     "testSent": "Test notificatie verzonden! Check uw telefoon.",
     "testError": "Kon test niet uitvoeren",
-    "invalidKeys": "Subscription keys zijn ongeldig. Klik op \"Uit\" en dan \"Inschakelen\"."
+    "invalidKeys": "Subscription keys zijn ongeldig. Klik op \"Uit\" en dan \"Inschakelen\".",
+    "howToEnable": "Hoe in te schakelen?"
+  },
+  "pushBlocked": {
+    "title": "Notificaties Geblokkeerd",
+    "subtitle": "Uw browser blokkeert momenteel notificaties",
+    "explanation": "U heeft eerder notificaties geweigerd voor deze website. Volg onderstaande stappen om notificaties weer in te schakelen.",
+    "browser": "uw browser",
+    "stepsFor": "Stappen voor {{browser}}",
+    "chrome": {
+      "step1Title": "Klik op het slotje",
+      "step1Desc": "Klik op het slotje (of 'i' icoon) links in de adresbalk naast de URL.",
+      "step2Title": "Open Site-instellingen",
+      "step2Desc": "Klik op 'Site-instellingen' of 'Machtigingen' in het dropdown menu.",
+      "step3Title": "Wijzig Notificaties",
+      "step3Desc": "Zoek 'Notificaties' en verander de instelling van 'Blokkeren' naar 'Toestaan'."
+    },
+    "safari": {
+      "step1Title": "Open Safari Voorkeuren",
+      "step1Desc": "Ga naar Safari menu → Voorkeuren → Websites → Meldingen.",
+      "step2Title": "Wijzig de instelling",
+      "step2Desc": "Zoek deze website in de lijst en verander naar 'Toestaan'."
+    },
+    "firefox": {
+      "step1Title": "Klik op het slotje",
+      "step1Desc": "Klik op het slotje links in de adresbalk.",
+      "step2Title": "Wis de blokkering",
+      "step2Desc": "Klik op 'Verbindingsinformatie wissen' of verander Meldingen naar 'Toestaan'."
+    },
+    "ios": {
+      "step1Title": "Open Instellingen",
+      "step1Desc": "Ga naar de Instellingen app op uw iPhone.",
+      "step2Title": "Zoek Safari/Chrome",
+      "step2Desc": "Scroll naar Safari (of Chrome) en tik erop.",
+      "step3Title": "Schakel Notificaties in",
+      "step3Desc": "Zoek 'Notificaties' en zet deze aan voor deze website."
+    },
+    "android": {
+      "step1Title": "Open Chrome Menu",
+      "step1Desc": "Tik op de drie puntjes rechtsboven in Chrome.",
+      "step2Title": "Ga naar Instellingen",
+      "step2Desc": "Tik op 'Instellingen' → 'Site-instellingen' → 'Meldingen'.",
+      "step3Title": "Deblokkeer de website",
+      "step3Desc": "Zoek deze website en verander naar 'Toestaan'."
+    },
+    "finalStep": "Nadat u de instelling heeft gewijzigd, ververs de pagina en probeer opnieuw notificaties in te schakelen.",
+    "understood": "Begrepen"
   },
   "parts": {
     "shopTitle": "Onderdelen Shop",

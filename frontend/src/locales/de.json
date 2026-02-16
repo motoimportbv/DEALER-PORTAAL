@@ -446,7 +446,53 @@
     "disableError": "Push-Benachrichtigungen konnten nicht deaktiviert werden",
     "testSent": "Testbenachrichtigung gesendet! Überprüfen Sie Ihr Telefon.",
     "testError": "Test konnte nicht ausgeführt werden",
-    "invalidKeys": "Subscription-Schlüssel sind ungültig. Klicken Sie auf \"Aus\" und dann \"Aktivieren\"."
+    "invalidKeys": "Subscription-Schlüssel sind ungültig. Klicken Sie auf \"Aus\" und dann \"Aktivieren\".",
+    "howToEnable": "Wie aktivieren?"
+  },
+  "pushBlocked": {
+    "title": "Benachrichtigungen Blockiert",
+    "subtitle": "Ihr Browser blockiert derzeit Benachrichtigungen",
+    "explanation": "Sie haben zuvor Benachrichtigungen für diese Website abgelehnt. Folgen Sie den unten stehenden Schritten, um Benachrichtigungen wieder zu aktivieren.",
+    "browser": "Ihr Browser",
+    "stepsFor": "Schritte für {{browser}}",
+    "chrome": {
+      "step1Title": "Klicken Sie auf das Schloss",
+      "step1Desc": "Klicken Sie auf das Schloss (oder 'i' Symbol) links in der Adressleiste neben der URL.",
+      "step2Title": "Öffnen Sie Website-Einstellungen",
+      "step2Desc": "Klicken Sie im Dropdown-Menü auf 'Website-Einstellungen' oder 'Berechtigungen'.",
+      "step3Title": "Ändern Sie Benachrichtigungen",
+      "step3Desc": "Suchen Sie 'Benachrichtigungen' und ändern Sie die Einstellung von 'Blockieren' auf 'Zulassen'."
+    },
+    "safari": {
+      "step1Title": "Öffnen Sie Safari Einstellungen",
+      "step1Desc": "Gehen Sie zu Safari Menü → Einstellungen → Websites → Mitteilungen.",
+      "step2Title": "Ändern Sie die Einstellung",
+      "step2Desc": "Suchen Sie diese Website in der Liste und ändern Sie auf 'Zulassen'."
+    },
+    "firefox": {
+      "step1Title": "Klicken Sie auf das Schloss",
+      "step1Desc": "Klicken Sie auf das Schloss links in der Adressleiste.",
+      "step2Title": "Blockierung aufheben",
+      "step2Desc": "Klicken Sie auf 'Verbindungsinformationen löschen' oder ändern Sie Mitteilungen auf 'Zulassen'."
+    },
+    "ios": {
+      "step1Title": "Öffnen Sie Einstellungen",
+      "step1Desc": "Gehen Sie zur Einstellungen-App auf Ihrem iPhone.",
+      "step2Title": "Suchen Sie Safari/Chrome",
+      "step2Desc": "Scrollen Sie zu Safari (oder Chrome) und tippen Sie darauf.",
+      "step3Title": "Aktivieren Sie Benachrichtigungen",
+      "step3Desc": "Suchen Sie 'Benachrichtigungen' und aktivieren Sie diese für diese Website."
+    },
+    "android": {
+      "step1Title": "Öffnen Sie das Chrome-Menü",
+      "step1Desc": "Tippen Sie auf die drei Punkte oben rechts in Chrome.",
+      "step2Title": "Gehen Sie zu Einstellungen",
+      "step2Desc": "Tippen Sie auf 'Einstellungen' → 'Website-Einstellungen' → 'Benachrichtigungen'.",
+      "step3Title": "Entsperren Sie die Website",
+      "step3Desc": "Suchen Sie diese Website und ändern Sie auf 'Zulassen'."
+    },
+    "finalStep": "Nachdem Sie die Einstellung geändert haben, aktualisieren Sie die Seite und versuchen Sie erneut, Benachrichtigungen zu aktivieren.",
+    "understood": "Verstanden"
   },
   "parts": {
     "shopTitle": "Ersatzteile Shop",

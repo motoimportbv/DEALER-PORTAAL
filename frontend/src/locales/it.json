@@ -446,7 +446,53 @@
     "disableError": "Impossibile disattivare le notifiche push",
     "testSent": "Notifica di test inviata! Controlla il tuo telefono.",
     "testError": "Impossibile eseguire il test",
-    "invalidKeys": "Le chiavi di sottoscrizione non sono valide. Clicca su \"Disattiva\" e poi \"Attiva\"."
+    "invalidKeys": "Le chiavi di sottoscrizione non sono valide. Clicca su \"Disattiva\" e poi \"Attiva\".",
+    "howToEnable": "Come attivare?"
+  },
+  "pushBlocked": {
+    "title": "Notifiche Bloccate",
+    "subtitle": "Il tuo browser sta attualmente bloccando le notifiche",
+    "explanation": "Hai precedentemente rifiutato le notifiche per questo sito. Segui i passaggi seguenti per riattivare le notifiche.",
+    "browser": "il tuo browser",
+    "stepsFor": "Passaggi per {{browser}}",
+    "chrome": {
+      "step1Title": "Clicca sul lucchetto",
+      "step1Desc": "Clicca sul lucchetto (o icona 'i') a sinistra della barra degli indirizzi accanto all'URL.",
+      "step2Title": "Apri le impostazioni del sito",
+      "step2Desc": "Clicca su 'Impostazioni sito' o 'Autorizzazioni' nel menu a discesa.",
+      "step3Title": "Modifica le notifiche",
+      "step3Desc": "Cerca 'Notifiche' e cambia l'impostazione da 'Blocca' a 'Consenti'."
+    },
+    "safari": {
+      "step1Title": "Apri le preferenze di Safari",
+      "step1Desc": "Vai al menu Safari → Preferenze → Siti web → Notifiche.",
+      "step2Title": "Modifica l'impostazione",
+      "step2Desc": "Trova questo sito nella lista e cambia in 'Consenti'."
+    },
+    "firefox": {
+      "step1Title": "Clicca sul lucchetto",
+      "step1Desc": "Clicca sul lucchetto a sinistra della barra degli indirizzi.",
+      "step2Title": "Rimuovi il blocco",
+      "step2Desc": "Clicca su 'Cancella informazioni di connessione' o cambia Notifiche in 'Consenti'."
+    },
+    "ios": {
+      "step1Title": "Apri Impostazioni",
+      "step1Desc": "Vai all'app Impostazioni sul tuo iPhone.",
+      "step2Title": "Trova Safari/Chrome",
+      "step2Desc": "Scorri fino a Safari (o Chrome) e toccalo.",
+      "step3Title": "Attiva le notifiche",
+      "step3Desc": "Cerca 'Notifiche' e attivale per questo sito."
+    },
+    "android": {
+      "step1Title": "Apri il menu di Chrome",
+      "step1Desc": "Tocca i tre puntini in alto a destra in Chrome.",
+      "step2Title": "Vai alle impostazioni",
+      "step2Desc": "Tocca 'Impostazioni' → 'Impostazioni sito' → 'Notifiche'.",
+      "step3Title": "Sblocca il sito",
+      "step3Desc": "Trova questo sito e cambia in 'Consenti'."
+    },
+    "finalStep": "Dopo aver modificato l'impostazione, aggiorna la pagina e riprova ad attivare le notifiche.",
+    "understood": "Capito"
   },
   "parts": {
     "shopTitle": "Shop Ricambi",

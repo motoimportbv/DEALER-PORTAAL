@@ -446,7 +446,53 @@
     "disableError": "Impossible de désactiver les notifications push",
     "testSent": "Notification de test envoyée ! Vérifiez votre téléphone.",
     "testError": "Impossible d'exécuter le test",
-    "invalidKeys": "Les clés d'abonnement sont invalides. Cliquez sur \"Désactiver\" puis \"Activer\"."
+    "invalidKeys": "Les clés d'abonnement sont invalides. Cliquez sur \"Désactiver\" puis \"Activer\".",
+    "howToEnable": "Comment activer?"
+  },
+  "pushBlocked": {
+    "title": "Notifications Bloquées",
+    "subtitle": "Votre navigateur bloque actuellement les notifications",
+    "explanation": "Vous avez précédemment refusé les notifications pour ce site. Suivez les étapes ci-dessous pour réactiver les notifications.",
+    "browser": "votre navigateur",
+    "stepsFor": "Étapes pour {{browser}}",
+    "chrome": {
+      "step1Title": "Cliquez sur le cadenas",
+      "step1Desc": "Cliquez sur le cadenas (ou icône 'i') à gauche de la barre d'adresse à côté de l'URL.",
+      "step2Title": "Ouvrez les paramètres du site",
+      "step2Desc": "Cliquez sur 'Paramètres du site' ou 'Autorisations' dans le menu déroulant.",
+      "step3Title": "Modifiez les notifications",
+      "step3Desc": "Recherchez 'Notifications' et changez le paramètre de 'Bloquer' à 'Autoriser'."
+    },
+    "safari": {
+      "step1Title": "Ouvrez les préférences Safari",
+      "step1Desc": "Allez dans le menu Safari → Préférences → Sites web → Notifications.",
+      "step2Title": "Modifiez le paramètre",
+      "step2Desc": "Trouvez ce site dans la liste et changez en 'Autoriser'."
+    },
+    "firefox": {
+      "step1Title": "Cliquez sur le cadenas",
+      "step1Desc": "Cliquez sur le cadenas à gauche de la barre d'adresse.",
+      "step2Title": "Supprimez le blocage",
+      "step2Desc": "Cliquez sur 'Effacer les informations de connexion' ou changez Notifications en 'Autoriser'."
+    },
+    "ios": {
+      "step1Title": "Ouvrez les Réglages",
+      "step1Desc": "Allez dans l'application Réglages sur votre iPhone.",
+      "step2Title": "Trouvez Safari/Chrome",
+      "step2Desc": "Faites défiler jusqu'à Safari (ou Chrome) et appuyez dessus.",
+      "step3Title": "Activez les notifications",
+      "step3Desc": "Recherchez 'Notifications' et activez-les pour ce site."
+    },
+    "android": {
+      "step1Title": "Ouvrez le menu Chrome",
+      "step1Desc": "Appuyez sur les trois points en haut à droite dans Chrome.",
+      "step2Title": "Allez dans les paramètres",
+      "step2Desc": "Appuyez sur 'Paramètres' → 'Paramètres du site' → 'Notifications'.",
+      "step3Title": "Débloquez le site",
+      "step3Desc": "Trouvez ce site et changez en 'Autoriser'."
+    },
+    "finalStep": "Après avoir modifié le paramètre, actualisez la page et réessayez d'activer les notifications.",
+    "understood": "Compris"
   },
   "parts": {
     "shopTitle": "Boutique Pièces",
