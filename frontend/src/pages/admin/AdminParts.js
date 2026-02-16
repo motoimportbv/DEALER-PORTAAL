@@ -597,60 +597,35 @@ const AdminParts = () => {
               </div>
 
               <div className="col-span-2">
-                <div className="flex items-center justify-between mb-2">
-                  <Label>{t('parts.compatibleBrands')}</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={selectAllBrands}
-                    className={formData.compatible_brands.length === MOTORCYCLE_BRANDS.length ? 'bg-red-600 text-white hover:bg-red-700' : ''}
-                  >
-                    {formData.compatible_brands.length === MOTORCYCLE_BRANDS.length ? 'Alles Deselecteren' : 'Alle Merken'}
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {MOTORCYCLE_BRANDS.map(brand => (
+                <Label>{t('parts.compatibleBrands')}</Label>
+                <div className="mt-2 p-4 border-2 border-dashed border-zinc-300 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-zinc-900">
+                        {Object.keys(formData.compatible_motorcycles).length > 0 ? (
+                          <>
+                            {Object.keys(formData.compatible_motorcycles).length} merken, {Object.values(formData.compatible_motorcycles).reduce((sum, m) => sum + m.length, 0)} modellen geselecteerd
+                          </>
+                        ) : (
+                          'Geen motoren geselecteerd'
+                        )}
+                      </p>
+                      {Object.keys(formData.compatible_motorcycles).length > 0 && (
+                        <p className="text-sm text-zinc-500 mt-1">
+                          {Object.keys(formData.compatible_motorcycles).slice(0, 4).join(', ')}
+                          {Object.keys(formData.compatible_motorcycles).length > 4 && ` +${Object.keys(formData.compatible_motorcycles).length - 4} meer`}
+                        </p>
+                      )}
+                    </div>
                     <Button
-                      key={brand}
                       type="button"
-                      variant={formData.compatible_brands.includes(brand) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleBrandToggle(brand)}
-                      className={formData.compatible_brands.includes(brand) ? 'bg-red-600 hover:bg-red-700' : ''}
+                      onClick={openWizard}
+                      className="bg-red-600 hover:bg-red-700"
                     >
-                      {brand}
+                      <Plus className="w-4 h-4 mr-2" />
+                      Kies Motoren
                     </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="col-span-2">
-                <div className="flex items-center justify-between mb-2">
-                  <Label>{t('parts.compatibleTypes')}</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={selectAllTypes}
-                    className={formData.compatible_types.length === MOTORCYCLE_TYPES.length ? 'bg-red-600 text-white hover:bg-red-700' : ''}
-                  >
-                    {formData.compatible_types.length === MOTORCYCLE_TYPES.length ? 'Alles Deselecteren' : 'Alle Types'}
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {MOTORCYCLE_TYPES.map(type => (
-                    <Button
-                      key={type}
-                      type="button"
-                      variant={formData.compatible_types.includes(type) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleTypeToggle(type)}
-                      className={formData.compatible_types.includes(type) ? 'bg-blue-600 hover:bg-blue-700' : ''}
-                    >
-                      {type}
-                    </Button>
-                  ))}
+                  </div>
                 </div>
               </div>
 
