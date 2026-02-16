@@ -271,11 +271,20 @@
   "myListings": {
     "listed": "Motorräder eingestellt",
     "forSale": "Zu verkaufen",
+    "paused": "Pausiert",
     "noListings": "Noch keine Motorräder eingestellt",
     "firstListing": "Stellen Sie Ihr erstes Motorrad zum Verkauf für andere Händler ein",
     "listedOn": "Eingestellt am",
     "feeNotice": "Hinweis",
-    "feeInfo": "Beim Verkauf Ihres Motorrads erhalten Sie eine Rechnung über €250."
+    "feeInfo": "Beim Verkauf Ihres Motorrads erhalten Sie eine Rechnung über €250.",
+    "editListing": "Anzeige Bearbeiten",
+    "updated": "Anzeige aktualisiert",
+    "deleted": "Anzeige gelöscht",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "delete": "Löschen",
+    "confirmDelete": "Anzeige Löschen",
+    "deleteWarning": "Sind Sie sicher, dass Sie diese Anzeige löschen möchten? Dies kann nicht rückgängig gemacht werden."
   },
   "orders": {
     "totalOrders": "Bestellungen insgesamt",
