@@ -235,7 +235,8 @@
     "placeBid": "Faire une offre",
     "yourBid": "Votre offre",
     "minimumBid": "Offre minimum",
-    "bidSuccess": "Offre placée !"
+    "bidSuccess": "Offre placée !",
+    "alreadyHighestBidder": "Vous êtes déjà le plus offrant"
   },
   "voucher": {
     "title": "Code promo",
