@@ -543,6 +543,7 @@
     "description": "Beschrijving",
     "descriptionPlaceholder": "Beschrijf het onderdeel...",
     "compatibleBrands": "Passend voor merken",
+    "compatibleTypes": "Passend voor types",
     "images": "Afbeeldingen",
     "orders": "bestellingen",
     "noOrders": "Nog geen bestellingen",
