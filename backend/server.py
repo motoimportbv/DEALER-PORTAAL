@@ -855,10 +855,10 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
         # Send email notifications to all approved dealers
         asyncio.create_task(notify_dealers_new_motorcycle_email(motorcycle, dealers))
         
-        # Send push notifications to all dealers
+        # Send push notifications to all dealers with detailed motor info
         asyncio.create_task(send_push_to_all_dealers(
-            title="🏍️ Nieuwe Motor!",
-            body=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - €{motorcycle.price:,.0f}",
+            title=f"🏍️ {motorcycle.brand} {motorcycle.model}",
+            body=f"Jaar: {motorcycle.year} | Prijs: €{motorcycle.price:,.0f} | {motorcycle.condition.title() if motorcycle.condition else 'Goed'}",
             url=f"/motorcycle/{motorcycle.id}"
         ))
     
