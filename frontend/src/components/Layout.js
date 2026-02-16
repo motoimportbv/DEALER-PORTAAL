@@ -59,9 +59,17 @@ const Layout = ({ children, requiredRole }) => {
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
-        {/* Top bar with language selector for mobile */}
-        <div className="md:hidden flex justify-end p-3 bg-zinc-100 border-b">
-          <LanguageSelector />
+        {/* Mobile header with language selector - always visible on mobile */}
+        <div className="md:hidden sticky top-0 z-50 flex items-center justify-between p-3 bg-white border-b shadow-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+              <Bike className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
+              Moto Import
+            </span>
+          </div>
+          <LanguageSelector variant="light" />
         </div>
         {children}
       </main>
