@@ -187,6 +187,13 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Volledig vertaald in 4 talen (NL, DE, FR, IT)
   - Test IDs: `notification-blocked-modal`, `push-notification-help-btn`
 
+- 🔧 **PUSH NOTIFICATIE VAPID KEY FIX** - Kritieke productie bug opgelost
+  - VAPID private key conversie gefixed (was PEM, nu raw base64 formaat)
+  - VAPID keys hardcoded in code voor consistentie tussen preview en productie
+  - Test pagina toegevoegd: `/push-test.html` voor debugging
+  - Nieuwe `/api/push/status` endpoint toegevoegd
+  - Productie deployment succesvol - keys_match: true
+
 - 📱 **NATIVE APP DOCUMENTATIE** - Capacitor build guide
   - Handleiding: `/app/frontend/NATIVE_APP_BUILD_GUIDE.md`
   - iOS en Android projecten al geconfigureerd
