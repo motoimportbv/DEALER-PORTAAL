@@ -75,6 +75,7 @@ const MotorcycleDetail = () => {
   };
 
   const fetchMyVoucher = async () => {
+    if (!user) return; // Don't fetch if not logged in
     try {
       const response = await axios.get(`${API}/voucher/my-voucher`);
       if (response.data.has_voucher && !response.data.is_used) {
@@ -84,7 +85,8 @@ const MotorcycleDetail = () => {
         setVoucherValid(true);
       }
     } catch (error) {
-      console.error('Failed to fetch voucher:', error);
+      // Silently fail - voucher is optional
+      console.log('No voucher available');
     }
   };
 
