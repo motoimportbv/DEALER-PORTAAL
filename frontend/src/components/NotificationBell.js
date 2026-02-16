@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Bell, Bike, Check, CheckCheck } from 'lucide-react';
@@ -12,12 +12,12 @@ import {
 } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const NotificationBell = () => {
-  const { token } = useContext(AuthContext);
+  const { token } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
