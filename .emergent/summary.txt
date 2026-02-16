@@ -3,75 +3,71 @@ The user wants to build and iteratively improve an application for their motorcy
 
 **PRODUCT REQUIREMENTS:**
 -   **Core Functionality:** An application for an admin to offer motorcycles to a network of dealers.
--   **User Roles:** Admin, Dealer, and a new **Foreign Dealer** (supplier) role.
--   **Admin Capabilities:** Add/manage motorcycles, view orders, manage dealer registrations (approve, delete, set as foreign), review and activate motorcycles submitted by foreign dealers, and view dealer activity stats.
--   **Dealer Capabilities:** Register, view the catalog, order motorcycles, list their own motorcycles for sale, and manage their listings.
--   **Foreign Dealer Capabilities:** Register, submit motorcycles for admin approval (cannot buy or see the main catalog).
+-   **User Roles:** Admin, Dealer, and a **Foreign Dealer** (supplier) role.
+-   **Admin Capabilities:** Add/manage motorcycles, view orders, manage dealer registrations, review and activate motorcycles submitted by foreign dealers, view dealer activity stats, and manage a new **Parts Shop**.
+-   **Dealer Capabilities:** Register, view the catalog, order motorcycles, list their own motorcycles for sale, and manage their listings (edit, pause, delete). Dealers can also purchase items from the **Parts Shop**.
+-   **Parts Shop:** Dealers should be able to search for parts by motorcycle brand and category, add them to a cart, and place an order. An invoice should be automatically generated and sent. The admin needs to manage parts, categories, and stock.
 -   **Internationalization (i18n):** The app must be usable in Dutch, German, French, and Italian.
 -   **Communication:** A WhatsApp button should be available for easy contact.
+-   **PWA/Mobile Experience:** The app should function well on mobile, especially iOS, with persistent data and easy refresh mechanisms. Users should be prompted to install the app on their home screen.
 -   **Native App:** The user wants to publish the app in the Apple App Store and Google Play Store.
 
 **User's preferred language**: Dutch. The next agent MUST respond in Dutch.
 
 **what currently exists?**
-A full-stack FastAPI/React application with Admin, Dealer, and Foreign Dealer roles. Key features include a dealer-to-dealer marketplace, a foreign dealer submission workflow, dealer activity tracking, a WhatsApp button, and auto-printing of packing slips. The foundation for multi-language support using  is in place. In this session, the agent has systematically translated almost the entire frontend application into Dutch, German, French, and Italian by replacing hardcoded text with translation keys.
+A full-stack FastAPI/React application with Admin, Dealer, and Foreign Dealer roles. The application is fully translated into Dutch, German, French, and Italian.
+
+Key implemented features include:
+-   Separate registration flows for local and foreign dealers.
+-   A complete dealer-to-dealer marketplace where dealers can list, edit, pause, and delete their own motorcycles.
+-   A fully functional Parts Shop where admins can manage parts/categories and dealers can order items, with automatic PDF invoice generation.
+-   A fix for image persistence: all uploaded images are now stored as Base64 strings directly in MongoDB, ensuring they survive server restarts.
+-   Significant improvements to the Progressive Web App (PWA) experience on iOS, including a Network First caching strategy, a manual refresh button, and UI adjustments for the iPhone notch.
+-   A fix for push notification errors caused by VAPID key mismatches, with automatic re-subscription logic.
 
 **Last working item**:
--   **Last item agent was working:** Completing the full-application translation. The agent just finished translating the final batch of pages, including the admin sections (, , ) and the  (packing slip) page. The corresponding translation keys were added to all four locale files (, , , ), and the frontend linter passed successfully.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N (Linter was run, but no visual or functional verification of the latest changes was performed).
--   **Which testing method agent to use?**: manual testing by screenshot tool. The agent needs to perform a final visual verification of the newly translated pages.
+-   **Last item agent was working:** The user reported being unable to enable push notifications, providing a screenshot that shows the browser is blocking them. The agent identified this as a browser permission issue (the user likely denied permission previously) and explained the manual steps to re-enable them in the browser settings. The agent then asked if the user would like an instructional popup in the app to guide users through this process.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** N/A
+-   **Which testing method agent to use?** frontend testing agent/screenshot tool (if the user requests the instructional popup).
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Verify Final Translations (P0)**
-    -   **Description**: The translation of all frontend pages is functionally complete, but the last batch of changes has not been visually verified. There might still be untranslated strings or UI issues.
-    -   **Attempted fixes:** N/A.
+-   **Issue 1: Push Notification Browser Permission Block (P0)**
+    -   **Description**: The user cannot enable push notifications because their browser has blocked permissions for the site.
+    -   **Attempted fixes**: The agent correctly diagnosed the issue is on the user's side (browser settings) and not a bug in the application code.
     -   **Next debug checklist**:
-        1.  Log in as an admin user.
-        2.  Navigate to the Dealers (), Bestellingen (), and Motoren () pages.
-        3.  Use the language selector to switch between Dutch, German, French, and Italian.
-        4.  Take a screenshot to confirm that all text (table headers, buttons, titles) is correctly translated and the layout is not broken.
-        5.  Do a final spot-check across other roles (Dealer, Foreign Dealer) to ensure full coverage.
-    -   **Why fix this issue and what will be achieved with the fix?**: This will complete the multi-language support feature as requested by the user, making the entire application internationally accessible.
-    -   **Status:** IN PROGRESS
+        1.  Await the user's response.
+        2.  If the user confirms they fixed it manually, the issue is resolved.
+        3.  If the user wants help for their dealers, implement a new instructional modal/popup that explains how to unblock notifications in Chrome/Safari settings.
+    -   **Why fix this issue and what will be achieved with the fix?**: This will allow users who have previously denied notification permissions to easily re-enable them, improving engagement.
+    -   **Status:** BLOCKED (Awaiting user decision)
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on other issue:** None.
+    -   **Blocked on other issue:** User feedback.
 
 **In progress Task List**:
--   **Task 1: Complete and Verify App Translation (P0)**
-    -   **Where to resume:** The code changes are done. The immediate next step is to perform visual verification via screenshots, starting with the recently modified admin pages.
-    -   **What will be achieved with this?**: A fully internationalized application, ready for user review.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on something:** No.
+-   None.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Native App Build (Capacitor) (P1):** The user wants to publish the app in the Apple App Store and Google Play Store. The next step is to create a plan to build the native apps and guide the user through the submission process.
+    -   **Native App Build (Capacitor) (P1):** The user wants to publish the app in the Apple App Store and Google Play Store. Plan the steps to integrate Capacitor and guide the user through the process.
 -   **Future Tasks:**
-    -   **Allow Edit/Delete of Dealer Listings (P2):** Add functionality for dealers to edit or remove the motorcycles they have listed for sale.
-    -   **Backend Refactoring (P2):** The  file is monolithic and should be split into a more maintainable structure (e.g., routers, models, services).
+    -   **Backend Refactoring (P2):** The  file has become extremely monolithic after adding the parts shop and other features. It should be split into a more maintainable structure (e.g., dedicated routers for auth, motorcycles, parts, orders).
     -   **Remove Unused API Endpoint (P2):** The  endpoint from an old Stripe integration is still in  and should be removed.
 
 **Completed work in this session**
--   **Full Frontend Translation (near-complete):**
-    -   Translated the following pages and components: , , , , , , , , , , , , and .
-    -   Systematically added all new translation keys to the , , , and  locale files.
-    -   Updated  to reflect the progress on the translation task.
+-   **Parts Shop Feature:** Built a complete parts shop from scratch, including backend models (Part, PartCategory, PartOrder), API endpoints (CRUD for parts, categories, and orders), and frontend pages for both admin management and a dealer-facing storefront with a shopping cart.
+-   **PDF Invoice Generation:** Implemented automatic PDF invoice generation for part orders using , including customer details, order items, and payment instructions. Handled user requests for adding and later removing a logo.
+-   **Image Persistence Fix:** Migrated motorcycle image storage from a volatile local file system to permanent Base64 encoding within the MongoDB database. This resolved the critical issue of images disappearing after server restarts.
+-   **Dealer Listing Management:** Implemented functionality for dealers to **edit, pause/resume, and delete** their own motorcycle listings.
+-   **iOS PWA Caching Fix:** Resolved the issue where iOS users had to reinstall the app to see updates. The service worker was changed to a Network First strategy, and a manual Refresh button was added.
+-   **iOS UI/UX Fixes:** Adjusted the mobile header layout to account for the iPhone notch using safe-area padding, ensuring UI elements like the refresh button and language selector are fully visible and usable.
+-   **Push Notification VAPID Key Fix:** Solved the  error by moving VAPID keys to environment variables and implementing logic on both frontend and backend to automatically handle re-subscription when keys mismatch.
+-   **Language Selector UI Fix:** Relocated and restyled the language selector for better visibility and usability on mobile devices.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Unused Stripe Endpoint**
-    -   **Debug checklist:** Search for  in  and remove the entire endpoint definition.
-    -   **Why to solve this issue and what will be achieved with this?**: Code cleanup and removal of dead code.
-    -   **Should Test frontend/backend/both after fix?**: backend (ensure app startup is unaffected).
-    -   **Is recurring issue?** Y
--   **Issue 2: Monolithic Backend File**
-    -   **Debug checklist:** Plan a refactoring strategy to split  into multiple files (e.g., , , ).
-    -   **Why to solve this issue and what will be achieved with this?**: Improves code maintainability and scalability.
-    -   **Should Test frontend/backend/both after fix?**: both (regression testing).
-    -   **Is recurring issue?** Y
+-   None. The Motorcycle Images Not Loading issue from the previous fork has been resolved by migrating image storage to MongoDB.
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -82,39 +78,67 @@ A full-stack FastAPI/React application with Admin, Dealer, and Foreign Dealer ro
 **Key Technical Concepts**
 -   **Backend**: FastAPI, MongoDB (motor), Pydantic, JWT Auth.
 -   **Frontend**: React, React Router, TailwindCSS, Axios.
--   **Internationalization (i18n)**: , , .
+-   **Image Storage**: Images are converted to Base64 and stored directly in MongoDB documents to ensure persistence.
+-   **PDF Generation**:  (Python) is used to dynamically create PDF invoices.
+-   **PWA Caching**:  now uses a Network First strategy to ensure iOS clients get updates on refresh.
 
 **key DB schema**
--   No changes made in this session.
+-   **motorcycles**:
+    -   : Now a  containing Base64 encoded image data.
+    -   : New boolean field to support pausing dealer listings.
+-   **part_categories** (New collection): 
+-   **parts** (New collection): 
+-   **part_orders** (New collection): 
 
 **changes in tech stack**
--   No new libraries were added. Existing  libraries were utilized.
+-   No new dependencies were installed, but the application logic has fundamentally changed to store images in the database instead of the filesystem.
 
 **All files of reference**
--   All  files under 
 -   
--   All JSON files in 
+-   
+-   
+-   
+-   
+-   
 -   
 
 **Areas that need refactoring**:
--    is monolithic and a candidate for future refactoring.
+-    is now critically monolithic. It contains logic for auth, motorcycles, dealer listings, auctions, parts, part orders, PDF generation, and image serving. This file urgently needs to be broken down into smaller, domain-specific router files (e.g., , ) to maintain scalability.
 
 **key api endpoints**
--   No changes were made to API endpoints in this session.
+-   : (New) Create a new part (admin).
+-   : (New) Get all parts (admin).
+-   : (New) Get available parts for dealers (filtered).
+-   : (New) Get all part categories.
+-   : (New) Create a new part order (dealer).
+-   : (New) Serves a Base64 image from the DB.
+-   : (New) Update a dealer's own listing.
+-   : (New) Delete a dealer's own listing.
+-   : (New) Pause/unpause a dealer's own listing.
+-   : (Updated) Now saves image as Base64 in a new  collection instead of to disk.
+-   : (Updated) Now handles  exceptions and can trigger a re-subscription flow.
 
 **Critical Info for New Agent**
--   The user's top priority is to complete the multi-language translation feature. The coding is done, but final verification is required.
--   Once the translation is confirmed as complete, the next major task is to begin work on the Native App Build using Capacitor.
--   The user has consistently instructed the agent to continue with the translation task until it is fully finished.
+-   The immediate priority is to wait for the user's response regarding the push notification permission issue. Do not proceed until the user decides if they want an instructional popup built.
+-   The image persistence problem is solved. All new and existing images are now in the database. The local  directory is no longer the source of truth for motorcycle images.
+-   The codebase, especially , has accumulated significant technical debt. Prioritize the backend refactoring task soon to keep the project manageable.
 
 **documents and test reports created in this job**
--    (updated)
+-   
+-    (updated with completed tasks)
+-   Generated sample invoices in  (e.g., ) for user review.
 
-**Last 10 User Messages and any pending HUMAN messages**
-- **User:** De rest ook vertalen (Translate the rest as well) - Acknowledged, In Progress.
-- **User:** Doorgaan met vertalen (Continue with translating) - Acknowledged, Completed.
-- **User:** Doorgaan (Continue) - Acknowledged, Completed.
-(The user has repeatedly confirmed the priority is to finish all translations before moving on.)
+**Last 10 User Messages and any pending HUMAN messages** 
+- **10.  (Something with browser settings)**: User sent a screenshot showing the browser is blocking notifications. - **IN PROGRESS**.
+- **9.  (Push up notification doesn't work)**: User reported a  error. - **Completed**.
+- **8. **: User requested deployment. - **Completed**.
+- **7.  (Also the language on iPhone is too high)**: User reported the language dropdown is obscured by the notch. - **Completed**.
+- **6.  (Next is that when dealers work with iOS that this app is automatically added as a bookmark to the iPhone)**: User asked for automatic PWA installation. - **Completed** (by adding a prominent instruction modal).
+- **5.  (This is original, customers can't refresh because the camera is in front of it on iPhone)**: User reported the refresh button was unusable due to the iPhone notch. - **Completed**.
+- **4.  (All 3)**: User confirmed they want edit, pause, and delete functionality for their listings. - **Completed**.
+- **3. **: User requested functionality for dealers to manage their listings. - **Completed**.
+- **2.  (Good job)**: User acknowledged the comprehensive testing results. - **Completed**.
+- **1.  (Extensive test please)**: User requested a full test of the iOS caching fix. - **Completed**.
 
 **Project Health Check:**
 -   **Broken**: None.
@@ -122,13 +146,14 @@ A full-stack FastAPI/React application with Admin, Dealer, and Foreign Dealer ro
 
 **3rd Party Integrations**
 -   **Gmail SMTP (Email)** — Functional.
--   **Web Push (pywebpush)** — Functional.
+-   **Web Push (pywebpush)** — Functional, with enhanced error handling.
+-   **Sora 2 (Video Generation)** — Uses Emergent LLM Key. The user's balance is likely still insufficient for use.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO
+-   **Testing agent used after significant changes**: YES ()
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None.
+-   **Known regressions**: A minor, low-priority error toast sometimes appears on the admin parts page, suspected to be a race condition. This was noted in the test report.
 
 **Credentials to test flow:**
 -   **Admin**:  / 
@@ -136,4 +161,4 @@ A full-stack FastAPI/React application with Admin, Dealer, and Foreign Dealer ro
 -   **Foreign Dealer**:  / 
 
 **What agent forgot to execute**
--   The agent did not perform a final verification (e.g., via screenshot) of the last batch of translated pages before the session ended. This is the immediate next step.</analysis>
+-   Nothing was forgotten. The agent successfully addressed all user requests from this session, including fixing a critical bug from the previous session (disappearing images).</analysis>
