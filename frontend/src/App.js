@@ -36,6 +36,28 @@ function App() {
     if (isNative) {
       initializeNativeFeatures();
     }
+
+    // Listen for messages from service worker (notification clicks)
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+        console.log('[App] Received notification click, navigating to:', event.data.url);
+        // Navigate to the URL from the notification
+        const url = new URL(event.data.url);
+        if (url.origin === window.location.origin) {
+          window.location.href = url.pathname + url.search;
+        }
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+
+    return () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
+    };
   }, []);
 
   return (
