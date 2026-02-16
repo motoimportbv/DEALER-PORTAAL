@@ -114,7 +114,7 @@
     "price": "Prijs",
     "askingPrice": "Vraagprijs",
     "buyNowPrice": "Koop Nu Prijs",
-    "startingPrice": "Vanaf prijs",
+    "startingPrice": "Prijs",
     "mileage": "Kilometerstand",
     "color": "Kleur",
     "condition": "Conditie",
@@ -140,7 +140,7 @@
     "noAvailableDesc": "Er zijn momenteel geen motoren beschikbaar",
     "notFound": "Motor niet gevonden",
     "notFoundDesc": "Deze motor bestaat niet of is niet meer beschikbaar",
-    "viewAndBid": "Bekijk & Bied",
+    "viewAndBid": "Bekijk & Koop",
     "deleted": "Motor verwijderd",
     "specifications": "Specificaties",
     "brandModel": "Merk & Model",
@@ -148,7 +148,7 @@
     "active": "Actief",
     "bids": "Biedingen",
     "currentBidLabel": "Huidig Bod",
-    "fromPrice": "Vanaf Prijs",
+    "fromPrice": "Prijs",
     "highestBid": "Hoogste"
   },
   "order": {
