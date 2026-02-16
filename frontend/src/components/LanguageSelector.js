@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Globe } from 'lucide-react';
 
 const languages = [
   { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
@@ -9,7 +9,7 @@ const languages = [
   { code: 'fr', name: 'Français', flag: '🇫🇷' }
 ];
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ variant = 'dark' }) => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -33,27 +33,45 @@ const LanguageSelector = () => {
 
   const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
 
+  // Styles based on variant (dark = sidebar, light = mobile header)
+  const buttonStyles = variant === 'light' 
+    ? 'bg-red-600 hover:bg-red-700 text-white shadow-md'
+    : 'bg-zinc-800 hover:bg-zinc-700 text-white';
+  
+  const dropdownStyles = variant === 'light'
+    ? 'bg-white border-zinc-200 shadow-lg'
+    : 'bg-zinc-800 border-zinc-700 shadow-xl';
+  
+  const itemStyles = variant === 'light'
+    ? 'hover:bg-zinc-100 text-zinc-700'
+    : 'hover:bg-zinc-700 text-zinc-300';
+  
+  const activeItemStyles = variant === 'light'
+    ? 'bg-red-50 text-red-700'
+    : 'bg-zinc-700 text-white';
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors text-white text-sm"
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${buttonStyles}`}
         data-testid="language-selector"
       >
+        <Globe className="w-4 h-4" />
         <span className="text-lg">{currentLang.flag}</span>
-        <span className="hidden sm:inline">{currentLang.name}</span>
+        <span>{currentLang.name}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50">
-          <div className="bg-zinc-800 rounded-lg shadow-xl overflow-hidden min-w-[140px] border border-zinc-700">
+        <div className={`absolute ${variant === 'light' ? 'right-0' : 'left-0'} top-full mt-2 z-50`}>
+          <div className={`rounded-lg overflow-hidden min-w-[160px] border ${dropdownStyles}`}>
             {languages.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
-                className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-zinc-700 transition-colors ${
-                  i18n.language === lang.code ? 'bg-zinc-700 text-white' : 'text-zinc-300'
+                className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left transition-colors ${
+                  i18n.language === lang.code ? activeItemStyles : itemStyles
                 }`}
                 data-testid={`lang-${lang.code}`}
               >
