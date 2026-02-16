@@ -39,7 +39,11 @@ const OrderList = () => {
       const response = await axios.get(`${API}/orders`);
       setOrders(response.data);
     } catch (error) {
-      toast.error(t('adminOrders.loadFailed'));
+      // Only show error if it's not a cancelled request
+      if (!axios.isCancel(error)) {
+        console.error('Failed to load orders:', error);
+        toast.error(t('adminOrders.loadFailed'));
+      }
     } finally {
       setLoading(false);
     }
