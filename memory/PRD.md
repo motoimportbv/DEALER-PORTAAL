@@ -213,6 +213,21 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Link op normale registratiepagina: "Bent u een buitenlandse leverancier?"
   - Volledig vertaald in 4 talen (NL, DE, FR, IT)
 
+### 16 Feb 2026 (Update 16) ✅ VOLTOOID
+- ✅ **ONDERDELEN SHOP COMPLEET** - Dealers kunnen onderdelen bestellen
+  - Admin kan onderdelen beheren: toevoegen, bewerken, verwijderen
+  - Admin kan categorieën beheren (standaard: Uitlaten, Tanktassen, Koffers, Luxe Zadels)
+  - Dealers kunnen zoeken op naam, artikelnummer, categorie en motormerk
+  - Winkelwagen functionaliteit met +/- knoppen
+  - Keuze tussen verzending (€9,95) of gratis ophalen
+  - Automatische PDF factuur per email naar dealer
+  - Admin krijgt notificatie email bij nieuwe bestelling
+  - Factuur bevat: S. Milone, IBAN NL90 REVO 9997 6557 88
+  - Voorraad wordt automatisch bijgewerkt na bestelling
+  - Backend endpoints: `/api/parts/*`, `/api/parts/categories`, `/api/parts/order`
+  - Frontend pagina's: PartsShop.js (dealer), AdminParts.js, AdminPartOrders.js (admin)
+  - Vertaald in 4 talen (NL, DE, FR, IT)
+
 ### 16 Feb 2026 (Update 15) ✅ VOLTOOID
 - ✅ **TAALKEUZE MOBIEL VERBETERD** - Nu prominent zichtbaar
   - Mobiele header met Moto Import logo en taalkeuze
