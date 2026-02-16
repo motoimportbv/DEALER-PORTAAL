@@ -1994,27 +1994,39 @@ async def calculate_payment(motorcycle_id: str, needs_delivery: bool = False, us
 
 @api_router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload image and store in MongoDB for persistence"""
+    import base64
+    
     # Check file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Alleen JPG, PNG of WEBP afbeeldingen toegestaan")
     
-    # Generate unique filename
+    # Read file content
+    content = await file.read()
+    
+    # Check file size (max 5MB)
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 5MB)")
+    
+    # Generate unique ID
+    image_id = str(uuid.uuid4())
     ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    filename = f"{uuid.uuid4()}.{ext}"
-    filepath = UPLOAD_DIR / filename
     
-    # Save file
-    try:
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Kon bestand niet opslaan: {str(e)}")
+    # Store in MongoDB
+    image_doc = {
+        "id": image_id,
+        "filename": f"{image_id}.{ext}",
+        "content_type": file.content_type,
+        "data": base64.b64encode(content).decode('utf-8'),
+        "uploaded_by": user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.images.insert_one(image_doc)
     
-    # Return URL - use request origin or BASE_URL as fallback
+    # Return URL that serves from MongoDB
     origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
     if origin:
-        # Extract base URL from origin/referer
         from urllib.parse import urlparse
         parsed = urlparse(origin)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
@@ -2024,12 +2036,34 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
     if not base_url:
         raise HTTPException(status_code=500, detail="BASE_URL niet geconfigureerd")
     
-    image_url = f"{base_url}/api/uploads/{filename}"
+    image_url = f"{base_url}/api/images/{image_id}"
     
-    return {"url": image_url, "filename": filename}
+    return {"url": image_url, "filename": f"{image_id}.{ext}"}
+
+@api_router.get("/images/{image_id}")
+async def get_image(image_id: str):
+    """Serve image from MongoDB"""
+    import base64
+    from fastapi.responses import Response
+    
+    image = await db.images.find_one({"id": image_id}, {"_id": 0})
+    if not image:
+        raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
+    
+    # Decode base64 data
+    image_data = base64.b64decode(image["data"])
+    
+    return Response(
+        content=image_data,
+        media_type=image["content_type"],
+        headers={"Cache-Control": "public, max-age=31536000"}  # Cache for 1 year
+    )
 
 @api_router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
+    """Upload multiple images and store in MongoDB"""
+    import base64
+    
     urls = []
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
     
@@ -2046,15 +2080,29 @@ async def upload_multiple_images(request: Request, files: List[UploadFile] = Fil
         if file.content_type not in allowed_types:
             continue
         
+        content = await file.read()
+        
+        # Skip if too large
+        if len(content) > 5 * 1024 * 1024:
+            continue
+        
+        image_id = str(uuid.uuid4())
         ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-        filename = f"{uuid.uuid4()}.{ext}"
-        filepath = UPLOAD_DIR / filename
+        
+        # Store in MongoDB
+        image_doc = {
+            "id": image_id,
+            "filename": f"{image_id}.{ext}",
+            "content_type": file.content_type,
+            "data": base64.b64encode(content).decode('utf-8'),
+            "uploaded_by": user["id"],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
         
         try:
-            with open(filepath, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            await db.images.insert_one(image_doc)
             if base_url:
-                urls.append(f"{base_url}/api/uploads/{filename}")
+                urls.append(f"{base_url}/api/images/{image_id}")
         except:
             continue
     
