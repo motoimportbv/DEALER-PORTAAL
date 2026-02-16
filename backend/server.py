@@ -2449,6 +2449,27 @@ async def delete_dealer(dealer_id: str, user: dict = Depends(require_admin)):
     
     return {"message": f"Dealer {dealer['company_name']} is verwijderd"}
 
+@api_router.put("/dealers/{dealer_id}/toggle-offline")
+async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_admin)):
+    """Zet een dealer tijdelijk offline/online - ontvangt geen meldingen wanneer offline"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": {"$in": ["dealer", "foreign_dealer"]}})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    current_status = dealer.get("is_offline", False)
+    new_status = not current_status
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_offline": new_status}}
+    )
+    
+    status_text = "offline" if new_status else "online"
+    return {
+        "message": f"Dealer {dealer['company_name']} is nu {status_text}",
+        "is_offline": new_status
+    }
+
 # ============ NOTIFICATION ENDPOINTS ============
 
 @api_router.get("/notifications", response_model=List[Notification])
