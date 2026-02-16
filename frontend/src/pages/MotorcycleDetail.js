@@ -308,21 +308,8 @@ const MotorcycleDetail = () => {
                       </div>
                     )}
                     
-                    {!timeLeft?.expired && (
-                      <Button 
-                        className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
-                        onClick={() => setBidDialogOpen(true)}
-                        disabled={motorcycle.highest_bidder_id === user?.id}
-                        data-testid="bid-btn"
-                      >
-                        <Gavel className="w-5 h-5 mr-2" />
-                        {motorcycle.highest_bidder_id === user?.id 
-                          ? t('bid.alreadyHighestBidder')
-                          : t('bid.placeBid')}
-                      </Button>
-                    )}
                     <Button 
-                      className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 font-barlow uppercase tracking-wide"
+                      className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
                       onClick={() => {
                         setNeedsDelivery(false);
                         setBuyNowDialogOpen(true);
@@ -330,7 +317,7 @@ const MotorcycleDetail = () => {
                       data-testid="buy-now-btn"
                     >
                       <ShoppingCart className="w-5 h-5 mr-2" />
-                      {t('motorcycle.buyNow')}
+                      {t('motorcycle.orderNow')}
                     </Button>
                   </div>
                 )}
