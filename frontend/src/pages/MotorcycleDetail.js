@@ -68,7 +68,10 @@ const MotorcycleDetail = () => {
       setMotorcycle(response.data);
     } catch (error) {
       console.error('Failed to load motorcycle:', error);
-      toast.error('Kon motor niet laden');
+      // Only show error toast if not a 401 (authentication issues are handled by AuthContext)
+      if (error.response?.status !== 401) {
+        toast.error('Kon motor niet laden');
+      }
     } finally {
       setLoading(false);
     }
