@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import WhatsAppButton from './WhatsAppButton';
+import LanguageSelector from './LanguageSelector';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 
