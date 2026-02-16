@@ -318,15 +318,9 @@ const DealerDashboard = () => {
                     <span>{motorcycle.color}</span>
                   </div>
 
-                  <div className="space-y-1 mb-4">
+                  <div className="mb-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-zinc-500">{t('motorcycle.startingPrice')}</span>
-                      <span className="font-barlow font-bold text-zinc-700">
-                        {formatPrice(motorcycle.starting_price || motorcycle.price * 0.8)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-zinc-500">{t('motorcycle.buyNow')}</span>
+                      <span className="text-sm text-zinc-500">{t('motorcycle.price')}</span>
                       <span className="font-barlow text-xl font-bold text-red-600">
                         {formatPrice(motorcycle.price)}
                       </span>
