@@ -80,12 +80,17 @@ const AdminParts = () => {
     description: '',
     price: '',
     category_id: '',
-    compatible_brands: [],
-    compatible_types: [],
+    compatible_motorcycles: {}, // { brand: [model1, model2], ... }
     stock: '',
     sku: '',
     images: []
   });
+
+  // Motorcycle wizard state
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [selectedBrand, setSelectedBrand] = useState(null);
+  const [selectedModels, setSelectedModels] = useState({});
 
   // Category form state
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
@@ -115,6 +120,84 @@ const AdminParts = () => {
     }
   };
 
+  // Wizard functions
+  const openWizard = () => {
+    setSelectedModels({ ...formData.compatible_motorcycles });
+    setWizardStep(1);
+    setSelectedBrand(null);
+    setWizardOpen(true);
+  };
+
+  const handleBrandSelect = (brand) => {
+    setSelectedBrand(brand);
+    setWizardStep(2);
+  };
+
+  const handleModelToggle = (model) => {
+    if (!selectedBrand) return;
+    
+    setSelectedModels(prev => {
+      const brandModels = prev[selectedBrand] || [];
+      if (brandModels.includes(model)) {
+        const newModels = brandModels.filter(m => m !== model);
+        if (newModels.length === 0) {
+          const { [selectedBrand]: _, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [selectedBrand]: newModels };
+      } else {
+        return { ...prev, [selectedBrand]: [...brandModels, model] };
+      }
+    });
+  };
+
+  const handleSelectAllModels = () => {
+    if (!selectedBrand) return;
+    const allModels = MOTORCYCLE_DATABASE[selectedBrand] || [];
+    const currentModels = selectedModels[selectedBrand] || [];
+    
+    if (currentModels.length === allModels.length) {
+      // Deselect all
+      const { [selectedBrand]: _, ...rest } = selectedModels;
+      setSelectedModels(rest);
+    } else {
+      // Select all
+      setSelectedModels(prev => ({ ...prev, [selectedBrand]: [...allModels] }));
+    }
+  };
+
+  const handleSelectAllBrands = () => {
+    const allSelected = MOTORCYCLE_BRANDS.every(brand => {
+      const models = MOTORCYCLE_DATABASE[brand] || [];
+      const selected = selectedModels[brand] || [];
+      return selected.length === models.length;
+    });
+    
+    if (allSelected) {
+      setSelectedModels({});
+    } else {
+      const allModels = {};
+      MOTORCYCLE_BRANDS.forEach(brand => {
+        allModels[brand] = [...(MOTORCYCLE_DATABASE[brand] || [])];
+      });
+      setSelectedModels(allModels);
+    }
+  };
+
+  const saveWizardSelection = () => {
+    setFormData(prev => ({ ...prev, compatible_motorcycles: selectedModels }));
+    setWizardOpen(false);
+    toast.success('Motormodellen opgeslagen');
+  };
+
+  const getSelectedCount = () => {
+    return Object.values(selectedModels).reduce((sum, models) => sum + models.length, 0);
+  };
+
+  const getBrandSelectedCount = (brand) => {
+    return (selectedModels[brand] || []).length;
+  };
+
   const openAddDialog = () => {
     setEditingPart(null);
     setFormData({
@@ -122,8 +205,7 @@ const AdminParts = () => {
       description: '',
       price: '',
       category_id: categories[0]?.id || '',
-      compatible_brands: [],
-      compatible_types: [],
+      compatible_motorcycles: {},
       stock: '0',
       sku: '',
       images: []
