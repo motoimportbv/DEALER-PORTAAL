@@ -213,6 +213,15 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Link op normale registratiepagina: "Bent u een buitenlandse leverancier?"
   - Volledig vertaald in 4 talen (NL, DE, FR, IT)
 
+### 16 Feb 2026 (Update 17) ✅ VOLTOOID
+- ✅ **AFBEELDINGEN PERMANENT OPGESLAGEN** - In MongoDB ipv lokale folder
+  - Afbeeldingen worden nu base64 gecodeerd in MongoDB opgeslagen
+  - 22 bestaande afbeeldingen gemigreerd naar database
+  - Nieuwe endpoint: `/api/images/{id}` voor ophalen
+  - Upload endpoint aangepast om direct in MongoDB op te slaan
+  - Afbeeldingen blijven bewaard bij server herstarts/deployments
+  - Alleen handmatig verwijderen haalt afbeeldingen weg
+
 ### 16 Feb 2026 (Update 16) ✅ VOLTOOID
 - ✅ **ONDERDELEN SHOP COMPLEET** - Dealers kunnen onderdelen bestellen
   - Admin kan onderdelen beheren: toevoegen, bewerken, verwijderen
