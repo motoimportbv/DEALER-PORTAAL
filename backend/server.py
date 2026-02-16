@@ -3075,6 +3075,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_db_client():
+    """Initialize database with default data"""
+    # Create default part categories if they don't exist
+    default_categories = [
+        {"name": "Uitlaten", "description": "Uitlaatsystemen en onderdelen"},
+        {"name": "Tanktassen", "description": "Tanktassen en bevestigingen"},
+        {"name": "Koffers", "description": "Zijkoffers en topkoffers"},
+        {"name": "Luxe Zadels", "description": "Comfort en luxe zadels"}
+    ]
+    
+    for cat in default_categories:
+        existing = await db.part_categories.find_one({"name": cat["name"]})
+        if not existing:
+            category = PartCategory(name=cat["name"], description=cat["description"])
+            await db.part_categories.insert_one(category.model_dump())
+            logger.info(f"Created default category: {cat['name']}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
