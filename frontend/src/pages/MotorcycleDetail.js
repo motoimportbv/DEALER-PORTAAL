@@ -49,12 +49,8 @@ const MotorcycleDetail = () => {
   const [motorcycle, setMotorcycle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [bids, setBids] = useState([]);
-  const [bidAmount, setBidAmount] = useState('');
-  const [bidDialogOpen, setBidDialogOpen] = useState(false);
   const [buyNowDialogOpen, setBuyNowDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(null);
   const [needsDelivery, setNeedsDelivery] = useState(false);
   const [needsInspection, setNeedsInspection] = useState(false);
   const [needsValuation, setNeedsValuation] = useState(false);
@@ -67,7 +63,6 @@ const MotorcycleDetail = () => {
 
   useEffect(() => {
     fetchMotorcycle();
-    fetchBids();
     fetchMyVoucher();
   }, [id]);
 
