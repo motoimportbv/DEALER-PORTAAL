@@ -114,6 +114,34 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - [ ] Export orders naar CSV/Excel
 - [ ] Favorieten voor dealers
 
+## Bestanden Structuur
+
+### Backend (Nieuw - Refactored)
+```
+/app/backend/
+├── server.py              # Hoofd FastAPI app (3228 regels - wordt opgesplitst)
+├── models/
+│   ├── __init__.py
+│   ├── database.py        # MongoDB connectie
+│   └── schemas.py         # Alle Pydantic models
+├── services/
+│   ├── __init__.py
+│   ├── auth_service.py    # JWT authenticatie
+│   └── email_service.py   # Gmail SMTP
+├── routers/               # Toekomstige API routers
+│   └── __init__.py
+└── README.md              # Refactoring roadmap
+```
+
+### Frontend (Capacitor)
+```
+/app/frontend/
+├── ios/                   # iOS Xcode project
+├── android/               # Android Studio project
+├── capacitor.config.ts    # Capacitor configuratie
+└── NATIVE_APP_BUILD_GUIDE.md  # Publicatie handleiding
+```
+
 ## API Endpoints
 | Endpoint | Method | Beschrijving |
 |----------|--------|--------------|
