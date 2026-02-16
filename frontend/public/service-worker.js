@@ -136,7 +136,7 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: data.icon || '/icons/icon-192x192.png',
     badge: data.badge || '/icons/icon-72x72.png',
-    vibrate: [200, 100, 200],
+    vibrate: [200, 100, 200, 100, 200], // Motorcycle-like vibration pattern
     tag: 'moto-import-notification',
     renotify: true,
     requireInteraction: true,
@@ -150,8 +150,17 @@ self.addEventListener('push', (event) => {
     ]
   };
 
+  // Try to play sound in any open client windows
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    Promise.all([
+      self.registration.showNotification(data.title, options),
+      // Send message to all clients to play sound
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'PLAY_NOTIFICATION_SOUND' });
+        });
+      })
+    ])
   );
 });
 
