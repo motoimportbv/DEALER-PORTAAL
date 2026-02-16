@@ -7,7 +7,38 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Bike, Plus, Eye, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { 
+  Bike, 
+  Plus, 
+  CheckCircle, 
+  Clock, 
+  Pencil, 
+  Trash2, 
+  Pause, 
+  Play,
+  X,
+  Save,
+  AlertTriangle
+} from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -16,6 +47,16 @@ const DealerMyListings = () => {
   const { token } = useAuth();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [editForm, setEditForm] = useState({
+    price: '',
+    description: '',
+    condition: '',
+    mileage: ''
+  });
 
   useEffect(() => {
     fetchListings();
@@ -29,20 +70,96 @@ const DealerMyListings = () => {
       setListings(response.data);
     } catch (error) {
       console.error('Error fetching listings:', error);
+      toast.error(t('messages.errorOccurred'));
     } finally {
       setLoading(false);
     }
   };
 
+  const openEditDialog = (listing) => {
+    setSelectedListing(listing);
+    setEditForm({
+      price: listing.price?.toString() || '',
+      description: listing.description || '',
+      condition: listing.condition || 'good',
+      mileage: listing.mileage?.toString() || ''
+    });
+    setEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (listing) => {
+    setSelectedListing(listing);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!selectedListing) return;
+    
+    setSubmitting(true);
+    try {
+      await axios.put(
+        `${API}/motorcycles/my-listings/${selectedListing.id}`,
+        {
+          price: parseFloat(editForm.price),
+          description: editForm.description,
+          condition: editForm.condition,
+          mileage: parseInt(editForm.mileage)
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(t('myListings.updated'));
+      setEditDialogOpen(false);
+      fetchListings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || t('messages.errorOccurred'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedListing) return;
+    
+    setSubmitting(true);
+    try {
+      await axios.delete(
+        `${API}/motorcycles/my-listings/${selectedListing.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(t('myListings.deleted'));
+      setDeleteDialogOpen(false);
+      fetchListings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || t('messages.errorOccurred'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePause = async (listing) => {
+    try {
+      const response = await axios.put(
+        `${API}/motorcycles/my-listings/${listing.id}/pause`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      fetchListings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || t('messages.errorOccurred'));
+    }
+  };
+
   const getStatusBadge = (motorcycle) => {
-    if (motorcycle.is_available) {
+    if (motorcycle.is_paused) {
       return (
-        <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {t('myListings.forSale')}
+        <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1">
+          <Pause className="w-3 h-3" />
+          {t('myListings.paused')}
         </Badge>
       );
-    } else {
+    }
+    if (!motorcycle.is_available) {
       return (
         <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1">
           <CheckCircle className="w-3 h-3" />
@@ -50,6 +167,12 @@ const DealerMyListings = () => {
         </Badge>
       );
     }
+    return (
+      <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+        <Clock className="w-3 h-3" />
+        {t('myListings.forSale')}
+      </Badge>
+    );
   };
 
   const getConditionLabel = (condition) => {
@@ -125,7 +248,7 @@ const DealerMyListings = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((motorcycle) => (
-              <Card key={motorcycle.id} className="overflow-hidden">
+              <Card key={motorcycle.id} className={`overflow-hidden ${motorcycle.is_paused ? 'opacity-60' : ''}`}>
                 <div className="aspect-[4/3] relative bg-zinc-100">
                   {motorcycle.images?.[0] ? (
                     <img
@@ -165,7 +288,43 @@ const DealerMyListings = () => {
                     </span>
                   </div>
 
-                  <div className="text-xs text-zinc-400">
+                  {/* Action buttons */}
+                  <div className="flex gap-2 pt-3 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => openEditDialog(motorcycle)}
+                      data-testid={`edit-listing-${motorcycle.id}`}
+                    >
+                      <Pencil className="w-4 h-4 mr-1" />
+                      {t('common.edit')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePause(motorcycle)}
+                      title={motorcycle.is_paused ? t('myListings.resume') : t('myListings.pause')}
+                      data-testid={`pause-listing-${motorcycle.id}`}
+                    >
+                      {motorcycle.is_paused ? (
+                        <Play className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Pause className="w-4 h-4 text-amber-600" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openDeleteDialog(motorcycle)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      data-testid={`delete-listing-${motorcycle.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="text-xs text-zinc-400 mt-3">
                     {t('myListings.listedOn')} {new Date(motorcycle.created_at).toLocaleDateString('nl-NL')}
                   </div>
                 </CardContent>
@@ -181,6 +340,122 @@ const DealerMyListings = () => {
           </p>
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
+              {t('myListings.editListing')}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedListing?.brand} {selectedListing?.model}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>{t('motorcycle.askingPrice')} (€)</Label>
+              <Input
+                type="number"
+                value={editForm.price}
+                onChange={(e) => setEditForm(prev => ({ ...prev, price: e.target.value }))}
+                data-testid="edit-price-input"
+              />
+            </div>
+
+            <div>
+              <Label>{t('motorcycle.mileage')} (km)</Label>
+              <Input
+                type="number"
+                value={editForm.mileage}
+                onChange={(e) => setEditForm(prev => ({ ...prev, mileage: e.target.value }))}
+                data-testid="edit-mileage-input"
+              />
+            </div>
+
+            <div>
+              <Label>{t('motorcycle.condition')}</Label>
+              <Select 
+                value={editForm.condition} 
+                onValueChange={(value) => setEditForm(prev => ({ ...prev, condition: value }))}
+              >
+                <SelectTrigger data-testid="edit-condition-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">{t('motorcycle.new')}</SelectItem>
+                  <SelectItem value="excellent">{t('motorcycle.excellent')}</SelectItem>
+                  <SelectItem value="good">{t('motorcycle.good')}</SelectItem>
+                  <SelectItem value="fair">{t('motorcycle.fair')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t('motorcycle.description')}</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                data-testid="edit-description-input"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleEdit}
+              disabled={submitting}
+              data-testid="save-edit-btn"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {submitting ? t('common.loading') : t('common.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-6 h-6" />
+              {t('myListings.confirmDelete')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('myListings.deleteWarning')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="p-4 bg-zinc-100 rounded-lg">
+              <p className="font-semibold">{selectedListing?.brand} {selectedListing?.model}</p>
+              <p className="text-sm text-zinc-500">{selectedListing?.year} • {formatPrice(selectedListing?.price || 0)}</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDelete}
+              disabled={submitting}
+              data-testid="confirm-delete-btn"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {submitting ? t('common.loading') : t('myListings.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
