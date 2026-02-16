@@ -69,7 +69,16 @@ const Layout = ({ children, requiredRole }) => {
               Moto Import
             </span>
           </div>
-          <LanguageSelector variant="light" />
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => window.location.reload()}
+              className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+              title="Verversen"
+            >
+              <RefreshCw className="w-5 h-5 text-zinc-600" />
+            </button>
+            <LanguageSelector variant="light" />
+          </div>
         </div>
         {children}
       </main>
