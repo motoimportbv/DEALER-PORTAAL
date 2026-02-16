@@ -717,6 +717,137 @@ const AdminParts = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Motorcycle Selection Wizard */}
+      <Dialog open={wizardOpen} onOpenChange={setWizardOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
+              {wizardStep === 1 ? 'Stap 1: Kies een merk' : `Stap 2: Kies modellen (${selectedBrand})`}
+            </DialogTitle>
+            <DialogDescription>
+              {getSelectedCount()} modellen geselecteerd
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto py-4">
+            {wizardStep === 1 ? (
+              /* Step 1: Brand Selection */
+              <div className="space-y-2">
+                {/* Select All Brands Button */}
+                <button
+                  onClick={handleSelectAllBrands}
+                  className={`w-full p-4 rounded-lg border-2 text-left flex items-center justify-between transition-all ${
+                    MOTORCYCLE_BRANDS.every(b => (selectedModels[b] || []).length === (MOTORCYCLE_DATABASE[b] || []).length)
+                      ? 'border-red-500 bg-red-50'
+                      : 'border-zinc-200 hover:border-red-300 hover:bg-red-50/50'
+                  }`}
+                >
+                  <span className="font-semibold text-red-600">🏍️ Alle Merken & Modellen</span>
+                  {MOTORCYCLE_BRANDS.every(b => (selectedModels[b] || []).length === (MOTORCYCLE_DATABASE[b] || []).length) && (
+                    <Check className="w-5 h-5 text-red-600" />
+                  )}
+                </button>
+
+                <div className="border-t border-zinc-200 my-4"></div>
+
+                {/* Brand List */}
+                {MOTORCYCLE_BRANDS.map(brand => {
+                  const selectedCount = getBrandSelectedCount(brand);
+                  const totalCount = (MOTORCYCLE_DATABASE[brand] || []).length;
+                  
+                  return (
+                    <button
+                      key={brand}
+                      onClick={() => handleBrandSelect(brand)}
+                      className={`w-full p-4 rounded-lg border-2 text-left flex items-center justify-between transition-all ${
+                        selectedCount > 0
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                      }`}
+                    >
+                      <div>
+                        <span className="font-semibold text-zinc-900">{brand}</span>
+                        <span className="text-sm text-zinc-500 ml-2">({totalCount} modellen)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {selectedCount > 0 && (
+                          <Badge className="bg-red-600">{selectedCount} geselecteerd</Badge>
+                        )}
+                        <ChevronRight className="w-5 h-5 text-zinc-400" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Step 2: Model Selection */
+              <div className="space-y-2">
+                {/* Select All Models Button */}
+                <button
+                  onClick={handleSelectAllModels}
+                  className={`w-full p-4 rounded-lg border-2 text-left flex items-center justify-between transition-all ${
+                    (selectedModels[selectedBrand] || []).length === (MOTORCYCLE_DATABASE[selectedBrand] || []).length
+                      ? 'border-red-500 bg-red-50'
+                      : 'border-zinc-200 hover:border-red-300 hover:bg-red-50/50'
+                  }`}
+                >
+                  <span className="font-semibold text-red-600">✓ Alle types ({selectedBrand})</span>
+                  {(selectedModels[selectedBrand] || []).length === (MOTORCYCLE_DATABASE[selectedBrand] || []).length && (
+                    <Check className="w-5 h-5 text-red-600" />
+                  )}
+                </button>
+
+                <div className="border-t border-zinc-200 my-4"></div>
+
+                {/* Model List */}
+                <div className="grid grid-cols-2 gap-2">
+                  {(MOTORCYCLE_DATABASE[selectedBrand] || []).map(model => {
+                    const isSelected = (selectedModels[selectedBrand] || []).includes(model);
+                    
+                    return (
+                      <button
+                        key={model}
+                        onClick={() => handleModelToggle(model)}
+                        className={`p-3 rounded-lg border-2 text-left flex items-center justify-between transition-all ${
+                          isSelected
+                            ? 'border-red-500 bg-red-50'
+                            : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                        }`}
+                      >
+                        <span className={`text-sm ${isSelected ? 'font-semibold text-red-600' : 'text-zinc-700'}`}>
+                          {model}
+                        </span>
+                        {isSelected && <Check className="w-4 h-4 text-red-600 flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="border-t pt-4">
+            {wizardStep === 2 && (
+              <Button variant="outline" onClick={() => setWizardStep(1)}>
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Vorige
+              </Button>
+            )}
+            <div className="flex-1"></div>
+            <Button variant="outline" onClick={() => setWizardOpen(false)}>
+              Annuleren
+            </Button>
+            <Button 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={saveWizardSelection}
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Opslaan ({getSelectedCount()} modellen)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
