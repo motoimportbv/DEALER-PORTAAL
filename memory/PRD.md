@@ -213,6 +213,18 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Link op normale registratiepagina: "Bent u een buitenlandse leverancier?"
   - Volledig vertaald in 4 talen (NL, DE, FR, IT)
 
+### 16 Feb 2026 (Update 15) ✅ VOLTOOID
+- ✅ **TAALKEUZE MOBIEL VERBETERD** - Nu prominent zichtbaar
+  - Mobiele header met Moto Import logo en taalkeuze
+  - Rode knop met globe icoon, vlag en taalnaam
+  - Sticky header blijft bovenaan tijdens scrollen
+  - LanguageSelector component ondersteunt nu `variant="light"` voor lichte achtergronden
+  - Werkt op alle pagina's: login, dashboard, detail pagina's
+- ⚠️ **AFBEELDINGEN ISSUE GEÏDENTIFICEERD** - Geen bug, maar lege data
+  - Motorfietsen in database hebben geen afbeeldingen geüpload
+  - Placeholder icoon wordt correct getoond bij ontbrekende afbeeldingen
+  - Admin moet afbeeldingen uploaden via "Motor toevoegen" of "Motor bewerken"
+
 ### 16 Feb 2026 (Update 14) ✅ VOLTOOID
 - ✅ **KEURING & TAXATIE OPTIES** - Bij bestellen
   - Keuring: €125
