@@ -113,7 +113,7 @@ def create_dealer_guide_nl():
     
     story.append(Spacer(1, 10))
     story.append(Paragraph("Registratie URL:", styles['GuideBodyText']))
-    story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register", styles['URLStyle']))
+    story.append(Paragraph("https://motoimport-dash.preview.emergentagent.com/register", styles['URLStyle']))
     
     # Step 2
     story.append(Paragraph("STAP 2: APP INSTALLEREN", styles['SectionTitle']))
@@ -206,7 +206,7 @@ def create_supplier_guide_nl():
     
     story.append(Spacer(1, 10))
     story.append(Paragraph("Registratie URL:", styles['GuideBodyText']))
-    story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register/supplier", styles['URLStyle']))
+    story.append(Paragraph("https://motoimport-dash.preview.emergentagent.com/register/supplier", styles['URLStyle']))
     
     # Step 2
     story.append(Paragraph("STAP 2: APP DOWNLOADEN", styles['SectionTitle']))
@@ -279,7 +279,7 @@ def create_dealer_guide_de():
     
     story.append(Spacer(1, 10))
     story.append(Paragraph("Registrierungs-URL:", styles['GuideBodyText']))
-    story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register", styles['URLStyle']))
+    story.append(Paragraph("https://motoimport-dash.preview.emergentagent.com/register", styles['URLStyle']))
     
     story.append(Paragraph("SCHRITT 2: APP INSTALLIEREN", styles['SectionTitle']))
     story.append(Paragraph("<b>Für iPhone:</b> Safari → Teilen → 'Zum Home-Bildschirm'", styles['BulletText']))
@@ -331,7 +331,7 @@ def create_supplier_guide_de():
     
     story.append(Spacer(1, 10))
     story.append(Paragraph("Registrierungs-URL:", styles['GuideBodyText']))
-    story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register/supplier", styles['URLStyle']))
+    story.append(Paragraph("https://motoimport-dash.preview.emergentagent.com/register/supplier", styles['URLStyle']))
     
     story.append(Paragraph("SCHRITT 2: APP INSTALLIEREN", styles['SectionTitle']))
     story.append(Paragraph("<b>Für iPhone:</b> Safari → Teilen → 'Zum Home-Bildschirm'", styles['BulletText']))
