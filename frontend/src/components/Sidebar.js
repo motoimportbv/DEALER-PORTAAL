@@ -11,7 +11,9 @@ import {
   Plus, 
   LogOut,
   Package,
-  Globe
+  Globe,
+  Wrench,
+  ClipboardList
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -33,11 +35,14 @@ const Sidebar = () => {
     { path: '/admin/motorcycles/new', icon: Plus, label: t('motorcycle.addMotorcycle') },
     { path: '/admin/pending-foreign', icon: Globe, label: t('nav.pendingListings') },
     { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
+    { path: '/admin/parts', icon: Wrench, label: t('nav.partsManagement') },
+    { path: '/admin/part-orders', icon: ClipboardList, label: t('nav.partOrders') },
     { path: '/admin/dealers', icon: Package, label: t('nav.dealers') },
   ];
 
   const dealerNavItems = [
     { path: '/dealer', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/dealer/parts', icon: Wrench, label: t('nav.partsShop') },
     { path: '/dealer/my-listings', icon: Bike, label: t('nav.myMotorcycles') },
     { path: '/dealer/sell', icon: Plus, label: t('nav.sellMotorcycle') },
     { path: '/dealer/orders', icon: ShoppingCart, label: t('nav.myOrders') },
