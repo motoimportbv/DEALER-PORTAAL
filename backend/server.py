@@ -122,6 +122,7 @@ class User(BaseModel):
     role: str  # "admin", "dealer", or "foreign_dealer"
     is_approved: bool = False  # Dealer moet goedgekeurd worden
     is_foreign_dealer: bool = False  # Buitenlandse dealer (leverancier)
+    is_offline: bool = False  # Tijdelijk offline - ontvangt geen meldingen
     country: str = ""  # Land van buitenlandse dealer
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
