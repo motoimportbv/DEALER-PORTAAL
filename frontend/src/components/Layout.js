@@ -59,6 +59,10 @@ const Layout = ({ children, requiredRole }) => {
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
+        {/* Top bar with language selector for mobile */}
+        <div className="md:hidden flex justify-end p-3 bg-zinc-100 border-b">
+          <LanguageSelector />
+        </div>
         {children}
       </main>
       {/* WhatsApp button for dealers */}
