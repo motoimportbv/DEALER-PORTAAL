@@ -91,7 +91,10 @@
     "myMotorcycles": "Mes motos",
     "sellMotorcycle": "Vendre une moto",
     "myOrders": "Mes commandes",
-    "pendingListings": "Motos en attente"
+    "pendingListings": "Motos en attente",
+    "partsShop": "Pièces détachées",
+    "partsManagement": "Gestion des pièces",
+    "partOrders": "Commandes de pièces"
   },
   "search": {
     "placeholder": "Rechercher par marque, modèle, couleur ou année...",
