@@ -52,25 +52,22 @@ VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', 'MIGHAgEAMBMGByq
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
-    """Get VAPID private key - returns a file path that pywebpush can use"""
+    """Get VAPID private key in raw base64 format for pywebpush"""
     import base64
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.backends import default_backend
     
     try:
+        # Decode PKCS8 DER format
         der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
         private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
-        pem_bytes = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
         
-        # Write to temp file (pywebpush needs a file path)
-        temp_key_path = '/tmp/vapid_private.pem'
-        with open(temp_key_path, 'wb') as f:
-            f.write(pem_bytes)
-        return temp_key_path
+        # Extract raw 32-byte private key value (required by py_vapid/pywebpush)
+        private_numbers = private_key.private_numbers()
+        raw_private_bytes = private_numbers.private_value.to_bytes(32, 'big')
+        
+        # Return as URL-safe base64 without padding (VAPID format)
+        return base64.urlsafe_b64encode(raw_private_bytes).decode('utf-8').rstrip('=')
     except Exception as e:
         logger.error(f"Failed to load VAPID private key: {e}")
         return None
