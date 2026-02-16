@@ -121,24 +121,6 @@ const MotorcycleDetail = () => {
     calculatePayment(checked);
   };
 
-  const handleBid = async () => {
-    setSubmitting(true);
-    try {
-      await axios.post(`${API}/bids`, {
-        motorcycle_id: id,
-        amount: parseFloat(bidAmount)
-      });
-      toast.success(t('bid.bidSuccess'));
-      setBidDialogOpen(false);
-      fetchMotorcycle();
-      fetchBids();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || t('messages.errorOccurred'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleBuyNow = async () => {
     setSubmitting(true);
     try {
