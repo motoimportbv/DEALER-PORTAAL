@@ -40,7 +40,7 @@ const MotorcycleDetail = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   const [motorcycle, setMotorcycle] = useState(null);
   const [loading, setLoading] = useState(true);
