@@ -168,6 +168,7 @@ class Motorcycle(BaseModel):
     condition: str
     images: List[str] = []
     is_available: bool = True
+    is_paused: bool = False  # Dealer can pause listing temporarily
     auction_end_time: Optional[str] = None  # Wanneer de veiling eindigt
     highest_bid: Optional[float] = None
     highest_bidder_id: Optional[str] = None
