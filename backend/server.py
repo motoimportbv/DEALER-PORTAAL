@@ -2747,36 +2747,25 @@ async def generate_part_order_number():
     return f"PO-{year}-{str(count + 1).zfill(4)}"
 
 async def generate_parts_invoice_pdf(order: dict, dealer: dict) -> bytes:
-    """Generate a PDF invoice for parts order with logo"""
+    """Generate a PDF invoice for parts order"""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from io import BytesIO
     
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=15*mm, bottomMargin=20*mm)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
     
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=24, textColor=colors.HexColor('#DC2626'))
-    header_style = ParagraphStyle('Header', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#666666'))
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=28, textColor=colors.HexColor('#DC2626'))
     
     elements = []
     
-    # Logo at top
-    logo_path = ROOT_DIR / "moto_import_logo.jpg"
-    if logo_path.exists():
-        try:
-            logo = Image(str(logo_path), width=70*mm, height=35*mm)
-            elements.append(logo)
-            elements.append(Spacer(1, 5*mm))
-        except Exception as e:
-            logger.error(f"Failed to load logo: {e}")
-    
-    # Header with FACTUUR title
+    # Header with FACTUUR title (no logo)
     elements.append(Paragraph("FACTUUR", title_style))
-    elements.append(Spacer(1, 8*mm))
+    elements.append(Spacer(1, 10*mm))
     
     # Company info (left side) and Order info (right side) in a table
     header_data = [
