@@ -215,27 +215,26 @@ const AdminParts = () => {
 
   const openEditDialog = (part) => {
     setEditingPart(part);
+    // Convert old format to new format if needed
+    let compatibleMotorcycles = part.compatible_motorcycles || {};
+    if (part.compatible_brands && part.compatible_brands.length > 0 && Object.keys(compatibleMotorcycles).length === 0) {
+      // Old format: just brands without models - convert
+      part.compatible_brands.forEach(brand => {
+        compatibleMotorcycles[brand] = MOTORCYCLE_DATABASE[brand] || [];
+      });
+    }
+    
     setFormData({
       name: part.name,
       description: part.description || '',
       price: part.price.toString(),
       category_id: part.category_id,
-      compatible_brands: part.compatible_brands || [],
-      compatible_types: part.compatible_types || [],
+      compatible_motorcycles: compatibleMotorcycles,
       stock: part.stock.toString(),
       sku: part.sku || '',
       images: part.images || []
     });
     setDialogOpen(true);
-  };
-
-  const handleBrandToggle = (brand) => {
-    setFormData(prev => ({
-      ...prev,
-      compatible_brands: prev.compatible_brands.includes(brand)
-        ? prev.compatible_brands.filter(b => b !== brand)
-        : [...prev.compatible_brands, brand]
-    }));
   };
 
   const handleTypeToggle = (type) => {
