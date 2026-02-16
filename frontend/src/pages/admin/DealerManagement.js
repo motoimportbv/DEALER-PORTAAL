@@ -135,6 +135,16 @@ const DealerManagement = () => {
     }
   };
 
+  const toggleOffline = async (dealerId, currentStatus) => {
+    try {
+      const response = await axios.put(`${API}/dealers/${dealerId}/toggle-offline`);
+      toast.success(response.data.message);
+      fetchDealers();
+    } catch (error) {
+      toast.error('Kon status niet wijzigen');
+    }
+  };
+
   const DealerCard = ({ dealer, showActions = false, showDelete = false }) => (
     <Card className="overflow-hidden" data-testid={`dealer-card-${dealer.id}`}>
       <CardContent className="p-6">
