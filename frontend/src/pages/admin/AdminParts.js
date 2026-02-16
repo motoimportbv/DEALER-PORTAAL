@@ -102,6 +102,7 @@ const AdminParts = () => {
       price: '',
       category_id: categories[0]?.id || '',
       compatible_brands: [],
+      compatible_types: [],
       stock: '0',
       sku: '',
       images: []
@@ -117,6 +118,7 @@ const AdminParts = () => {
       price: part.price.toString(),
       category_id: part.category_id,
       compatible_brands: part.compatible_brands || [],
+      compatible_types: part.compatible_types || [],
       stock: part.stock.toString(),
       sku: part.sku || '',
       images: part.images || []
@@ -130,6 +132,29 @@ const AdminParts = () => {
       compatible_brands: prev.compatible_brands.includes(brand)
         ? prev.compatible_brands.filter(b => b !== brand)
         : [...prev.compatible_brands, brand]
+    }));
+  };
+
+  const handleTypeToggle = (type) => {
+    setFormData(prev => ({
+      ...prev,
+      compatible_types: prev.compatible_types.includes(type)
+        ? prev.compatible_types.filter(t => t !== type)
+        : [...prev.compatible_types, type]
+    }));
+  };
+
+  const selectAllBrands = () => {
+    setFormData(prev => ({
+      ...prev,
+      compatible_brands: prev.compatible_brands.length === MOTORCYCLE_BRANDS.length ? [] : [...MOTORCYCLE_BRANDS]
+    }));
+  };
+
+  const selectAllTypes = () => {
+    setFormData(prev => ({
+      ...prev,
+      compatible_types: prev.compatible_types.length === MOTORCYCLE_TYPES.length ? [] : [...MOTORCYCLE_TYPES]
     }));
   };
 
