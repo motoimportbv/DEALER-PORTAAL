@@ -433,10 +433,13 @@ const MotorcycleDetail = () => {
                       <Button 
                         className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
                         onClick={() => setBidDialogOpen(true)}
+                        disabled={motorcycle.highest_bidder_id === user?.id}
                         data-testid="bid-btn"
                       >
                         <Gavel className="w-5 h-5 mr-2" />
-                        {t('bid.placeBid')}
+                        {motorcycle.highest_bidder_id === user?.id 
+                          ? t('bid.alreadyHighestBidder')
+                          : t('bid.placeBid')}
                       </Button>
                     )}
                     <Button 
