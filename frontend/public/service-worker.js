@@ -1,33 +1,31 @@
-const CACHE_NAME = 'moto-import-v2';
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `moto-import-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
-// Files to cache for offline use
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
+// Only cache essential offline files
+const OFFLINE_ASSETS = [
   '/offline.html',
-  '/manifest.json',
-  '/static/js/main.js',
-  '/static/css/main.css'
+  '/manifest.json'
 ];
 
-// Install event - cache static assets
+// Install event - cache only essential offline files
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] Installing service worker...', CACHE_VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS).catch(err => {
+      console.log('[SW] Caching offline assets');
+      return cache.addAll(OFFLINE_ASSETS).catch(err => {
         console.log('[SW] Failed to cache some assets:', err);
       });
     })
   );
+  // Force immediate activation - don't wait for old SW to stop
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches immediately
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  console.log('[SW] Activating service worker...', CACHE_VERSION);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -38,12 +36,14 @@ self.addEventListener('activate', (event) => {
             return caches.delete(name);
           })
       );
+    }).then(() => {
+      // Take control of all pages immediately
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - NETWORK FIRST for everything (fixes iOS refresh issues)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -53,7 +53,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip API requests - always fetch from network
+  // Skip external requests
+  if (!url.origin.includes(self.location.origin)) {
+    return;
+  }
+
+  // API requests - always network only, no caching
   if (url.pathname.startsWith('/api')) {
     event.respondWith(
       fetch(request).catch(() => {
@@ -66,59 +71,51 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For navigation requests, try network first, then cache, then offline page
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Cache successful responses
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            return caches.match(OFFLINE_URL);
-          });
-        })
-    );
-    return;
-  }
-
-  // For other requests (JS, CSS, images), try cache first, then network
+  // For ALL other requests: Network First strategy
+  // This ensures iOS users always get fresh content on refresh
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached version, but also update cache in background
-        fetch(request).then((response) => {
-          if (response.ok) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, response);
-            });
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-
-      // Not in cache, fetch from network
-      return fetch(request).then((response) => {
-        if (response.ok) {
+    fetch(request)
+      .then((response) => {
+        // Only cache successful responses
+        if (response.ok && response.status === 200) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseClone);
           });
         }
         return response;
-      });
-    })
+      })
+      .catch(() => {
+        // Network failed - try cache as fallback
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // For navigation requests, show offline page
+          if (request.mode === 'navigate') {
+            return caches.match(OFFLINE_URL);
+          }
+          // For other requests, return error
+          return new Response('Offline', { status: 503 });
+        });
+      })
   );
+});
+
+// Listen for skip waiting message from client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[SW] Skip waiting requested');
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    console.log('[SW] Clear cache requested');
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((name) => caches.delete(name))
+      );
+    });
+  }
 });
 
 // Handle push notifications
@@ -171,13 +168,9 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there's already a window open with the app
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin)) {
-          // Focus the existing window and navigate
           return client.focus().then((focusedClient) => {
-            // Use postMessage to navigate instead of client.navigate()
-            // This is more reliable across different browsers
             if (focusedClient) {
               focusedClient.postMessage({
                 type: 'NOTIFICATION_CLICK',
@@ -186,16 +179,13 @@ self.addEventListener('notificationclick', (event) => {
             }
             return focusedClient;
           }).catch(() => {
-            // If focus fails, try opening new window
             return clients.openWindow(urlToOpen);
           });
         }
       }
-      // No existing window, open new one
       return clients.openWindow(urlToOpen);
     }).catch((err) => {
       console.error('[SW] Error handling notification click:', err);
-      // Fallback: just open the URL
       return clients.openWindow(urlToOpen);
     })
   );
