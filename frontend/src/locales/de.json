@@ -138,6 +138,8 @@
     "buyerFeeWarning": "Hinweis: €250 Käufergebühr beim Kauf",
     "noAvailable": "Keine Motorräder verfügbar",
     "noAvailableDesc": "Derzeit sind keine Motorräder verfügbar",
+    "notFound": "Motor nicht gefunden",
+    "notFoundDesc": "Dieser Motor existiert nicht oder ist nicht mehr verfügbar",
     "viewAndBid": "Ansehen & Bieten",
     "deleted": "Motorrad gelöscht",
     "specifications": "Spezifikationen",

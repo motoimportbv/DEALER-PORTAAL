@@ -138,6 +138,8 @@
     "buyerFeeWarning": "Nota: €250 costi acquirente all'acquisto",
     "noAvailable": "Nessuna moto disponibile",
     "noAvailableDesc": "Al momento non sono disponibili moto",
+    "notFound": "Moto non trovata",
+    "notFoundDesc": "Questa moto non esiste o non è più disponibile",
     "viewAndBid": "Visualizza & Offri",
     "deleted": "Moto eliminata",
     "specifications": "Specifiche",

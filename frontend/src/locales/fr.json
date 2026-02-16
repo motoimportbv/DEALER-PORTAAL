@@ -138,6 +138,8 @@
     "buyerFeeWarning": "Note : €250 frais d'achat",
     "noAvailable": "Aucune moto disponible",
     "noAvailableDesc": "Aucune moto n'est disponible actuellement",
+    "notFound": "Moto non trouvée",
+    "notFoundDesc": "Cette moto n'existe pas ou n'est plus disponible",
     "viewAndBid": "Voir & Enchérir",
     "deleted": "Moto supprimée",
     "specifications": "Spécifications",
