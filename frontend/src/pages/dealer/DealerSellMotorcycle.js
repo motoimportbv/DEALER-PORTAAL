@@ -91,7 +91,7 @@ const DealerSellMotorcycle = () => {
         ...formData,
         year: parseInt(formData.year),
         price: parseFloat(formData.price),
-        starting_price: formData.starting_price ? parseFloat(formData.starting_price) : parseFloat(formData.price) * 0.8,
+        starting_price: parseFloat(formData.price), // Same as price - no auction
         mileage: parseInt(formData.mileage) || 0,
         auction_duration_hours: 0
       };
