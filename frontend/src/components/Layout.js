@@ -61,10 +61,13 @@ const Layout = ({ children, requiredRole }) => {
       <main className="main-content">
         {/* Mobile header with language selector - always visible on mobile */}
         {/* Uses safe-area-inset for iPhone notch */}
-        <div className="md:hidden sticky top-0 z-50 bg-white border-b shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-          <div className="flex items-center justify-between p-3">
+        <div 
+          className="md:hidden sticky top-0 z-50 bg-white border-b shadow-sm"
+          style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 10px)' }}
+        >
+          <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+              <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center">
                 <Bike className="w-5 h-5 text-white" />
               </div>
               <span className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
@@ -74,7 +77,7 @@ const Layout = ({ children, requiredRole }) => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-1 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
                 title="Verversen"
               >
                 <RefreshCw className="w-4 h-4 text-zinc-700" />
