@@ -235,7 +235,8 @@
     "placeBid": "Gebot abgeben",
     "yourBid": "Ihr Gebot",
     "minimumBid": "Mindestgebot",
-    "bidSuccess": "Gebot platziert!"
+    "bidSuccess": "Gebot platziert!",
+    "alreadyHighestBidder": "Sie sind bereits Höchstbietender"
   },
   "voucher": {
     "title": "Gutscheincode",
