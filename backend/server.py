@@ -366,7 +366,7 @@ class PartOrder(BaseModel):
 async def root():
     return {"message": "Moto Import API is running"}
 
-@api_router.get("/health")
+@api_router.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     """Health check endpoint for keeping the service warm"""
     try:
