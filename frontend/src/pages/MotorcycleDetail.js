@@ -196,9 +196,6 @@ const MotorcycleDetail = () => {
   }
 
   const images = motorcycle.images?.length > 0 ? motorcycle.images : [];
-  const currentBid = motorcycle.highest_bid || motorcycle.starting_price;
-  const minNextBid = motorcycle.highest_bid ? motorcycle.highest_bid + 100 : motorcycle.starting_price;
-  const auctionActive = motorcycle.is_available && timeLeft && !timeLeft.expired;
 
   return (
     <Layout>
@@ -241,15 +238,6 @@ const MotorcycleDetail = () => {
                 {!motorcycle.is_available && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <Badge className="bg-red-600 text-white text-lg px-4 py-2">{t('motorcycle.sold')}</Badge>
-                  </div>
-                )}
-                {/* Timer Badge */}
-                {auctionActive && (
-                  <div className="absolute top-4 right-4 bg-black/80 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-red-500" />
-                    <span className="font-barlow font-bold">
-                      {timeLeft.hours}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-                    </span>
                   </div>
                 )}
               </div>
