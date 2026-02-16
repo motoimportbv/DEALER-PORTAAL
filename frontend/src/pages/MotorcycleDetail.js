@@ -414,50 +414,6 @@ const MotorcycleDetail = () => {
         </div>
       </div>
 
-      {/* Bid Dialog */}
-      <Dialog open={bidDialogOpen} onOpenChange={setBidDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight">
-              {t('bid.placeBid')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('motorcycle.currentBid')}: {formatPrice(currentBid)} • {t('bid.minimumBid')}: {formatPrice(minNextBid)}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-              {t('bid.yourBid')} (€)
-            </Label>
-            <Input
-              type="number"
-              value={bidAmount}
-              onChange={(e) => setBidAmount(e.target.value)}
-              min={minNextBid}
-              step="100"
-              className="mt-2 text-2xl font-bold h-14"
-              data-testid="bid-amount-input"
-            />
-            <p className="text-sm text-zinc-500 mt-2">
-              {t('bid.minimumBid')}: {formatPrice(minNextBid)} • {t('motorcycle.buyNowPrice')}: {formatPrice(motorcycle.price)}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBidDialogOpen(false)} data-testid="cancel-bid-btn">
-              {t('common.cancel')}
-            </Button>
-            <Button 
-              className="bg-red-600 hover:bg-red-700"
-              onClick={handleBid}
-              disabled={submitting || parseFloat(bidAmount) < minNextBid}
-              data-testid="confirm-bid-btn"
-            >
-              {submitting ? t('common.loading') : `${t('bid.placeBid')} ${formatPrice(parseFloat(bidAmount) || 0)}`}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Buy Now Dialog */}
       <Dialog open={buyNowDialogOpen} onOpenChange={setBuyNowDialogOpen}>
         <DialogContent className="max-w-md">
