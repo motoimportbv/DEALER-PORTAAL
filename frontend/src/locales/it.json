@@ -91,7 +91,10 @@
     "myMotorcycles": "Le mie moto",
     "sellMotorcycle": "Vendi moto",
     "myOrders": "I miei ordini",
-    "pendingListings": "Moto in attesa"
+    "pendingListings": "Moto in attesa",
+    "partsShop": "Ricambi",
+    "partsManagement": "Gestione ricambi",
+    "partOrders": "Ordini ricambi"
   },
   "search": {
     "placeholder": "Cerca per marca, modello, colore o anno...",
