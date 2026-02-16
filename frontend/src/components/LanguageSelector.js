@@ -39,7 +39,7 @@ const LanguageSelector = ({ variant = 'dark' }) => {
     : 'bg-zinc-800 hover:bg-zinc-700 text-white';
   
   const dropdownStyles = variant === 'light'
-    ? 'bg-white border-zinc-200 shadow-lg'
+    ? 'bg-white border-zinc-200 shadow-xl'
     : 'bg-zinc-800 border-zinc-700 shadow-xl';
   
   const itemStyles = variant === 'light'
@@ -59,24 +59,29 @@ const LanguageSelector = ({ variant = 'dark' }) => {
       >
         <Globe className="w-4 h-4" />
         <span className="text-lg">{currentLang.flag}</span>
-        <span>{currentLang.name}</span>
+        <span className="hidden xs:inline">{currentLang.name}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       
       {isOpen && (
-        <div className={`absolute ${variant === 'light' ? 'right-0' : 'left-0'} top-full mt-2 z-50`}>
-          <div className={`rounded-lg overflow-hidden min-w-[160px] border ${dropdownStyles}`}>
+        <div 
+          className={`fixed ${variant === 'light' ? 'right-4' : 'left-4'} z-[100]`}
+          style={{ 
+            top: variant === 'light' ? 'calc(env(safe-area-inset-top, 0px) + 60px)' : 'auto'
+          }}
+        >
+          <div className={`rounded-xl overflow-hidden min-w-[180px] border-2 ${dropdownStyles}`}>
             {languages.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
-                className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-4 text-base text-left transition-colors ${
                   i18n.language === lang.code ? activeItemStyles : itemStyles
                 }`}
                 data-testid={`lang-${lang.code}`}
               >
-                <span className="text-lg">{lang.flag}</span>
-                <span>{lang.name}</span>
+                <span className="text-2xl">{lang.flag}</span>
+                <span className="font-medium">{lang.name}</span>
               </button>
             ))}
           </div>
