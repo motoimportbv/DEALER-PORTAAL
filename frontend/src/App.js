@@ -51,6 +51,25 @@ function App() {
           window.location.href = url.pathname + url.search;
         }
       }
+      
+      // Play motorcycle sound on push notification
+      if (event.data && event.data.type === 'PLAY_NOTIFICATION_SOUND') {
+        console.log('[App] Playing notification sound');
+        playMotorcycleSound();
+      }
+    };
+    
+    // Function to play motorcycle sound
+    const playMotorcycleSound = () => {
+      try {
+        const audio = new Audio('/motorcycle-sound.wav');
+        audio.volume = 0.7;
+        audio.play().catch(e => {
+          console.log('[App] Could not play sound (user interaction required):', e);
+        });
+      } catch (e) {
+        console.log('[App] Audio not supported:', e);
+      }
     };
 
     if ('serviceWorker' in navigator) {
