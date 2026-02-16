@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './ui/button';
-import { Bell, BellOff, Check } from 'lucide-react';
+import { Bell, BellOff, Check, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import NotificationBlockedModal from './NotificationBlockedModal';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -13,6 +14,7 @@ const PushNotificationToggle = ({ token }) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [permission, setPermission] = useState('default');
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
 
   useEffect(() => {
     // Check if push notifications are supported
@@ -60,11 +62,13 @@ const PushNotificationToggle = ({ token }) => {
     setIsLoading(true);
     try {
       // Request notification permission
-      const permission = await Notification.requestPermission();
-      setPermission(permission);
+      const currentPermission = await Notification.requestPermission();
+      setPermission(currentPermission);
       
-      if (permission !== 'granted') {
+      if (currentPermission !== 'granted') {
         toast.error(t('pushNotifications.denied'));
+        // Show the help modal when permission is denied
+        setShowBlockedModal(true);
         return;
       }
 
@@ -224,64 +228,101 @@ const PushNotificationToggle = ({ token }) => {
   }
 
   return (
-    <div className="flex items-center gap-3 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-      <div className="flex-1">
-        <h4 className="font-medium text-zinc-900 flex items-center gap-2">
-          <Bell className="w-4 h-4 text-red-600" />
-          {t('pushNotifications.title')}
-        </h4>
-        <p className="text-sm text-zinc-500 mt-1">
-          {isSubscribed 
-            ? t('pushNotifications.subscribedMessage')
-            : t('pushNotifications.unsubscribedMessage')}
-        </p>
+    <>
+      <div className="flex items-center gap-3 p-4 bg-zinc-50 rounded-lg border border-zinc-200" data-testid="push-notification-toggle">
+        <div className="flex-1">
+          <h4 className="font-medium text-zinc-900 flex items-center gap-2">
+            <Bell className="w-4 h-4 text-red-600" />
+            {t('pushNotifications.title')}
+          </h4>
+          <p className="text-sm text-zinc-500 mt-1">
+            {isSubscribed 
+              ? t('pushNotifications.subscribedMessage')
+              : t('pushNotifications.unsubscribedMessage')}
+          </p>
+          {/* Show help link when permission is denied */}
+          {permission === 'denied' && !isSubscribed && (
+            <button
+              onClick={() => setShowBlockedModal(true)}
+              className="text-sm text-amber-600 hover:text-amber-700 underline mt-1 flex items-center gap-1"
+              data-testid="push-notification-help-btn"
+            >
+              <HelpCircle className="w-3 h-3" />
+              {t('pushNotifications.howToEnable')}
+            </button>
+          )}
+        </div>
+        
+        {isSubscribed ? (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={testPush}
+              className="text-green-600 border-green-600 hover:bg-green-50"
+              data-testid="push-notification-test-btn"
+            >
+              {t('pushNotifications.test')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={unsubscribe}
+              disabled={isLoading}
+              className="text-zinc-600"
+              data-testid="push-notification-disable-btn"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <BellOff className="w-4 h-4 mr-2" />
+                  {t('pushNotifications.disable')}
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            {/* Show help button when blocked */}
+            {permission === 'denied' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBlockedModal(true)}
+                className="text-amber-600 border-amber-400 hover:bg-amber-50"
+                data-testid="push-notification-blocked-help-btn"
+              >
+                <HelpCircle className="w-4 h-4 mr-1" />
+                {t('pushNotifications.howToEnable')}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={subscribe}
+              disabled={isLoading}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="push-notification-enable-btn"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Bell className="w-4 h-4 mr-2" />
+                  {t('pushNotifications.enable')}
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
       
-      {isSubscribed ? (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={testPush}
-            className="text-green-600 border-green-600 hover:bg-green-50"
-          >
-            {t('pushNotifications.test')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={unsubscribe}
-            disabled={isLoading}
-            className="text-zinc-600"
-          >
-            {isLoading ? (
-              <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <BellOff className="w-4 h-4 mr-2" />
-                {t('pushNotifications.disable')}
-              </>
-            )}
-          </Button>
-        </div>
-      ) : (
-        <Button
-          size="sm"
-          onClick={subscribe}
-          disabled={isLoading}
-          className="bg-red-600 hover:bg-red-700"
-        >
-          {isLoading ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <Bell className="w-4 h-4 mr-2" />
-              {t('pushNotifications.enable')}
-            </>
-          )}
-        </Button>
-      )}
-    </div>
+      {/* Blocked Notifications Help Modal */}
+      <NotificationBlockedModal 
+        isOpen={showBlockedModal} 
+        onClose={() => setShowBlockedModal(false)} 
+      />
+    </>
   );
 };
 
