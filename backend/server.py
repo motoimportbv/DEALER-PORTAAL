@@ -278,6 +278,89 @@ class Voucher(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     used_at: Optional[str] = None
 
+# ============ PARTS SHOP MODELS ============
+
+# Predefined motorcycle brands for parts compatibility
+MOTORCYCLE_BRANDS = ["Yamaha", "Honda", "Kawasaki", "Ducati", "Triumph", "KTM", "Suzuki", "BMW"]
+
+class PartCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PartCategoryCreate(BaseModel):
+    name: str
+    description: str = ""
+
+class Part(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    price: float
+    category_id: str
+    category_name: str = ""
+    compatible_brands: List[str] = []  # Which motorcycle brands this part fits
+    stock: int = 0
+    sku: str = ""  # Article number
+    images: List[str] = []
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PartCreate(BaseModel):
+    name: str
+    description: str = ""
+    price: float
+    category_id: str
+    compatible_brands: List[str] = []
+    stock: int = 0
+    sku: str = ""
+    images: List[str] = []
+
+class PartUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    category_id: Optional[str] = None
+    compatible_brands: Optional[List[str]] = None
+    stock: Optional[int] = None
+    sku: Optional[str] = None
+    images: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+
+class PartOrderItem(BaseModel):
+    part_id: str
+    part_name: str = ""
+    quantity: int
+    price: float
+
+class PartOrderCreate(BaseModel):
+    items: List[PartOrderItem]
+    needs_shipping: bool = True  # True = €9.95 shipping, False = free pickup
+    notes: str = ""
+
+class PartOrder(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    order_number: str = ""  # e.g. "PO-2026-0001"
+    dealer_id: str
+    dealer_email: str
+    dealer_company: str
+    dealer_address: str = ""
+    dealer_postal_code: str = ""
+    dealer_city: str = ""
+    dealer_phone: str = ""
+    items: List[dict] = []
+    subtotal: float = 0.0
+    shipping_cost: float = 0.0  # €9.95 or €0
+    total: float = 0.0
+    status: str = "pending"  # pending, paid, shipped, completed, cancelled
+    notes: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    paid_at: Optional[str] = None
+
 # ============ ROOT ENDPOINT ============
 
 @api_router.get("/")
