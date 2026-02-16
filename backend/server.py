@@ -2597,8 +2597,31 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
         return {"success": True, "message": "Test notificatie verzonden!", "debug": debug_info}
     except WebPushException as e:
         error_msg = str(e)
+        response_text = ""
         if e.response:
-            error_msg = f"Status {e.response.status_code}: {e.response.text[:200]}"
+            response_text = e.response.text[:200] if e.response.text else ""
+            error_msg = f"Status {e.response.status_code}: {response_text}"
+        
+        # Check for VAPID key mismatch - delete the invalid subscription
+        if "VapidPkHashMismatch" in response_text or "VapidPkHashMismatch" in str(e):
+            await db.push_subscriptions.delete_many({"user_id": user["id"]})
+            return {
+                "success": False, 
+                "error": "VapidPkHashMismatch - Subscription verwijderd. Klik op 'Inschakelen' om opnieuw te registreren.",
+                "needs_resubscribe": True,
+                "debug": debug_info
+            }
+        
+        # Check for expired/invalid subscription
+        if e.response and e.response.status_code in [404, 410]:
+            await db.push_subscriptions.delete_many({"user_id": user["id"]})
+            return {
+                "success": False,
+                "error": "Subscription verlopen. Klik op 'Inschakelen' om opnieuw te registreren.",
+                "needs_resubscribe": True,
+                "debug": debug_info
+            }
+        
         return {"success": False, "error": f"Push fout: {error_msg}", "debug": debug_info}
     except Exception as e:
         return {"success": False, "error": f"Fout: {str(e)[:150]}", "debug": debug_info}
