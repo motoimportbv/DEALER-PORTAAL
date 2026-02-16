@@ -150,6 +150,29 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 16 Feb 2026 (Update 19) ✅ VOLTOOID
+- 🔔 **PUSH NOTIFICATIE INSTRUCTIE-POPUP** - Voor geblokkeerde notificaties
+  - Nieuwe `NotificationBlockedModal.js` component
+  - Automatische browser-detectie (Chrome, Safari, Firefox, iOS, Android)
+  - Stap-voor-stap instructies per browser/platform
+  - "Hoe in te schakelen?" link en knop bij geblokkeerde permissies
+  - Volledig vertaald in 4 talen (NL, DE, FR, IT)
+  - Test IDs: `notification-blocked-modal`, `push-notification-help-btn`
+
+- 📱 **NATIVE APP DOCUMENTATIE** - Capacitor build guide
+  - Handleiding: `/app/frontend/NATIVE_APP_BUILD_GUIDE.md`
+  - iOS en Android projecten al geconfigureerd
+  - App ID: `nl.motoimport.app`
+  - Android SDK target updated naar API 34
+
+- 🏗️ **BACKEND REFACTORING GESTART** - Modulaire structuur
+  - Nieuwe directory structuur: `/app/backend/models/`, `/app/backend/services/`, `/app/backend/routers/`
+  - Models gescheiden naar `models/schemas.py` (alle Pydantic modellen)
+  - Database connectie naar `models/database.py`
+  - Auth service naar `services/auth_service.py` (JWT, wachtwoord hashing)
+  - Email service naar `services/email_service.py` (Gmail SMTP)
+  - Backend README toegevoegd met refactoring roadmap
+
 ### 15 Feb 2026 (Update 6)
 - 📜 **Algemene Voorwaarden feature** - Dealers moeten eenmalig de voorwaarden accepteren
   - Modal verschijnt automatisch na eerste login
