@@ -235,7 +235,8 @@
     "placeBid": "Fai un'offerta",
     "yourBid": "La tua offerta",
     "minimumBid": "Offerta minima",
-    "bidSuccess": "Offerta effettuata!"
+    "bidSuccess": "Offerta effettuata!",
+    "alreadyHighestBidder": "Sei già il miglior offerente"
   },
   "voucher": {
     "title": "Codice sconto",
