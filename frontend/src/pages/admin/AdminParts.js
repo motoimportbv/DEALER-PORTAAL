@@ -38,7 +38,9 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const MOTORCYCLE_BRANDS = ['Yamaha', 'Honda', 'Kawasaki', 'Ducati', 'Triumph', 'KTM', 'Suzuki', 'BMW'];
+const MOTORCYCLE_BRANDS = ['Yamaha', 'Honda', 'Kawasaki', 'Ducati', 'Triumph', 'KTM', 'Suzuki', 'BMW', 'Harley-Davidson', 'Aprilia', 'Moto Guzzi', 'Indian', 'Benelli', 'CF Moto', 'Royal Enfield'];
+
+const MOTORCYCLE_TYPES = ['Naked', 'Sport', 'Touring', 'Adventure', 'Cruiser', 'Enduro', 'Cross', 'Scooter', 'Classic', 'Custom'];
 
 const AdminParts = () => {
   const { t } = useTranslation();
@@ -58,6 +60,7 @@ const AdminParts = () => {
     price: '',
     category_id: '',
     compatible_brands: [],
+    compatible_types: [],
     stock: '',
     sku: '',
     images: []
