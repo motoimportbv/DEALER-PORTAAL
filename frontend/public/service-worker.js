@@ -167,21 +167,36 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  const urlToOpen = event.notification.data?.url || '/';
+  const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Check if there's already a window open
+      // Check if there's already a window open with the app
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(urlToOpen);
-          return client.focus();
+        if (client.url.includes(self.location.origin)) {
+          // Focus the existing window and navigate
+          return client.focus().then((focusedClient) => {
+            // Use postMessage to navigate instead of client.navigate()
+            // This is more reliable across different browsers
+            if (focusedClient) {
+              focusedClient.postMessage({
+                type: 'NOTIFICATION_CLICK',
+                url: urlToOpen
+              });
+            }
+            return focusedClient;
+          }).catch(() => {
+            // If focus fails, try opening new window
+            return clients.openWindow(urlToOpen);
+          });
         }
       }
-      // Open new window
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      // No existing window, open new one
+      return clients.openWindow(urlToOpen);
+    }).catch((err) => {
+      console.error('[SW] Error handling notification click:', err);
+      // Fallback: just open the URL
+      return clients.openWindow(urlToOpen);
     })
   );
 });
