@@ -83,14 +83,14 @@ def create_dealer_guide_nl():
     story.append(Paragraph("Kom bij het grootste motor netwerk van Nederland", styles['Tagline']))
     story.append(Spacer(1, 10))
     story.append(Paragraph("DEALER INSTALLATIEHANDLEIDING", styles['SectionTitle']))
-    story.append(Paragraph("Stap-voor-stap gids voor registratie en app installatie", styles['BodyText']))
+    story.append(Paragraph("Stap-voor-stap gids voor registratie en app installatie", styles['GuideBodyText']))
     story.append(Spacer(1, 15))
     
     # Intro
     story.append(Paragraph(
         "Welkom bij Moto Import! Als dealer krijgt u toegang tot ons uitgebreide aanbod van motoren "
         "tegen aantrekkelijke prijzen. Volg deze handleiding om te starten.",
-        styles['BodyText']
+        styles['GuideBodyText']
     ))
     story.append(Spacer(1, 10))
     
@@ -112,22 +112,22 @@ def create_dealer_guide_nl():
         story.append(Paragraph(f"✓ {step}" if not step.startswith("   ") else step, styles['BulletText']))
     
     story.append(Spacer(1, 10))
-    story.append(Paragraph("Registratie URL:", styles['BodyText']))
+    story.append(Paragraph("Registratie URL:", styles['GuideBodyText']))
     story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register", styles['URLStyle']))
     
     # Step 2
     story.append(Paragraph("STAP 2: APP INSTALLEREN", styles['SectionTitle']))
-    story.append(Paragraph("Na goedkeuring kunt u de app installeren voor snelle toegang tot nieuwe motoren:", styles['BodyText']))
+    story.append(Paragraph("Na goedkeuring kunt u de app installeren voor snelle toegang tot nieuwe motoren:", styles['GuideBodyText']))
     story.append(Spacer(1, 5))
     
-    story.append(Paragraph("<b>Voor iPhone/iPad:</b>", styles['BodyText']))
+    story.append(Paragraph("<b>Voor iPhone/iPad:</b>", styles['GuideBodyText']))
     story.append(Paragraph("1. Open Safari en ga naar onze website", styles['BulletText']))
     story.append(Paragraph("2. Tik op het 'Delen' icoon (vierkant met pijl omhoog)", styles['BulletText']))
     story.append(Paragraph("3. Scroll naar beneden en tik op 'Zet op beginscherm'", styles['BulletText']))
     story.append(Paragraph("4. Tik op 'Voeg toe'", styles['BulletText']))
     story.append(Spacer(1, 5))
     
-    story.append(Paragraph("<b>Voor Android:</b>", styles['BodyText']))
+    story.append(Paragraph("<b>Voor Android:</b>", styles['GuideBodyText']))
     story.append(Paragraph("1. Open Chrome en ga naar onze website", styles['BulletText']))
     story.append(Paragraph("2. Tik op de drie puntjes (menu) rechtsboven", styles['BulletText']))
     story.append(Paragraph("3. Tik op 'App installeren' of 'Toevoegen aan startscherm'", styles['BulletText']))
@@ -135,7 +135,7 @@ def create_dealer_guide_nl():
     
     # Step 3
     story.append(Paragraph("STAP 3: MELDINGEN INSCHAKELEN", styles['SectionTitle']))
-    story.append(Paragraph("Ontvang direct een melding als er nieuwe motoren beschikbaar zijn:", styles['BodyText']))
+    story.append(Paragraph("Ontvang direct een melding als er nieuwe motoren beschikbaar zijn:", styles['GuideBodyText']))
     story.append(Paragraph("✓ Log in op uw account", styles['BulletText']))
     story.append(Paragraph("✓ Klik op 'Push Notificaties' → 'Inschakelen'", styles['BulletText']))
     story.append(Paragraph("✓ Geef toestemming in uw browser", styles['BulletText']))
@@ -153,11 +153,11 @@ def create_dealer_guide_nl():
     # Contact
     story.append(Spacer(1, 20))
     story.append(Paragraph("CONTACT", styles['SectionTitle']))
-    story.append(Paragraph("Moto Import B.V.", styles['BodyText']))
-    story.append(Paragraph("Horstenhoekweg 11", styles['BodyText']))
-    story.append(Paragraph("7433 SV Schalkhaar", styles['BodyText']))
-    story.append(Paragraph("Tel: +31 6 38525541", styles['BodyText']))
-    story.append(Paragraph("Email: motoimportbv@gmail.com", styles['BodyText']))
+    story.append(Paragraph("Moto Import B.V.", styles['GuideBodyText']))
+    story.append(Paragraph("Horstenhoekweg 11", styles['GuideBodyText']))
+    story.append(Paragraph("7433 SV Schalkhaar", styles['GuideBodyText']))
+    story.append(Paragraph("Tel: +31 6 38525541", styles['GuideBodyText']))
+    story.append(Paragraph("Email: motoimportbv@gmail.com", styles['GuideBodyText']))
     
     doc.build(story)
     print(f"Created: {filename}")
@@ -181,14 +181,14 @@ def create_supplier_guide_nl():
     story.append(Paragraph("Kom bij het grootste motor netwerk van Nederland", styles['Tagline']))
     story.append(Spacer(1, 10))
     story.append(Paragraph("LEVERANCIER HANDLEIDING", styles['SectionTitle']))
-    story.append(Paragraph("Stap-voor-stap gids voor registratie en app installatie", styles['BodyText']))
+    story.append(Paragraph("Stap-voor-stap gids voor registratie en app installatie", styles['GuideBodyText']))
     story.append(Spacer(1, 15))
     
     # Intro
     story.append(Paragraph(
         "Welkom bij Moto Import! Als buitenlandse leverancier kunt u eenvoudig uw motoren aanbieden "
         "aan ons uitgebreide dealernetwerk in Nederland. Volg deze handleiding om te starten.",
-        styles['BodyText']
+        styles['GuideBodyText']
     ))
     story.append(Spacer(1, 10))
     
@@ -205,22 +205,22 @@ def create_supplier_guide_nl():
     story.append(Paragraph("✓ Wacht op goedkeuring door Moto Import (u ontvangt een e-mail)", styles['BulletText']))
     
     story.append(Spacer(1, 10))
-    story.append(Paragraph("Registratie URL:", styles['BodyText']))
+    story.append(Paragraph("Registratie URL:", styles['GuideBodyText']))
     story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register/supplier", styles['URLStyle']))
     
     # Step 2
     story.append(Paragraph("STAP 2: APP DOWNLOADEN", styles['SectionTitle']))
-    story.append(Paragraph("Na goedkeuring kunt u de app installeren voor eenvoudig beheer:", styles['BodyText']))
+    story.append(Paragraph("Na goedkeuring kunt u de app installeren voor eenvoudig beheer:", styles['GuideBodyText']))
     story.append(Spacer(1, 5))
     
-    story.append(Paragraph("<b>Voor iPhone/iPad:</b>", styles['BodyText']))
+    story.append(Paragraph("<b>Voor iPhone/iPad:</b>", styles['GuideBodyText']))
     story.append(Paragraph("1. Open Safari en ga naar onze website", styles['BulletText']))
     story.append(Paragraph("2. Tik op het 'Delen' icoon (vierkant met pijl omhoog)", styles['BulletText']))
     story.append(Paragraph("3. Scroll naar beneden en tik op 'Zet op beginscherm'", styles['BulletText']))
     story.append(Paragraph("4. Tik op 'Voeg toe'", styles['BulletText']))
     story.append(Spacer(1, 5))
     
-    story.append(Paragraph("<b>Voor Android:</b>", styles['BodyText']))
+    story.append(Paragraph("<b>Voor Android:</b>", styles['GuideBodyText']))
     story.append(Paragraph("1. Open Chrome en ga naar onze website", styles['BulletText']))
     story.append(Paragraph("2. Tik op de drie puntjes (menu) rechtsboven", styles['BulletText']))
     story.append(Paragraph("3. Tik op 'App installeren' of 'Toevoegen aan startscherm'", styles['BulletText']))
@@ -238,11 +238,11 @@ def create_supplier_guide_nl():
     # Contact
     story.append(Spacer(1, 20))
     story.append(Paragraph("CONTACT", styles['SectionTitle']))
-    story.append(Paragraph("Moto Import B.V.", styles['BodyText']))
-    story.append(Paragraph("Horstenhoekweg 11", styles['BodyText']))
-    story.append(Paragraph("7433 SV Schalkhaar", styles['BodyText']))
-    story.append(Paragraph("Tel: +31 6 38525541", styles['BodyText']))
-    story.append(Paragraph("Email: motoimportbv@gmail.com", styles['BodyText']))
+    story.append(Paragraph("Moto Import B.V.", styles['GuideBodyText']))
+    story.append(Paragraph("Horstenhoekweg 11", styles['GuideBodyText']))
+    story.append(Paragraph("7433 SV Schalkhaar", styles['GuideBodyText']))
+    story.append(Paragraph("Tel: +31 6 38525541", styles['GuideBodyText']))
+    story.append(Paragraph("Email: motoimportbv@gmail.com", styles['GuideBodyText']))
     
     doc.build(story)
     print(f"Created: {filename}")
@@ -266,7 +266,7 @@ def create_dealer_guide_de():
     story.append(Paragraph(
         "Willkommen bei Moto Import! Als Händler erhalten Sie Zugang zu unserem umfangreichen "
         "Motorradangebot zu attraktiven Preisen.",
-        styles['BodyText']
+        styles['GuideBodyText']
     ))
     story.append(Spacer(1, 10))
     
@@ -278,7 +278,7 @@ def create_dealer_guide_de():
     story.append(Paragraph("✓ Warten Sie auf die Genehmigung (Sie erhalten eine E-Mail)", styles['BulletText']))
     
     story.append(Spacer(1, 10))
-    story.append(Paragraph("Registrierungs-URL:", styles['BodyText']))
+    story.append(Paragraph("Registrierungs-URL:", styles['GuideBodyText']))
     story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register", styles['URLStyle']))
     
     story.append(Paragraph("SCHRITT 2: APP INSTALLIEREN", styles['SectionTitle']))
@@ -293,7 +293,7 @@ def create_dealer_guide_de():
     story.append(Paragraph("✓ Optional: Lieferung (€50), Inspektion (€125), Bewertung (€160 zzgl. MwSt.)", styles['BulletText']))
     
     story.append(Spacer(1, 20))
-    story.append(Paragraph("KONTAKT: Moto Import B.V. | Tel: +31 6 38525541 | motoimportbv@gmail.com", styles['BodyText']))
+    story.append(Paragraph("KONTAKT: Moto Import B.V. | Tel: +31 6 38525541 | motoimportbv@gmail.com", styles['GuideBodyText']))
     
     doc.build(story)
     print(f"Created: {filename}")
@@ -319,7 +319,7 @@ def create_supplier_guide_de():
     story.append(Paragraph(
         "Willkommen bei Moto Import! Als ausländischer Lieferant können Sie Ihre Motorräder "
         "einfach unserem Händlernetzwerk in den Niederlanden anbieten.",
-        styles['BodyText']
+        styles['GuideBodyText']
     ))
     story.append(Spacer(1, 10))
     
@@ -330,7 +330,7 @@ def create_supplier_guide_de():
     story.append(Paragraph("✓ Klicken Sie auf 'Als Lieferant registrieren'", styles['BulletText']))
     
     story.append(Spacer(1, 10))
-    story.append(Paragraph("Registrierungs-URL:", styles['BodyText']))
+    story.append(Paragraph("Registrierungs-URL:", styles['GuideBodyText']))
     story.append(Paragraph("https://moto-import-1.preview.emergentagent.com/register/supplier", styles['URLStyle']))
     
     story.append(Paragraph("SCHRITT 2: APP INSTALLIEREN", styles['SectionTitle']))
@@ -343,7 +343,7 @@ def create_supplier_guide_de():
     story.append(Paragraph("✓ Zur Genehmigung einreichen", styles['BulletText']))
     
     story.append(Spacer(1, 20))
-    story.append(Paragraph("KONTAKT: Moto Import B.V. | Tel: +31 6 38525541 | motoimportbv@gmail.com", styles['BodyText']))
+    story.append(Paragraph("KONTAKT: Moto Import B.V. | Tel: +31 6 38525541 | motoimportbv@gmail.com", styles['GuideBodyText']))
     
     doc.build(story)
     print(f"Created: {filename}")
