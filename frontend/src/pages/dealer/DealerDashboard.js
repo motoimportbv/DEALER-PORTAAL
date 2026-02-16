@@ -223,6 +223,13 @@ const DealerDashboard = () => {
               </h1>
               <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} {t('motorcycle.available')}</p>
             </div>
+            {/* Prominent Sell Motorcycle Button */}
+            <Link to="/dealer/sell">
+              <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold" data-testid="sell-motorcycle-btn">
+                <Plus className="w-5 h-5 mr-2" />
+                {t('nav.sellMotorcycle')}
+              </Button>
+            </Link>
           </div>
           
           {/* Prominent Search Bar */}
