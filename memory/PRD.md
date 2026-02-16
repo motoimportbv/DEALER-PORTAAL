@@ -90,14 +90,23 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 - [x] Twilio SMS verwijderen
 - [x] Algemene Voorwaarden accepteren (dealers)
 - [x] **Volledige app vertaling (NL, DE, FR, IT)** ✅
+- [x] **Push notificatie instructie-popup** ✅ (16 Feb 2026)
 
-### P1 (Hoog) - Aanbevolen
-- [ ] Native app build (Capacitor) voor App Store/Play Store
-- [ ] Backend refactoren naar routers/models structuur
-- [ ] Ongebruikte Stripe endpoints verwijderen (`/api/create-checkout-session`)
+### P1 (Hoog) - ✅ Voltooid
+- [x] **Native app build (Capacitor)** ✅ Geconfigureerd met iOS/Android projecten
+  - Documentatie: `/app/frontend/NATIVE_APP_BUILD_GUIDE.md`
+  - iOS project: `/app/frontend/ios/`
+  - Android project: `/app/frontend/android/`
+  - App ID: `nl.motoimport.app`
 
-### P2 (Medium)
+### P2 (Medium) - In Progress
 - [x] ~~Wachtwoord reset functionaliteit~~ ✅ Voltooid
+- [x] **Backend refactoring gestart** ✅ (16 Feb 2026)
+  - Models gescheiden naar `/app/backend/models/`
+  - Services gescheiden naar `/app/backend/services/`
+  - Routers structuur aangemaakt
+- [ ] Backend refactoring voltooien (endpoints naar routers)
+- [ ] Ongebruikte Stripe endpoints verwijderen
 - [ ] Zoek/filter uitbreiden (prijs range, jaar, conditie)
 
 ### P3 (Laag)
