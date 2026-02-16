@@ -18,6 +18,13 @@
     "login": "Accedi",
     "register": "Registrati"
   },
+  "guides": {
+    "title": "Guide",
+    "dealerGuide": "Guida Rivenditore",
+    "supplierGuide": "Guida Fornitore",
+    "viewOnline": "Vedi online (Rivenditore)",
+    "supplierOnline": "Vedi online (Fornitore)"
+  },
   "supplierRegister": {
     "badge": "Fornitore Estero",
     "title": "Registrazione Fornitore",
