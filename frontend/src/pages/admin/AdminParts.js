@@ -237,29 +237,6 @@ const AdminParts = () => {
     setDialogOpen(true);
   };
 
-  const handleTypeToggle = (type) => {
-    setFormData(prev => ({
-      ...prev,
-      compatible_types: prev.compatible_types.includes(type)
-        ? prev.compatible_types.filter(t => t !== type)
-        : [...prev.compatible_types, type]
-    }));
-  };
-
-  const selectAllBrands = () => {
-    setFormData(prev => ({
-      ...prev,
-      compatible_brands: prev.compatible_brands.length === MOTORCYCLE_BRANDS.length ? [] : [...MOTORCYCLE_BRANDS]
-    }));
-  };
-
-  const selectAllTypes = () => {
-    setFormData(prev => ({
-      ...prev,
-      compatible_types: prev.compatible_types.length === MOTORCYCLE_TYPES.length ? [] : [...MOTORCYCLE_TYPES]
-    }));
-  };
-
   const handleSubmit = async () => {
     if (!formData.name || !formData.price || !formData.category_id) {
       toast.error('Vul alle verplichte velden in');
@@ -268,13 +245,16 @@ const AdminParts = () => {
 
     setSubmitting(true);
     try {
+      // Convert compatible_motorcycles to compatible_brands for backward compatibility
+      const compatibleBrands = Object.keys(formData.compatible_motorcycles);
+      
       const payload = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
         category_id: formData.category_id,
-        compatible_brands: formData.compatible_brands,
-        compatible_types: formData.compatible_types,
+        compatible_brands: compatibleBrands,
+        compatible_motorcycles: formData.compatible_motorcycles,
         stock: parseInt(formData.stock) || 0,
         sku: formData.sku,
         images: formData.images
