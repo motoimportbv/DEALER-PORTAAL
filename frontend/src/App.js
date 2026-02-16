@@ -72,6 +72,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/register/supplier" element={<SupplierRegisterPage />} />
             <Route path="/supplier-guide" element={<SupplierGuide />} />
+            <Route path="/dealer-guide" element={<DealerGuide />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             
