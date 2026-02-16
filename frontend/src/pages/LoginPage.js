@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Bike, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Bike, Mail, Lock, ArrowRight, FileText, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import LanguageSelector from '../components/LanguageSelector';
 
