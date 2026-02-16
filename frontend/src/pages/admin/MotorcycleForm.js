@@ -229,21 +229,7 @@ const MotorcycleForm = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-                      Vanaf Prijs (€) *
-                    </Label>
-                    <Input
-                      type="number"
-                      value={formData.starting_price}
-                      onChange={(e) => handleChange('starting_price', e.target.value)}
-                      placeholder="15000"
-                      min="0"
-                      data-testid="starting-price-input"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-                      Koop Nu Prijs (€) *
+                      Prijs (€) *
                     </Label>
                     <Input
                       type="number"
