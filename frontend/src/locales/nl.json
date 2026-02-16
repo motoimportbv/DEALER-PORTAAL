@@ -18,6 +18,13 @@
     "login": "Inloggen",
     "register": "Registreren"
   },
+  "guides": {
+    "title": "Handleidingen",
+    "dealerGuide": "Dealer Handleiding",
+    "supplierGuide": "Leverancier Handleiding",
+    "viewOnline": "Online bekijken (Dealer)",
+    "supplierOnline": "Online bekijken (Leverancier)"
+  },
   "supplierRegister": {
     "badge": "Buitenlandse Leverancier",
     "title": "Leverancier Registratie",
