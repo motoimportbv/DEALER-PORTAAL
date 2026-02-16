@@ -104,15 +104,21 @@ const PushNotificationToggle = ({ token }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Push test response:', response.data);
+      
       if (response.data.success) {
         toast.success(t('pushNotifications.testSent'));
+      } else if (response.data.needs_resubscribe) {
+        // Server detected invalid subscription and removed it
+        toast.info('Push notificaties opnieuw instellen...');
+        setIsSubscribed(false);
+        // Auto resubscribe after short delay
+        setTimeout(() => subscribe(), 1000);
       } else {
         // Check for VAPID key mismatch error
         const errorMsg = response.data.error || '';
         const debug = response.data.debug;
         
         if (errorMsg.includes('VapidPkHashMismatch') || errorMsg.includes('400')) {
-          // VAPID key changed - need to resubscribe
           toast.error('Push keys gewijzigd. Even opnieuw inschakelen...');
           await resubscribe();
           return;
