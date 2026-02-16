@@ -1994,6 +1994,10 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
     if datetime.now(timezone.utc) > auction_end:
         raise HTTPException(status_code=400, detail="Veiling is afgelopen")
     
+    # Check if user is already the highest bidder - prevent self-overbidding
+    if motorcycle.get("highest_bidder_id") == user["id"]:
+        raise HTTPException(status_code=400, detail="U bent al de hoogste bieder. Wacht op een ander bod.")
+    
     # Check minimum bid
     current_highest = motorcycle.get("highest_bid") or motorcycle.get("starting_price", 0)
     min_bid = current_highest + 100 if motorcycle.get("highest_bid") else motorcycle.get("starting_price", 0)
