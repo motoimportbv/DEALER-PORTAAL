@@ -67,8 +67,8 @@ const MotorcycleDetail = () => {
       const response = await axios.get(`${API}/motorcycles/${id}`);
       setMotorcycle(response.data);
     } catch (error) {
+      console.error('Failed to load motorcycle:', error);
       toast.error('Kon motor niet laden');
-      navigate(-1);
     } finally {
       setLoading(false);
     }
