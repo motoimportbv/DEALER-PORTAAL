@@ -62,7 +62,6 @@ const MotorcycleDetail = () => {
     fetchMyVoucher();
   }, [id]);
 
-  useEffect(() => {
   const fetchMotorcycle = async () => {
     try {
       const response = await axios.get(`${API}/motorcycles/${id}`);
