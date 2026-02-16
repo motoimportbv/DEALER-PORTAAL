@@ -42,7 +42,7 @@ def create_styles():
     ))
     
     styles.add(ParagraphStyle(
-        name='BodyText',
+        name='GuideBodyText',
         fontSize=10,
         spaceAfter=8,
         textColor=colors.HexColor('#3f3f46'),
