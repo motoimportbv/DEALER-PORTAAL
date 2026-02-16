@@ -18,6 +18,18 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Load cached user first for instant display
+        const cachedUser = localStorage.getItem('user');
+        if (cachedUser) {
+          try {
+            setUser(JSON.parse(cachedUser));
+          } catch (e) {
+            // Invalid cached data
+          }
+        }
+        
+        // Then fetch fresh data from server
         await fetchUser();
       } else {
         setLoading(false);
