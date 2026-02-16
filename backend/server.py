@@ -2543,6 +2543,12 @@ async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depend
     )
     return {"message": "Subscribed to push notifications"}
 
+@api_router.get("/push/status")
+async def get_push_status(user: dict = Depends(get_current_user)):
+    """Check if user has an active push subscription"""
+    sub = await db.push_subscriptions.find_one({"user_id": user["id"]})
+    return {"subscribed": sub is not None}
+
 @api_router.get("/push/test")
 async def test_push_notification(user: dict = Depends(get_current_user)):
     """Test push notification for current user"""
