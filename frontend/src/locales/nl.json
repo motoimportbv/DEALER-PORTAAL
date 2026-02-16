@@ -91,7 +91,10 @@
     "myMotorcycles": "Mijn Motoren",
     "sellMotorcycle": "Motor Verkopen",
     "myOrders": "Mijn Bestellingen",
-    "pendingListings": "Wachtende Motors"
+    "pendingListings": "Wachtende Motors",
+    "partsShop": "Onderdelen",
+    "partsManagement": "Onderdelen Beheer",
+    "partOrders": "Onderdelen Bestellingen"
   },
   "search": {
     "placeholder": "Zoek op merk, model, kleur of bouwjaar...",
