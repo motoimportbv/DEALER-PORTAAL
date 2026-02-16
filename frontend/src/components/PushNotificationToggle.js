@@ -122,8 +122,12 @@ const PushNotificationToggle = ({ token }) => {
         const errorMsg = response.data.error || '';
         const debug = response.data.debug;
         
-        if (errorMsg.includes('VapidPkHashMismatch') || errorMsg.includes('400')) {
-          toast.error('Push keys gewijzigd. Even opnieuw inschakelen...');
+        // Detect various VAPID mismatch errors
+        if (errorMsg.includes('VapidPkHashMismatch') || 
+            errorMsg.includes('VAPID credentials') ||
+            errorMsg.includes('403') ||
+            errorMsg.includes('400')) {
+          toast.info('Push instellingen worden vernieuwd...');
           await resubscribe();
           return;
         }
@@ -141,8 +145,11 @@ const PushNotificationToggle = ({ token }) => {
       const errorMsg = error.response?.data?.error || error.message || '';
       
       // Check for VAPID mismatch in error response
-      if (errorMsg.includes('VapidPkHashMismatch') || errorMsg.includes('400')) {
-        toast.error('Push keys gewijzigd. Even opnieuw inschakelen...');
+      if (errorMsg.includes('VapidPkHashMismatch') || 
+          errorMsg.includes('VAPID credentials') ||
+          errorMsg.includes('403') ||
+          errorMsg.includes('400')) {
+        toast.info('Push instellingen worden vernieuwd...');
         await resubscribe();
         return;
       }
