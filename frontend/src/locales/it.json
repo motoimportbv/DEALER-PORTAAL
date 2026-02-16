@@ -543,6 +543,7 @@
     "description": "Descrizione",
     "descriptionPlaceholder": "Descrivi il ricambio...",
     "compatibleBrands": "Compatibile con",
+    "compatibleTypes": "Compatibile con tipi",
     "images": "Immagini",
     "orders": "ordini",
     "noOrders": "Nessun ordine ancora",

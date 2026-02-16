@@ -543,6 +543,7 @@
     "description": "Description",
     "descriptionPlaceholder": "Décrivez la pièce...",
     "compatibleBrands": "Compatible avec",
+    "compatibleTypes": "Compatible avec types",
     "images": "Images",
     "orders": "commandes",
     "noOrders": "Pas encore de commandes",
