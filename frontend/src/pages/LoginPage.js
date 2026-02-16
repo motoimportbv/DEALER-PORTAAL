@@ -152,6 +152,40 @@ const LoginPage = () => {
             {t('common.register')}
           </Link>
         </p>
+
+        {/* Handleidingen sectie */}
+        <div className="mt-8 pt-6 border-t border-zinc-200">
+          <p className="text-center text-sm font-semibold text-zinc-600 mb-4">
+            {t('guides.title')}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <a 
+              href="/guides/dealer-handleiding-nl.pdf" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-3 bg-red-50 hover:bg-red-100 rounded-lg text-red-700 transition-colors"
+              data-testid="dealer-guide-link"
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-sm font-medium">{t('guides.dealerGuide')}</span>
+            </a>
+            <a 
+              href="/guides/leverancier-handleiding-nl.pdf" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-purple-700 transition-colors"
+              data-testid="supplier-guide-link"
+            >
+              <Globe className="w-5 h-5" />
+              <span className="text-sm font-medium">{t('guides.supplierGuide')}</span>
+            </a>
+          </div>
+          <div className="mt-3 flex justify-center gap-4 text-xs text-zinc-500">
+            <Link to="/dealer-guide" className="hover:text-red-600">{t('guides.viewOnline')}</Link>
+            <span>|</span>
+            <Link to="/supplier-guide" className="hover:text-purple-600">{t('guides.supplierOnline')}</Link>
+          </div>
+        </div>
       </div>
     </div>
   );
