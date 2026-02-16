@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import WhatsAppButton from './WhatsAppButton';
 import LanguageSelector from './LanguageSelector';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Bike } from 'lucide-react';
 import { Button } from './ui/button';
 
 const Layout = ({ children, requiredRole }) => {
