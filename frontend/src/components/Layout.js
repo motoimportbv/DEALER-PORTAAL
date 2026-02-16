@@ -60,24 +60,28 @@ const Layout = ({ children, requiredRole }) => {
       <Sidebar />
       <main className="main-content">
         {/* Mobile header with language selector - always visible on mobile */}
-        <div className="md:hidden sticky top-0 z-50 flex items-center justify-between p-3 bg-white border-b shadow-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-              <Bike className="w-5 h-5 text-white" />
+        {/* Uses safe-area-inset for iPhone notch */}
+        <div className="md:hidden sticky top-0 z-50 bg-white border-b shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+          <div className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <Bike className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
+                Moto Import
+              </span>
             </div>
-            <span className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
-              Moto Import
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => window.location.reload()}
-              className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
-              title="Verversen"
-            >
-              <RefreshCw className="w-5 h-5 text-zinc-600" />
-            </button>
-            <LanguageSelector variant="light" />
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => window.location.reload()}
+                className="flex items-center gap-1 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                title="Verversen"
+              >
+                <RefreshCw className="w-4 h-4 text-zinc-700" />
+                <span className="text-sm font-medium text-zinc-700">Ververs</span>
+              </button>
+              <LanguageSelector variant="light" />
+            </div>
           </div>
         </div>
         {children}
