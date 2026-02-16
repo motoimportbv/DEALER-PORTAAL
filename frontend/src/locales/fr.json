@@ -271,11 +271,20 @@
   "myListings": {
     "listed": "motos publiées",
     "forSale": "À vendre",
+    "paused": "En pause",
     "noListings": "Aucune moto publiée",
     "firstListing": "Publiez votre première moto à vendre pour d'autres revendeurs",
     "listedOn": "Publié le",
     "feeNotice": "Attention",
-    "feeInfo": "Lors de la vente de votre moto, vous recevrez une facture de €250."
+    "feeInfo": "Lors de la vente de votre moto, vous recevrez une facture de €250.",
+    "editListing": "Modifier l'annonce",
+    "updated": "Annonce mise à jour",
+    "deleted": "Annonce supprimée",
+    "pause": "Mettre en pause",
+    "resume": "Reprendre",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer l'annonce",
+    "deleteWarning": "Êtes-vous sûr de vouloir supprimer cette annonce ? Cette action est irréversible."
   },
   "orders": {
     "totalOrders": "commandes au total",
