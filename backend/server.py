@@ -46,10 +46,9 @@ STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
 DELIVERY_COST = 50.0  # €50 bezorgkosten
 DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
 
-# VAPID Config for Push Notifications - FIXED KEYS (do not change!)
-# These keys are hardcoded to ensure they ALWAYS match across all deployments
-VAPID_PUBLIC_KEY = "BDVDg84JgYjD10VTovA4da7oXRi0GAQ7Exk_woSSP2R5t9I-TG5tpMsSpSkACaUC-3XxFKqVE5O9Q8nuxOyVSrU"
-VAPID_PRIVATE_KEY_DER = "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgetbgPlFqO/NomQmXcYexcYlBvS4fKNUD8aF0a2dJbiWhRANCAAQ1Q4POCYGIw9dFU6LwOHWu6F0YtBgEOxMZP8KEkj9kebfSPkxubaTLEqUpAAmlAvt18RSqlROTvUPJ7sTslUq1"
+# VAPID Config for Push Notifications
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'BDVDg84JgYjD10VTovA4da7oXRi0GAQ7Exk_woSSP2R5t9I-TG5tpMsSpSkACaUC-3XxFKqVE5O9Q8nuxOyVSrU')
+VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgetbgPlFqO/NomQmXcYexcYlBvS4fKNUD8aF0a2dJbiWhRANCAAQ1Q4POCYGIw9dFU6LwOHWu6F0YtBgEOxMZP8KEkj9kebfSPkxubaTLEqUpAAmlAvt18RSqlROTvUPJ7sTslUq1')
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
