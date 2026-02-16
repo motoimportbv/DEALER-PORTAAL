@@ -63,50 +63,15 @@ const MotorcycleDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    if (motorcycle?.auction_end_time) {
-      const timer = setInterval(() => {
-        const end = new Date(motorcycle.auction_end_time);
-        const now = new Date();
-        const diff = end - now;
-        
-        if (diff <= 0) {
-          setTimeLeft({ expired: true });
-          clearInterval(timer);
-        } else {
-          const hours = Math.floor(diff / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          setTimeLeft({ hours, minutes, seconds, expired: false });
-        }
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    }
-  }, [motorcycle?.auction_end_time]);
-
   const fetchMotorcycle = async () => {
     try {
       const response = await axios.get(`${API}/motorcycles/${id}`);
       setMotorcycle(response.data);
-      // Set minimum bid amount
-      const minBid = response.data.highest_bid 
-        ? response.data.highest_bid + 100 
-        : response.data.starting_price || response.data.price * 0.8;
-      setBidAmount(Math.ceil(minBid));
     } catch (error) {
       toast.error('Kon motor niet laden');
       navigate(-1);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchBids = async () => {
-    try {
-      const response = await axios.get(`${API}/bids/${id}`);
-      setBids(response.data);
-    } catch (error) {
-      console.error('Failed to fetch bids:', error);
     }
   };
 
