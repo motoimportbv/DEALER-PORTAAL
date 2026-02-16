@@ -191,7 +191,18 @@ const MotorcycleDetail = () => {
   }
 
   if (!motorcycle) {
-    return null;
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <Bike className="w-16 h-16 text-zinc-300 mb-4" />
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">{t('motorcycle.notFound')}</h2>
+          <p className="text-zinc-500 mb-4">{t('motorcycle.notFoundDesc')}</p>
+          <Button onClick={() => navigate('/catalog')} className="bg-red-600 hover:bg-red-700">
+            {t('nav.catalog')}
+          </Button>
+        </div>
+      </Layout>
+    );
   }
 
   const images = motorcycle.images?.length > 0 ? motorcycle.images : [];
