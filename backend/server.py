@@ -1083,11 +1083,12 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
     return {"message": "Motor geactiveerd", "price": price}
 
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
-    """Send email notifications to all approved dealers about a new motorcycle"""
+    """Send email notifications to all approved dealers who are not offline about a new motorcycle"""
     base_url = os.environ.get("BASE_URL", "")
     
     for dealer in dealers:
-        if not dealer.get("email"):
+        # Skip dealers without email or who are offline
+        if not dealer.get("email") or dealer.get("is_offline", False):
             continue
             
         try:
