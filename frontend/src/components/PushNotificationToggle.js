@@ -37,9 +37,24 @@ const PushNotificationToggle = ({ token }) => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
+      
+      if (subscription) {
+        // Browser has subscription - verify it's also on server
+        try {
+          const response = await axios.get(`${API}/api/push/status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setIsSubscribed(response.data.subscribed);
+        } catch (e) {
+          // If server check fails, trust browser state
+          setIsSubscribed(true);
+        }
+      } else {
+        setIsSubscribed(false);
+      }
     } catch (error) {
       console.error('Error checking subscription:', error);
+      setIsSubscribed(false);
     }
   };
 
