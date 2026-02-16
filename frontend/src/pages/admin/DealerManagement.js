@@ -165,6 +165,12 @@ const DealerManagement = () => {
             </div>
           </div>
           <div className="flex flex-col gap-1 items-end">
+            {dealer.is_offline && (
+              <Badge className="bg-gray-100 text-gray-800 flex items-center gap-1">
+                <WifiOff className="w-3 h-3" />
+                Offline
+              </Badge>
+            )}
             {dealer.is_approved ? (
               <Badge className="bg-green-100 text-green-800">{t('dealer.approved')}</Badge>
             ) : (
