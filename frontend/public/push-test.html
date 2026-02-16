@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Push Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 600px; margin: 0 auto; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        #log { background: #f5f5f5; padding: 15px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Push Notificatie Test</h1>
+    <p>Deze pagina test push notificaties stap voor stap.</p>
+    
+    <button onclick="checkSupport()">1. Check Support</button>
+    <button onclick="checkPermission()">2. Check Permissie</button>
+    <button onclick="requestPermission()">3. Vraag Permissie</button>
+    <button onclick="subscribe()">4. Subscribe</button>
+    <button onclick="testPush()">5. Test Push</button>
+    
+    <div id="log"></div>
+
+    <script>
+        const API = window.location.origin;
+        let token = localStorage.getItem('token');
+        
+        function log(msg, isError = false) {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<span class="${isError ? 'error' : ''}">[${time}] ${msg}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(msg);
+        }
+        
+        function checkSupport() {
+            log('--- Checking browser support ---');
+            log('serviceWorker in navigator: ' + ('serviceWorker' in navigator));
+            log('PushManager in window: ' + ('PushManager' in window));
+            log('Notification in window: ' + ('Notification' in window));
+            
+            if (!('serviceWorker' in navigator)) {
+                log('❌ Service Workers NOT supported!', true);
+            } else if (!('PushManager' in window)) {
+                log('❌ Push API NOT supported!', true);
+            } else {
+                log('✅ Browser supports push notifications');
+            }
+        }
+        
+        function checkPermission() {
+            log('--- Checking permission ---');
+            log('Notification.permission: ' + Notification.permission);
+            
+            if (Notification.permission === 'granted') {
+                log('✅ Notificaties zijn TOEGESTAAN');
+            } else if (Notification.permission === 'denied') {
+                log('❌ Notificaties zijn GEBLOKKEERD - Ga naar browser instellingen om dit te wijzigen', true);
+            } else {
+                log('⚠️ Notificaties nog niet gevraagd - klik op "Vraag Permissie"');
+            }
+        }
+        
+        async function requestPermission() {
+            log('--- Requesting permission ---');
+            try {
+                const result = await Notification.requestPermission();
+                log('Permission result: ' + result);
+                
+                if (result === 'granted') {
+                    log('✅ Permissie verleend!');
+                } else if (result === 'denied') {
+                    log('❌ Permissie geweigerd! Ga naar browser instellingen.', true);
+                } else {
+                    log('⚠️ Permissie genegeerd (dismissed)');
+                }
+            } catch (e) {
+                log('❌ Error: ' + e.message, true);
+            }
+        }
+        
+        async function subscribe() {
+            log('--- Subscribing ---');
+            
+            if (!token) {
+                log('❌ Niet ingelogd! Log eerst in op de normale app.', true);
+                return;
+            }
+            log('Token found: ' + token.substring(0, 30) + '...');
+            
+            try {
+                // Get service worker
+                log('Getting service worker...');
+                const registration = await navigator.serviceWorker.ready;
+                log('Service worker ready: ' + registration.scope);
+                
+                // Get VAPID key
+                log('Fetching VAPID key...');
+                const vapidResponse = await fetch(API + '/api/push/vapid-key');
+                const vapidData = await vapidResponse.json();
+                log('VAPID key: ' + vapidData.vapidKey.substring(0, 30) + '...');
+                
+                // Subscribe
+                log('Creating push subscription...');
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidData.vapidKey)
+                });
+                log('Subscription created!');
+                log('Endpoint: ' + subscription.endpoint.substring(0, 60) + '...');
+                
+                // Send to server
+                log('Sending to server...');
+                const response = await fetch(API + '/api/push/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ subscription: subscription.toJSON() })
+                });
+                
+                if (response.ok) {
+                    log('✅ SUBSCRIPTION SAVED TO SERVER!');
+                } else {
+                    const error = await response.json();
+                    log('❌ Server error: ' + JSON.stringify(error), true);
+                }
+            } catch (e) {
+                log('❌ Error: ' + e.message, true);
+                console.error(e);
+            }
+        }
+        
+        async function testPush() {
+            log('--- Testing push ---');
+            
+            if (!token) {
+                log('❌ Niet ingelogd!', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(API + '/api/push/test', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                log('Server response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.success) {
+                    log('✅ PUSH VERZONDEN! Check uw notificaties.');
+                } else {
+                    log('❌ Push failed: ' + data.error, true);
+                }
+            } catch (e) {
+                log('❌ Error: ' + e.message, true);
+            }
+        }
+        
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+        
+        // Initial check
+        log('Push Test Page loaded');
+        log('Token present: ' + (token ? 'YES' : 'NO - login first!'));
+    </script>
+</body>
+</html>
