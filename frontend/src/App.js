@@ -12,6 +12,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import SupplierRegisterPage from "./pages/SupplierRegisterPage";
 import SupplierGuide from "./pages/SupplierGuide";
+import DealerGuide from "./pages/DealerGuide";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
