@@ -114,7 +114,7 @@
     "price": "Prix",
     "askingPrice": "Prix demandé",
     "buyNowPrice": "Prix Achat Immédiat",
-    "startingPrice": "Prix de départ",
+    "startingPrice": "Prix",
     "mileage": "Kilométrage",
     "color": "Couleur",
     "condition": "État",
@@ -140,7 +140,7 @@
     "noAvailableDesc": "Aucune moto n'est disponible actuellement",
     "notFound": "Moto non trouvée",
     "notFoundDesc": "Cette moto n'existe pas ou n'est plus disponible",
-    "viewAndBid": "Voir & Enchérir",
+    "viewAndBid": "Voir & Acheter",
     "deleted": "Moto supprimée",
     "specifications": "Spécifications",
     "brandModel": "Marque & Modèle",
@@ -148,7 +148,7 @@
     "active": "Active",
     "bids": "Enchères",
     "currentBidLabel": "Offre actuelle",
-    "fromPrice": "À partir de",
+    "fromPrice": "Prix",
     "highestBid": "Plus haute"
   },
   "order": {
