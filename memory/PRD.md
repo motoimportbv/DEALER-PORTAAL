@@ -187,6 +187,13 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Fix: 401 errors worden nu stil afgehandeld (geen foutmelding meer bij auth timing issues)
   - Opgeruimd: Tijdelijk debug bestand `push-test.html` verwijderd
 
+- 🏷️ **BIEDINGSTERMINOLOGIE VERWIJDERD** - Volledig koopsysteem
+  - "Bekijk & Bied" → "Bekijk & Koop" (alle talen)
+  - "Vanaf prijs" verwijderd uit dashboard - nu alleen "Prijs"
+  - Admin formulier: "Vanaf Prijs" veld verwijderd, alleen "Prijs (€)"
+  - Dealer motor verkopen: "Minimum bod" veld verwijderd
+  - Vertalingen aangepast in NL, DE, FR, IT
+
 ### 16 Feb 2026 (Update 19) ✅ VOLTOOID
 - 🔔 **PUSH NOTIFICATIE INSTRUCTIE-POPUP** - Voor geblokkeerde notificaties
   - Nieuwe `NotificationBlockedModal.js` component
