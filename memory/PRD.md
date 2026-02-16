@@ -213,6 +213,15 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
   - Link op normale registratiepagina: "Bent u een buitenlandse leverancier?"
   - Volledig vertaald in 4 talen (NL, DE, FR, IT)
 
+### 16 Feb 2026 (Update 18) ✅ VOLTOOID
+- ✅ **DEALER LISTINGS BEHEER** - Bewerken, verwijderen, pauzeren
+  - Dealers kunnen hun eigen listings bewerken (prijs, km-stand, conditie, beschrijving)
+  - Dealers kunnen listings pauzeren (tijdelijk onzichtbaar) en hervatten
+  - Dealers kunnen listings permanent verwijderen
+  - Backend endpoints: PUT/DELETE /api/motorcycles/my-listings/{id}, PUT .../pause
+  - Visuele feedback: gepauzeerde listings tonen oranje badge en zijn transparant
+  - Vertalingen toegevoegd in 4 talen (NL, DE, FR, IT)
+
 ### 16 Feb 2026 (Update 17) ✅ VOLTOOID
 - ✅ **AFBEELDINGEN PERMANENT OPGESLAGEN** - In MongoDB ipv lokale folder
   - Afbeeldingen worden nu base64 gecodeerd in MongoDB opgeslagen
