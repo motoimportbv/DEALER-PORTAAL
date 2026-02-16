@@ -2602,12 +2602,19 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
             response_text = e.response.text[:200] if e.response.text else ""
             error_msg = f"Status {e.response.status_code}: {response_text}"
         
-        # Check for VAPID key mismatch - delete the invalid subscription
-        if "VapidPkHashMismatch" in response_text or "VapidPkHashMismatch" in str(e):
+        # Check for VAPID key mismatch - multiple error patterns
+        vapid_mismatch = (
+            "VapidPkHashMismatch" in response_text or 
+            "VapidPkHashMismatch" in str(e) or
+            "VAPID credentials" in response_text or
+            (e.response and e.response.status_code == 403 and "credentials" in response_text.lower())
+        )
+        
+        if vapid_mismatch:
             await db.push_subscriptions.delete_many({"user_id": user["id"]})
             return {
                 "success": False, 
-                "error": "VapidPkHashMismatch - Subscription verwijderd. Klik op 'Inschakelen' om opnieuw te registreren.",
+                "error": "Push instellingen verouderd. Subscription verwijderd.",
                 "needs_resubscribe": True,
                 "debug": debug_info
             }
