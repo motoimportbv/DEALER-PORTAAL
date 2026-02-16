@@ -366,6 +366,16 @@ class PartOrder(BaseModel):
 async def root():
     return {"message": "Moto Import API is running"}
 
+@api_router.get("/health")
+async def health_check():
+    """Health check endpoint for keeping the service warm"""
+    try:
+        # Quick database ping
+        await db.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "database": "error", "detail": str(e)}
+
 # ============ AUTH HELPERS ============
 
 def hash_password(password: str) -> str:
