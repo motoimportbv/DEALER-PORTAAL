@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Bell, Bike, Check, CheckCheck } from 'lucide-react';
@@ -12,29 +12,37 @@ import {
 } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
+import { AuthContext } from '../contexts/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const NotificationBell = () => {
+  const { token } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+  const getHeaders = () => ({
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
   useEffect(() => {
-    if (open) {
+    if (token) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000); // Check every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (open && token) {
       fetchNotifications();
     }
-  }, [open]);
+  }, [open, token]);
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await axios.get(`${API}/notifications/unread-count`);
+      const response = await axios.get(`${API}/notifications/unread-count`, getHeaders());
       setUnreadCount(response.data.count);
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
@@ -43,7 +51,7 @@ const NotificationBell = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await axios.get(`${API}/notifications`);
+      const response = await axios.get(`${API}/notifications`, getHeaders());
       setNotifications(response.data);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -52,7 +60,7 @@ const NotificationBell = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await axios.put(`${API}/notifications/${notificationId}/read`);
+      await axios.put(`${API}/notifications/${notificationId}/read`, {}, getHeaders());
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
@@ -64,7 +72,7 @@ const NotificationBell = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put(`${API}/notifications/read-all`);
+      await axios.put(`${API}/notifications/read-all`, {}, getHeaders());
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
