@@ -107,10 +107,18 @@ const PushNotificationToggle = ({ token }) => {
       if (response.data.success) {
         toast.success(t('pushNotifications.testSent'));
       } else {
-        // Show detailed error with debug info
-        const errorMsg = response.data.error || t('pushNotifications.testError');
+        // Check for VAPID key mismatch error
+        const errorMsg = response.data.error || '';
         const debug = response.data.debug;
-        toast.error(errorMsg);
+        
+        if (errorMsg.includes('VapidPkHashMismatch') || errorMsg.includes('400')) {
+          // VAPID key changed - need to resubscribe
+          toast.error('Push keys gewijzigd. Even opnieuw inschakelen...');
+          await resubscribe();
+          return;
+        }
+        
+        toast.error(errorMsg || t('pushNotifications.testError'));
         if (debug) {
           console.log('Debug info:', debug);
           if (!debug.has_valid_keys) {
@@ -120,8 +128,63 @@ const PushNotificationToggle = ({ token }) => {
       }
     } catch (error) {
       console.error('Test push error:', error);
-      const errorMsg = error.response?.data?.error || error.message || t('pushNotifications.testError');
-      toast.error(errorMsg);
+      const errorMsg = error.response?.data?.error || error.message || '';
+      
+      // Check for VAPID mismatch in error response
+      if (errorMsg.includes('VapidPkHashMismatch') || errorMsg.includes('400')) {
+        toast.error('Push keys gewijzigd. Even opnieuw inschakelen...');
+        await resubscribe();
+        return;
+      }
+      
+      toast.error(errorMsg || t('pushNotifications.testError'));
+    }
+  };
+
+  const resubscribe = async () => {
+    // First unsubscribe the old subscription
+    setIsLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      
+      if (subscription) {
+        await subscription.unsubscribe();
+        console.log('Old subscription removed');
+      }
+
+      // Remove from server
+      try {
+        await axios.delete(`${API}/api/push/subscribe`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (e) {
+        // Ignore if not found on server
+      }
+
+      // Now subscribe with new key
+      const vapidResponse = await axios.get(`${API}/api/push/vapid-key`);
+      const vapidKey = vapidResponse.data.vapidKey;
+
+      const newSubscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+
+      await axios.post(`${API}/api/push/subscribe`, {
+        subscription: newSubscription.toJSON()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setIsSubscribed(true);
+      toast.success('Push notificaties opnieuw ingeschakeld!');
+    } catch (error) {
+      console.error('Resubscribe error:', error);
+      setIsSubscribed(false);
+      toast.error('Kon niet opnieuw inschakelen. Probeer handmatig.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
