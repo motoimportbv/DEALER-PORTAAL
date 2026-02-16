@@ -112,48 +112,16 @@ const PushNotificationToggle = ({ token }) => {
       if (response.data.success) {
         toast.success(t('pushNotifications.testSent'));
       } else if (response.data.needs_resubscribe) {
-        // Server detected invalid subscription and removed it
-        toast.info('Push notificaties opnieuw instellen...');
+        // Server detected invalid subscription - show manual instructions
+        toast.error('Subscription ongeldig. Klik op "Uit" en dan "Inschakelen".');
         setIsSubscribed(false);
-        // Auto resubscribe after short delay
-        setTimeout(() => subscribe(), 1000);
       } else {
-        // Check for VAPID key mismatch error
         const errorMsg = response.data.error || '';
-        const debug = response.data.debug;
-        
-        // Detect various VAPID mismatch errors
-        if (errorMsg.includes('VapidPkHashMismatch') || 
-            errorMsg.includes('VAPID credentials') ||
-            errorMsg.includes('403') ||
-            errorMsg.includes('400')) {
-          toast.info('Push instellingen worden vernieuwd...');
-          await resubscribe();
-          return;
-        }
-        
         toast.error(errorMsg || t('pushNotifications.testError'));
-        if (debug) {
-          console.log('Debug info:', debug);
-          if (!debug.has_valid_keys) {
-            toast.error(t('pushNotifications.invalidKeys'));
-          }
-        }
       }
     } catch (error) {
       console.error('Test push error:', error);
       const errorMsg = error.response?.data?.error || error.message || '';
-      
-      // Check for VAPID mismatch in error response
-      if (errorMsg.includes('VapidPkHashMismatch') || 
-          errorMsg.includes('VAPID credentials') ||
-          errorMsg.includes('403') ||
-          errorMsg.includes('400')) {
-        toast.info('Push instellingen worden vernieuwd...');
-        await resubscribe();
-        return;
-      }
-      
       toast.error(errorMsg || t('pushNotifications.testError'));
     }
   };
