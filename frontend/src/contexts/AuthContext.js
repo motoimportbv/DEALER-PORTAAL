@@ -48,9 +48,23 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      setError(error.message);
-      // Token is invalid or expired, clear it
-      logout();
+      
+      // Only logout if token is truly invalid (401/403), not on network errors
+      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        setError('Sessie verlopen, log opnieuw in');
+        logout();
+      } else {
+        // Network error or server issue - keep user logged in with cached data
+        setError('Verbinding mislukt, probeer opnieuw');
+        const cachedUser = localStorage.getItem('user');
+        if (cachedUser) {
+          try {
+            setUser(JSON.parse(cachedUser));
+          } catch (e) {
+            // Invalid cached data
+          }
+        }
+      }
     } finally {
       // Always set loading to false, even on error
       setLoading(false);
