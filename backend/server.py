@@ -237,6 +237,8 @@ class LicensePlate(BaseModel):
     brand: Optional[str] = None
     model: Optional[str] = None
     notes: str = ""
+    document_url: Optional[str] = None  # URL to uploaded RDW document
+    document_filename: Optional[str] = None  # Original filename
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OrderCreate(BaseModel):
