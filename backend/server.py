@@ -217,6 +217,7 @@ class Order(BaseModel):
     total_price: float = 0.0
     payment_status: str = "unpaid"  # unpaid, pending, paid
     stripe_session_id: Optional[str] = None
+    motorcycle_snapshot: Optional[dict] = None  # Snapshot of motorcycle data at time of order
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OrderWithMotorcycle(BaseModel):
