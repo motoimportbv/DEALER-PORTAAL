@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Bike } from 'lucide-react';
@@ -8,6 +8,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const AutoLoginPage = () => {
   const [searchParams] = useSearchParams();
+  const { token: pathToken } = useParams(); // Token from URL path /login/:token
   const navigate = useNavigate();
   const { user } = useAuth();
   const [error, setError] = useState(null);
@@ -15,7 +16,8 @@ const AutoLoginPage = () => {
 
   useEffect(() => {
     const performAutoLogin = async () => {
-      const token = searchParams.get('token');
+      // Get token from path OR query string
+      const token = pathToken || searchParams.get('token');
       const redirect = searchParams.get('redirect') || '/dealer';
 
       // If already logged in, just redirect
@@ -84,7 +86,7 @@ const AutoLoginPage = () => {
     };
 
     performAutoLogin();
-  }, [searchParams, navigate, user]);
+  }, [searchParams, pathToken, navigate, user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50">
