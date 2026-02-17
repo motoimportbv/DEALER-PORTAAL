@@ -366,6 +366,33 @@ const MotorcycleForm = () => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                      Chassisnummer (VIN) *
+                    </Label>
+                    <Input
+                      value={formData.chassis_number}
+                      onChange={(e) => handleChange('chassis_number', e.target.value.toUpperCase())}
+                      placeholder="bijv. WB10408J09ZT12345"
+                      data-testid="chassis-number-input"
+                      required
+                      maxLength={17}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                      Kenteken
+                    </Label>
+                    <Input
+                      value={formData.license_plate || ''}
+                      onChange={(e) => handleChange('license_plate', e.target.value.toUpperCase())}
+                      placeholder="bijv. AB-123-CD"
+                      data-testid="license-plate-input"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Conditie *
