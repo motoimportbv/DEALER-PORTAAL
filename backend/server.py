@@ -2803,7 +2803,7 @@ async def test_push_notification(user: dict = Depends(get_current_user)):
             "title": "🧪 Test Notificatie",
             "body": "Push notificaties werken!",
             "icon": "/icons/icon-192x192.png",
-            "url": "/"
+            "url": "/dealer"
         })
         
         webpush(
