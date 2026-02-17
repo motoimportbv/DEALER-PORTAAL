@@ -128,6 +128,42 @@ const SupplierRegisterPage = () => {
       </div>
 
       <div className="auth-form">
+        {/* Language Selector for Foreign Dealers - German first */}
+        <div className="absolute top-4 right-4 z-50">
+          <div className="relative">
+            <button
+              onClick={() => setLangMenuOpen(!langMenuOpen)}
+              className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium shadow-md"
+              data-testid="supplier-language-selector"
+            >
+              <Globe className="w-4 h-4" />
+              <span className="text-lg">{currentLang.flag}</span>
+              <span className="hidden xs:inline">{currentLang.name}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {langMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-white border-2 border-zinc-200 rounded-xl overflow-hidden min-w-[180px] shadow-xl">
+                {foreignDealerLanguages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-base text-left transition-colors ${
+                      i18n.language === lang.code 
+                        ? 'bg-purple-50 text-purple-700' 
+                        : 'hover:bg-zinc-100 text-zinc-700'
+                    }`}
+                    data-testid={`supplier-lang-${lang.code}`}
+                  >
+                    <span className="text-2xl">{lang.flag}</span>
+                    <span className="font-medium">{lang.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="w-full max-w-md">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
