@@ -76,6 +76,48 @@ const MotorcycleList = () => {
     }
   };
 
+  // SMS functionality
+  const [showSMSModal, setShowSMSModal] = useState(false);
+  const [smsData, setSmsData] = useState(null);
+  const [sendingSMS, setSendingSMS] = useState(false);
+
+  const handleSMSShare = async (motorcycleId) => {
+    try {
+      const response = await axios.get(`${API}/motorcycles/${motorcycleId}/sms-share`);
+      setSmsData({ ...response.data, motorcycleId });
+      setShowSMSModal(true);
+    } catch (error) {
+      toast.error('Kon SMS bericht niet genereren');
+    }
+  };
+
+  const sendSMSToAll = async () => {
+    if (!smsData?.motorcycleId) return;
+    
+    setSendingSMS(true);
+    try {
+      const response = await axios.post(`${API}/motorcycles/${smsData.motorcycleId}/sms-send-all`);
+      const result = response.data;
+      
+      if (result.sent > 0) {
+        toast.success(`SMS verstuurd naar ${result.sent} dealers!`);
+      }
+      if (result.failed > 0) {
+        toast.warning(`${result.failed} SMS berichten mislukt`);
+      }
+      if (result.sent === 0 && result.failed === 0) {
+        toast.info('Geen dealers met telefoonnummer gevonden');
+      }
+      
+      setShowSMSModal(false);
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'SMS verzenden mislukt';
+      toast.error(errorMsg);
+    } finally {
+      setSendingSMS(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API}/motorcycles/${id}`);
