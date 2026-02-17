@@ -20,6 +20,26 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 17 February 2025 (Part 5)
+
+#### ✅ RDW Document Upload voor Kentekens
+- **Feature**: Admin kan RDW documenten uploaden bij kentekens
+- **Ondersteunde formaten**: PDF, JPG, PNG, WEBP
+- **Max bestandsgrootte**: 10MB
+- **Backend Endpoints**:
+  - `POST /api/license-plates/{plate_id}/document` - Upload document
+  - `DELETE /api/license-plates/{plate_id}/document` - Verwijder document
+- **Opslag**: `/app/backend/uploads/rdw/` met unieke bestandsnamen
+- **Frontend Updates**:
+  - "RDW Document Uploaden" knop bij kentekens zonder document
+  - Groene badge met bestandsnaam bij kentekens met document
+  - Download knop (opent in nieuw tabblad)
+  - Verwijder knop (met bevestigingsdialoog)
+- **Bestanden gewijzigd**:
+  - `/app/backend/server.py` (upload/delete endpoints)
+  - `/app/frontend/src/pages/admin/AdminLicensePlates.js`
+- **Test Status**: 100% geslaagd (16 backend tests, alle frontend tests)
+
 ### Session - 17 February 2025 (Part 4)
 
 #### ✅ Dealer Filters met Voorraad Telling
