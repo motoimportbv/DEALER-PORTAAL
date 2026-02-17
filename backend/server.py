@@ -810,9 +810,9 @@ async def generate_permanent_link(user: dict = Depends(get_current_user)):
         }}
     )
     
-    # Build the permanent login URL using short code
+    # Build the permanent login URL using query parameter format (works better with iOS bookmarks)
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
-    permanent_url = f"{base_url}/go/{short_code}"
+    permanent_url = f"{base_url}/login?code={short_code}"
     
     return {
         "permanent_url": permanent_url,
@@ -830,9 +830,9 @@ async def get_my_permanent_link(user: dict = Depends(get_current_user)):
     if not permanent_token or not short_code:
         return {"has_permanent_link": False, "permanent_url": None}
     
-    # Use short code format
+    # Use query parameter format (works better with iOS bookmarks)
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
-    permanent_url = f"{base_url}/go/{short_code}"
+    permanent_url = f"{base_url}/login?code={short_code}"
     
     return {
         "has_permanent_link": True,
