@@ -8,8 +8,14 @@ import { AlertCircle, RefreshCw, Bike, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 
 const Layout = ({ children, requiredRole }) => {
-  const { user, loading, error } = useAuth();
+  const { user, loading, error, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   // Store current URL for redirect after login (for notification clicks)
   useEffect(() => {
