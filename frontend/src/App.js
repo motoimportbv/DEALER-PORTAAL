@@ -152,6 +152,7 @@ function App() {
             <Route path="/dealer-guide" element={<DealerGuide />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auto-login" element={<AutoLoginPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
