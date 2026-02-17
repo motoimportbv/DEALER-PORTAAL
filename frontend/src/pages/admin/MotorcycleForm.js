@@ -135,7 +135,12 @@ const MotorcycleForm = () => {
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Reset model when brand changes
+    if (field === 'brand' && value !== formData.brand) {
+      setFormData(prev => ({ ...prev, brand: value, model: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const addImage = () => {
