@@ -19,17 +19,22 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // Load cached user first for instant display
+        // Load cached user FIRST and set it immediately
+        // This ensures user is available during initial render
         const cachedUser = localStorage.getItem('user');
         if (cachedUser) {
           try {
-            setUser(JSON.parse(cachedUser));
+            const parsedUser = JSON.parse(cachedUser);
+            setUser(parsedUser);
+            // Set loading to false early if we have cached data
+            // This prevents redirect to login while fetching fresh data
+            setLoading(false);
           } catch (e) {
-            // Invalid cached data
+            console.error('Invalid cached user data');
           }
         }
         
-        // Then fetch fresh data from server
+        // Then fetch fresh data from server (in background)
         await fetchUser();
       } else {
         setLoading(false);
