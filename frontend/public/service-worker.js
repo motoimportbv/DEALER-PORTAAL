@@ -174,50 +174,51 @@ self.addEventListener('notificationclick', (event) => {
   }
 
   // Get the target URL from notification data
-  const targetPath = event.notification.data?.url || '/';
-  const urlToOpen = new URL(targetPath, self.location.origin).href;
-
+  const targetPath = event.notification.data?.url || '/dealer';
+  
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
-      // First, try to find an existing window/tab with our app that is visible/focused
+    (async () => {
+      // Get all window clients
+      const windowClients = await clients.matchAll({ 
+        type: 'window', 
+        includeUncontrolled: true 
+      });
+      
+      console.log('[SW] Found', windowClients.length, 'window clients');
+      
+      // Try to find an existing window and focus it
       for (const client of windowClients) {
-        // Check if this client is from our origin
-        if (client.url.startsWith(self.location.origin)) {
-          console.log('[SW] Found existing client, focusing and navigating to:', targetPath);
-          try {
-            // Focus the existing window first
-            await client.focus();
-            // Small delay to ensure focus is complete
-            await new Promise(resolve => setTimeout(resolve, 100));
-            // Send message to navigate within the app (preserves auth state)
-            client.postMessage({
-              type: 'NOTIFICATION_CLICK',
-              url: targetPath
-            });
-            return client;
-          } catch (focusError) {
-            console.log('[SW] Could not focus client:', focusError);
-            // Continue to try other clients or open new window
-          }
+        console.log('[SW] Checking client:', client.url);
+        if (client.url.includes(self.location.origin)) {
+          console.log('[SW] Found matching client, focusing');
+          await client.focus();
+          // Navigate within the existing window
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            url: targetPath
+          });
+          return;
         }
       }
-
-      // No existing window found - open a new one
-      // Store the intended destination in the URL so the app can redirect after auth loads
-      console.log('[SW] No existing client found, opening new window to:', targetPath);
       
-      // For specific motorcycle pages, open directly to that URL
-      // The auth context will handle the redirect if not logged in
-      if (targetPath !== '/' && targetPath !== '') {
-        return clients.openWindow(urlToOpen);
+      // No existing window - need to open one
+      // On Android PWA, we need to open a URL within the PWA scope
+      // Using just the path (not full URL) helps Android recognize it as PWA
+      console.log('[SW] No existing window, opening:', targetPath);
+      
+      // Build the full URL
+      const urlToOpen = new URL(targetPath, self.location.origin).href;
+      
+      try {
+        // Try to open the window
+        const newClient = await clients.openWindow(urlToOpen);
+        console.log('[SW] Opened new window:', newClient?.url);
+        return newClient;
+      } catch (err) {
+        console.error('[SW] Failed to open window:', err);
+        // Fallback: try opening just the origin
+        return clients.openWindow(self.location.origin);
       }
-      
-      // For root path, go to dealer dashboard (most common use case)
-      return clients.openWindow(new URL('/dealer', self.location.origin).href);
-    }).catch((err) => {
-      console.error('[SW] Error handling notification click:', err);
-      // Fallback: just open the URL
-      return clients.openWindow(urlToOpen);
-    })
+    })()
   );
 });
