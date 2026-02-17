@@ -63,6 +63,8 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get(`${API}/auth/me`);
       // Always use fresh data from server
       setUser(response.data);
+      // Update cache with fresh data
+      localStorage.setItem('user', JSON.stringify(response.data));
     } catch (error) {
       console.error('Failed to fetch user:', error);
       
@@ -73,12 +75,16 @@ export const AuthProvider = ({ children }) => {
       } else {
         // Network error or server issue - keep user logged in with cached data
         setError('Verbinding mislukt, probeer opnieuw');
-        const cachedUser = localStorage.getItem('user');
-        if (cachedUser) {
-          try {
-            setUser(JSON.parse(cachedUser));
-          } catch (e) {
-            // Invalid cached data
+        // Don't touch user state - keep whatever is already set from cache
+        // Only try to restore from cache if user is somehow null
+        if (!user) {
+          const cachedUser = localStorage.getItem('user');
+          if (cachedUser) {
+            try {
+              setUser(JSON.parse(cachedUser));
+            } catch (e) {
+              // Invalid cached data
+            }
           }
         }
       }
