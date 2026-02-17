@@ -1,11 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import "@/App.css";
 import "./i18n"; // Initialize i18n
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { initializeNativeFeatures, isNative } from "./services/nativeService";
 import InstallPrompt from "./components/InstallPrompt";
+
+// Global navigation ref for service worker notifications
+let globalNavigate = null;
 
 // Pages
 import LoginPage from "./pages/LoginPage";
