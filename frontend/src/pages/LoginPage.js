@@ -276,6 +276,24 @@ const LoginPage = () => {
     await performLogin(email, password, false);
   };
 
+  // Show loading screen when short code login is in progress
+  if (shortCodeLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Bike className="w-10 h-10 text-white" />
+          </div>
+          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="font-barlow text-xl font-bold uppercase tracking-tight text-zinc-900 mb-2">
+            Even geduld...
+          </h2>
+          <p className="text-zinc-500">U wordt automatisch ingelogd</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-layout">
       <div 
