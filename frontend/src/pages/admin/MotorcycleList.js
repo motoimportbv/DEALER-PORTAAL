@@ -13,7 +13,8 @@ import {
   Bike,
   Eye,
   MessageCircle,
-  Share2
+  Share2,
+  Smartphone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
