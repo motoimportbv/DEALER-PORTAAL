@@ -289,6 +289,12 @@ const DealerDashboard = () => {
         <div className="mb-6">
           <PushNotificationToggle token={token} />
         </div>
+
+        {/* Push Notification Reminder Popup */}
+        <PushNotificationReminder 
+          isSubscribed={isPushSubscribed} 
+          onEnableClick={handleEnablePush} 
+        />
         
         {filteredMotorcycles.length === 0 ? (
           <Card>
