@@ -3411,6 +3411,107 @@ async def get_top_dealers(user: dict = Depends(require_admin)):
     
     return dealers
 
+# ============ LICENSE PLATE (KENTEKEN) ENDPOINTS ============
+
+@api_router.post("/license-plates")
+async def create_license_plate(data: LicensePlateCreate, user: dict = Depends(require_admin)):
+    """Admin adds a license plate for a dealer"""
+    # Get dealer info
+    dealer = await db.users.find_one({"id": data.dealer_id}, {"_id": 0})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    # Check if license plate already exists
+    existing = await db.license_plates.find_one({"license_plate": data.license_plate.upper()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Dit kenteken is al toegevoegd")
+    
+    license_plate = LicensePlate(
+        dealer_id=data.dealer_id,
+        dealer_company=dealer.get("company_name", ""),
+        dealer_email=dealer.get("email", ""),
+        license_plate=data.license_plate.upper(),
+        chassis_number=data.chassis_number.upper() if data.chassis_number else None,
+        brand=data.brand,
+        model=data.model,
+        notes=data.notes or ""
+    )
+    
+    await db.license_plates.insert_one(license_plate.model_dump())
+    
+    # Send notification to dealer
+    notification = {
+        "id": str(uuid.uuid4()),
+        "user_id": data.dealer_id,
+        "type": "license_plate",
+        "title": "Nieuw kenteken toegevoegd",
+        "message": f"Kenteken {data.license_plate.upper()} is toegevoegd aan uw account.",
+        "is_read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notifications.insert_one(notification)
+    
+    return {"message": f"Kenteken {data.license_plate.upper()} toegevoegd voor {dealer.get('company_name', 'dealer')}", "license_plate": license_plate.model_dump()}
+
+@api_router.get("/license-plates")
+async def get_all_license_plates(user: dict = Depends(require_admin)):
+    """Admin gets all license plates"""
+    plates = await db.license_plates.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return plates
+
+@api_router.get("/license-plates/my")
+async def get_my_license_plates(user: dict = Depends(require_approved_dealer)):
+    """Dealer gets their own license plates"""
+    plates = await db.license_plates.find(
+        {"dealer_id": user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return plates
+
+@api_router.get("/license-plates/dealer/{dealer_id}")
+async def get_dealer_license_plates(dealer_id: str, user: dict = Depends(require_admin)):
+    """Admin gets license plates for a specific dealer"""
+    plates = await db.license_plates.find(
+        {"dealer_id": dealer_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return plates
+
+@api_router.delete("/license-plates/{plate_id}")
+async def delete_license_plate(plate_id: str, user: dict = Depends(require_admin)):
+    """Admin deletes a license plate"""
+    result = await db.license_plates.delete_one({"id": plate_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Kenteken niet gevonden")
+    return {"message": "Kenteken verwijderd"}
+
+@api_router.put("/license-plates/{plate_id}")
+async def update_license_plate(plate_id: str, data: LicensePlateCreate, user: dict = Depends(require_admin)):
+    """Admin updates a license plate"""
+    update_data = {
+        "license_plate": data.license_plate.upper(),
+        "chassis_number": data.chassis_number.upper() if data.chassis_number else None,
+        "brand": data.brand,
+        "model": data.model,
+        "notes": data.notes or ""
+    }
+    
+    # If dealer changed, update dealer info too
+    if data.dealer_id:
+        dealer = await db.users.find_one({"id": data.dealer_id}, {"_id": 0})
+        if dealer:
+            update_data["dealer_id"] = data.dealer_id
+            update_data["dealer_company"] = dealer.get("company_name", "")
+            update_data["dealer_email"] = dealer.get("email", "")
+    
+    result = await db.license_plates.update_one(
+        {"id": plate_id},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Kenteken niet gevonden")
+    return {"message": "Kenteken bijgewerkt"}
+
 # Include the router
 app.include_router(api_router)
 
