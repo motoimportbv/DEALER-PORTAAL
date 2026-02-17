@@ -445,6 +445,7 @@
     "subscribedMessage": "U ontvangt meldingen bij nieuwe motoren",
     "unsubscribedMessage": "Ontvang direct een melding op uw telefoon",
     "enable": "Inschakelen",
+    "enableNow": "Nu Inschakelen",
     "disable": "Uit",
     "test": "Test",
     "enabled": "Push notificaties ingeschakeld! U ontvangt nu meldingen bij nieuwe motoren.",
@@ -455,7 +456,20 @@
     "testSent": "Test notificatie verzonden! Check uw telefoon.",
     "testError": "Kon test niet uitvoeren",
     "invalidKeys": "Subscription keys zijn ongeldig. Klik op \"Uit\" en dan \"Inschakelen\".",
-    "howToEnable": "Hoe in te schakelen?"
+    "howToEnable": "Hoe in te schakelen?",
+    "important": "Belangrijk",
+    "missNothing": "Mis geen nieuwe motoren of updates van uw bestellingen!"
+  },
+  "pushReminder": {
+    "title": "Mis niets!",
+    "subtitle": "Schakel meldingen in",
+    "message": "Ontvang direct een melding wanneer:",
+    "benefit1": "Er nieuwe motoren beschikbaar zijn",
+    "benefit2": "Uw bestelling is bijgewerkt",
+    "benefit3": "Er een nieuw kenteken voor u is",
+    "deviceNote": "Werkt op telefoon, tablet én computer",
+    "later": "Later",
+    "enable": "Inschakelen"
   },
   "pushBlocked": {
     "title": "Notificaties Geblokkeerd",
