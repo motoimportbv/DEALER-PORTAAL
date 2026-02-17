@@ -1314,10 +1314,14 @@ async def get_orders(user: dict = Depends(get_current_user)):
     ).to_list(1000)
     motorcycles_map = {m["id"]: m for m in motorcycles_list}
     
-    # Enrich orders with motorcycle data
+    # Enrich orders with motorcycle data (use snapshot as fallback)
     result = []
     for order in orders:
-        order["motorcycle"] = motorcycles_map.get(order["motorcycle_id"])
+        # Try to get live motorcycle data, fallback to snapshot
+        motorcycle_data = motorcycles_map.get(order["motorcycle_id"])
+        if not motorcycle_data:
+            motorcycle_data = order.get("motorcycle_snapshot")
+        order["motorcycle"] = motorcycle_data
         result.append(order)
     
     return result
