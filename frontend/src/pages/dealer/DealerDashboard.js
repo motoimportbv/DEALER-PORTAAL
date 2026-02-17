@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
@@ -7,18 +7,25 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Input } from '../../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import PushNotificationReminder from '../../components/PushNotificationReminder';
 import TermsModal from '../../components/TermsModal';
 import { 
   Bike, 
-  Search,
+  Filter,
   Eye,
   ShoppingCart,
   Clock,
   CheckCircle,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
