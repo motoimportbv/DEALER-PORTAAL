@@ -94,7 +94,8 @@
     "pendingListings": "Wachtende Motors",
     "partsShop": "Onderdelen",
     "partsManagement": "Onderdelen Beheer",
-    "partOrders": "Onderdelen Bestellingen"
+    "partOrders": "Onderdelen Bestellingen",
+    "licensePlates": "Kentekens"
   },
   "search": {
     "placeholder": "Zoek op merk, model, kleur of bouwjaar...",
