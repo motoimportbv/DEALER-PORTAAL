@@ -146,6 +146,7 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login/:token" element={<AutoLoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/register/supplier" element={<SupplierRegisterPage />} />
             <Route path="/supplier-guide" element={<SupplierGuide />} />
