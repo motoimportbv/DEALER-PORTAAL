@@ -244,6 +244,22 @@ const LoginPage = () => {
             </div>
           </div>
 
+          {/* Remember me checkbox */}
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="rememberMe" 
+              checked={rememberMe}
+              onCheckedChange={setRememberMe}
+              data-testid="remember-me-checkbox"
+            />
+            <Label 
+              htmlFor="rememberMe" 
+              className="text-sm font-medium text-zinc-700 cursor-pointer"
+            >
+              Onthoud mijn inloggegevens
+            </Label>
+          </div>
+
           <Button 
             type="submit" 
             className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide font-semibold"
