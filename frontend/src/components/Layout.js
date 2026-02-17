@@ -102,6 +102,15 @@ const Layout = ({ children, requiredRole }) => {
                 <span className="text-sm font-medium text-zinc-700">Ververs</span>
               </button>
               <LanguageSelector variant="light" />
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                title="Uitloggen"
+                data-testid="mobile-logout-btn"
+              >
+                <LogOut className="w-4 h-4 text-red-700" />
+                <span className="text-sm font-medium text-red-700">Uit</span>
+              </button>
             </div>
           </div>
         </div>
