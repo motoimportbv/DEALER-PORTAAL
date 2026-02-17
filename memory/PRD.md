@@ -20,6 +20,31 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 17 February 2025 (Part 3)
+
+#### ✅ Short Code Permanent Login System (P0 Feature)
+- **Problem**: Previous permanent login attempts (`?token=` and `/login/TOKEN`) failed on iOS when bookmarked
+- **Solution**: Implemented short code system using `/go/{SHORT_CODE}` URL format
+- **Features**:
+  - 8-character alphanumeric codes (excluding confusing chars: 0, O, I, 1, L)
+  - Codes stored in user profile (`login_short_code` field)
+  - Case-insensitive code matching
+  - Frontend page at `/go/:code` auto-logs in and redirects to `/dealer`
+  - UI component shows link in dealer dashboard with copy/regenerate/revoke options
+  - Security warning displayed to users about not sharing the link
+- **Backend Endpoints**:
+  - `POST /api/auth/generate-permanent-link` - Generate short code
+  - `GET /api/auth/shortcode/{code}` - Verify code validity
+  - `POST /api/auth/shortcode-login` - Exchange code for session token
+  - `GET /api/auth/my-permanent-link` - Get user's current permanent link
+  - `POST /api/auth/revoke-permanent-link` - Revoke the permanent link
+- **Files Modified**:
+  - `/app/backend/server.py` (short code functions and endpoints)
+  - `/app/frontend/src/pages/ShortCodeLoginPage.js` (NEW)
+  - `/app/frontend/src/App.js` (new route)
+  - `/app/frontend/src/components/PermanentLoginLink.js`
+- **Test Status**: 100% passed (12 backend tests, all frontend tests)
+
 ### Session - 17 February 2025 (Part 2)
 
 #### ✅ Push Notification Click Fix (P0 Bug Fix)
