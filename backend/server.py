@@ -3295,6 +3295,71 @@ async def send_push_to_all_dealers(title: str, body: str, url: str = "/", exclud
         logger.error(f"Error sending push to all dealers: {e}")
         return 0
 
+@api_router.post("/admin/test-push")
+async def send_test_push_to_all(user: dict = Depends(require_admin)):
+    """Send a test push notification to all dealers and return who received it"""
+    try:
+        # Get all approved dealers who are NOT offline and NOT foreign dealers
+        query = {
+            "role": "dealer", 
+            "is_approved": True, 
+            "is_offline": {"$ne": True}, 
+            "is_foreign_dealer": {"$ne": True}
+        }
+        
+        dealers = await db.users.find(query, {"_id": 0, "id": 1, "company_name": 1, "email": 1}).to_list(1000)
+        
+        # Check which dealers have push subscriptions
+        results = []
+        sent_count = 0
+        no_subscription_count = 0
+        
+        for dealer in dealers:
+            # Check if dealer has a push subscription
+            subscription = await db.push_subscriptions.find_one({"user_id": dealer["id"]})
+            
+            if subscription:
+                # Send test push
+                success = await send_push_notification_to_user(
+                    dealer["id"],
+                    "🔔 Test Notificatie",
+                    "Dit is een test push notificatie van Moto Import",
+                    "/dealer",
+                    include_auto_login=True
+                )
+                
+                if success:
+                    sent_count += 1
+                    results.append({
+                        "company_name": dealer.get("company_name", "Onbekend"),
+                        "email": dealer.get("email", ""),
+                        "status": "✅ Verzonden"
+                    })
+                else:
+                    results.append({
+                        "company_name": dealer.get("company_name", "Onbekend"),
+                        "email": dealer.get("email", ""),
+                        "status": "❌ Mislukt"
+                    })
+            else:
+                no_subscription_count += 1
+                results.append({
+                    "company_name": dealer.get("company_name", "Onbekend"),
+                    "email": dealer.get("email", ""),
+                    "status": "⚠️ Geen push ingeschakeld"
+                })
+        
+        return {
+            "success": True,
+            "total_dealers": len(dealers),
+            "sent_count": sent_count,
+            "no_subscription_count": no_subscription_count,
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Error sending test push: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout bij verzenden: {str(e)}")
+
 @api_router.post("/push-token")
 async def register_push_token(data: PushTokenCreate, user: dict = Depends(get_current_user)):
     """Register or update a push notification token for the current user"""
