@@ -455,6 +455,18 @@ def create_notification_token(user_id: str, email: str, role: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
+def create_permanent_login_token(user_id: str) -> str:
+    """Create a permanent auto-login token that never expires (stored in user profile)"""
+    # Generate a unique token ID
+    token_id = str(uuid.uuid4())
+    payload = {
+        "user_id": user_id,
+        "token_id": token_id,
+        "type": "permanent",
+        # No expiration - permanent token
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
