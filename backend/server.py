@@ -445,13 +445,13 @@ def create_token(user_id: str, email: str, role: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 def create_notification_token(user_id: str, email: str, role: str) -> str:
-    """Create a short-lived token for push notification auto-login (10 minutes)"""
+    """Create a token for push notification auto-login (24 hours)"""
     payload = {
         "user_id": user_id,
         "email": email,
         "role": role,
         "type": "notification",
-        "exp": datetime.now(timezone.utc).timestamp() + 600  # 10 minutes
+        "exp": datetime.now(timezone.utc).timestamp() + 86400  # 24 hours (was 10 min)
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
