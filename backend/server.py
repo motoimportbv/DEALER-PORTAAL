@@ -4140,6 +4140,93 @@ async def update_license_plate(plate_id: str, data: LicensePlateCreate, user: di
         raise HTTPException(status_code=404, detail="Kenteken niet gevonden")
     return {"message": "Kenteken bijgewerkt"}
 
+# RDW Document upload directory
+RDW_UPLOAD_DIR = UPLOAD_DIR / "rdw"
+RDW_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+@api_router.post("/license-plates/{plate_id}/document")
+async def upload_license_plate_document(
+    plate_id: str, 
+    file: UploadFile = File(...), 
+    user: dict = Depends(require_admin)
+):
+    """Admin uploads an RDW document for a license plate"""
+    # Check plate exists
+    plate = await db.license_plates.find_one({"id": plate_id}, {"_id": 0})
+    if not plate:
+        raise HTTPException(status_code=404, detail="Kenteken niet gevonden")
+    
+    # Validate file type
+    allowed_types = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, 
+            detail="Alleen PDF, JPG, PNG of WEBP bestanden zijn toegestaan"
+        )
+    
+    # Limit file size (10MB)
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 10MB)")
+    
+    # Delete old document if exists
+    if plate.get("document_url"):
+        old_filename = plate["document_url"].split("/")[-1]
+        old_path = RDW_UPLOAD_DIR / old_filename
+        if old_path.exists():
+            old_path.unlink()
+    
+    # Generate unique filename
+    ext = Path(file.filename).suffix.lower() if file.filename else ".pdf"
+    if ext not in [".pdf", ".jpg", ".jpeg", ".png", ".webp"]:
+        ext = ".pdf"
+    new_filename = f"{plate_id}_{uuid.uuid4().hex[:8]}{ext}"
+    file_path = RDW_UPLOAD_DIR / new_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    # Update database
+    document_url = f"/api/uploads/rdw/{new_filename}"
+    await db.license_plates.update_one(
+        {"id": plate_id},
+        {"$set": {
+            "document_url": document_url,
+            "document_filename": file.filename or new_filename
+        }}
+    )
+    
+    return {
+        "message": "Document geüpload",
+        "document_url": document_url,
+        "document_filename": file.filename or new_filename
+    }
+
+@api_router.delete("/license-plates/{plate_id}/document")
+async def delete_license_plate_document(plate_id: str, user: dict = Depends(require_admin)):
+    """Admin deletes an RDW document from a license plate"""
+    plate = await db.license_plates.find_one({"id": plate_id}, {"_id": 0})
+    if not plate:
+        raise HTTPException(status_code=404, detail="Kenteken niet gevonden")
+    
+    if not plate.get("document_url"):
+        raise HTTPException(status_code=404, detail="Geen document gevonden")
+    
+    # Delete file
+    filename = plate["document_url"].split("/")[-1]
+    file_path = RDW_UPLOAD_DIR / filename
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Update database
+    await db.license_plates.update_one(
+        {"id": plate_id},
+        {"$set": {"document_url": None, "document_filename": None}}
+    )
+    
+    return {"message": "Document verwijderd"}
+
 # Include the router
 app.include_router(api_router)
 
