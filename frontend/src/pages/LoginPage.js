@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -16,6 +16,26 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for redirect URL from notification click or other source
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
+
+  useEffect(() => {
+    // Check if there's a stored redirect URL (from notification click)
+    const storedRedirect = sessionStorage.getItem('redirectAfterLogin');
+    if (storedRedirect) {
+      setRedirectAfterLogin(storedRedirect);
+    }
+    
+    // Also check URL params for redirect
+    const params = new URLSearchParams(location.search);
+    const redirectParam = params.get('redirect');
+    if (redirectParam) {
+      setRedirectAfterLogin(redirectParam);
+      sessionStorage.setItem('redirectAfterLogin', redirectParam);
+    }
+  }, [location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +43,15 @@ const LoginPage = () => {
     try {
       const user = await login(email, password);
       toast.success(t('messages.successSaved'));
+      
+      // Clear stored redirect
+      sessionStorage.removeItem('redirectAfterLogin');
+      
+      // Check for stored redirect URL first
+      if (redirectAfterLogin && redirectAfterLogin.startsWith('/')) {
+        navigate(redirectAfterLogin);
+        return;
+      }
       
       // Determine redirect based on user type
       let redirectPath = '/dealer';
