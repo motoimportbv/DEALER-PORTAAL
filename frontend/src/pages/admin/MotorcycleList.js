@@ -145,12 +145,12 @@ const MotorcycleList = () => {
   return (
     <Layout requiredRole="admin">
       <div className="content-header">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
               {t('nav.motorcycles')}
             </h1>
-            <p className="text-zinc-500 mt-1">{motorcycles.length} {t('adminMotorcycles.inStock')}</p>
+            <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} van {motorcycles.length} {t('adminMotorcycles.inStock')}</p>
           </div>
           <Link to="/admin/motorcycles/new">
             <Button className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid="add-motorcycle-btn">
@@ -159,10 +159,46 @@ const MotorcycleList = () => {
             </Button>
           </Link>
         </div>
+        
+        {/* Search Bar */}
+        <div className="mt-4 relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+          <Input
+            type="text"
+            placeholder="Zoek op merk, model, jaar of kleur..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-10"
+            data-testid="motorcycle-search-input"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="content-body" data-testid="motorcycle-list">
-        {motorcycles.length === 0 ? (
+        {filteredMotorcycles.length === 0 && searchTerm ? (
+          <Card>
+            <CardContent className="py-16">
+              <div className="empty-state">
+                <Search className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
+                <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
+                  Geen resultaten
+                </h3>
+                <p className="text-zinc-500 mb-6">Geen motoren gevonden voor "{searchTerm}"</p>
+                <Button variant="outline" onClick={() => setSearchTerm('')}>
+                  Wis zoekopdracht
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : motorcycles.length === 0 ? (
           <Card>
             <CardContent className="py-16">
               <div className="empty-state">
