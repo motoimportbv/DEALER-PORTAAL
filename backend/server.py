@@ -3356,38 +3356,6 @@ TOTAAL: €{total:.2f}
         "order": order.model_dump()
     }
 
-@api_router.get("/parts/orders/my")
-async def get_my_part_orders(user: dict = Depends(get_current_user)):
-    """Get current user's parts orders"""
-    orders = await db.part_orders.find(
-        {"dealer_id": user["id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(100)
-    return orders
-
-@api_router.get("/parts/orders")
-async def get_all_part_orders(user: dict = Depends(require_admin)):
-    """Get all parts orders (admin only)"""
-    orders = await db.part_orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
-    return orders
-
-@api_router.put("/parts/orders/{order_id}/status")
-async def update_part_order_status(order_id: str, status: str, user: dict = Depends(require_admin)):
-    """Update parts order status (admin only)"""
-    valid_statuses = ["pending", "paid", "shipped", "completed", "cancelled"]
-    if status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Ongeldige status. Kies uit: {', '.join(valid_statuses)}")
-    
-    update_data = {"status": status}
-    if status == "paid":
-        update_data["paid_at"] = datetime.now(timezone.utc).isoformat()
-    
-    result = await db.part_orders.update_one({"id": order_id}, {"$set": update_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Bestelling niet gevonden")
-    
-    return {"message": f"Status bijgewerkt naar {status}"}
-
 # ============ STATS ENDPOINTS ============
 
 @api_router.get("/stats")
