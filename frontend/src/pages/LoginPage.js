@@ -171,7 +171,7 @@ const LoginPage = () => {
     } catch (error) {
       // If auto-login fails, clear saved credentials
       if (isAutoLogin) {
-        deleteRememberCookie();
+        deleteRememberCredentials();
         setAutoLoginAttempted(true);
         autoLoginRef.current = false;
       }
