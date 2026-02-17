@@ -3018,8 +3018,7 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
             user_id=dealer_id,
             type="account_online",
             title="Account weer online",
-            message="Goed nieuws! Wij waren bezig met een update en alles is nu afgerond. Uw account is weer online en u kunt weer volop gebruik maken van het platform.",
-            data={}
+            message="Goed nieuws! Wij waren bezig met een update en alles is nu afgerond. Uw account is weer online en u kunt weer volop gebruik maken van het platform."
         )
         await db.notifications.insert_one(notification.model_dump())
         
