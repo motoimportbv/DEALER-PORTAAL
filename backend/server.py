@@ -1847,6 +1847,20 @@ async def create_checkout(data: PaymentRequest, user: dict = Depends(get_current
     delivery_cost = DELIVERY_COST if data.needs_delivery else 0.0
     total_to_pay = deposit_amount + delivery_cost
     
+    # Create snapshot of motorcycle data for historical reference
+    motorcycle_snapshot = {
+        "id": motorcycle["id"],
+        "brand": motorcycle.get("brand"),
+        "model": motorcycle.get("model"),
+        "year": motorcycle.get("year"),
+        "price": motorcycle.get("price"),
+        "mileage": motorcycle.get("mileage"),
+        "color": motorcycle.get("color"),
+        "condition": motorcycle.get("condition"),
+        "images": motorcycle.get("images", []),
+        "description": motorcycle.get("description"),
+    }
+    
     # Create order first
     order = Order(
         motorcycle_id=data.motorcycle_id,
@@ -1858,7 +1872,8 @@ async def create_checkout(data: PaymentRequest, user: dict = Depends(get_current
         delivery_cost=delivery_cost,
         deposit_amount=deposit_amount,
         total_price=motor_price,
-        payment_status="pending"
+        payment_status="pending",
+        motorcycle_snapshot=motorcycle_snapshot
     )
     
     # Save order
