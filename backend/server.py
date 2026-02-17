@@ -2901,8 +2901,8 @@ async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
     await db.push_subscriptions.delete_many({"user_id": user["id"]})
     return {"message": "Unsubscribed from push notifications"}
 
-async def send_push_notification_to_user(user_id: str, title: str, body: str, url: str = "/"):
-    """Send a web push notification to a specific user"""
+async def send_push_notification_to_user(user_id: str, title: str, body: str, url: str = "/", include_auto_login: bool = True):
+    """Send a web push notification to a specific user with optional auto-login token"""
     try:
         subscription_doc = await db.push_subscriptions.find_one({"user_id": user_id})
         if not subscription_doc:
@@ -2919,13 +2919,24 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
             logger.warning("VAPID private key not configured - push notifications disabled")
             return False
         
+        # Get user info for auto-login token
+        final_url = url
+        if include_auto_login:
+            user = await db.users.find_one({"id": user_id}, {"_id": 0})
+            if user and not user.get("is_offline"):
+                # Create auto-login token
+                auto_token = create_notification_token(user_id, user.get("email", ""), user.get("role", "dealer"))
+                # Add token to URL
+                separator = "&" if "?" in url else "?"
+                final_url = f"/auto-login?token={auto_token}&redirect={url}"
+        
         # Prepare notification payload
         payload = json.dumps({
             "title": title,
             "body": body,
             "icon": "/icons/icon-192x192.png",
             "badge": "/icons/icon-72x72.png",
-            "url": url,
+            "url": final_url,
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
