@@ -1462,7 +1462,8 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
 
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
     """Send email notifications to all approved dealers who are not offline about a new motorcycle"""
-    base_url = os.environ.get("BASE_URL", "")
+    # Always use production URL for email links
+    base_url = "https://www.motoimportbv.nl"
     
     for dealer in dealers:
         # Skip dealers without email or who are offline
