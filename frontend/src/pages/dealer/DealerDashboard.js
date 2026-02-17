@@ -32,6 +32,33 @@ const DealerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+  const pushToggleRef = useRef(null);
+
+  // Check push subscription status
+  useEffect(() => {
+    const checkPushStatus = async () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          setIsPushSubscribed(!!subscription);
+        } catch (error) {
+          console.error('Error checking push status:', error);
+        }
+      }
+    };
+    checkPushStatus();
+  }, []);
+
+  const handleEnablePush = () => {
+    // Scroll to push toggle and click it
+    const pushToggle = document.querySelector('[data-testid="push-notification-enable-btn"]');
+    if (pushToggle) {
+      pushToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => pushToggle.click(), 500);
+    }
+  };
 
   useEffect(() => {
     const checkApprovalAndLoadData = async () => {
