@@ -58,7 +58,6 @@ const PendingForeignListings = () => {
   const openActivateDialog = (motorcycle) => {
     setSelectedMotorcycle(motorcycle);
     setNewPrice(motorcycle.price?.toString() || '');
-    setNewStartingPrice(motorcycle.starting_price?.toString() || '');
     setActivateDialogOpen(true);
   };
 
