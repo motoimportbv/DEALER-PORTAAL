@@ -20,7 +20,21 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
-### Session - 17 February 2025
+### Session - 17 February 2025 (Part 2)
+
+#### ✅ Push Notification Click Fix (P0 Bug Fix)
+- **Issue**: Dealers were forced to re-login when clicking a push notification
+- **Root Cause**: Service worker's `notificationclick` handler was opening new windows incorrectly, causing auth state loss
+- **Solution**: 
+  - Updated service worker to prioritize focusing existing tabs
+  - Added `NotificationHandler` React component for React Router navigation
+  - Navigation now uses `navigate()` instead of `window.location.href`
+  - Service worker version bumped to v4
+- **Files Modified**:
+  - `/app/frontend/public/service-worker.js`
+  - `/app/frontend/src/App.js`
+
+### Session - 17 February 2025 (Part 1)
 
 #### ✅ License Plates (Kentekens) System
 - Admin can add license plates to dealers
