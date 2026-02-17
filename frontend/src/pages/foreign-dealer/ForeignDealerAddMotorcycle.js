@@ -230,25 +230,36 @@ const ForeignDealerAddMotorcycle = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="brand">{t('motorcycle.brand')} *</Label>
-                  <Input
-                    id="brand"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleChange}
-                    placeholder="e.g. Kawasaki"
-                    required
-                  />
+                  <Select 
+                    value={formData.brand} 
+                    onValueChange={(value) => handleSelectChange('brand', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Kies een merk" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {MOTORCYCLE_BRANDS.map(brand => (
+                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="model">{t('motorcycle.model')} *</Label>
-                  <Input
-                    id="model"
-                    name="model"
-                    value={formData.model}
-                    onChange={handleChange}
-                    placeholder="e.g. Ninja ZX-6R"
-                    required
-                  />
+                  <Select 
+                    value={formData.model} 
+                    onValueChange={(value) => handleSelectChange('model', value)}
+                    disabled={!formData.brand}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.brand ? "Kies een model" : "Kies eerst een merk"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {formData.brand && MOTORCYCLE_DATABASE[formData.brand]?.map(model => (
+                        <SelectItem key={model} value={model}>{model}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="year">{t('motorcycle.year')} *</Label>
