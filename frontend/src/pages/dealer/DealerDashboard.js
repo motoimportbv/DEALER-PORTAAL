@@ -35,12 +35,47 @@ const DealerDashboard = () => {
   const { user, token, refreshUser } = useAuth();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('all');
+  const [selectedModel, setSelectedModel] = useState('all');
   const [loading, setLoading] = useState(true);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const pushToggleRef = useRef(null);
+
+  // Get unique brands from motorcycles
+  const brands = useMemo(() => {
+    const uniqueBrands = [...new Set(motorcycles.map(m => m.brand))].sort();
+    return uniqueBrands;
+  }, [motorcycles]);
+
+  // Get models for selected brand
+  const models = useMemo(() => {
+    if (selectedBrand === 'all') {
+      return [...new Set(motorcycles.map(m => m.model))].sort();
+    }
+    return [...new Set(motorcycles.filter(m => m.brand === selectedBrand).map(m => m.model))].sort();
+  }, [motorcycles, selectedBrand]);
+
+  // Filter motorcycles based on selections
+  useEffect(() => {
+    let filtered = motorcycles;
+    
+    if (selectedBrand !== 'all') {
+      filtered = filtered.filter(m => m.brand === selectedBrand);
+    }
+    
+    if (selectedModel !== 'all') {
+      filtered = filtered.filter(m => m.model === selectedModel);
+    }
+    
+    setFilteredMotorcycles(filtered);
+  }, [selectedBrand, selectedModel, motorcycles]);
+
+  // Reset model when brand changes
+  useEffect(() => {
+    setSelectedModel('all');
+  }, [selectedBrand]);
 
   // Check push subscription status
   useEffect(() => {
