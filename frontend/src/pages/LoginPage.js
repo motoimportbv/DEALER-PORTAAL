@@ -116,7 +116,7 @@ const LoginPage = () => {
   useEffect(() => {
     if (autoLoginRef.current || autoLoginAttempted || user) return;
     
-    const remembered = getRememberCookie();
+    const remembered = getRememberCredentials();
     if (remembered) {
       const creds = decodeCredentials(remembered);
       if (creds && creds.email && creds.password) {
