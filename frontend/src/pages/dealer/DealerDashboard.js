@@ -51,12 +51,28 @@ const DealerDashboard = () => {
     checkPushStatus();
   }, []);
 
-  const handleEnablePush = () => {
-    // Scroll to push toggle and click it
-    const pushToggle = document.querySelector('[data-testid="push-notification-enable-btn"]');
-    if (pushToggle) {
-      pushToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => pushToggle.click(), 500);
+  const handleEnablePush = async () => {
+    // Directly request notification permission and subscribe
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          // Scroll to push toggle to show success state
+          const pushToggle = document.querySelector('[data-testid="push-notification-enable-btn"]');
+          if (pushToggle) {
+            pushToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => pushToggle.click(), 300);
+          }
+        }
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+        // Fallback: scroll to the toggle
+        const pushToggle = document.querySelector('[data-testid="push-notification-enable-btn"]');
+        if (pushToggle) {
+          pushToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => pushToggle.click(), 500);
+        }
+      }
     }
   };
 
