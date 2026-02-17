@@ -282,6 +282,72 @@ const DealerOrders = () => {
             ))}
           </div>
         )}
+
+        {/* Image Lightbox */}
+        <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+          <DialogContent className="max-w-4xl w-full p-0 bg-black/95 border-none">
+            <div className="relative">
+              {/* Close button */}
+              <button 
+                onClick={() => setLightboxOpen(false)}
+                className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+
+              {/* Main image */}
+              <div className="flex items-center justify-center min-h-[60vh]">
+                {lightboxImages[lightboxIndex] && (
+                  <img 
+                    src={lightboxImages[lightboxIndex]} 
+                    alt={`Foto ${lightboxIndex + 1}`}
+                    className="max-w-full max-h-[80vh] object-contain"
+                  />
+                )}
+              </div>
+
+              {/* Navigation arrows */}
+              {lightboxImages.length > 1 && (
+                <>
+                  <button 
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="w-8 h-8 text-white" />
+                  </button>
+                  <button 
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <ChevronRight className="w-8 h-8 text-white" />
+                  </button>
+
+                  {/* Image counter */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
+                    {lightboxIndex + 1} / {lightboxImages.length}
+                  </div>
+                </>
+              )}
+
+              {/* Thumbnail strip */}
+              {lightboxImages.length > 1 && (
+                <div className="flex justify-center gap-2 p-4 bg-black/80">
+                  {lightboxImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setLightboxIndex(idx)}
+                      className={`w-16 h-16 rounded overflow-hidden border-2 transition-colors ${
+                        idx === lightboxIndex ? 'border-red-500' : 'border-transparent hover:border-white/50'
+                      }`}
+                    >
+                      <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
