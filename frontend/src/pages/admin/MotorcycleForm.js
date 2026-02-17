@@ -277,38 +277,30 @@ const MotorcycleForm = () => {
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Merk *
                     </Label>
-                    <Select 
-                      value={formData.brand} 
+                    <SearchableSelect
+                      options={MOTORCYCLE_BRANDS}
+                      value={formData.brand}
                       onValueChange={(value) => handleChange('brand', value)}
-                    >
-                      <SelectTrigger data-testid="brand-input">
-                        <SelectValue placeholder="Kies een merk" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {MOTORCYCLE_BRANDS.map(brand => (
-                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Kies een merk"
+                      searchPlaceholder="Zoek merk... (bijv. Yamaha)"
+                      emptyText="Geen merk gevonden"
+                      data-testid="brand-input"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Model *
                     </Label>
-                    <Select 
-                      value={formData.model} 
+                    <SearchableSelect
+                      options={formData.brand ? MOTORCYCLE_DATABASE[formData.brand] || [] : []}
+                      value={formData.model}
                       onValueChange={(value) => handleChange('model', value)}
+                      placeholder={formData.brand ? "Kies een model" : "Kies eerst een merk"}
+                      searchPlaceholder="Zoek model..."
+                      emptyText="Geen model gevonden"
                       disabled={!formData.brand}
-                    >
-                      <SelectTrigger data-testid="model-input">
-                        <SelectValue placeholder={formData.brand ? "Kies een model" : "Kies eerst een merk"} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {formData.brand && MOTORCYCLE_DATABASE[formData.brand]?.map(model => (
-                          <SelectItem key={model} value={model}>{model}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      data-testid="model-input"
+                    />
                   </div>
                 </div>
 
