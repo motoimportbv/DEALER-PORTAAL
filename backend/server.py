@@ -420,9 +420,12 @@ async def require_admin(user: dict = Depends(get_current_user)):
     return user
 
 async def require_approved_dealer(user: dict = Depends(get_current_user)):
-    """Helper to check if a dealer is approved"""
-    if user["role"] == "dealer" and not user.get("is_approved", False):
-        raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+    """Helper to check if a dealer is approved and not offline"""
+    if user["role"] == "dealer":
+        if not user.get("is_approved", False):
+            raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+        if user.get("is_offline", False):
+            raise HTTPException(status_code=403, detail="Uw account is tijdelijk offline gezet door de beheerder. Neem contact op met Moto Import.")
     return user
 
 # ============ EMAIL HELPER ============
