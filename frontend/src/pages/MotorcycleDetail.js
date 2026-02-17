@@ -762,7 +762,7 @@ const MotorcycleDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </Layout>
+    </Wrapper>
   );
 };
 
