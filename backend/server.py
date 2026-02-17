@@ -3226,6 +3226,9 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
             logger.warning("VAPID private key not configured - push notifications disabled")
             return False
         
+        # Always use production URL for push notifications
+        base_url = "https://www.motoimportbv.nl"
+        
         # Get user info for auto-login token
         final_url = url
         if include_auto_login:
@@ -3233,9 +3236,12 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
             if user and not user.get("is_offline"):
                 # Create auto-login token
                 auto_token = create_notification_token(user_id, user.get("email", ""), user.get("role", "dealer"))
-                # Add token to URL
-                separator = "&" if "?" in url else "?"
-                final_url = f"/auto-login?token={auto_token}&redirect={url}"
+                # Build absolute URL with auto-login
+                final_url = f"{base_url}/auto-login?token={auto_token}&redirect={url}"
+        else:
+            # Make URL absolute even without auto-login
+            if url.startswith("/"):
+                final_url = f"{base_url}{url}"
         
         # Prepare notification payload
         payload = json.dumps({
