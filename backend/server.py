@@ -1478,6 +1478,51 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
         {"$set": {"is_available": False}}
     )
     
+    # Check if this motorcycle is from a foreign dealer and notify them (without price)
+    foreign_dealer_id = motorcycle.get("foreign_dealer_id")
+    if foreign_dealer_id:
+        foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0})
+        if foreign_dealer:
+            # Send email notification to foreign dealer (without price)
+            foreign_html = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #16a34a; padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🎉 YOUR MOTORCYCLE HAS BEEN SOLD!</h1>
+                </div>
+                <div style="padding: 30px; background: #f9fafb;">
+                    <p>Dear {foreign_dealer.get('company_name', 'Supplier')},</p>
+                    <p>Great news! Your motorcycle has been sold through Moto Import.</p>
+                    
+                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #18181b;">Sold Motorcycle</h3>
+                        <p style="font-size: 20px; font-weight: bold; color: #16a34a; margin: 10px 0;">
+                            {motorcycle['brand']} {motorcycle['model']}
+                        </p>
+                        <p><strong>Year:</strong> {motorcycle['year']}</p>
+                        <p><strong>Mileage:</strong> {motorcycle.get('mileage', 'N/A'):,} km</p>
+                    </div>
+                    
+                    <p>We will contact you shortly regarding the delivery arrangements.</p>
+                    <p style="color: #6b7280; font-size: 14px;">Thank you for working with Moto Import!</p>
+                </div>
+                <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+                    <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+                    <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                </div>
+            </div>
+            """
+            try:
+                await send_email(foreign_dealer["email"], "🎉 Your Motorcycle Has Been Sold! - Moto Import", foreign_html)
+                # Also send push notification (without price)
+                await send_push_notification_to_user(
+                    foreign_dealer_id,
+                    "🎉 Motorcycle Sold!",
+                    f"Your {motorcycle['brand']} {motorcycle['model']} has been sold!",
+                    "/foreign-dealer/my-motorcycles"
+                )
+            except Exception as e:
+                logger.error(f"Failed to notify foreign dealer: {str(e)}")
+    
     # Get dealer info
     dealer = await db.users.find_one({"id": user["id"]}, {"_id": 0})
     delivery_text = "Ja (€50)" if data.needs_delivery else "Nee (ophalen)"
