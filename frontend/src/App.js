@@ -18,6 +18,7 @@ import SupplierGuide from "./pages/SupplierGuide";
 import DealerGuide from "./pages/DealerGuide";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AutoLoginPage from "./pages/AutoLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import MotorcycleList from "./pages/admin/MotorcycleList";
 import MotorcycleForm from "./pages/admin/MotorcycleForm";
