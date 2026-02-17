@@ -265,13 +265,21 @@ const MotorcycleDetail = () => {
           {/* Image Gallery */}
           <div className="lg:col-span-8">
             <Card className="overflow-hidden">
-              <div className="aspect-[16/10] bg-zinc-100 relative">
+              <div 
+                className="aspect-[16/10] bg-zinc-100 relative cursor-pointer group"
+                onClick={() => images.length > 0 && openLightbox(selectedImage)}
+              >
                 {images.length > 0 ? (
-                  <img 
-                    src={images[selectedImage]} 
-                    alt={`${motorcycle.brand} ${motorcycle.model}`}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img 
+                      src={images[selectedImage]} 
+                      alt={`${motorcycle.brand} ${motorcycle.model}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <ZoomIn className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                    </div>
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Bike className="w-32 h-32 text-zinc-300" />
