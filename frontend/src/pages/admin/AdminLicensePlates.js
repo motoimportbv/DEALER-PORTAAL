@@ -326,6 +326,62 @@ const AdminLicensePlates = () => {
                           </div>
                         )}
                         
+                        {/* RDW Document Section */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 mt-2">
+                          {plate.document_url ? (
+                            <>
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <File className="w-3 h-3 mr-1" />
+                                {plate.document_filename || 'RDW Document'}
+                              </Badge>
+                              <a
+                                href={`${process.env.REACT_APP_BACKEND_URL}${plate.document_url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <Button variant="ghost" size="sm" className="h-7 px-2">
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </a>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDocumentDelete(plate.id)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                onChange={(e) => handleDocumentUpload(plate.id, e.target.files?.[0])}
+                                disabled={uploadingDoc === plate.id}
+                              />
+                              <Badge 
+                                variant="outline" 
+                                className="bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100 cursor-pointer"
+                              >
+                                {uploadingDoc === plate.id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                    Uploaden...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-3 h-3 mr-1" />
+                                    RDW Document Uploaden
+                                  </>
+                                )}
+                              </Badge>
+                            </label>
+                          )}
+                        </div>
+                        
                         <div className="flex items-center gap-2 text-xs text-zinc-400">
                           <Calendar className="w-3 h-3" />
                           <span>Toegevoegd: {formatDate(plate.created_at)}</span>
