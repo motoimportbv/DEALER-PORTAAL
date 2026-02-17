@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import WhatsAppButton from './WhatsAppButton';
 import LanguageSelector from './LanguageSelector';
-import { AlertCircle, RefreshCw, Bike } from 'lucide-react';
+import { AlertCircle, RefreshCw, Bike, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 
 const Layout = ({ children, requiredRole }) => {
