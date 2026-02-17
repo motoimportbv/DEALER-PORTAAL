@@ -10,6 +10,7 @@ import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import PushNotificationReminder from '../../components/PushNotificationReminder';
+import PermanentLoginLink from '../../components/PermanentLoginLink';
 import TermsModal from '../../components/TermsModal';
 import { 
   Bike, 
