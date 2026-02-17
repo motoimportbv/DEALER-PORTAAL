@@ -80,11 +80,10 @@ const PendingForeignListings = () => {
       setActivateDialogOpen(false);
       setSelectedMotorcycle(null);
       setNewPrice('');
-      setNewStartingPrice('');
       fetchPendingListings();
     } catch (error) {
       console.error('Error activating:', error);
-      toast.error(t('adminPending.activateFailed'));
+      toast.error(error.response?.data?.detail || t('adminPending.activateFailed'));
     } finally {
       setActivating(false);
     }
