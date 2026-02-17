@@ -34,10 +34,18 @@ const AutoLoginPage = () => {
       }
 
       try {
-        console.log('[AutoLogin] Attempting auto-login with notification token');
+        console.log('[AutoLogin] Attempting auto-login');
         
-        // Call the auto-login endpoint
-        const response = await axios.post(`${API}/auth/notification-login`, { token });
+        // Try permanent login first, then notification login
+        let response;
+        try {
+          response = await axios.post(`${API}/auth/permanent-login`, { token });
+          console.log('[AutoLogin] Permanent login successful');
+        } catch (permError) {
+          // If permanent login fails, try notification login
+          console.log('[AutoLogin] Trying notification login...');
+          response = await axios.post(`${API}/auth/notification-login`, { token });
+        }
         
         if (response.data.token && response.data.user) {
           // Store the new token and user data
