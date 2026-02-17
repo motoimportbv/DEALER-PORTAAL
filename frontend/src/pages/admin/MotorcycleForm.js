@@ -249,11 +249,18 @@ const MotorcycleForm = () => {
       if (isEditing) {
         await axios.put(`${API}/motorcycles/${id}`, payload);
         toast.success('Motor bijgewerkt');
+        navigate('/admin/motorcycles');
       } else {
-        await axios.post(`${API}/motorcycles`, payload);
+        const response = await axios.post(`${API}/motorcycles`, payload);
         toast.success('Motor toegevoegd');
+        
+        // Show WhatsApp share option for new motorcycles
+        if (response.data?.id) {
+          handleWhatsAppShare(response.data.id);
+        } else {
+          navigate('/admin/motorcycles');
+        }
       }
-      navigate('/admin/motorcycles');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Er ging iets mis');
     } finally {
