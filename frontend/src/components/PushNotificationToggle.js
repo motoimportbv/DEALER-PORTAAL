@@ -111,6 +111,14 @@ const PushNotificationToggle = ({ token }) => {
 
       setIsSubscribed(true);
       toast.success(t('pushNotifications.enabled'));
+      
+      // Show background permission modal if not already accepted
+      const hasAcceptedBackground = localStorage.getItem('backgroundPermissionAccepted');
+      if (!hasAcceptedBackground) {
+        setTimeout(() => {
+          setShowBackgroundModal(true);
+        }, 1000);
+      }
     } catch (error) {
       console.error('Error subscribing:', error);
       toast.error(t('pushNotifications.enableError'));
