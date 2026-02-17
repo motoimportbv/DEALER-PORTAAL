@@ -268,7 +268,6 @@ const ForeignDealerAddMotorcycle = () => {
                     emptyText="Geen resultaten"
                     data-testid="foreign-year-select"
                   />
-                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mileage">{t('motorcycle.mileage')}</Label>
