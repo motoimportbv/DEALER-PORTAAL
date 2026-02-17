@@ -8,33 +8,48 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 // Set axios timeout to prevent infinite loading
 axios.defaults.timeout = 15000;
 
+// Helper function to safely get initial user from localStorage
+const getInitialUser = () => {
+  try {
+    const cachedUser = localStorage.getItem('user');
+    if (cachedUser) {
+      return JSON.parse(cachedUser);
+    }
+  } catch (e) {
+    console.error('Failed to parse cached user');
+  }
+  return null;
+};
+
+// Helper function to get initial token
+const getInitialToken = () => {
+  return localStorage.getItem('token');
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  // Initialize user SYNCHRONOUSLY from localStorage to prevent flash of login page
+  const [user, setUser] = useState(() => getInitialUser());
+  const [token, setToken] = useState(() => getInitialToken());
+  // If we have both token and user in localStorage, don't show loading
+  const [loading, setLoading] = useState(() => {
+    const hasToken = !!getInitialToken();
+    const hasUser = !!getInitialUser();
+    // Only show loading if we have a token but no cached user
+    return hasToken && !hasUser;
+  });
   const [error, setError] = useState(null);
+
+  // Set axios header immediately if token exists
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+  }, [token]);
 
   useEffect(() => {
     const initAuth = async () => {
       if (token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        // Load cached user FIRST and set it immediately
-        // This ensures user is available during initial render
-        const cachedUser = localStorage.getItem('user');
-        if (cachedUser) {
-          try {
-            const parsedUser = JSON.parse(cachedUser);
-            setUser(parsedUser);
-            // Set loading to false early if we have cached data
-            // This prevents redirect to login while fetching fresh data
-            setLoading(false);
-          } catch (e) {
-            console.error('Invalid cached user data');
-          }
-        }
-        
-        // Then fetch fresh data from server (in background)
+        // Fetch fresh data from server (user is already set from localStorage)
         await fetchUser();
       } else {
         setLoading(false);
