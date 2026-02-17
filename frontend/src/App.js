@@ -77,10 +77,31 @@ function App() {
     const handleServiceWorkerMessage = (event) => {
       if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
         console.log('[App] Received notification click, navigating to:', event.data.url);
-        // Navigate to the URL from the notification
-        const url = new URL(event.data.url);
-        if (url.origin === window.location.origin) {
-          window.location.href = url.pathname + url.search;
+        
+        // Use React Router navigation if available (preserves auth state)
+        if (globalNavigate) {
+          try {
+            // Parse the URL to get just the pathname
+            const targetUrl = event.data.url;
+            // Handle both full URLs and relative paths
+            const path = targetUrl.startsWith('http') 
+              ? new URL(targetUrl).pathname 
+              : targetUrl;
+            
+            console.log('[App] Using React Router to navigate to:', path);
+            globalNavigate(path);
+          } catch (e) {
+            console.error('[App] Navigation error:', e);
+            // Fallback: use location change but with the path only
+            window.location.pathname = event.data.url;
+          }
+        } else {
+          // Fallback if router not ready
+          console.log('[App] Router not ready, using window.location');
+          const url = new URL(event.data.url, window.location.origin);
+          if (url.origin === window.location.origin) {
+            window.location.pathname = url.pathname;
+          }
         }
       }
       
