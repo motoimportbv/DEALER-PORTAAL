@@ -779,6 +779,99 @@ async def accept_terms(user: dict = Depends(get_current_user)):
     )
     return {"message": "Voorwaarden geaccepteerd", "terms_accepted": True}
 
+@api_router.post("/auth/generate-permanent-link")
+async def generate_permanent_link(user: dict = Depends(get_current_user)):
+    """Generate a permanent auto-login link for the user"""
+    # Create permanent token
+    permanent_token = create_permanent_login_token(user["id"])
+    
+    # Store token in user profile
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "permanent_login_token": permanent_token,
+            "permanent_link_created_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Build the permanent login URL
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    permanent_url = f"{base_url}/auto-login?token={permanent_token}&redirect=/dealer"
+    
+    return {
+        "permanent_url": permanent_url,
+        "token": permanent_token,
+        "message": "Permanente login link aangemaakt"
+    }
+
+@api_router.get("/auth/my-permanent-link")
+async def get_my_permanent_link(user: dict = Depends(get_current_user)):
+    """Get the user's permanent login link"""
+    permanent_token = user.get("permanent_login_token")
+    
+    if not permanent_token:
+        return {"has_permanent_link": False, "permanent_url": None}
+    
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    permanent_url = f"{base_url}/auto-login?token={permanent_token}&redirect=/dealer"
+    
+    return {
+        "has_permanent_link": True,
+        "permanent_url": permanent_url,
+        "created_at": user.get("permanent_link_created_at")
+    }
+
+class PermanentLoginRequest(BaseModel):
+    token: str
+
+@api_router.post("/auth/permanent-login")
+async def permanent_login(data: PermanentLoginRequest):
+    """Login using a permanent auto-login token"""
+    try:
+        payload = jwt.decode(data.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        
+        # Verify this is a permanent token
+        if payload.get("type") != "permanent":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        
+        # Find user and verify token matches
+        user = await db.users.find_one(
+            {"id": payload["user_id"], "permanent_login_token": data.token},
+            {"_id": 0, "password_hash": 0}
+        )
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid or revoked token")
+        
+        # Check if user is offline
+        if user.get("is_offline"):
+            raise HTTPException(status_code=403, detail="Account is offline")
+        
+        # Create a regular session token
+        session_token = create_token(user["id"], user["email"], user["role"])
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"last_permanent_login": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        return {
+            "token": session_token,
+            "user": user
+        }
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@api_router.post("/auth/revoke-permanent-link")
+async def revoke_permanent_link(user: dict = Depends(get_current_user)):
+    """Revoke the user's permanent login link"""
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$unset": {"permanent_login_token": "", "permanent_link_created_at": ""}}
+    )
+    return {"message": "Permanente login link ingetrokken"}
+
 class PasswordResetRequest(BaseModel):
     email: str
 
