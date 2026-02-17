@@ -318,7 +318,7 @@ const ForeignDealerAddMotorcycle = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="price">{t('motorcycle.askingPrice')} (€) *</Label>
+                  <Label htmlFor="price">Vraagprijs (CHF) *</Label>
                   <Input
                     id="price"
                     name="price"
