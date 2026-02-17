@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://motorcycles-portal.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://motocycle-hub-1.preview.emergentagent.com')
 
 # Test credentials
 DEALER_EMAIL = "dealer@test.nl"
@@ -191,7 +191,7 @@ class TestStripeCheckout:
                 "motorcycle_id": MOTORCYCLE_ID,
                 "needs_delivery": False,
                 "order_type": "buy_now",
-                "origin_url": "https://motorcycles-portal.preview.emergentagent.com"
+                "origin_url": "https://motocycle-hub-1.preview.emergentagent.com"
             }
         )
         
@@ -228,7 +228,7 @@ class TestStripeCheckout:
                 "motorcycle_id": MOTORCYCLE_ID,
                 "needs_delivery": True,
                 "order_type": "buy_now",
-                "origin_url": "https://motorcycles-portal.preview.emergentagent.com"
+                "origin_url": "https://motocycle-hub-1.preview.emergentagent.com"
             }
         )
         
