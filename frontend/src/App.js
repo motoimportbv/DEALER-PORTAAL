@@ -39,6 +39,33 @@ import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Pakbon from "./pages/Pakbon";
 
+// Helper component to handle service worker navigation
+function NotificationHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Store navigate function globally for service worker messages
+    globalNavigate = navigate;
+    
+    // Clean up the from_notification param after navigating
+    const params = new URLSearchParams(location.search);
+    if (params.has('from_notification')) {
+      params.delete('from_notification');
+      const newSearch = params.toString();
+      const newUrl = location.pathname + (newSearch ? `?${newSearch}` : '');
+      // Replace URL without the marker
+      window.history.replaceState({}, '', newUrl);
+    }
+    
+    return () => {
+      globalNavigate = null;
+    };
+  }, [navigate, location]);
+  
+  return null;
+}
+
 function App() {
   useEffect(() => {
     // Initialize native features when running as mobile app
