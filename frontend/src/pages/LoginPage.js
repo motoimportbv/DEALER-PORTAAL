@@ -1,22 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Checkbox } from '../components/ui/checkbox';
 import { Bike, Mail, Lock, ArrowRight, FileText, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import LanguageSelector from '../components/LanguageSelector';
+
+// Simple encoding for stored credentials (not secure encryption, but obfuscates plain text)
+const encodeCredentials = (email, password) => {
+  return btoa(JSON.stringify({ e: email, p: password }));
+};
+
+const decodeCredentials = (encoded) => {
+  try {
+    const decoded = JSON.parse(atob(encoded));
+    return { email: decoded.e, password: decoded.p };
+  } catch {
+    return null;
+  }
+};
+
+// Cookie helpers
+const setRememberCookie = (value, days = 365) => {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `moto_remember=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+};
+
+const getRememberCookie = () => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; moto_remember=`);
+  if (parts.length === 2) {
+    return decodeURIComponent(parts.pop().split(';').shift());
+  }
+  return null;
+};
+
+const deleteRememberCookie = () => {
+  document.cookie = `moto_remember=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+};
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const autoLoginRef = useRef(false);
 
   // Check for redirect URL from notification click or other source
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
@@ -37,12 +74,43 @@ const LoginPage = () => {
     }
   }, [location]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Auto-login with remembered credentials
+  useEffect(() => {
+    if (autoLoginRef.current || autoLoginAttempted || user) return;
+    
+    const remembered = getRememberCookie();
+    if (remembered) {
+      const creds = decodeCredentials(remembered);
+      if (creds && creds.email && creds.password) {
+        autoLoginRef.current = true;
+        setAutoLoginAttempted(true);
+        // Auto-fill and submit
+        setEmail(creds.email);
+        setPassword(creds.password);
+        setRememberMe(true);
+        
+        // Perform auto-login
+        performLogin(creds.email, creds.password, true);
+      }
+    }
+  }, [user, autoLoginAttempted]);
+
+  const performLogin = async (loginEmail, loginPassword, isAutoLogin = false) => {
     setLoading(true);
     try {
-      const user = await login(email, password);
-      toast.success(t('messages.successSaved'));
+      const loggedInUser = await login(loginEmail, loginPassword);
+      
+      if (!isAutoLogin) {
+        toast.success(t('messages.successSaved'));
+      }
+      
+      // Save credentials if remember me is checked
+      if (rememberMe || isAutoLogin) {
+        const encoded = encodeCredentials(loginEmail, loginPassword);
+        setRememberCookie(encoded);
+      } else {
+        deleteRememberCookie();
+      }
       
       // Clear stored redirect
       sessionStorage.removeItem('redirectAfterLogin');
@@ -55,25 +123,37 @@ const LoginPage = () => {
       
       // Determine redirect based on user type
       let redirectPath = '/dealer';
-      if (user.role === 'admin') {
+      if (loggedInUser.role === 'admin') {
         redirectPath = '/admin';
-      } else if (user.is_foreign_dealer) {
+      } else if (loggedInUser.is_foreign_dealer) {
         redirectPath = '/foreign-dealer';
       }
       
       navigate(redirectPath);
     } catch (error) {
+      // If auto-login fails, clear saved credentials
+      if (isAutoLogin) {
+        deleteRememberCookie();
+        setAutoLoginAttempted(true);
+        autoLoginRef.current = false;
+      }
+      
       const errorMessage = error.response?.data?.detail || t('messages.errorOccurred');
       
       // Check if it's a pending approval error
       if (error.response?.status === 403 && errorMessage.includes('goedkeuring')) {
         toast.info(errorMessage, { duration: 5000 });
-      } else {
+      } else if (!isAutoLogin) {
         toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await performLogin(email, password, false);
   };
 
   return (
