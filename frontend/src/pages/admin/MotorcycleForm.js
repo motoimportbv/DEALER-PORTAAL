@@ -14,6 +14,32 @@ import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Alle motormerken - alfabetisch gesorteerd
+const MOTORCYCLE_BRANDS = [
+  'Aprilia', 'Benelli', 'Beta', 'Bimota', 'BMW', 'Brixton', 'Buell', 'Bultaco',
+  'Cagiva', 'Can-Am', 'CCM', 'CF Moto', 'Condor',
+  'Ducati',
+  'Energica',
+  'Fantic',
+  'Gas Gas', 'Gilera', 'Gowow',
+  'Harley-Davidson', 'Hercules', 'Honda', 'Horex', 'Husqvarna', 'Hyosung',
+  'Indian', 'Italjet',
+  'Jawa',
+  'Kawasaki', 'Kramer', 'KTM', 'Kymco',
+  'Laverda', 'Lambretta', 'Leonart',
+  'Mash', 'Miele', 'Montesa', 'Morbidelli', 'Moto Guzzi', 'Moto Morini', 'Motobecane', 'Mutt Motorcycles', 'MV Agusta', 'MZ',
+  'Norton',
+  'Orcal',
+  'Peugeot', 'Piaggio', 'Polaris',
+  'Rieju', 'Royal Enfield',
+  'Sachs', 'Sherco', 'SWM', 'Suzuki', 'SYM',
+  'Triumph', 'TRS', 'TM Racing',
+  'Ultraviolette',
+  'Vent', 'Vespa', 'Victory', 'Voge',
+  'Yamaha',
+  'Zero', 'Zontes', 'Zundapp'
+].sort();
+
 const MotorcycleForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
