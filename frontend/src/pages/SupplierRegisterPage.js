@@ -1,18 +1,50 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Globe, Mail, Lock, Building, ArrowRight, Phone, User } from 'lucide-react';
+import { Globe, Mail, Lock, Building, ArrowRight, Phone, User, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
+// Language order for foreign dealers: German first, then Italian, French, Dutch
+const foreignDealerLanguages = [
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' }
+];
+
 const SupplierRegisterPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+
+  // Set German as default language for foreign dealers, or use URL param
+  useEffect(() => {
+    const urlLang = searchParams.get('lang');
+    if (urlLang && ['de', 'it', 'fr', 'nl'].includes(urlLang)) {
+      i18n.changeLanguage(urlLang);
+      localStorage.setItem('i18nextLng', urlLang);
+    } else if (!localStorage.getItem('supplierLangSet')) {
+      // Only set German on first visit to supplier page
+      i18n.changeLanguage('de');
+      localStorage.setItem('i18nextLng', 'de');
+      localStorage.setItem('supplierLangSet', 'true');
+    }
+  }, [i18n, searchParams]);
+
+  const handleLanguageChange = (langCode) => {
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('i18nextLng', langCode);
+    setLangMenuOpen(false);
+  };
+
+  const currentLang = foreignDealerLanguages.find(l => l.code === i18n.language) || foreignDealerLanguages[0];
   const [formData, setFormData] = useState({
     email: '',
     password: '',
