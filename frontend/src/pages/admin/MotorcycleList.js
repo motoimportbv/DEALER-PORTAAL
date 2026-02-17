@@ -6,6 +6,7 @@ import Layout from '../../components/Layout';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
 import { 
   Plus, 
   Pencil, 
@@ -14,7 +15,8 @@ import {
   Eye,
   MessageCircle,
   Share2,
-  Smartphone
+  Search,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -41,6 +43,8 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MotorcycleList = () => {
   const { t } = useTranslation();
   const [motorcycles, setMotorcycles] = useState([]);
+  const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsappData, setWhatsappData] = useState(null);
@@ -49,10 +53,27 @@ const MotorcycleList = () => {
     fetchMotorcycles();
   }, []);
 
+  // Filter motorcycles when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredMotorcycles(motorcycles);
+    } else {
+      const search = searchTerm.toLowerCase();
+      const filtered = motorcycles.filter(m => 
+        m.brand?.toLowerCase().includes(search) ||
+        m.model?.toLowerCase().includes(search) ||
+        m.year?.toString().includes(search) ||
+        m.color?.toLowerCase().includes(search)
+      );
+      setFilteredMotorcycles(filtered);
+    }
+  }, [searchTerm, motorcycles]);
+
   const fetchMotorcycles = async () => {
     try {
       const response = await axios.get(`${API}/motorcycles`);
       setMotorcycles(response.data);
+      setFilteredMotorcycles(response.data);
     } catch (error) {
       toast.error(t('adminMotorcycles.loadFailed'));
     } finally {
@@ -74,48 +95,6 @@ const MotorcycleList = () => {
     if (whatsappData?.whatsapp_url) {
       window.open(whatsappData.whatsapp_url, '_blank');
       setShowWhatsAppModal(false);
-    }
-  };
-
-  // SMS functionality
-  const [showSMSModal, setShowSMSModal] = useState(false);
-  const [smsData, setSmsData] = useState(null);
-  const [sendingSMS, setSendingSMS] = useState(false);
-
-  const handleSMSShare = async (motorcycleId) => {
-    try {
-      const response = await axios.get(`${API}/motorcycles/${motorcycleId}/sms-share`);
-      setSmsData({ ...response.data, motorcycleId });
-      setShowSMSModal(true);
-    } catch (error) {
-      toast.error('Kon SMS bericht niet genereren');
-    }
-  };
-
-  const sendSMSToAll = async () => {
-    if (!smsData?.motorcycleId) return;
-    
-    setSendingSMS(true);
-    try {
-      const response = await axios.post(`${API}/motorcycles/${smsData.motorcycleId}/sms-send-all`);
-      const result = response.data;
-      
-      if (result.sent > 0) {
-        toast.success(`SMS verstuurd naar ${result.sent} dealers!`);
-      }
-      if (result.failed > 0) {
-        toast.warning(`${result.failed} SMS berichten mislukt`);
-      }
-      if (result.sent === 0 && result.failed === 0) {
-        toast.info('Geen dealers met telefoonnummer gevonden');
-      }
-      
-      setShowSMSModal(false);
-    } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'SMS verzenden mislukt';
-      toast.error(errorMsg);
-    } finally {
-      setSendingSMS(false);
     }
   };
 
