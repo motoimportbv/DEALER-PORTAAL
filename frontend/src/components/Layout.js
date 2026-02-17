@@ -100,14 +100,13 @@ const Layout = ({ children, requiredRole }) => {
               >
                 <RefreshCw className="w-4 h-4 text-zinc-700" />
               </button>
-              <LanguageSelector variant="light" />
               <button 
                 onClick={handleLogout}
-                className="p-2 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                 title="Uitloggen"
                 data-testid="mobile-logout-btn"
               >
-                <LogOut className="w-4 h-4 text-red-700" />
+                <LogOut className="w-4 h-4 text-white" />
               </button>
             </div>
           </div>
