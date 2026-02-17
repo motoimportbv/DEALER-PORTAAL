@@ -22,7 +22,11 @@ import {
   CreditCard,
   Gift,
   Tag,
-  Store
+  Store,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
