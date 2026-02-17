@@ -3119,6 +3119,176 @@ async def remove_push_token(user: dict = Depends(get_current_user)):
     await db.push_tokens.delete_many({"user_id": user["id"]})
     return {"message": "Push token removed"}
 
+# ============ SMS NOTIFICATION ENDPOINTS ============
+
+async def send_sms_to_dealer(phone_number: str, message: str) -> dict:
+    """Send SMS to a single phone number using Twilio"""
+    if not twilio_client:
+        logger.warning("Twilio client not initialized - SMS disabled")
+        return {"success": False, "error": "SMS niet geconfigureerd"}
+    
+    if not TWILIO_PHONE_NUMBER:
+        logger.warning("Twilio phone number not configured")
+        return {"success": False, "error": "Twilio telefoonnummer niet geconfigureerd"}
+    
+    try:
+        # Normalize phone number (ensure it starts with +)
+        if not phone_number.startswith('+'):
+            # Assume Dutch number if no country code
+            if phone_number.startswith('0'):
+                phone_number = '+31' + phone_number[1:]
+            else:
+                phone_number = '+' + phone_number
+        
+        # Send SMS via Twilio
+        sms = twilio_client.messages.create(
+            body=message,
+            from_=TWILIO_PHONE_NUMBER,
+            to=phone_number
+        )
+        
+        logger.info(f"SMS sent to {phone_number}, SID: {sms.sid}")
+        return {"success": True, "sid": sms.sid, "status": sms.status}
+    
+    except Exception as e:
+        logger.error(f"Failed to send SMS to {phone_number}: {e}")
+        return {"success": False, "error": str(e)}
+
+async def send_sms_to_all_dealers(message: str, exclude_user_id: str = None) -> dict:
+    """Send SMS to all active dealers with phone numbers"""
+    if not twilio_client:
+        return {"success": False, "error": "SMS niet geconfigureerd", "sent": 0, "failed": 0}
+    
+    # Get all active dealers with phone numbers
+    query = {
+        "role": "dealer",
+        "is_offline": {"$ne": True},
+        "phone": {"$exists": True, "$ne": "", "$ne": None}
+    }
+    
+    if exclude_user_id:
+        query["id"] = {"$ne": exclude_user_id}
+    
+    dealers = await db.users.find(query, {"_id": 0, "phone": 1, "company_name": 1, "id": 1}).to_list(1000)
+    
+    sent_count = 0
+    failed_count = 0
+    results = []
+    
+    for dealer in dealers:
+        phone = dealer.get("phone")
+        if phone:
+            result = await send_sms_to_dealer(phone, message)
+            if result.get("success"):
+                sent_count += 1
+            else:
+                failed_count += 1
+            results.append({
+                "dealer": dealer.get("company_name", "Unknown"),
+                "phone": phone,
+                "result": result
+            })
+            # Small delay to avoid rate limiting
+            await asyncio.sleep(0.2)
+    
+    return {
+        "success": True,
+        "sent": sent_count,
+        "failed": failed_count,
+        "total_dealers": len(dealers),
+        "details": results
+    }
+
+class SMSRequest(BaseModel):
+    phone_number: str
+    message: str
+
+class BulkSMSRequest(BaseModel):
+    message: str
+
+@api_router.post("/sms/send")
+async def send_single_sms(data: SMSRequest, user: dict = Depends(require_admin)):
+    """Send SMS to a single phone number (admin only)"""
+    result = await send_sms_to_dealer(data.phone_number, data.message)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "SMS verzenden mislukt"))
+    return result
+
+@api_router.post("/sms/send-all")
+async def send_sms_to_all(data: BulkSMSRequest, user: dict = Depends(require_admin)):
+    """Send SMS to all active dealers (admin only)"""
+    result = await send_sms_to_all_dealers(data.message)
+    return result
+
+@api_router.get("/sms/status")
+async def get_sms_status(user: dict = Depends(require_admin)):
+    """Check if SMS is configured and working"""
+    is_configured = bool(twilio_client and TWILIO_PHONE_NUMBER)
+    
+    # Count dealers with phone numbers
+    dealers_with_phone = await db.users.count_documents({
+        "role": "dealer",
+        "is_offline": {"$ne": True},
+        "phone": {"$exists": True, "$ne": "", "$ne": None}
+    })
+    
+    return {
+        "configured": is_configured,
+        "twilio_account": bool(TWILIO_ACCOUNT_SID),
+        "twilio_phone": bool(TWILIO_PHONE_NUMBER),
+        "dealers_with_phone": dealers_with_phone
+    }
+
+@api_router.get("/motorcycles/{motorcycle_id}/sms-share")
+async def get_sms_share_message(motorcycle_id: str, user: dict = Depends(require_admin)):
+    """Generate SMS message for sharing a motorcycle"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    
+    brand = motorcycle.get("brand", "")
+    model = motorcycle.get("model", "")
+    year = motorcycle.get("year", "")
+    price = motorcycle.get("price", 0)
+    
+    message = f"""NIEUWE MOTOR: {brand} {model} ({year})
+Prijs: €{price:,.0f}
+
+Bekijk: {base_url}/motorcycle/{motorcycle_id}
+
+- Moto Import"""
+
+    return {
+        "message": message,
+        "motorcycle_id": motorcycle_id
+    }
+
+@api_router.post("/motorcycles/{motorcycle_id}/sms-send-all")
+async def send_motorcycle_sms_to_all(motorcycle_id: str, user: dict = Depends(require_admin)):
+    """Send SMS about a motorcycle to all dealers"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    
+    brand = motorcycle.get("brand", "")
+    model = motorcycle.get("model", "")
+    year = motorcycle.get("year", "")
+    price = motorcycle.get("price", 0)
+    
+    message = f"""NIEUWE MOTOR: {brand} {model} ({year})
+Prijs: €{price:,.0f}
+
+Bekijk: {base_url}/motorcycle/{motorcycle_id}
+
+- Moto Import"""
+
+    result = await send_sms_to_all_dealers(message)
+    return result
+
 # ============ PARTS SHOP ENDPOINTS ============
 
 # --- Part Categories ---
