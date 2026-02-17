@@ -117,6 +117,15 @@ const DealerSellMotorcycle = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSelectChange = (field, value) => {
+    // Reset model when brand changes
+    if (field === 'brand' && value !== formData.brand) {
+      setFormData(prev => ({ ...prev, brand: value, model: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
