@@ -138,6 +138,7 @@ class MotorcycleCreate(BaseModel):
     condition: str = "good"  # "new", "excellent", "good", "fair"
     images: List[str] = []
     auction_duration_hours: int = 3  # Standaard 3 uur
+    chassis_number: str = ""  # VIN/Chassisnummer
 
 class MotorcycleUpdate(BaseModel):
     brand: Optional[str] = None
@@ -151,6 +152,8 @@ class MotorcycleUpdate(BaseModel):
     condition: Optional[str] = None
     images: Optional[List[str]] = None
     is_available: Optional[bool] = None
+    chassis_number: Optional[str] = None  # VIN/Chassisnummer
+    license_plate: Optional[str] = None  # Kenteken (set by admin later)
 
 class Motorcycle(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -170,6 +173,8 @@ class Motorcycle(BaseModel):
     auction_end_time: Optional[str] = None  # Wanneer de veiling eindigt
     highest_bid: Optional[float] = None
     highest_bidder_id: Optional[str] = None
+    chassis_number: str = ""  # VIN/Chassisnummer
+    license_plate: Optional[str] = None  # Kenteken (set by admin)
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str = ""
     # Dealer marketplace fields
