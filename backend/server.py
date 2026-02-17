@@ -3010,6 +3010,55 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
     )
     
     status_text = "offline" if new_status else "online"
+    
+    # Send notification when dealer is set back ONLINE
+    if not new_status:  # new_status is False means dealer is now online
+        # Create in-app notification
+        notification = Notification(
+            user_id=dealer_id,
+            type="account_online",
+            message="Goed nieuws! Wij waren bezig met een update en alles is nu afgerond. Uw account is weer online en u kunt weer volop gebruik maken van het platform.",
+            data={}
+        )
+        await db.notifications.insert_one(notification.model_dump())
+        
+        # Send push notification to all devices of this dealer
+        try:
+            subscriptions = await db.push_subscriptions.find({"user_id": dealer_id}).to_list(100)
+            for sub in subscriptions:
+                try:
+                    subscription_info = {
+                        "endpoint": sub["endpoint"],
+                        "keys": sub["keys"]
+                    }
+                    
+                    # Generate auto-login token for this dealer
+                    token_payload = {
+                        "user_id": dealer_id,
+                        "email": dealer.get("email"),
+                        "role": dealer.get("role"),
+                        "exp": (datetime.now(timezone.utc) + timedelta(hours=24)).timestamp()
+                    }
+                    auto_login_token = jwt.encode(token_payload, SECRET_KEY, algorithm="HS256")
+                    
+                    payload = json.dumps({
+                        "title": "Account weer online! ✅",
+                        "body": "Wij waren bezig met een update. Alles is nu afgerond en u bent weer online!",
+                        "url": f"https://www.motoimportbv.nl/login?token={auto_login_token}",
+                        "tag": "account-online"
+                    })
+                    
+                    webpush(
+                        subscription_info=subscription_info,
+                        data=payload,
+                        vapid_private_key=VAPID_PRIVATE_KEY,
+                        vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+                    )
+                except Exception as push_error:
+                    print(f"Push to device failed: {push_error}")
+        except Exception as e:
+            print(f"Error sending online notification: {e}")
+    
     return {
         "message": f"Dealer {dealer['company_name']} is nu {status_text}",
         "is_offline": new_status
