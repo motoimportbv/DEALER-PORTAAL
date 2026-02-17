@@ -263,15 +263,61 @@ const RegisterPage = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => handleChange('password', e.target.value)}
                   placeholder={t('register.passwordPlaceholder')}
-                  className="pl-10 h-11"
+                  className="pl-10 pr-10 h-11"
                   data-testid="register-password-input"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              <p className="text-xs text-zinc-400">Minimaal 6 tekens</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-xs text-zinc-500">Bevestig wachtwoord *</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  placeholder="Herhaal uw wachtwoord"
+                  className={`pl-10 pr-10 h-11 ${
+                    formData.confirmPassword && formData.password !== formData.confirmPassword 
+                      ? 'border-red-500 focus:border-red-500' 
+                      : formData.confirmPassword && formData.password === formData.confirmPassword
+                      ? 'border-green-500 focus:border-green-500'
+                      : ''
+                  }`}
+                  data-testid="register-confirm-password-input"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="text-xs text-red-500">Wachtwoorden komen niet overeen</p>
+              )}
+              {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                <p className="text-xs text-green-500">Wachtwoorden komen overeen ✓</p>
+              )}
             </div>
           </div>
 
