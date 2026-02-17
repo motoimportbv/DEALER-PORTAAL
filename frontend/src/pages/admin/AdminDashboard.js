@@ -9,6 +9,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import { 
   Bike, 
   ShoppingCart, 
@@ -17,8 +24,11 @@ import {
   Plus,
   ArrowRight,
   Package,
-  Trophy
+  Trophy,
+  Bell,
+  Send
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -29,6 +39,9 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [topDealers, setTopDealers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingTestPush, setSendingTestPush] = useState(false);
+  const [testPushResults, setTestPushResults] = useState(null);
+  const [showPushResultsModal, setShowPushResultsModal] = useState(false);
 
   useEffect(() => {
     fetchData();
