@@ -1428,9 +1428,15 @@ async def delete_my_listing(motorcycle_id: str, user: dict = Depends(require_app
 @api_router.get("/motorcycles/{motorcycle_id}/public")
 async def get_motorcycle_public(motorcycle_id: str):
     """Get motorcycle details without authentication (for sharing links)"""
+    # First try to find with is_active=True, then try without the filter
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id, "is_active": True}, {"_id": 0})
     if not motorcycle:
+        # Try without is_active filter (for older motorcycles without this field)
+        motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    
+    if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
     # Add default starting_price if missing
     if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
