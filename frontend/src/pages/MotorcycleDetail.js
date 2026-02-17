@@ -396,13 +396,19 @@ const MotorcycleDetail = () => {
                     <Button 
                       className="w-full h-12 bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide"
                       onClick={() => {
+                        if (!user) {
+                          // Not logged in - redirect to login
+                          sessionStorage.setItem('redirectAfterLogin', `/motorcycle/${id}`);
+                          navigate('/login');
+                          return;
+                        }
                         setNeedsDelivery(false);
                         setBuyNowDialogOpen(true);
                       }}
                       data-testid="buy-now-btn"
                     >
                       <ShoppingCart className="w-5 h-5 mr-2" />
-                      {t('motorcycle.orderNow')}
+                      {user ? t('motorcycle.orderNow') : 'Inloggen om te bestellen'}
                     </Button>
                   </div>
                 )}
