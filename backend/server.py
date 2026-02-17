@@ -844,6 +844,9 @@ async def get_my_permanent_link(user: dict = Depends(get_current_user)):
 class PermanentLoginRequest(BaseModel):
     token: str
 
+class ShortCodeLoginRequest(BaseModel):
+    code: str
+
 @api_router.post("/auth/permanent-login")
 async def permanent_login(data: PermanentLoginRequest):
     """Login using a permanent auto-login token"""
@@ -882,6 +885,57 @@ async def permanent_login(data: PermanentLoginRequest):
         }
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+@api_router.post("/auth/shortcode-login")
+async def shortcode_login(data: ShortCodeLoginRequest):
+    """Login using a short code - for iOS home screen bookmarks"""
+    # Find user by short code
+    user = await db.users.find_one(
+        {"login_short_code": data.code.upper()},
+        {"_id": 0, "password_hash": 0}
+    )
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Ongeldige code")
+    
+    # Check if user is offline
+    if user.get("is_offline"):
+        raise HTTPException(status_code=403, detail="Account is offline")
+    
+    # Create a regular session token
+    session_token = create_token(user["id"], user["email"], user["role"])
+    
+    # Update last login
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"last_shortcode_login": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {
+        "token": session_token,
+        "user": user
+    }
+
+@api_router.get("/auth/shortcode/{code}")
+async def get_user_by_shortcode(code: str):
+    """Get user info by short code (for auto-login page)"""
+    user = await db.users.find_one(
+        {"login_short_code": code.upper()},
+        {"_id": 0, "password_hash": 0, "permanent_login_token": 0}
+    )
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Ongeldige code")
+    
+    if user.get("is_offline"):
+        raise HTTPException(status_code=403, detail="Account is offline")
+    
+    # Return limited info for security
+    return {
+        "valid": True,
+        "company_name": user.get("company_name", ""),
+        "user_id": user["id"]
+    }
 
 @api_router.post("/auth/revoke-permanent-link")
 async def revoke_permanent_link(user: dict = Depends(get_current_user)):
