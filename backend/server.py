@@ -2349,7 +2349,58 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
         {"$set": {"is_approved": True}}
     )
     
-    # Genereer unieke voucher code voor nieuwe dealer
+    # Check of het een buitenlandse dealer is
+    is_foreign = dealer.get("is_foreign_dealer", False)
+    
+    # Get base URL from request origin or fallback
+    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
+    if origin:
+        from urllib.parse import urlparse
+        parsed = urlparse(origin)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    
+    login_url = f"{base_url}/login"
+    
+    # Buitenlandse dealers krijgen GEEN voucher
+    if is_foreign:
+        # Email voor buitenlandse dealer (zonder voucher)
+        try:
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #18181b; padding: 25px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+                </div>
+                
+                <div style="padding: 30px; background: #f9fafb;">
+                    <h2 style="color: #16a34a; margin-top: 0;">✅ Account Approved!</h2>
+                    <p>Dear {dealer.get('contact_person', dealer['company_name'])},</p>
+                    <p>Your supplier account at <strong>Moto Import</strong> has been approved!</p>
+                    <p>You can now log in and submit motorcycles for sale to our dealer network.</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{login_url}" 
+                           style="display: inline-block; background: #DC2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                            Login Now
+                        </a>
+                    </div>
+                </div>
+                
+                <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+                    <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+                    <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                </div>
+            </div>
+            """
+            await send_email(dealer["email"], "✅ Account Approved - Moto Import", html_content)
+        except Exception as e:
+            logger.error(f"Failed to send approval email to foreign dealer: {str(e)}")
+        
+        return {"message": f"Buitenlandse dealer {dealer['company_name']} is goedgekeurd"}
+    
+    # Nederlandse dealers krijgen WEL een voucher
     import random
     import string
     voucher_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -2362,17 +2413,6 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
         amount=250.0
     )
     await db.vouchers.insert_one(voucher.model_dump())
-    
-    # Get base URL from request origin or fallback
-    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
-    if origin:
-        from urllib.parse import urlparse
-        parsed = urlparse(origin)
-        base_url = f"{parsed.scheme}://{parsed.netloc}"
-    else:
-        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
-    
-    login_url = f"{base_url}/login"
     
     # Stuur email naar dealer met voucher
     try:
