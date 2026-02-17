@@ -113,7 +113,8 @@ const DealerSellMotorcycle = () => {
     color: '',
     description: '',
     condition: 'good',
-    images: []
+    images: [],
+    chassis_number: ''
   });
 
   const handleChange = (e) => {
