@@ -452,6 +452,32 @@ const MotorcycleDetail = () => {
         </div>
       </div>
 
+      {/* Fixed Mobile Order Button */}
+      {motorcycle.is_available && user?.role === 'dealer' && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-zinc-200 shadow-lg lg:hidden z-40">
+          <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
+            <div>
+              <p className="text-sm text-zinc-500">{motorcycle.brand} {motorcycle.model}</p>
+              <p className="text-xl font-bold text-red-600">{formatPrice(motorcycle.price)}</p>
+            </div>
+            <Button 
+              className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide px-6 h-12"
+              onClick={() => {
+                setNeedsDelivery(false);
+                setBuyNowDialogOpen(true);
+              }}
+              data-testid="mobile-buy-btn"
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              {t('motorcycle.orderNow')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Add padding at bottom for mobile to account for fixed button */}
+      <div className="h-24 lg:hidden"></div>
+
       {/* Buy Now Dialog */}
       <Dialog open={buyNowDialogOpen} onOpenChange={setBuyNowDialogOpen}>
         <DialogContent className="max-w-md">
