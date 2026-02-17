@@ -236,6 +236,7 @@ class OrderWithMotorcycle(BaseModel):
     payment_status: str = "unpaid"
     created_at: str
     motorcycle: Optional[dict] = None
+    motorcycle_snapshot: Optional[dict] = None  # Fallback data if motorcycle is deleted
 
 class Notification(BaseModel):
     model_config = ConfigDict(extra="ignore")
