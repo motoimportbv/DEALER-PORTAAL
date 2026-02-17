@@ -216,13 +216,19 @@ const MotorcycleForm = () => {
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Merk *
                     </Label>
-                    <Input
-                      value={formData.brand}
-                      onChange={(e) => handleChange('brand', e.target.value)}
-                      placeholder="bijv. Ducati"
-                      data-testid="brand-input"
-                      required
-                    />
+                    <Select 
+                      value={formData.brand} 
+                      onValueChange={(value) => handleChange('brand', value)}
+                    >
+                      <SelectTrigger data-testid="brand-input">
+                        <SelectValue placeholder="Kies een merk" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {MOTORCYCLE_BRANDS.map(brand => (
+                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
