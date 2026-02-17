@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Bike, User } from 'lucide-react';
 
@@ -8,26 +7,24 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const ShortCodeLoginPage = () => {
   const { code } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const [error, setError] = useState(null);
   const [attempting, setAttempting] = useState(true);
   const [companyName, setCompanyName] = useState('');
+  const hasAttempted = useRef(false);
 
   useEffect(() => {
-    const performAutoLogin = async () => {
-      // If already logged in, just redirect
-      if (user) {
-        console.log('[ShortCode] Already logged in, redirecting');
-        navigate('/dealer', { replace: true });
-        return;
-      }
+    // Prevent double execution
+    if (hasAttempted.current) return;
+    hasAttempted.current = true;
 
+    const performAutoLogin = async () => {
       if (!code) {
         console.log('[ShortCode] No code provided');
         setError('Geen code gevonden');
         setAttempting(false);
-        setTimeout(() => navigate('/login', { replace: true }), 2000);
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
         return;
       }
 
@@ -42,11 +39,17 @@ const ShortCodeLoginPage = () => {
         const response = await axios.post(`${API}/auth/shortcode-login`, { code });
         
         if (response.data.token && response.data.user) {
+          console.log('[ShortCode] Login successful, storing credentials');
+          
+          // Clear any old auth data first
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          
           // Store the new token and user data
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('user', JSON.stringify(response.data.user));
           
-          // Also set cookies for cross-context compatibility
+          // Also set cookies for cross-context compatibility (PWA, etc.)
           const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
           document.cookie = `moto_token=${encodeURIComponent(response.data.token)}; expires=${expires}; path=/; SameSite=Lax`;
           document.cookie = `moto_user=${encodeURIComponent(JSON.stringify(response.data.user))}; expires=${expires}; path=/; SameSite=Lax`;
@@ -56,8 +59,19 @@ const ShortCodeLoginPage = () => {
           
           console.log('[ShortCode] Success! Redirecting to dealer dashboard');
           
-          // Force reload to ensure auth context picks up the new token
-          window.location.href = '/dealer';
+          // Determine redirect based on user role
+          const role = response.data.user.role;
+          const isForeignDealer = response.data.user.is_foreign_dealer;
+          let redirectUrl = '/dealer';
+          
+          if (role === 'admin') {
+            redirectUrl = '/admin';
+          } else if (isForeignDealer) {
+            redirectUrl = '/foreign-dealer';
+          }
+          
+          // Force full page reload to ensure fresh auth state
+          window.location.replace(redirectUrl);
         } else {
           throw new Error('Invalid response');
         }
@@ -70,13 +84,13 @@ const ShortCodeLoginPage = () => {
         
         // Redirect to login after showing error
         setTimeout(() => {
-          navigate('/login', { replace: true });
+          window.location.href = '/login';
         }, 3000);
       }
     };
 
     performAutoLogin();
-  }, [code, navigate, user]);
+  }, [code]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50">
