@@ -361,68 +361,6 @@ const MotorcycleList = () => {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* SMS Share Modal */}
-      <Dialog open={showSMSModal} onOpenChange={setShowSMSModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                <Smartphone className="w-5 h-5 text-white" />
-              </div>
-              SMS naar Dealers
-            </DialogTitle>
-            <DialogDescription>
-              Verstuur SMS naar alle dealers met een telefoonnummer
-            </DialogDescription>
-          </DialogHeader>
-
-          {smsData && (
-            <div className="space-y-4">
-              <div className="bg-zinc-50 rounded-lg p-4">
-                <p className="text-sm text-zinc-600 mb-2 font-medium">SMS bericht:</p>
-                <pre className="text-xs bg-white p-3 rounded border whitespace-pre-wrap font-sans">
-                  {smsData.message}
-                </pre>
-              </div>
-
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p className="text-sm text-amber-700">
-                  <strong>Let op:</strong> SMS versturen kost ~€0.07 per bericht per dealer.
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowSMSModal(false)}
-                  disabled={sendingSMS}
-                >
-                  Annuleren
-                </Button>
-                <Button
-                  className="flex-1 bg-blue-500 hover:bg-blue-600"
-                  onClick={sendSMSToAll}
-                  disabled={sendingSMS}
-                >
-                  {sendingSMS ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Versturen...
-                    </>
-                  ) : (
-                    <>
-                      <Smartphone className="w-4 h-4 mr-2" />
-                      Verstuur SMS
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 };
