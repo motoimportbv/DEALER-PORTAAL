@@ -3091,12 +3091,20 @@ async def debug_vapid_keys():
 
 @api_router.post("/push/subscribe")
 async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depends(get_current_user)):
-    """Subscribe to web push notifications"""
+    """Subscribe to web push notifications - supports multiple devices per user"""
     subscription = data.subscription
+    endpoint = subscription.get("endpoint", "")
     
-    # Store subscription in database
+    if not endpoint:
+        raise HTTPException(status_code=400, detail="Invalid subscription - no endpoint")
+    
+    # Use endpoint as unique identifier for device
+    # This allows multiple devices per user
     await db.push_subscriptions.update_one(
-        {"user_id": user["id"]},
+        {
+            "user_id": user["id"],
+            "subscription.endpoint": endpoint  # Match by user AND endpoint
+        },
         {
             "$set": {
                 "user_id": user["id"],
@@ -3107,13 +3115,17 @@ async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depend
         },
         upsert=True
     )
-    return {"message": "Subscribed to push notifications"}
+    
+    # Count how many devices user has
+    device_count = await db.push_subscriptions.count_documents({"user_id": user["id"]})
+    
+    return {"message": f"Push ingeschakeld voor dit apparaat ({device_count} apparaat/apparaten actief)"}
 
 @api_router.get("/push/status")
 async def get_push_status(user: dict = Depends(get_current_user)):
-    """Check if user has an active push subscription"""
-    sub = await db.push_subscriptions.find_one({"user_id": user["id"]})
-    return {"subscribed": sub is not None}
+    """Check if user has an active push subscription on any device"""
+    sub_count = await db.push_subscriptions.count_documents({"user_id": user["id"]})
+    return {"subscribed": sub_count > 0, "device_count": sub_count}
 
 @api_router.get("/push/test")
 async def test_push_notification(user: dict = Depends(get_current_user)):
