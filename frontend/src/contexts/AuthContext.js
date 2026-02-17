@@ -169,8 +169,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
     const { token: newToken, user: userData } = response.data;
+    // Store in both localStorage AND cookies for PWA/browser compatibility
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
+    setCookie('moto_token', newToken, 365);
+    setCookie('moto_user', JSON.stringify(userData), 365);
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
     // Ensure we use fresh user data with correct is_approved status
@@ -192,8 +195,11 @@ export const AuthProvider = ({ children }) => {
       contact_person: contactPerson
     });
     const { token: newToken, user: userData } = response.data;
+    // Store in both localStorage AND cookies for PWA/browser compatibility
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
+    setCookie('moto_token', newToken, 365);
+    setCookie('moto_user', JSON.stringify(userData), 365);
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
     setUser(userData);
@@ -201,8 +207,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear both localStorage AND cookies
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    deleteCookie('moto_token');
+    deleteCookie('moto_user');
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
