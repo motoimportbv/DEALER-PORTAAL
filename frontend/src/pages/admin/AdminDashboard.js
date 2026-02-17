@@ -102,79 +102,87 @@ const AdminDashboard = () => {
           <PushNotificationToggle token={token} />
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Clickable KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="kpi-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    {t('admin.totalMotorcycles')}
-                  </p>
-                  <p className="font-barlow text-4xl font-bold text-zinc-900">
-                    {stats?.total_motorcycles || 0}
-                  </p>
+          <Link to="/admin/motorcycles" className="block">
+            <Card className="kpi-card hover:shadow-lg hover:border-red-200 transition-all cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
+                      {t('admin.totalMotorcycles')}
+                    </p>
+                    <p className="font-barlow text-4xl font-bold text-zinc-900">
+                      {stats?.total_motorcycles || 0}
+                    </p>
+                  </div>
+                  <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
+                    <Bike className="w-7 h-7 text-red-600" />
+                  </div>
                 </div>
-                <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
-                  <Bike className="w-7 h-7 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="kpi-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    {t('motorcycle.available')}
-                  </p>
-                  <p className="font-barlow text-4xl font-bold text-zinc-900">
-                    {stats?.available_motorcycles || 0}
-                  </p>
+          <Link to="/admin/motorcycles" className="block">
+            <Card className="kpi-card hover:shadow-lg hover:border-green-200 transition-all cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
+                      {t('motorcycle.available')}
+                    </p>
+                    <p className="font-barlow text-4xl font-bold text-zinc-900">
+                      {stats?.available_motorcycles || 0}
+                    </p>
+                  </div>
+                  <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Package className="w-7 h-7 text-green-600" />
+                  </div>
                 </div>
-                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Package className="w-7 h-7 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="kpi-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    {t('admin.pendingOrders')}
-                  </p>
-                  <p className="font-barlow text-4xl font-bold text-zinc-900">
-                    {stats?.pending_orders || 0}
-                  </p>
+          <Link to="/admin/orders" className="block">
+            <Card className="kpi-card hover:shadow-lg hover:border-amber-200 transition-all cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
+                      {t('admin.pendingOrders')}
+                    </p>
+                    <p className="font-barlow text-4xl font-bold text-zinc-900">
+                      {stats?.pending_orders || 0}
+                    </p>
+                  </div>
+                  <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <ShoppingCart className="w-7 h-7 text-amber-600" />
+                  </div>
                 </div>
-                <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
-                  <ShoppingCart className="w-7 h-7 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card className="kpi-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
-                    {t('nav.dealers')}
-                  </p>
-                  <p className="font-barlow text-4xl font-bold text-zinc-900">
-                    {stats?.total_dealers || 0}
-                  </p>
+          <Link to="/admin/dealers" className="block">
+            <Card className="kpi-card hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 mb-1">
+                      {t('nav.dealers')}
+                    </p>
+                    <p className="font-barlow text-4xl font-bold text-zinc-900">
+                      {stats?.total_dealers || 0}
+                    </p>
+                  </div>
+                  <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Users className="w-7 h-7 text-blue-600" />
+                  </div>
                 </div>
-                <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Users className="w-7 h-7 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Recent Orders */}
