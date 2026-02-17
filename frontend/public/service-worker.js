@@ -179,14 +179,16 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
-      // First, try to find an existing window/tab with our app
+      // First, try to find an existing window/tab with our app that is visible/focused
       for (const client of windowClients) {
         // Check if this client is from our origin
         if (client.url.startsWith(self.location.origin)) {
-          console.log('[SW] Found existing client, focusing and navigating');
+          console.log('[SW] Found existing client, focusing and navigating to:', targetPath);
           try {
-            // Focus the existing window
+            // Focus the existing window first
             await client.focus();
+            // Small delay to ensure focus is complete
+            await new Promise(resolve => setTimeout(resolve, 100));
             // Send message to navigate within the app (preserves auth state)
             client.postMessage({
               type: 'NOTIFICATION_CLICK',
@@ -201,12 +203,17 @@ self.addEventListener('notificationclick', (event) => {
       }
 
       // No existing window found - open a new one
-      // Add a marker to the URL so the app knows this came from a notification
-      // This helps prevent unnecessary redirects during auth initialization
-      console.log('[SW] No existing client found, opening new window');
-      const notificationUrl = new URL(urlToOpen);
-      notificationUrl.searchParams.set('from_notification', 'true');
-      return clients.openWindow(notificationUrl.href);
+      // Store the intended destination in the URL so the app can redirect after auth loads
+      console.log('[SW] No existing client found, opening new window to:', targetPath);
+      
+      // For specific motorcycle pages, open directly to that URL
+      // The auth context will handle the redirect if not logged in
+      if (targetPath !== '/' && targetPath !== '') {
+        return clients.openWindow(urlToOpen);
+      }
+      
+      // For root path, go to dealer dashboard (most common use case)
+      return clients.openWindow(new URL('/dealer', self.location.origin).href);
     }).catch((err) => {
       console.error('[SW] Error handling notification click:', err);
       // Fallback: just open the URL
