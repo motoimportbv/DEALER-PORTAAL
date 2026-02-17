@@ -1701,8 +1701,14 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_approved_
 @api_router.get("/orders", response_model=List[OrderWithMotorcycle])
 async def get_orders(user: dict = Depends(require_approved_dealer)):
     if user["role"] == "admin":
-        orders = await db.orders.find({}, {"_id": 0}).to_list(1000)
+        # Admin ziet alleen orders van de laatste 24 uur
+        twenty_four_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        orders = await db.orders.find(
+            {"created_at": {"$gte": twenty_four_hours_ago}}, 
+            {"_id": 0}
+        ).to_list(1000)
     else:
+        # Dealers zien al hun orders (geen tijdslimiet)
         orders = await db.orders.find({"dealer_id": user["id"]}, {"_id": 0}).to_list(1000)
     
     # Batch fetch motorcycles to avoid N+1 query
