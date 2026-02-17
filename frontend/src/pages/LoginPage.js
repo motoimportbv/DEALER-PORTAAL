@@ -145,9 +145,9 @@ const LoginPage = () => {
       // Save credentials if remember me is checked
       if (rememberMe || isAutoLogin) {
         const encoded = encodeCredentials(loginEmail, loginPassword);
-        setRememberCookie(encoded);
+        setRememberCredentials(encoded);
       } else {
-        deleteRememberCookie();
+        deleteRememberCredentials();
       }
       
       // Clear stored redirect
