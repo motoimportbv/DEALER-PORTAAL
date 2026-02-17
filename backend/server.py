@@ -2847,15 +2847,8 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
     # Check of het een buitenlandse dealer is
     is_foreign = dealer.get("is_foreign_dealer", False)
     
-    # Get base URL from request origin or fallback
-    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
-    if origin:
-        from urllib.parse import urlparse
-        parsed = urlparse(origin)
-        base_url = f"{parsed.scheme}://{parsed.netloc}"
-    else:
-        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
-    
+    # Always use production URL for email links
+    base_url = "https://www.motoimportbv.nl"
     login_url = f"{base_url}/login"
     
     # Buitenlandse dealers krijgen GEEN voucher
