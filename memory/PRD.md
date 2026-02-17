@@ -22,6 +22,25 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ### Session - 17 February 2025
 
+#### ✅ License Plates (Kentekens) System
+- Admin can add license plates to dealers
+- Admin can edit/delete license plates
+- Admin can search by plate, dealer, chassis number
+- Dealers see their assigned plates in "Mijn Kentekens"
+- Notification sent to dealer when plate is added
+- Dutch-style yellow license plate display
+
+#### ✅ Chassis Number (VIN) Field
+- Added required chassis_number field to all motorcycle forms
+- Admin, Dealer, and Foreign Dealer forms updated
+- Auto-uppercase, max 17 characters
+- Admin can also set license_plate on motorcycles
+
+#### ✅ Photo Lightbox on Motorcycle Detail
+- Dealers can click photos to enlarge
+- Navigation arrows, thumbnails, counter
+- Works on desktop and mobile
+
 #### ✅ Security Fix: Offline Dealers Blocked
 - Dealers set to "offline" are now blocked from all functionality
 - Error message: "Uw account is tijdelijk offline gezet door de beheerder. Neem contact op met Moto Import."
