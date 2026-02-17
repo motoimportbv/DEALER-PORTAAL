@@ -141,6 +141,7 @@ function App() {
       <div className="App">
         <Toaster position="top-right" richColors />
         <BrowserRouter>
+          <NotificationHandler />
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
