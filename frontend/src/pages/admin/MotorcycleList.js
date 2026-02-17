@@ -11,7 +11,9 @@ import {
   Pencil, 
   Trash2, 
   Bike,
-  Eye
+  Eye,
+  MessageCircle,
+  Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -25,6 +27,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../../components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -32,6 +41,8 @@ const MotorcycleList = () => {
   const { t } = useTranslation();
   const [motorcycles, setMotorcycles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsappData, setWhatsappData] = useState(null);
 
   useEffect(() => {
     fetchMotorcycles();
@@ -45,6 +56,23 @@ const MotorcycleList = () => {
       toast.error(t('adminMotorcycles.loadFailed'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleWhatsAppShare = async (motorcycleId) => {
+    try {
+      const response = await axios.get(`${API}/motorcycles/${motorcycleId}/whatsapp-share`);
+      setWhatsappData(response.data);
+      setShowWhatsAppModal(true);
+    } catch (error) {
+      toast.error('Kon WhatsApp link niet genereren');
+    }
+  };
+
+  const openWhatsApp = () => {
+    if (whatsappData?.whatsapp_url) {
+      window.open(whatsappData.whatsapp_url, '_blank');
+      setShowWhatsAppModal(false);
     }
   };
 
