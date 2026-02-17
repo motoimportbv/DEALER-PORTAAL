@@ -316,15 +316,19 @@ const MotorcycleForm = () => {
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Bouwjaar *
                     </Label>
-                    <Input
-                      type="number"
-                      value={formData.year}
-                      onChange={(e) => handleChange('year', e.target.value)}
-                      min="1900"
-                      max={new Date().getFullYear() + 1}
-                      data-testid="year-input"
-                      required
-                    />
+                    <Select 
+                      value={formData.year?.toString()} 
+                      onValueChange={(value) => handleChange('year', value)}
+                    >
+                      <SelectTrigger data-testid="year-input">
+                        <SelectValue placeholder="Kies jaar" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {YEARS.map(year => (
+                          <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
