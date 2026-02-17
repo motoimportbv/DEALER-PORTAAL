@@ -83,19 +83,19 @@ const Layout = ({ children, requiredRole }) => {
           className="md:hidden sticky top-0 z-50 bg-white border-b shadow-sm"
           style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 10px)' }}
         >
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center">
-                <Bike className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <Bike className="w-4 h-4 text-white" />
               </div>
-              <span className="font-barlow text-lg font-bold uppercase tracking-tight text-zinc-900">
+              <span className="font-barlow text-base font-bold uppercase tracking-tight text-zinc-900">
                 Moto Import
               </span>
             </div>
             <div className="flex items-center gap-1">
               <button 
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-1 px-2 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
                 title="Verversen"
               >
                 <RefreshCw className="w-4 h-4 text-zinc-700" />
@@ -103,7 +103,7 @@ const Layout = ({ children, requiredRole }) => {
               <LanguageSelector variant="light" />
               <button 
                 onClick={handleLogout}
-                className="flex items-center gap-1 px-2 py-2 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                className="p-2 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
                 title="Uitloggen"
                 data-testid="mobile-logout-btn"
               >
