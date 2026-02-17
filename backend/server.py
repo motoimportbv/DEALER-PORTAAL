@@ -21,6 +21,7 @@ import jwt
 import json
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 from pywebpush import webpush, WebPushException
+from twilio.rest import Client as TwilioClient
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -45,6 +46,20 @@ GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
 DELIVERY_COST = 50.0  # €50 bezorgkosten
 DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
+
+# Twilio SMS Config
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+
+# Initialize Twilio client if credentials are available
+twilio_client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    try:
+        twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        logging.info("Twilio client initialized successfully")
+    except Exception as e:
+        logging.warning(f"Failed to initialize Twilio client: {e}")
 
 # VAPID Config for Push Notifications - Hardcoded to ensure consistency between preview and production
 # These keys are a matching pair and must stay together
