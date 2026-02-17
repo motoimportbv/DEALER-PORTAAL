@@ -1288,12 +1288,27 @@ async def create_order(data: OrderCreate, user: dict = Depends(get_current_user)
     if existing:
         raise HTTPException(status_code=400, detail="You already have a pending order for this motorcycle")
     
+    # Create snapshot of motorcycle data for historical reference
+    motorcycle_snapshot = {
+        "id": motorcycle["id"],
+        "brand": motorcycle.get("brand"),
+        "model": motorcycle.get("model"),
+        "year": motorcycle.get("year"),
+        "price": motorcycle.get("price"),
+        "mileage": motorcycle.get("mileage"),
+        "color": motorcycle.get("color"),
+        "condition": motorcycle.get("condition"),
+        "images": motorcycle.get("images", []),
+        "description": motorcycle.get("description"),
+    }
+    
     order = Order(
         motorcycle_id=data.motorcycle_id,
         dealer_id=user["id"],
         dealer_email=user["email"],
         dealer_company=user["company_name"],
-        notes=data.notes or ""
+        notes=data.notes or "",
+        motorcycle_snapshot=motorcycle_snapshot
     )
     doc = order.model_dump()
     await db.orders.insert_one(doc)
