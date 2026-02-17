@@ -302,26 +302,56 @@ const DealerDashboard = () => {
             </Link>
           </div>
           
-          {/* Prominent Search Bar */}
-          <div className="relative w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-            <Input
-              type="text"
-              placeholder={t('search.placeholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-3 text-base border-2 border-zinc-200 focus:border-red-500 rounded-lg shadow-sm"
-              data-testid="search-input"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                data-testid="clear-search-btn"
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm text-zinc-500 hidden sm:inline">Filter:</span>
+            </div>
+            
+            {/* Brand Filter */}
+            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+              <SelectTrigger className="w-[160px]" data-testid="brand-filter">
+                <SelectValue placeholder="Alle merken" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle merken</SelectItem>
+                {brands.map(brand => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Model Filter */}
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger className="w-[160px]" data-testid="model-filter">
+                <SelectValue placeholder="Alle types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle types</SelectItem>
+                {models.map(model => (
+                  <SelectItem key={model} value={model}>{model}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Clear Filters */}
+            {(selectedBrand !== 'all' || selectedModel !== 'all') && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => { setSelectedBrand('all'); setSelectedModel('all'); }}
+                className="text-zinc-500 hover:text-zinc-700"
               >
-                ✕
-              </button>
+                <X className="w-4 h-4 mr-1" />
+                Wis filters
+              </Button>
             )}
+            
+            {/* Results Count */}
+            <span className="text-sm text-zinc-500 ml-auto">
+              {filteredMotorcycles.length} {filteredMotorcycles.length === 1 ? 'motor' : 'motoren'} gevonden
+            </span>
           </div>
         </div>
       </div>
