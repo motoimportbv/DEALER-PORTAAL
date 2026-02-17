@@ -9,6 +9,9 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Bike, Mail, Lock, ArrowRight, FileText, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import LanguageSelector from '../components/LanguageSelector';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Simple encoding for stored credentials (not secure encryption, but obfuscates plain text)
 const encodeCredentials = (email, password) => {
