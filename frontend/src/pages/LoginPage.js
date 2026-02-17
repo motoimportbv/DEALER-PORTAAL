@@ -112,23 +112,33 @@ const LoginPage = () => {
     }
   }, [location]);
 
-  // Auto-login with remembered credentials
+  // Check for remembered credentials and pre-fill form OR auto-login
   useEffect(() => {
     if (autoLoginRef.current || autoLoginAttempted || user) return;
     
     const remembered = getRememberCredentials();
+    console.log('[Login] Checking remembered credentials:', remembered ? 'FOUND' : 'NOT FOUND');
+    
     if (remembered) {
       const creds = decodeCredentials(remembered);
+      console.log('[Login] Decoded credentials:', creds ? 'SUCCESS' : 'FAILED');
+      
       if (creds && creds.email && creds.password) {
         autoLoginRef.current = true;
         setAutoLoginAttempted(true);
-        // Auto-fill and submit
+        
+        // Pre-fill the form
         setEmail(creds.email);
         setPassword(creds.password);
         setRememberMe(true);
         
-        // Perform auto-login
-        performLogin(creds.email, creds.password, true);
+        // Show message that we found saved credentials
+        toast.info('Opgeslagen inloggegevens gevonden. Even geduld...');
+        
+        // Perform auto-login after a short delay
+        setTimeout(() => {
+          performLogin(creds.email, creds.password, true);
+        }, 500);
       }
     }
   }, [user, autoLoginAttempted]);
