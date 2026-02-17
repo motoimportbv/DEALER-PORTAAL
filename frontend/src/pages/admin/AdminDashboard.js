@@ -113,19 +113,40 @@ const AdminDashboard = () => {
   return (
     <Layout requiredRole="admin">
       <div className="content-header">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
               {t('nav.dashboard')}
             </h1>
             <p className="text-zinc-500 mt-1">{t('admin.portalOverview')}</p>
           </div>
-          <Link to="/admin/motorcycles/new">
-            <Button className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid="add-motorcycle-btn">
-              <Plus className="w-5 h-5 mr-2" />
-              {t('admin.newMotorcycle')}
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={sendTestPush}
+              disabled={sendingTestPush}
+              className="border-amber-500 text-amber-600 hover:bg-amber-50"
+              data-testid="test-push-btn"
+            >
+              {sendingTestPush ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin mr-2" />
+                  Verzenden...
+                </>
+              ) : (
+                <>
+                  <Bell className="w-5 h-5 mr-2" />
+                  Test Push
+                </>
+              )}
             </Button>
-          </Link>
+            <Link to="/admin/motorcycles/new">
+              <Button className="bg-red-600 hover:bg-red-700 font-barlow uppercase tracking-wide" data-testid="add-motorcycle-btn">
+                <Plus className="w-5 h-5 mr-2" />
+                {t('admin.newMotorcycle')}
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
