@@ -1318,7 +1318,7 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_approved_
     return order
 
 @api_router.get("/orders", response_model=List[OrderWithMotorcycle])
-async def get_orders(user: dict = Depends(get_current_user)):
+async def get_orders(user: dict = Depends(require_approved_dealer)):
     if user["role"] == "admin":
         orders = await db.orders.find({}, {"_id": 0}).to_list(1000)
     else:
