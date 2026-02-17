@@ -153,6 +153,61 @@ const AdminLicensePlates = () => {
     }
   };
 
+  const handleDocumentUpload = async (plateId, file) => {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Alleen PDF, JPG, PNG of WEBP bestanden zijn toegestaan');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Bestand te groot (max 10MB)');
+      return;
+    }
+
+    setUploadingDoc(plateId);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await axios.post(`${API}/license-plates/${plateId}/document`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      toast.success('RDW document geüpload');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Fout bij uploaden');
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
+
+  const handleDocumentDelete = async (plateId) => {
+    if (!window.confirm('Weet u zeker dat u dit RDW document wilt verwijderen?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/license-plates/${plateId}/document`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Document verwijderd');
+      fetchData();
+    } catch (error) {
+      toast.error('Fout bij verwijderen document');
+    }
+  };
+
   const filteredPlates = licensePlates.filter(plate => {
     const search = searchTerm.toLowerCase();
     return (
