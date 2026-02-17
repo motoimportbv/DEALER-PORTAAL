@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import WhatsAppButton from './WhatsAppButton';
@@ -9,6 +9,18 @@ import { Button } from './ui/button';
 
 const Layout = ({ children, requiredRole }) => {
   const { user, loading, error } = useAuth();
+  const location = useLocation();
+
+  // Store current URL for redirect after login (for notification clicks)
+  useEffect(() => {
+    if (!user && !loading) {
+      // User is not logged in - store the current path for redirect after login
+      const currentPath = location.pathname + location.search;
+      if (currentPath && currentPath !== '/login' && currentPath !== '/') {
+        sessionStorage.setItem('redirectAfterLogin', currentPath);
+      }
+    }
+  }, [user, loading, location]);
 
   // Show error state with retry option
   if (error && !user) {
