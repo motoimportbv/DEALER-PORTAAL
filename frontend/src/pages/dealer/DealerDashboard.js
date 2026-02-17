@@ -179,22 +179,6 @@ const DealerDashboard = () => {
     }
   }, [user, pendingApproval]);
 
-  useEffect(() => {
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase().trim();
-      const filtered = motorcycles.filter(m => 
-        m.brand.toLowerCase().includes(search) ||
-        m.model.toLowerCase().includes(search) ||
-        m.color.toLowerCase().includes(search) ||
-        m.year.toString().includes(search) ||
-        `${m.brand} ${m.model}`.toLowerCase().includes(search)
-      );
-      setFilteredMotorcycles(filtered);
-    } else {
-      setFilteredMotorcycles(motorcycles);
-    }
-  }, [searchTerm, motorcycles]);
-
   const fetchMotorcycles = async () => {
     try {
       const response = await axios.get(`${API}/motorcycles/available`);
