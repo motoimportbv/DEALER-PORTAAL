@@ -609,6 +609,62 @@ const MotorcycleForm = () => {
           </div>
         </form>
       </div>
+
+      {/* WhatsApp Share Modal */}
+      <Dialog open={showWhatsAppModal} onOpenChange={setShowWhatsAppModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <MessageCircle className="w-5 h-5 text-white" />
+              </div>
+              Motor Toegevoegd!
+            </DialogTitle>
+            <DialogDescription>
+              Wilt u deze motor delen met alle dealers via WhatsApp?
+            </DialogDescription>
+          </DialogHeader>
+
+          {whatsappData && (
+            <div className="space-y-4">
+              <div className="bg-zinc-50 rounded-lg p-4">
+                <p className="text-sm text-zinc-600 mb-2 font-medium">Voorbeeld bericht:</p>
+                <pre className="text-xs bg-white p-3 rounded border whitespace-pre-wrap font-sans">
+                  {whatsappData.message}
+                </pre>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowWhatsAppModal(false);
+                    navigate('/admin/motorcycles');
+                  }}
+                >
+                  Later
+                </Button>
+                <Button
+                  className="flex-1 bg-green-500 hover:bg-green-600"
+                  onClick={() => {
+                    openWhatsApp();
+                    setShowWhatsAppModal(false);
+                    navigate('/admin/motorcycles');
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Deel via WhatsApp
+                </Button>
+              </div>
+
+              <p className="text-xs text-zinc-500 text-center">
+                Tip: Stuur dit naar uw WhatsApp groep met alle dealers
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
