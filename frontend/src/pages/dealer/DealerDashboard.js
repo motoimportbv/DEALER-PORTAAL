@@ -374,11 +374,22 @@ const DealerDashboard = () => {
               <div className="empty-state">
                 <Bike className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
                 <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                  {searchTerm ? t('search.noResults') : t('motorcycle.noAvailable')}
+                  {(selectedBrand !== 'all' || selectedModel !== 'all') ? 'Geen resultaten' : t('motorcycle.noAvailable')}
                 </h3>
                 <p className="text-zinc-500">
-                  {searchTerm ? t('search.tryAnother') : t('motorcycle.noAvailableDesc')}
+                  {(selectedBrand !== 'all' || selectedModel !== 'all') 
+                    ? 'Geen motoren gevonden met deze filters' 
+                    : t('motorcycle.noAvailableDesc')}
                 </p>
+                {(selectedBrand !== 'all' || selectedModel !== 'all') && (
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => { setSelectedBrand('all'); setSelectedModel('all'); }}
+                  >
+                    Wis filters
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
