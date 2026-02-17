@@ -217,97 +217,133 @@ const PushNotificationToggle = ({ token }) => {
     return null;
   }
 
-  return (
-    <>
-      <div className="flex items-center gap-3 p-4 bg-zinc-50 rounded-lg border border-zinc-200" data-testid="push-notification-toggle">
-        <div className="flex-1">
-          <h4 className="font-medium text-zinc-900 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-red-600" />
-            {t('pushNotifications.title')}
-          </h4>
-          <p className="text-sm text-zinc-500 mt-1">
-            {isSubscribed 
-              ? t('pushNotifications.subscribedMessage')
-              : t('pushNotifications.unsubscribedMessage')}
-          </p>
-          {/* Show help link when permission is denied */}
-          {permission === 'denied' && !isSubscribed && (
-            <button
-              onClick={() => setShowBlockedModal(true)}
-              className="text-sm text-amber-600 hover:text-amber-700 underline mt-1 flex items-center gap-1"
-              data-testid="push-notification-help-btn"
-            >
-              <HelpCircle className="w-3 h-3" />
-              {t('pushNotifications.howToEnable')}
-            </button>
-          )}
+  // Show prominent banner when not subscribed
+  if (!isSubscribed) {
+    return (
+      <>
+        <div 
+          className="relative overflow-hidden rounded-xl border-2 border-red-500 bg-gradient-to-r from-red-50 to-orange-50 p-6 shadow-lg animate-pulse-subtle"
+          data-testid="push-notification-toggle"
+        >
+          {/* Decorative background */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-100 rounded-full translate-y-1/2 -translate-x-1/2 opacity-50" />
+          
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* Icon with animation */}
+            <div className="flex-shrink-0 w-16 h-16 bg-red-600 rounded-full flex items-center justify-center animate-bounce-slow shadow-lg">
+              <Bell className="w-8 h-8 text-white" />
+            </div>
+            
+            <div className="flex-1">
+              <h4 className="font-bold text-xl text-zinc-900 flex items-center gap-2">
+                🔔 {t('pushNotifications.title')}
+                <span className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  {t('pushNotifications.important') || 'Belangrijk'}
+                </span>
+              </h4>
+              <p className="text-base text-zinc-700 mt-2">
+                {t('pushNotifications.unsubscribedMessage')}
+              </p>
+              <p className="text-sm text-zinc-500 mt-1">
+                {t('pushNotifications.missNothing') || 'Mis geen nieuwe motoren of updates van uw bestellingen!'}
+              </p>
+              
+              {permission === 'denied' && (
+                <button
+                  onClick={() => setShowBlockedModal(true)}
+                  className="text-sm text-amber-600 hover:text-amber-700 underline mt-2 flex items-center gap-1"
+                  data-testid="push-notification-help-btn"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  {t('pushNotifications.howToEnable')}
+                </button>
+              )}
+            </div>
+            
+            <div className="flex flex-col gap-2 w-full sm:w-auto">
+              {permission === 'denied' ? (
+                <Button
+                  onClick={() => setShowBlockedModal(true)}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 text-lg shadow-lg"
+                  data-testid="push-notification-blocked-help-btn"
+                >
+                  <HelpCircle className="w-5 h-5 mr-2" />
+                  {t('pushNotifications.howToEnable')}
+                </Button>
+              ) : (
+                <Button
+                  onClick={subscribe}
+                  disabled={isLoading}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 text-lg shadow-lg transform hover:scale-105 transition-transform"
+                  data-testid="push-notification-enable-btn"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Bell className="w-5 h-5 mr-2" />
+                      {t('pushNotifications.enableNow') || 'Nu Inschakelen'}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
         
-        {isSubscribed ? (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={testPush}
-              className="text-green-600 border-green-600 hover:bg-green-50"
-              data-testid="push-notification-test-btn"
-            >
-              {t('pushNotifications.test')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={unsubscribe}
-              disabled={isLoading}
-              className="text-zinc-600"
-              data-testid="push-notification-disable-btn"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <BellOff className="w-4 h-4 mr-2" />
-                  {t('pushNotifications.disable')}
-                </>
-              )}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            {/* Show help button when blocked */}
-            {permission === 'denied' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBlockedModal(true)}
-                className="text-amber-600 border-amber-400 hover:bg-amber-50"
-                data-testid="push-notification-blocked-help-btn"
-              >
-                <HelpCircle className="w-4 h-4 mr-1" />
-                {t('pushNotifications.howToEnable')}
-              </Button>
+        <NotificationBlockedModal 
+          isOpen={showBlockedModal} 
+          onClose={() => setShowBlockedModal(false)} 
+        />
+      </>
+    );
+  }
+
+  // Compact view when already subscribed
+  return (
+    <>
+      <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200" data-testid="push-notification-toggle">
+        <div className="flex-1">
+          <h4 className="font-medium text-green-800 flex items-center gap-2">
+            <Check className="w-4 h-4 text-green-600" />
+            {t('pushNotifications.title')}
+          </h4>
+          <p className="text-sm text-green-600 mt-1">
+            {t('pushNotifications.subscribedMessage')}
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={testPush}
+            className="text-green-600 border-green-600 hover:bg-green-100"
+            data-testid="push-notification-test-btn"
+          >
+            {t('pushNotifications.test')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={unsubscribe}
+            disabled={isLoading}
+            className="text-zinc-600"
+            data-testid="push-notification-disable-btn"
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <BellOff className="w-4 h-4 mr-2" />
+                {t('pushNotifications.disable')}
+              </>
             )}
-            <Button
-              size="sm"
-              onClick={subscribe}
-              disabled={isLoading}
-              className="bg-red-600 hover:bg-red-700"
-              data-testid="push-notification-enable-btn"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Bell className="w-4 h-4 mr-2" />
-                  {t('pushNotifications.enable')}
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+          </Button>
+        </div>
       </div>
       
-      {/* Blocked Notifications Help Modal */}
       <NotificationBlockedModal 
         isOpen={showBlockedModal} 
         onClose={() => setShowBlockedModal(false)} 
