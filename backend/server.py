@@ -3923,7 +3923,8 @@ async def get_stats(user: dict = Depends(require_admin)):
     available_motorcycles = await db.motorcycles.count_documents({"is_available": True})
     total_orders = await db.orders.count_documents({})
     pending_orders = await db.orders.count_documents({"status": "pending"})
-    total_dealers = await db.dealers.count_documents({}) if await db.users.count_documents({"role": "dealer"}) else await db.users.count_documents({"role": "dealer"})
+    # Count dealers from users collection (not dealers collection)
+    total_dealers = await db.users.count_documents({"role": "dealer"})
     
     return {
         "total_motorcycles": total_motorcycles,
