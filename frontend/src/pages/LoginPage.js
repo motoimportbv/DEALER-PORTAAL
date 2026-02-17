@@ -91,13 +91,82 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
+  const [shortCodeLoading, setShortCodeLoading] = useState(false);
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const autoLoginRef = useRef(false);
+  const shortCodeRef = useRef(false);
 
   // Check for redirect URL from notification click or other source
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
+
+  // Handle short code auto-login (from ?code= parameter)
+  useEffect(() => {
+    if (shortCodeRef.current) return;
+    
+    const params = new URLSearchParams(location.search);
+    const shortCode = params.get('code');
+    
+    if (shortCode && shortCode.length >= 6) {
+      shortCodeRef.current = true;
+      setShortCodeLoading(true);
+      
+      console.log('[Login] Short code detected:', shortCode);
+      
+      // Perform short code login
+      const performShortCodeLogin = async () => {
+        try {
+          // Verify and login with short code
+          const response = await axios.post(`${API}/auth/shortcode-login`, { code: shortCode });
+          
+          if (response.data.token && response.data.user) {
+            console.log('[Login] Short code login successful');
+            
+            // Clear old auth data
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // Store new credentials
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            
+            // Set cookies for PWA compatibility
+            const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
+            document.cookie = `moto_token=${encodeURIComponent(response.data.token)}; expires=${expires}; path=/; SameSite=Lax`;
+            document.cookie = `moto_user=${encodeURIComponent(JSON.stringify(response.data.user))}; expires=${expires}; path=/; SameSite=Lax`;
+            
+            // Set axios header
+            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+            
+            // Determine redirect
+            const role = response.data.user.role;
+            const isForeignDealer = response.data.user.is_foreign_dealer;
+            let redirectUrl = '/dealer';
+            
+            if (role === 'admin') {
+              redirectUrl = '/admin';
+            } else if (isForeignDealer) {
+              redirectUrl = '/foreign-dealer';
+            }
+            
+            // Force full reload to ensure fresh state
+            window.location.replace(redirectUrl);
+          }
+        } catch (err) {
+          console.error('[Login] Short code login failed:', err);
+          toast.error('Automatisch inloggen mislukt. Gebruik uw email en wachtwoord.');
+          setShortCodeLoading(false);
+          
+          // Remove code from URL
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      };
+      
+      performShortCodeLogin();
+    }
+  }, [location.search]);
 
   useEffect(() => {
     // Check if there's a stored redirect URL (from notification click)
