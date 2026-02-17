@@ -209,6 +209,30 @@ const MotorcycleForm = () => {
     }
   };
 
+  // WhatsApp share state
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsappData, setWhatsappData] = useState(null);
+  const [loadingWhatsApp, setLoadingWhatsApp] = useState(false);
+
+  const handleWhatsAppShare = async (motorcycleId) => {
+    setLoadingWhatsApp(true);
+    try {
+      const response = await axios.get(`${API}/motorcycles/${motorcycleId}/whatsapp-share`);
+      setWhatsappData(response.data);
+      setShowWhatsAppModal(true);
+    } catch (error) {
+      toast.error('Kon WhatsApp link niet genereren');
+    } finally {
+      setLoadingWhatsApp(false);
+    }
+  };
+
+  const openWhatsApp = () => {
+    if (whatsappData?.whatsapp_url) {
+      window.open(whatsappData.whatsapp_url, '_blank');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
