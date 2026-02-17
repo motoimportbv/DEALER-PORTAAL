@@ -31,7 +31,12 @@ import {
   Building,
   Hash,
   Calendar,
-  FileText
+  FileText,
+  Upload,
+  Download,
+  File,
+  X,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,6 +50,7 @@ const AdminLicensePlates = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlate, setEditingPlate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(null); // plate id being uploaded
   const [formData, setFormData] = useState({
     dealer_id: '',
     license_plate: '',
