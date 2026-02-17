@@ -36,7 +36,6 @@ const PendingForeignListings = () => {
   const [activateDialogOpen, setActivateDialogOpen] = useState(false);
   const [selectedMotorcycle, setSelectedMotorcycle] = useState(null);
   const [newPrice, setNewPrice] = useState('');
-  const [newStartingPrice, setNewStartingPrice] = useState('');
   const [activating, setActivating] = useState(false);
 
   useEffect(() => {
