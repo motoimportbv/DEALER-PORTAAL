@@ -43,18 +43,30 @@ const DealerDashboard = () => {
   const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const pushToggleRef = useRef(null);
 
-  // Get unique brands from motorcycles
-  const brands = useMemo(() => {
-    const uniqueBrands = [...new Set(motorcycles.map(m => m.brand))].sort();
-    return uniqueBrands;
+  // Get unique brands with count
+  const brandsWithCount = useMemo(() => {
+    const brandCounts = {};
+    motorcycles.forEach(m => {
+      brandCounts[m.brand] = (brandCounts[m.brand] || 0) + 1;
+    });
+    return Object.entries(brandCounts)
+      .map(([brand, count]) => ({ brand, count }))
+      .sort((a, b) => a.brand.localeCompare(b.brand));
   }, [motorcycles]);
 
-  // Get models for selected brand
-  const models = useMemo(() => {
-    if (selectedBrand === 'all') {
-      return [...new Set(motorcycles.map(m => m.model))].sort();
-    }
-    return [...new Set(motorcycles.filter(m => m.brand === selectedBrand).map(m => m.model))].sort();
+  // Get models with count for selected brand
+  const modelsWithCount = useMemo(() => {
+    const relevantMotorcycles = selectedBrand === 'all' 
+      ? motorcycles 
+      : motorcycles.filter(m => m.brand === selectedBrand);
+    
+    const modelCounts = {};
+    relevantMotorcycles.forEach(m => {
+      modelCounts[m.model] = (modelCounts[m.model] || 0) + 1;
+    });
+    return Object.entries(modelCounts)
+      .map(([model, count]) => ({ model, count }))
+      .sort((a, b) => a.model.localeCompare(b.model));
   }, [motorcycles, selectedBrand]);
 
   // Filter motorcycles based on selections
