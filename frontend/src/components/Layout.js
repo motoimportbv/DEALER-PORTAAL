@@ -92,24 +92,22 @@ const Layout = ({ children, requiredRole }) => {
                 Moto Import
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button 
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
                 title="Verversen"
               >
                 <RefreshCw className="w-4 h-4 text-zinc-700" />
-                <span className="text-sm font-medium text-zinc-700">Ververs</span>
               </button>
               <LanguageSelector variant="light" />
               <button 
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2 py-2 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
                 title="Uitloggen"
                 data-testid="mobile-logout-btn"
               >
                 <LogOut className="w-4 h-4 text-red-700" />
-                <span className="text-sm font-medium text-red-700">Uit</span>
               </button>
             </div>
           </div>
