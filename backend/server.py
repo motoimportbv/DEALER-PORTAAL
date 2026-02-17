@@ -202,6 +202,28 @@ class Bid(BaseModel):
     amount: float
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+# License plate (Kenteken) model - admin adds these for dealers
+class LicensePlateCreate(BaseModel):
+    dealer_id: str
+    license_plate: str
+    chassis_number: Optional[str] = None  # Optional link to motorcycle
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    notes: Optional[str] = ""
+
+class LicensePlate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    license_plate: str
+    chassis_number: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    notes: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class OrderCreate(BaseModel):
     motorcycle_id: str
     notes: Optional[str] = ""
