@@ -358,6 +358,14 @@ const PushNotificationToggle = ({ token }) => {
         isOpen={showBlockedModal} 
         onClose={() => setShowBlockedModal(false)} 
       />
+      
+      <BackgroundPermissionModal 
+        isOpen={showBackgroundModal} 
+        onClose={() => setShowBackgroundModal(false)}
+        onAccept={() => {
+          toast.success('Instellingen opgeslagen!');
+        }}
+      />
     </>
   );
 };
