@@ -710,6 +710,39 @@ async def login(credentials: UserLogin):
 async def get_me(user: dict = Depends(get_current_user)):
     return user
 
+class NotificationAutoLogin(BaseModel):
+    token: str
+
+@api_router.post("/auth/notification-login")
+async def notification_auto_login(data: NotificationAutoLogin):
+    """Auto-login via push notification token - returns a full session token"""
+    try:
+        payload = jwt.decode(data.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        
+        # Verify this is a notification token
+        if payload.get("type") != "notification":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        
+        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # Check if user is offline
+        if user.get("is_offline"):
+            raise HTTPException(status_code=403, detail="Account is offline")
+        
+        # Create a full session token
+        full_token = create_token(user["id"], user["email"], user["role"])
+        
+        return {
+            "token": full_token,
+            "user": user
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 @api_router.post("/auth/accept-terms")
 async def accept_terms(user: dict = Depends(get_current_user)):
     """Accept terms and conditions"""
