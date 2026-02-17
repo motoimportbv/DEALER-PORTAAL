@@ -286,13 +286,20 @@ const MotorcycleForm = () => {
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
                       Model *
                     </Label>
-                    <Input
-                      value={formData.model}
-                      onChange={(e) => handleChange('model', e.target.value)}
-                      placeholder="bijv. Panigale V4"
-                      data-testid="model-input"
-                      required
-                    />
+                    <Select 
+                      value={formData.model} 
+                      onValueChange={(value) => handleChange('model', value)}
+                      disabled={!formData.brand}
+                    >
+                      <SelectTrigger data-testid="model-input">
+                        <SelectValue placeholder={formData.brand ? "Kies een model" : "Kies eerst een merk"} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {formData.brand && MOTORCYCLE_DATABASE[formData.brand]?.map(model => (
+                          <SelectItem key={model} value={model}>{model}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
