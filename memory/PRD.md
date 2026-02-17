@@ -164,6 +164,8 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Backend refactoring: split server.py into routers/services
 - Remove obsolete Bid model and auction code
 - Replace hardcoded VAPID keys with environment variables
+- Clean up abandoned permanent login implementations (token URL params, `/login/:token` route)
+- Simplify AuthContext.js (multiple login/token strategies accumulated)
 
 ---
 
