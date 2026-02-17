@@ -255,20 +255,6 @@ const PendingForeignListings = () => {
                   placeholder={t('adminPending.pricePlaceholder')}
                 />
               </div>
-
-              {/* Starting Price Input */}
-              <div className="space-y-2">
-                <Label htmlFor="newStartingPrice">{t('adminPending.minBidPrice')} (€)</Label>
-                <Input
-                  id="newStartingPrice"
-                  type="number"
-                  min="0"
-                  step="100"
-                  value={newStartingPrice}
-                  onChange={(e) => setNewStartingPrice(e.target.value)}
-                  placeholder={t('adminPending.minBidPlaceholder')}
-                />
-              </div>
             </div>
 
             <DialogFooter>
