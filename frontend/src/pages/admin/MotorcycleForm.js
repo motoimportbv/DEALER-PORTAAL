@@ -10,8 +10,15 @@ import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { Switch } from '../../components/ui/switch';
-import { ArrowLeft, Save, Plus, X, ImageIcon, Camera, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, ImageIcon, Camera, Upload, Loader2, MessageCircle, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
