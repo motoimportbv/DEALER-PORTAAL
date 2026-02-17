@@ -147,14 +147,27 @@ const DealerOrders = () => {
               <Card key={order.id} className="overflow-hidden" data-testid={`order-card-${order.id}`}>
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
-                    {/* Image */}
-                    <div className="w-full md:w-48 h-48 md:h-auto bg-zinc-100 flex-shrink-0">
+                    {/* Image - Clickable */}
+                    <div 
+                      className="w-full md:w-48 h-48 md:h-auto bg-zinc-100 flex-shrink-0 relative group cursor-pointer"
+                      onClick={() => openLightbox(order.motorcycle?.images, 0)}
+                    >
                       {order.motorcycle?.images?.[0] ? (
-                        <img 
-                          src={order.motorcycle.images[0]} 
-                          alt={`${order.motorcycle?.brand} ${order.motorcycle?.model}`}
-                          className="w-full h-full object-cover"
-                        />
+                        <>
+                          <img 
+                            src={order.motorcycle.images[0]} 
+                            alt={`${order.motorcycle?.brand} ${order.motorcycle?.model}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                            <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          {order.motorcycle?.images?.length > 1 && (
+                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                              +{order.motorcycle.images.length - 1} foto's
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Bike className="w-12 h-12 text-zinc-300" />
