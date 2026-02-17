@@ -1829,7 +1829,7 @@ class PaymentRequest(BaseModel):
     origin_url: str
 
 @api_router.post("/payments/create-checkout")
-async def create_checkout(data: PaymentRequest, user: dict = Depends(get_current_user)):
+async def create_checkout(data: PaymentRequest, user: dict = Depends(require_approved_dealer)):
     # Get motorcycle
     motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
     if not motorcycle:
