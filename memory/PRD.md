@@ -22,6 +22,11 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ### Session - 17 February 2025
 
+#### ✅ Security Fix: Offline Dealers Blocked
+- Dealers set to "offline" are now blocked from all functionality
+- Error message: "Uw account is tijdelijk offline gezet door de beheerder. Neem contact op met Moto Import."
+- Blocked endpoints: catalog, orders, buy-now, payments, etc.
+
 #### ✅ Foreign Dealer Registration Improvements
 - Direct link: `/register/supplier` for foreign dealers
 - Default language set to German
