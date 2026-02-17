@@ -1417,7 +1417,7 @@ async def get_my_voucher(user: dict = Depends(get_current_user)):
     }
 
 @api_router.post("/orders/buy-now")
-async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_current_user)):
+async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require_approved_dealer)):
     """Create a direct order without payment - sends emails to dealer and admin"""
     
     # Get motorcycle
