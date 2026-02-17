@@ -234,51 +234,40 @@ const ForeignDealerAddMotorcycle = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="brand">{t('motorcycle.brand')} *</Label>
-                  <Select 
-                    value={formData.brand} 
+                  <SearchableSelect
+                    options={MOTORCYCLE_BRANDS}
+                    value={formData.brand}
                     onValueChange={(value) => handleSelectChange('brand', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Kies een merk" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {MOTORCYCLE_BRANDS.map(brand => (
-                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Kies een merk"
+                    searchPlaceholder="Zoek merk..."
+                    emptyText="Geen resultaten"
+                    data-testid="foreign-brand-select"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="model">{t('motorcycle.model')} *</Label>
-                  <Select 
-                    value={formData.model} 
+                  <SearchableSelect
+                    options={formData.brand ? MOTORCYCLE_DATABASE[formData.brand] || [] : []}
+                    value={formData.model}
                     onValueChange={(value) => handleSelectChange('model', value)}
+                    placeholder={formData.brand ? "Kies een model" : "Kies eerst een merk"}
+                    searchPlaceholder="Zoek model..."
+                    emptyText="Geen resultaten"
                     disabled={!formData.brand}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={formData.brand ? "Kies een model" : "Kies eerst een merk"} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {formData.brand && MOTORCYCLE_DATABASE[formData.brand]?.map(model => (
-                        <SelectItem key={model} value={model}>{model}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    data-testid="foreign-model-select"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="year">{t('motorcycle.year')} *</Label>
-                  <Select 
-                    value={formData.year?.toString()} 
+                  <SearchableSelect
+                    options={YEARS.map(y => y.toString())}
+                    value={formData.year?.toString()}
                     onValueChange={(value) => handleSelectChange('year', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Kies jaar" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {YEARS.map(year => (
-                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                      ))}
-                    </SelectContent>
+                    placeholder="Kies jaar"
+                    searchPlaceholder="Zoek jaar..."
+                    emptyText="Geen resultaten"
+                    data-testid="foreign-year-select"
+                  />
                   </Select>
                 </div>
                 <div className="space-y-2">
