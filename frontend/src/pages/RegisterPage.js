@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Bike, Mail, Lock, Building, ArrowRight, MapPin, Phone, User, FileText } from 'lucide-react';
+import { Bike, Mail, Lock, Building, ArrowRight, MapPin, Phone, User, FileText, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 const RegisterPage = () => {
@@ -13,6 +13,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     company_name: '',
     kvk_number: '',
     address: '',
@@ -21,6 +22,8 @@ const RegisterPage = () => {
     phone: '',
     contact_person: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +36,10 @@ const RegisterPage = () => {
     e.preventDefault();
     if (formData.password.length < 6) {
       toast.error(t('register.passwordMinLength'));
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Wachtwoorden komen niet overeen');
       return;
     }
     if (!formData.kvk_number) {
