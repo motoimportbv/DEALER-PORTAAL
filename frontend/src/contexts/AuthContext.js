@@ -8,25 +8,79 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 // Set axios timeout to prevent infinite loading
 axios.defaults.timeout = 15000;
 
-// Cookie helper functions - gebruik meerdere methodes voor maximale compatibiliteit
+// ============ IndexedDB Storage (meest persistent op iOS) ============
+const DB_NAME = 'MotoImportAuth';
+const STORE_NAME = 'auth';
+
+const openDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+  });
+};
+
+const idbGet = async (key) => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+  } catch (e) {
+    console.warn('[Auth] IndexedDB get failed:', e);
+    return null;
+  }
+};
+
+const idbSet = async (key, value) => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(value, key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  } catch (e) {
+    console.warn('[Auth] IndexedDB set failed:', e);
+  }
+};
+
+const idbDelete = async (key) => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(key);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  } catch (e) {
+    console.warn('[Auth] IndexedDB delete failed:', e);
+  }
+};
+
+// ============ Cookie Storage (backup) ============
 const setCookie = (name, value, days = 365) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  // Probeer meerdere cookie configuraties voor verschillende browsers/PWAs
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-  // Backup cookie met andere settings
-  document.cookie = `${name}_backup=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict`;
 };
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
-  // Probeer eerst de hoofdcookie
-  let parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    const cookieValue = decodeURIComponent(parts.pop().split(';').shift());
-    if (cookieValue) return cookieValue;
-  }
-  // Probeer de backup cookie
-  parts = value.split(`; ${name}_backup=`);
+  const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
     return decodeURIComponent(parts.pop().split(';').shift());
   }
@@ -35,162 +89,164 @@ const getCookie = (name) => {
 
 const deleteCookie = (name) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-  document.cookie = `${name}_backup=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
 };
 
-// Helper function to safely get initial user from localStorage or cookie
-const getInitialUser = () => {
+// ============ Combined Storage Functions ============
+// Probeert alle storage methodes en geeft de eerste geldige waarde terug
+const getStoredValue = async (key) => {
+  // 1. Probeer IndexedDB eerst (meest persistent)
   try {
-    // First try localStorage
-    const cachedUser = localStorage.getItem('user');
-    if (cachedUser) {
-      const parsed = JSON.parse(cachedUser);
-      if (parsed && parsed.id) return parsed;
+    const idbValue = await idbGet(key);
+    if (idbValue) {
+      console.log(`[Auth] Got ${key} from IndexedDB`);
+      return idbValue;
     }
-  } catch (e) {
-    console.error('[Auth] Failed to parse localStorage user');
-  }
+  } catch (e) {}
   
+  // 2. Probeer localStorage
   try {
-    // Then try cookie
-    const cookieUser = getCookie('moto_user');
-    if (cookieUser) {
-      const parsed = JSON.parse(cookieUser);
-      if (parsed && parsed.id) {
-        // Sync cookie to localStorage
-        try { localStorage.setItem('user', cookieUser); } catch(e) {}
-        return parsed;
-      }
+    const localValue = localStorage.getItem(key);
+    if (localValue) {
+      console.log(`[Auth] Got ${key} from localStorage`);
+      return localValue;
     }
-  } catch (e) {
-    console.error('[Auth] Failed to parse cookie user');
-  }
+  } catch (e) {}
   
+  // 3. Probeer cookie
   try {
-    // Try sessionStorage as last resort
-    const sessionUser = sessionStorage.getItem('user');
-    if (sessionUser) {
-      const parsed = JSON.parse(sessionUser);
-      if (parsed && parsed.id) return parsed;
+    const cookieValue = getCookie(`moto_${key}`);
+    if (cookieValue) {
+      console.log(`[Auth] Got ${key} from cookie`);
+      return cookieValue;
     }
-  } catch (e) {
-    // Ignore
-  }
+  } catch (e) {}
   
   return null;
 };
 
-// Helper function to get initial token from localStorage or cookie
-const getInitialToken = () => {
-  // First try localStorage
-  try {
-    const localToken = localStorage.getItem('token');
-    if (localToken && localToken.length > 20) {
-      return localToken;
-    }
-  } catch (e) {
-    console.error('[Auth] Failed to read localStorage token');
-  }
-  
-  // Then try cookie
-  try {
-    const cookieToken = getCookie('moto_token');
-    if (cookieToken && cookieToken.length > 20) {
-      // Sync cookie token to localStorage for future use
-      try { localStorage.setItem('token', cookieToken); } catch (e) {}
-      return cookieToken;
-    }
-  } catch (e) {
-    console.error('[Auth] Failed to read cookie token');
-  }
-  
-  // Try sessionStorage as last resort
-  try {
-    const sessionToken = sessionStorage.getItem('token');
-    if (sessionToken && sessionToken.length > 20) {
-      return sessionToken;
-    }
-  } catch (e) {
-    // Ignore
-  }
-  
-  return null;
-};
-
-// Sla credentials op in ALLE beschikbare storage methodes
-const persistCredentials = (token, user) => {
-  const userStr = JSON.stringify(user);
+// Slaat waarde op in ALLE storage methodes
+const setStoredValue = async (key, value) => {
+  // IndexedDB
+  await idbSet(key, value);
   
   // localStorage
-  try {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', userStr);
-  } catch (e) {
-    console.warn('[Auth] localStorage not available');
-  }
+  try { localStorage.setItem(key, value); } catch (e) {}
   
-  // sessionStorage
-  try {
-    sessionStorage.setItem('token', token);
-    sessionStorage.setItem('user', userStr);
-  } catch (e) {
-    console.warn('[Auth] sessionStorage not available');
-  }
-  
-  // Cookies (met lange expiry)
-  setCookie('moto_token', token, 365);
-  setCookie('moto_user', userStr, 365);
+  // Cookie
+  setCookie(`moto_${key}`, value, 365);
 };
 
-// Verwijder credentials uit ALLE storage methodes
-const clearCredentials = () => {
-  try { localStorage.removeItem('token'); } catch (e) {}
-  try { localStorage.removeItem('user'); } catch (e) {}
-  try { sessionStorage.removeItem('token'); } catch (e) {}
-  try { sessionStorage.removeItem('user'); } catch (e) {}
-  deleteCookie('moto_token');
-  deleteCookie('moto_user');
+// Verwijdert waarde uit ALLE storage methodes
+const deleteStoredValue = async (key) => {
+  await idbDelete(key);
+  try { localStorage.removeItem(key); } catch (e) {}
+  deleteCookie(`moto_${key}`);
+};
+
+// ============ Synchrone initialisatie (voor eerste render) ============
+const getInitialUserSync = () => {
+  // Alleen localStorage en cookies checken (IndexedDB is async)
+  try {
+    const localUser = localStorage.getItem('user');
+    if (localUser) return JSON.parse(localUser);
+  } catch (e) {}
+  
+  try {
+    const cookieUser = getCookie('moto_user');
+    if (cookieUser) return JSON.parse(cookieUser);
+  } catch (e) {}
+  
+  return null;
+};
+
+const getInitialTokenSync = () => {
+  try {
+    const localToken = localStorage.getItem('token');
+    if (localToken && localToken.length > 20) return localToken;
+  } catch (e) {}
+  
+  try {
+    const cookieToken = getCookie('moto_token');
+    if (cookieToken && cookieToken.length > 20) return cookieToken;
+  } catch (e) {}
+  
+  return null;
 };
 
 export const AuthProvider = ({ children }) => {
-  // Initialize user SYNCHRONOUSLY from localStorage to prevent flash of login page
-  const [user, setUser] = useState(() => getInitialUser());
-  const [token, setToken] = useState(() => getInitialToken());
-  // If we have both token and user in localStorage, don't show loading
-  const [loading, setLoading] = useState(() => {
-    const hasToken = !!getInitialToken();
-    const hasUser = !!getInitialUser();
-    // Only show loading if we have a token but no cached user
-    return hasToken && !hasUser;
-  });
+  const [user, setUser] = useState(() => getInitialUserSync());
+  const [token, setToken] = useState(() => getInitialTokenSync());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Set axios header immediately if token exists
+  // Check IndexedDB voor auth data bij startup (async)
+  useEffect(() => {
+    const checkIndexedDB = async () => {
+      // Als we al een token hebben, geen IDB check nodig
+      if (token) {
+        setLoading(false);
+        return;
+      }
+      
+      console.log('[Auth] Checking IndexedDB for stored credentials...');
+      
+      try {
+        const storedToken = await getStoredValue('token');
+        const storedUser = await getStoredValue('user');
+        
+        if (storedToken && storedUser) {
+          console.log('[Auth] Found credentials in IndexedDB!');
+          const parsedUser = typeof storedUser === 'string' ? JSON.parse(storedUser) : storedUser;
+          
+          setToken(storedToken);
+          setUser(parsedUser);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          
+          // Sync naar andere storage methodes
+          await setStoredValue('token', storedToken);
+          await setStoredValue('user', typeof storedUser === 'string' ? storedUser : JSON.stringify(storedUser));
+        }
+      } catch (e) {
+        console.error('[Auth] IndexedDB check failed:', e);
+      }
+      
+      setLoading(false);
+    };
+    
+    checkIndexedDB();
+  }, []);
+
+  // Set axios header wanneer token verandert
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Verifieer token bij de server
+      fetchUser();
     }
   }, [token]);
 
+  // Ververs user data wanneer app weer zichtbaar wordt
   useEffect(() => {
-    const initAuth = async () => {
-      if (token) {
-        // Fetch fresh data from server (user is already set from localStorage)
-        await fetchUser();
-      } else {
-        setLoading(false);
-      }
-    };
-    
-    initAuth();
-  }, [token]);
-
-  // Ververs user data wanneer de app weer zichtbaar wordt (bijv. na wisselen van app)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && token) {
-        // App is weer zichtbaar, ververs data
-        fetchUser();
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Auth] App visible, checking auth...');
+        
+        // Check IndexedDB opnieuw wanneer app terugkomt
+        if (!token) {
+          const storedToken = await getStoredValue('token');
+          const storedUser = await getStoredValue('user');
+          
+          if (storedToken && storedUser) {
+            console.log('[Auth] Restored credentials from storage');
+            const parsedUser = typeof storedUser === 'string' ? JSON.parse(storedUser) : storedUser;
+            setToken(storedToken);
+            setUser(parsedUser);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          }
+        } else {
+          // Token bestaat, ververs user data
+          fetchUser();
+        }
       }
     };
 
@@ -199,84 +255,67 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const fetchUser = async () => {
+    if (!token) return;
+    
     try {
       setError(null);
       const response = await axios.get(`${API}/auth/me`);
-      // Always use fresh data from server
       setUser(response.data);
-      // Update cache in ALL storage locations
-      persistCredentials(token, response.data);
+      // Update alle storage
+      await setStoredValue('user', JSON.stringify(response.data));
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error('[Auth] Failed to fetch user:', error);
       
-      // Only logout if token is truly invalid (401/403), not on network errors
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         setError('Sessie verlopen, log opnieuw in');
         logout();
       } else {
-        // Network error or server issue - keep user logged in with cached data
-        setError('Verbinding mislukt, probeer opnieuw');
-        // Don't touch user state - keep whatever is already set from cache
+        setError('Verbinding mislukt');
       }
-    } finally {
-      // Always set loading to false, even on error
-      setLoading(false);
     }
   };
 
-  // Function to refresh user data (can be called manually)
   const refreshUser = async () => {
-    if (token) {
-      try {
-        const response = await axios.get(`${API}/auth/me`);
-        setUser(response.data);
-        persistCredentials(token, response.data);
-        return response.data;
-      } catch (error) {
-        console.error('Failed to refresh user:', error);
-        logout();
-      }
-    }
-    return null;
+    await fetchUser();
+    return user;
   };
 
   const login = async (email, password) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
     const { token: newToken, user: userData } = response.data;
-    // Store in ALL storage locations for maximum compatibility
-    persistCredentials(newToken, userData);
+    
+    // Sla op in ALLE storage methodes
+    await setStoredValue('token', newToken);
+    await setStoredValue('user', JSON.stringify(userData));
+    
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
-    // Ensure we use fresh user data with correct is_approved status
     setUser(userData);
+    
+    console.log('[Auth] Login successful, credentials stored in all locations');
     return userData;
   };
 
   const register = async (email, password, companyName, role = 'dealer', kvkNumber = '', address = '', postalCode = '', city = '', phone = '', contactPerson = '') => {
     const response = await axios.post(`${API}/auth/register`, {
-      email,
-      password,
-      company_name: companyName,
-      role,
-      kvk_number: kvkNumber,
-      address,
-      postal_code: postalCode,
-      city,
-      phone,
-      contact_person: contactPerson
+      email, password, company_name: companyName, role,
+      kvk_number: kvkNumber, address, postal_code: postalCode,
+      city, phone, contact_person: contactPerson
     });
     const { token: newToken, user: userData } = response.data;
-    // Store in ALL storage locations for maximum compatibility
-    persistCredentials(newToken, userData);
+    
+    await setStoredValue('token', newToken);
+    await setStoredValue('user', JSON.stringify(userData));
+    
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
     setUser(userData);
     return userData;
   };
 
-  const logout = () => {
-    // Clear ALL storage locations
-    clearCredentials();
+  const logout = async () => {
+    await deleteStoredValue('token');
+    await deleteStoredValue('user');
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
