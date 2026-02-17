@@ -323,26 +323,26 @@ const DealerDashboard = () => {
             
             {/* Brand Filter */}
             <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-              <SelectTrigger className="w-[160px]" data-testid="brand-filter">
+              <SelectTrigger className="w-[180px]" data-testid="brand-filter">
                 <SelectValue placeholder="Alle merken" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle merken</SelectItem>
-                {brands.map(brand => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                <SelectItem value="all">Alle merken ({motorcycles.length})</SelectItem>
+                {brandsWithCount.map(({ brand, count }) => (
+                  <SelectItem key={brand} value={brand}>{brand} ({count})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             
-            {/* Model Filter */}
+            {/* Model/Type Filter */}
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[160px]" data-testid="model-filter">
+              <SelectTrigger className="w-[200px]" data-testid="model-filter">
                 <SelectValue placeholder="Alle types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle types</SelectItem>
-                {models.map(model => (
-                  <SelectItem key={model} value={model}>{model}</SelectItem>
+                <SelectItem value="all">Alle types ({selectedBrand === 'all' ? motorcycles.length : motorcycles.filter(m => m.brand === selectedBrand).length})</SelectItem>
+                {modelsWithCount.map(({ model, count }) => (
+                  <SelectItem key={model} value={model}>{model} ({count})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
