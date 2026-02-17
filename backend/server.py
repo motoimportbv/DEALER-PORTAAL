@@ -2767,8 +2767,8 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
 async def send_push_to_all_dealers(title: str, body: str, url: str = "/", exclude_user_id: str = None):
     """Send push notification to all approved dealers who are not offline"""
     try:
-        # Get all approved dealers who are NOT offline
-        query = {"role": "dealer", "is_approved": True, "is_offline": {"$ne": True}}
+        # Get all approved dealers who are NOT offline and NOT foreign dealers
+        query = {"role": "dealer", "is_approved": True, "is_offline": {"$ne": True}, "is_foreign_dealer": {"$ne": True}}
         if exclude_user_id:
             query["id"] = {"$ne": exclude_user_id}
         
