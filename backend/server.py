@@ -2179,12 +2179,11 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
             </div>
         </div>
         
-        <!-- Link naar online pakbon -->
-        <div style="padding: 20px; text-align: center;">
-            <a href="{base_url}/pakbon/{order.id}" style="display: inline-block; background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                Bekijk Pakbon Online
-            </a>
-            <p style="color: #71717a; font-size: 12px; margin-top: 10px;">Of print deze email direct uit</p>
+        <!-- Print instructie -->
+        <div style="padding: 20px; text-align: center; background: #f4f4f5; border-radius: 8px; margin: 20px;">
+            <p style="color: #52525b; font-size: 14px; margin: 0;">
+                <strong>💡 Tip:</strong> Print deze email uit als pakbon (Ctrl+P of ⌘+P)
+            </p>
         </div>
         
         <div style="background: #18181b; padding: 15px; text-align: center; color: #a1a1aa; font-size: 11px;">
