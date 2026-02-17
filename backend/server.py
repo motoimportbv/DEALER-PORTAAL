@@ -429,6 +429,17 @@ def create_token(user_id: str, email: str, role: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
+def create_notification_token(user_id: str, email: str, role: str) -> str:
+    """Create a short-lived token for push notification auto-login (10 minutes)"""
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "role": role,
+        "type": "notification",
+        "exp": datetime.now(timezone.utc).timestamp() + 600  # 10 minutes
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
