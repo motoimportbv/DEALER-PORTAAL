@@ -467,6 +467,14 @@ def create_permanent_login_token(user_id: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
+def generate_short_code() -> str:
+    """Generate a short 8-character alphanumeric code for easy login links"""
+    import random
+    import string
+    # Use only uppercase letters and numbers, excluding confusing characters (0, O, I, 1, L)
+    chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    return ''.join(random.choice(chars) for _ in range(8))
+
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
