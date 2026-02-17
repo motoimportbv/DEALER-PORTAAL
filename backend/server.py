@@ -1948,7 +1948,7 @@ async def create_checkout(data: PaymentRequest, user: dict = Depends(require_app
         raise HTTPException(status_code=500, detail=f"Betaling kon niet worden gestart: {str(e)}")
 
 @api_router.get("/payments/status/{session_id}")
-async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
+async def get_payment_status(session_id: str, user: dict = Depends(require_approved_dealer)):
     try:
         stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
         status = await stripe_checkout.get_checkout_status(session_id)
