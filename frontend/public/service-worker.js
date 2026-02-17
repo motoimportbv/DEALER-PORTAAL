@@ -173,28 +173,43 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  // Get the target URL from notification data
+  const targetPath = event.notification.data?.url || '/';
+  const urlToOpen = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windowClients) => {
+      // First, try to find an existing window/tab with our app
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin)) {
-          return client.focus().then((focusedClient) => {
-            if (focusedClient) {
-              focusedClient.postMessage({
-                type: 'NOTIFICATION_CLICK',
-                url: urlToOpen
-              });
-            }
-            return focusedClient;
-          }).catch(() => {
-            return clients.openWindow(urlToOpen);
-          });
+        // Check if this client is from our origin
+        if (client.url.startsWith(self.location.origin)) {
+          console.log('[SW] Found existing client, focusing and navigating');
+          try {
+            // Focus the existing window
+            await client.focus();
+            // Send message to navigate within the app (preserves auth state)
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              url: targetPath
+            });
+            return client;
+          } catch (focusError) {
+            console.log('[SW] Could not focus client:', focusError);
+            // Continue to try other clients or open new window
+          }
         }
       }
-      return clients.openWindow(urlToOpen);
+
+      // No existing window found - open a new one
+      // Add a marker to the URL so the app knows this came from a notification
+      // This helps prevent unnecessary redirects during auth initialization
+      console.log('[SW] No existing client found, opening new window');
+      const notificationUrl = new URL(urlToOpen);
+      notificationUrl.searchParams.set('from_notification', 'true');
+      return clients.openWindow(notificationUrl.href);
     }).catch((err) => {
       console.error('[SW] Error handling notification click:', err);
+      // Fallback: just open the URL
       return clients.openWindow(urlToOpen);
     })
   );
