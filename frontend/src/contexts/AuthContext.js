@@ -8,12 +8,38 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 // Set axios timeout to prevent infinite loading
 axios.defaults.timeout = 15000;
 
-// Helper function to safely get initial user from localStorage
+// Cookie helper functions
+const setCookie = (name, value, days = 365) => {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  // Set cookie with SameSite=Lax to allow it to work across browser/PWA
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+};
+
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return decodeURIComponent(parts.pop().split(';').shift());
+  }
+  return null;
+};
+
+const deleteCookie = (name) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+};
+
+// Helper function to safely get initial user from localStorage or cookie
 const getInitialUser = () => {
   try {
+    // First try localStorage
     const cachedUser = localStorage.getItem('user');
     if (cachedUser) {
       return JSON.parse(cachedUser);
+    }
+    // Then try cookie
+    const cookieUser = getCookie('moto_user');
+    if (cookieUser) {
+      return JSON.parse(cookieUser);
     }
   } catch (e) {
     console.error('Failed to parse cached user');
@@ -21,9 +47,25 @@ const getInitialUser = () => {
   return null;
 };
 
-// Helper function to get initial token
+// Helper function to get initial token from localStorage or cookie
 const getInitialToken = () => {
-  return localStorage.getItem('token');
+  // First try localStorage
+  const localToken = localStorage.getItem('token');
+  if (localToken) {
+    return localToken;
+  }
+  // Then try cookie
+  const cookieToken = getCookie('moto_token');
+  if (cookieToken) {
+    // Sync cookie token to localStorage for future use
+    try {
+      localStorage.setItem('token', cookieToken);
+    } catch (e) {
+      // localStorage might be full or unavailable
+    }
+    return cookieToken;
+  }
+  return null;
 };
 
 export const AuthProvider = ({ children }) => {
