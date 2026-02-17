@@ -1274,7 +1274,7 @@ async def delete_motorcycle(motorcycle_id: str, user: dict = Depends(require_adm
 # ============ ORDER ENDPOINTS ============
 
 @api_router.post("/orders", response_model=Order)
-async def create_order(data: OrderCreate, user: dict = Depends(get_current_user)):
+async def create_order(data: OrderCreate, user: dict = Depends(require_approved_dealer)):
     # Check motorcycle exists and is available
     motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
     if not motorcycle:
