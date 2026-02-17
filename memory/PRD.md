@@ -178,6 +178,14 @@ Een applicatie voor Moto Import B.V. waar motorfietsen worden aangeboden aan een
 
 ## Changelog
 
+### 17 Feb 2026 (Update 21) ✅ VOLTOOID
+- 🔧 **FORMULIER DROPDOWNS TOEGEVOEGD** - Alle motor formulieren verbeterd
+  - Merk: Dropdown met 72 merken van motoroccasion.nl
+  - Model: Dynamische dropdown gebaseerd op geselecteerd merk (honderden modellen)
+  - Bouwjaar: Dropdown van 1960 tot 2027
+  - Toegepast op: Admin, Dealer en Buitenlandse Dealer formulieren
+  - Onderdelen wizard: Stap-voor-stap merk/model selectie zoals motoroccasion.nl
+
 ### 16 Feb 2026 (Update 20) ✅ VOLTOOID
 - 🔧 **WHITE SCREEN BUG OPGELOST** - Motor detail pagina werkt weer
   - Oorzaak: Bid Dialog JSX code was achtergebleven na verwijdering biedingssysteem
