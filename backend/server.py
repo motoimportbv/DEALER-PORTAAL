@@ -3221,14 +3221,12 @@ async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
     return {"message": "Unsubscribed from push notifications"}
 
 async def send_push_notification_to_user(user_id: str, title: str, body: str, url: str = "/", include_auto_login: bool = True):
-    """Send a web push notification to a specific user with optional auto-login token"""
+    """Send a web push notification to ALL devices of a specific user"""
     try:
-        subscription_doc = await db.push_subscriptions.find_one({"user_id": user_id})
-        if not subscription_doc:
-            return False
+        # Get ALL subscriptions for this user (multiple devices)
+        subscription_docs = await db.push_subscriptions.find({"user_id": user_id}).to_list(100)
         
-        subscription = subscription_doc.get("subscription")
-        if not subscription:
+        if not subscription_docs:
             return False
         
         # Get private key using helper function
@@ -3265,24 +3263,36 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
-        # Send notification
-        webpush(
-            subscription_info=subscription,
-            data=payload,
-            vapid_private_key=private_key,
-            vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
-        )
+        # Send to ALL devices
+        sent_count = 0
+        for sub_doc in subscription_docs:
+            subscription = sub_doc.get("subscription")
+            if not subscription:
+                continue
+                
+            try:
+                webpush(
+                    subscription_info=subscription,
+                    data=payload,
+                    vapid_private_key=private_key,
+                    vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+                )
+                sent_count += 1
+            except WebPushException as e:
+                logger.error(f"Web push failed for device: {e}")
+                # If subscription is expired/invalid, remove it
+                if e.response and e.response.status_code in [404, 410]:
+                    await db.push_subscriptions.delete_one({"_id": sub_doc["_id"]})
+            except Exception as e:
+                logger.error(f"Error sending to device: {e}")
         
-        logger.info(f"Push notification sent to user {user_id}")
-        return True
-    except WebPushException as e:
-        logger.error(f"Web push failed for user {user_id}: {e}")
-        # If subscription is expired/invalid, remove it
-        if e.response and e.response.status_code in [404, 410]:
-            await db.push_subscriptions.delete_one({"user_id": user_id})
+        if sent_count > 0:
+            logger.info(f"Push notification sent to {sent_count} device(s) for user {user_id}")
+            return True
         return False
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
+        return False
         return False
 
 async def send_push_to_all_dealers(title: str, body: str, url: str = "/", exclude_user_id: str = None):
