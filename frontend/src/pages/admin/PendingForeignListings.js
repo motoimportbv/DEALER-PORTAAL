@@ -71,9 +71,6 @@ const PendingForeignListings = () => {
     try {
       const params = new URLSearchParams();
       params.append('price', newPrice);
-      if (newStartingPrice) {
-        params.append('starting_price', newStartingPrice);
-      }
 
       await axios.post(`${API}/motorcycles/${selectedMotorcycle.id}/activate?${params.toString()}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
