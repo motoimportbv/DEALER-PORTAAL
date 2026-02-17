@@ -128,6 +128,17 @@
     
     .main-content {
         margin-left: 0;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    
+    .content-header {
+        padding: 1rem;
+    }
+    
+    .content-body {
+        padding: 1rem;
     }
     
     .auth-hero {
