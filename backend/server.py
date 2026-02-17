@@ -1097,6 +1097,104 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
     
     return {"message": "Motor ingediend voor beoordeling", "motorcycle_id": motorcycle.id}
 
+@api_router.get("/motorcycles/{motorcycle_id}/whatsapp-share")
+async def get_whatsapp_share_link(motorcycle_id: str, user: dict = Depends(require_admin)):
+    """Generate a WhatsApp share link with auto-login tokens for all dealers"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Get the base URL from environment or use default
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    
+    # Create a generic share message (dealers will get auto-login when they click their personalized link)
+    brand = motorcycle.get("brand", "")
+    model = motorcycle.get("model", "")
+    year = motorcycle.get("year", "")
+    price = motorcycle.get("price", 0)
+    mileage = motorcycle.get("mileage", 0)
+    condition = motorcycle.get("condition", "goed").title()
+    vin = motorcycle.get("vin", "")
+    
+    # Build the message
+    message = f"""🏍️ *NIEUWE MOTOR BESCHIKBAAR*
+
+*{brand} {model}* ({year})
+
+💰 Prijs: €{price:,.0f}
+📍 KM-stand: {mileage:,} km
+⭐ Conditie: {condition}
+🔑 Chassisnr: {vin if vin else 'Zie website'}
+
+👉 Bekijk en bestel direct:
+{base_url}/motorcycle/{motorcycle_id}
+
+_Moto Import - Uw partner in motoren_"""
+
+    # URL encode the message for WhatsApp
+    import urllib.parse
+    encoded_message = urllib.parse.quote(message)
+    
+    whatsapp_url = f"https://wa.me/?text={encoded_message}"
+    
+    return {
+        "whatsapp_url": whatsapp_url,
+        "message": message,
+        "motorcycle_id": motorcycle_id
+    }
+
+@api_router.get("/motorcycles/{motorcycle_id}/whatsapp-share-personal")
+async def get_personal_whatsapp_share(motorcycle_id: str, dealer_id: str, user: dict = Depends(require_admin)):
+    """Generate a personalized WhatsApp share link with auto-login for a specific dealer"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    dealer = await db.users.find_one({"id": dealer_id}, {"_id": 0, "password_hash": 0})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    # Create auto-login token for this dealer
+    auto_token = create_notification_token(dealer["id"], dealer.get("email", ""), dealer.get("role", "dealer"))
+    
+    # Get the base URL
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    
+    # Build personalized URL with auto-login
+    auto_login_url = f"{base_url}/auto-login?token={auto_token}&redirect=/motorcycle/{motorcycle_id}"
+    
+    brand = motorcycle.get("brand", "")
+    model = motorcycle.get("model", "")
+    year = motorcycle.get("year", "")
+    price = motorcycle.get("price", 0)
+    
+    message = f"""🏍️ *NIEUWE MOTOR*
+
+*{brand} {model}* ({year})
+💰 €{price:,.0f}
+
+👉 Klik hier om direct te bekijken:
+{auto_login_url}
+
+_Moto Import_"""
+
+    import urllib.parse
+    encoded_message = urllib.parse.quote(message)
+    
+    # If dealer has a phone number, create direct link
+    phone = dealer.get("phone", "").replace(" ", "").replace("-", "")
+    if phone:
+        whatsapp_url = f"https://wa.me/{phone}?text={encoded_message}"
+    else:
+        whatsapp_url = f"https://wa.me/?text={encoded_message}"
+    
+    return {
+        "whatsapp_url": whatsapp_url,
+        "message": message,
+        "dealer_phone": phone,
+        "dealer_company": dealer.get("company_name", "")
+    }
+
 @api_router.get("/motorcycles/foreign-listings")
 async def get_foreign_listings(user: dict = Depends(get_current_user)):
     """Get motorcycles submitted by the current foreign dealer"""
