@@ -218,7 +218,7 @@ const MotorcycleList = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {motorcycles.map((motorcycle) => (
+            {filteredMotorcycles.map((motorcycle) => (
               <Card key={motorcycle.id} className="motorcycle-card overflow-hidden" data-testid={`motorcycle-card-${motorcycle.id}`}>
                 <div className="aspect-[4/3] relative bg-zinc-100">
                   {motorcycle.images?.[0] ? (
