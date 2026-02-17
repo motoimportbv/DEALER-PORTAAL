@@ -110,6 +110,7 @@ function App() {
             <Route path="/admin/pending-foreign" element={<PendingForeignListings />} />
             <Route path="/admin/parts" element={<AdminParts />} />
             <Route path="/admin/part-orders" element={<AdminPartOrders />} />
+            <Route path="/admin/license-plates" element={<AdminLicensePlates />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
@@ -117,6 +118,7 @@ function App() {
             <Route path="/dealer/sell" element={<DealerSellMotorcycle />} />
             <Route path="/dealer/my-listings" element={<DealerMyListings />} />
             <Route path="/dealer/parts" element={<PartsShop />} />
+            <Route path="/dealer/license-plates" element={<DealerLicensePlates />} />
             
             {/* Foreign Dealer Routes */}
             <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
