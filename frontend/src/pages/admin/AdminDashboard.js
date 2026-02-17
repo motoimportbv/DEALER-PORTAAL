@@ -64,6 +64,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const sendTestPush = async () => {
+    setSendingTestPush(true);
+    try {
+      const response = await axios.post(`${API}/admin/test-push`);
+      setTestPushResults(response.data);
+      setShowPushResultsModal(true);
+      
+      if (response.data.sent_count > 0) {
+        toast.success(`Test push verzonden naar ${response.data.sent_count} dealers!`);
+      } else {
+        toast.warning('Geen dealers hebben push notificaties ingeschakeld');
+      }
+    } catch (error) {
+      console.error('Failed to send test push:', error);
+      toast.error('Fout bij verzenden van test push');
+    } finally {
+      setSendingTestPush(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       pending: 'bg-amber-100 text-amber-800',
