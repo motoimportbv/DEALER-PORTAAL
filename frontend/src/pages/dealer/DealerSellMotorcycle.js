@@ -274,16 +274,19 @@ const DealerSellMotorcycle = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="year">{t('motorcycle.year')} *</Label>
-                  <Input
-                    id="year"
-                    name="year"
-                    type="number"
-                    min="1900"
-                    max={new Date().getFullYear() + 1}
-                    value={formData.year}
-                    onChange={handleChange}
-                    required
-                  />
+                  <Select 
+                    value={formData.year?.toString()} 
+                    onValueChange={(value) => handleSelectChange('year', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Kies jaar" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {YEARS.map(year => (
+                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mileage">{t('motorcycle.mileage')}</Label>
