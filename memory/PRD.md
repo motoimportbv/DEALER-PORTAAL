@@ -191,11 +191,10 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ---
 
 ## Key Files Modified (This Session)
-- `/app/backend/server.py` (short code login endpoints)
-- `/app/frontend/src/pages/ShortCodeLoginPage.js` (NEW)
-- `/app/frontend/src/App.js` (new `/go/:code` route)
-- `/app/frontend/src/components/PermanentLoginLink.js`
-- `/app/backend/tests/test_shortcode_login.py` (NEW - tests)
+- `/app/backend/server.py` (RDW document upload/delete endpoints)
+- `/app/frontend/src/pages/admin/AdminLicensePlates.js` (upload UI)
+- `/app/backend/uploads/rdw/` (document storage directory)
+- `/app/backend/tests/test_rdw_document.py` (NEW - tests)
 
 ---
 
