@@ -4,109 +4,125 @@ The user is building a comprehensive application for their motorcycle dealership
 **PRODUCT REQUIREMENTS:**
 -   **Core Functionality:** An application for an admin to offer motorcycles to a network of dealers.
 -   **User Roles:** Admin, Dealer, and Foreign Dealer with specific permissions.
--   **Push Notifications:** A robust push notification system that works seamlessly, allowing dealers to click a notification and be taken directly to the relevant content while logged in, even if the app was closed.
--   **Permanent Login:** Dealers should have a way to get a permanent, personal link that allows them to access the app without ever needing to enter their password again, especially when saved as a bookmark or home screen icon on mobile devices.
--   **Communication Tools:** Admin needs the ability to notify all registered dealers about new motorcycles via multiple channels, including WhatsApp and SMS. The links in these messages must work correctly and allow for auto-login.
--   **Public Viewing:** Links to specific motorcycles shared externally (e.g., via WhatsApp) should be viewable by anyone without requiring a login, but actions like purchasing should require authentication.
+-   **Push Notifications:** A robust push notification system that works seamlessly across multiple devices for a single user. It should allow dealers to click a notification and be taken directly to the relevant content while being logged in automatically. A persistent reminder should prompt users to enable notifications.
+-   **Public Viewing & Email Links:** Links to specific motorcycles shared externally (e.g., via WhatsApp, email) should be viewable by anyone without requiring a login, and these links must always point to the production domain ().
+-   **Admin Features:** The admin needs various tools, including a way to test push notifications, filter motorcycles, manage recent orders, and have a clear logout option on all devices.
+-   **Registration:** The registration process must be secure, with password confirmation and a visibility toggle (eye icon).
+-   **License Plate Management:** The admin needs to upload RDW registration documents and associate them with a specific motorcycle's license plate.
+-   **Dealer Experience:** Dealers require effective filtering tools (by brand and type) on their dashboard to quickly find motorcycles.
 
 **User's preferred language**: Dutch. The next agent MUST respond in Dutch.
 
 **what currently exists?**
-The application is a full-stack FastAPI/React platform. In this session, the agent addressed a persistent push notification bug and implemented several new communication and authentication features based on user requests.
+The application is a full-stack FastAPI/React platform. In this extensive session, the agent addressed a very wide range of user requests, moving from a persistent login issue to numerous UI/UX improvements, feature additions, and bug fixes across the admin and dealer sections of the application.
 
--   **Push Notification Workaround:** To solve an OS-level issue where clicking a notification with the app closed forces a re-login, the agent implemented an auto-login system. A short-lived, single-use token is now embedded in the notification URL, which logs the user in automatically.
--   **WhatsApp Sharing Feature:** An admin-facing Share via WhatsApp button was added to the motorcycle list and new motorcycle form. It opens a modal with a pre-formatted message and a  link, allowing the admin to easily share a new motorcycle with a dealer group.
--   **Public Motorcycle Detail Page:** To fix an issue where shared WhatsApp links were inaccessible, the  page was refactored to be publicly viewable without a login. The backend now has a public endpoint to fetch motorcycle data. Authenticated actions like Buy Now now prompt a non-logged-in user to log in.
--   **Twilio SMS Integration:** A feature to send SMS notifications to all dealers about a new motorcycle was implemented. This includes backend logic using the Twilio SDK and a new Send SMS button and modal in the admin UI. The feature is complete but blocked.
--   **Remember Me & Auto-Redirect:** The login page was enhanced with a Remember Me checkbox that stores credentials to pre-fill the form. It also now stores the intended destination URL, so after a forced login, the user is redirected to the page they were trying to access.
+-   **Abandoned Login Attempts:** Multiple attempts to create a permanent, bookmarkable auto-login link (using URL paths  and query parameters ) were implemented, tested, and ultimately abandoned due to iOS PWA limitations and user frustration.
+-   **Robust Session & Push Login:** The focus shifted to making the standard session more persistent (using localStorage/IndexedDB) and ensuring the auto-login mechanism via push notifications is reliable. The token expiry for these links was increased to 24 hours.
+-   **Multi-Device Push Notifications:** The backend was fixed to allow a single user to receive push notifications on all their subscribed devices (e.g., phone and tablet) instead of only the last one.
+-   **UI/UX Fixes:**
+    -   Fixed a scrolling issue in the mobile order dialog, allowing dealers to access the Buy button.
+    -   Added a visible logout button for the admin on mobile layouts.
+-   **Feature Enhancements:**
+    -   **Search & Filter:** A text-based search was added to the admin motorcycle list. The dealer dashboard's search bar was replaced with brand/type dropdown filters that display the number of available units for each category.
+    -   **Admin Dashboard:** The dealer count was corrected, and the KPI cards were made clickable, linking to their respective pages.
+    -   **Test Push Notifications:** A new feature was added allowing the admin to send a test push notification to all dealers and view a report of who received it successfully.
+    -   **Password Security:** The registration page now includes a Confirm Password field with validation, and both login and registration pages feature a password visibility toggle (eye icon).
+    -   **Push Notification Reminder:** A more persistent modal now reminds dealers to enable push notifications.
+-   **Feature Removals & Cleanup:**
+    -   The non-functional Twilio SMS feature was completely removed from the admin UI.
+    -   The Permanent Login Link feature was removed from the dealer dashboard, and the underlying component file was deleted.
+-   **Production URL Consistency:** All user-facing links generated by the backend (in emails, push notifications) were hardcoded to point to the production domain  to prevent confusion with the preview environment.
+-   **Admin Order View:** The admin's Recent Orders list is now filtered to show only orders from the last 24 hours.
 
 **Last working item**:
--   **Last item agent was working:** Implementing a short code based permanent login system. This is the third attempt to create a robust permanent login link that works correctly when bookmarked on iOS devices, which tend to strip URL parameters or ignore the full bookmarked URL.
+-   **Last item agent was working:** Extending the License Plates Management feature for the admin. The goal is to allow the admin to upload an RDW document (PDF/image) and associate it with a license plate entry. The agent started by modifying the backend data model.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Manual testing. The agent needs to build the latest changes, generate a short code link as a test dealer, and verify that accessing  logs the user in and redirects correctly.
+-   **Which testing method agent to use?** Both. The agent will need to:
+    1.  Create a backend endpoint for file uploads ().
+    2.  Test the endpoint with .
+    3.  Modify the frontend  page to add a file input.
+    4.  Use the screenshot tool to verify the UI and test the full upload flow.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Permanent auto-login link fails when bookmarked on iOS (P0)**
--   **Issue 2: SMS sending is non-functional (P1)**
+-   **Issue 1: Complete RDW Document Upload for License Plates (P0)**
 
 **Issues Detail**:
--   **Issue 1: Permanent auto-login link fails when bookmarked on iOS (P0)**
-    -   **Attempted fixes:**
-        1.   format: Failed because iOS strips query parameters from home screen bookmarks.
-        2.   format: Failed because iOS PWA sometimes defaults to the  from the manifest, ignoring the path.
+-   **Issue 1: Complete RDW Document Upload for License Plates (P0)**
+    -   **Attempted fixes:** The agent has started the implementation by adding a  field to the  Pydantic model in .
     -   **Next debug checklist**:
-        1.  The agent was in the middle of implementing a short code system. A new database collection  is being created on the backend to map a short, simple code (e.g., ) to a user's permanent login JWT.
-        2.  The frontend needs a new page  () to handle this.
-        3.  The agent has created the backend logic, the new frontend page, and added the routes.
-        4.  **Next step:** Build the frontend, restart services, and test the complete flow. Verify that visiting  correctly logs the user in.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core user requirement to eliminate login friction for dealers, providing a seamless passwordless experience.
+        1.  Create a new backend endpoint in  to handle file uploads for a license plate (e.g., ). This will involve using FastAPI's  and saving the file to a persistent directory (e.g., ).
+        2.  Modify the  frontend page. Add a file input field to the Add/Edit License Plate modal.
+        3.  Implement the frontend logic to upload the selected file to the new backend endpoint.
+        4.  Update the UI to show that a document has been uploaded for a license plate, perhaps with a link to view it.
+    -   **Why fix this issue and what will be achieved with the fix?** It is a direct user request to manage essential vehicle documentation within the application, centralizing information for the admin.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
+    -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on other issue:** None
 
--   **Issue 2: SMS sending is non-functional (P1)**
-    -   **Attempted fixes:** The agent confirmed the Twilio integration code is correct and that the credentials are set. Direct API testing revealed the root cause.
-    -   **Next debug checklist**: This issue is not resolvable by the agent. The user's Twilio account is a Trial account, which can only send messages to phone numbers that have been manually verified in the Twilio console.
-    -   **Why fix this issue and what will be achieved with the fix?** It will enable a key communication channel for the admin to notify dealers.
-    -   **Status:** BLOCKED (on user action)
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Backend (after user confirms Twilio account upgrade)
-    -   **Blocked on other issue:** None
-
 **In progress Task List**:
--   **Task 1: Complete and Test the Short Code Permanent Login System (P0)**
-    -   **Where to resume:** The agent has created the backend logic, the new frontend page (), and added the new routes ( and ) in . The next action is to run a frontend build (yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.) and restart services to test the functionality.
-    -   **What will be achieved with this?** A robust, user-friendly permanent login system that works across all devices and bookmarking methods.
+-   **Task 1: Implement RDW document upload for license plates (P0)**
+    -   **Where to resume:** In , create the file upload endpoint. The Pydantic model  has already been updated. After the backend is done, move to  to add the frontend components.
+    -   **What will be achieved with this?** Admins will be able to upload and associate RDW documents with motorcycle license plates.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   **Native App Build (P1):** Guide the user through building the native iOS/Android apps using .
 -   **Future Tasks (Technical Debt):**
-    -   **Refactor Frontend Components (P1):** The large motorcycle database and dropdown logic is duplicated across , , and . It should be extracted into a shared custom hook ().
-    -   **Refactor Backend (P2):**  is a very large monolithic file. Logic should be migrated into a  and  directory structure.
+    -   **Refactor Backend (P1):**  is a very large monolithic file. Logic should be migrated into a  and  directory structure.
+    -   **Refactor Frontend Components (P2):** The motorcycle database and dropdown logic is duplicated across several components. It should be extracted into a shared custom hook ().
     -   **Remove Obsolete Bid Logic (P2):** The  model and related auction code should be deleted.
     -   **Remove Hardcoded VAPID Keys (P2):** VAPID keys in  must be moved to environment variables.
 
 **Completed work in this session**
--   **Auto-Login for Push Notifications**: Implemented a workaround for the PWA re-login issue by embedding single-use auto-login tokens in notification URLs. (DONE)
--   **Manual Share via WhatsApp Feature**: Added a button for admins to generate a pre-filled WhatsApp message with motor details and an auto-login link. (DONE)
--   **Public Motorcycle Detail Page**: Made the motorcycle detail page publicly viewable to fix broken WhatsApp links, with a login prompt for purchase actions. (DONE)
--   **SMS Notification Feature**: Integrated Twilio to allow admins to send SMS alerts. The feature is code-complete but blocked on the user's Twilio trial account. (BLOCKED)
--   **Remember Me & Redirect Logic**: Added a Remember Me checkbox and logic to redirect users to their intended page after login. (DONE)
--   **Permanent Login Link (Attempts 1 & 2)**: Two previous versions of the permanent login feature were implemented and subsequently abandoned due to iOS bookmarking limitations. The code for these may still exist. (ABANDONED)
+-   **UI/UX Fixes:**
+    -   Mobile order dialog is now scrollable. (DONE)
+    -   Admin logout button is now visible on mobile. (DONE)
+-   **Features & Enhancements:**
+    -   Search/filter functionality added for admin and dealers. (DONE)
+    -   Admin dashboard KPI cards are now clickable and show the correct dealer count. (DONE)
+    -   Admin can send a test push notification to all dealers. (DONE)
+    -   Password confirmation and visibility toggle added to registration/login. (DONE)
+    -   A more persistent reminder for enabling push notifications was implemented. (DONE)
+-   **Backend & Architecture:**
+    -   Push notifications now support multiple devices per user. (DONE)
+    -   All generated links (email, push) now correctly point to the production URL. (DONE)
+    -   Admin Recent Orders view is limited to the last 24 hours. (DONE)
+-   **Removals & Cleanup:**
+    -   The broken SMS functionality has been removed. (DONE)
+    -   The entire Permanent Login Link feature has been removed and its code deleted. (DONE)
+    -   Broken View Online Pakbon link removed from emails. (DONE)
 
 **Earlier issues found/mentioned but not fixed**
--   None.
+-   None from this session. All technical debt is from the previous fork.
 
 **Known issue recurrence from previous fork**
--   None.
+-   **Issue:** The user's core desire for a 100% reliable, permanent, bookmarkable auto-login on iOS devices.
+-   **Recurrence count:** High. The agent attempted three different technical solutions in this session ( path,  query param, and strengthening / persistence). All failed to overcome the limitations of how iOS PWAs handle bookmarks and clear storage, leading to significant user frustration.
+-   **Status:** ABANDONED. The agent and user have pivoted to ensuring the push notification auto-login works flawlessly as the primary means of quick, passwordless access. The next agent should not attempt to re-implement a permanent bookmarkable link without acknowledging this history and the underlying platform constraints.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Token-based Auto-Login:** Implemented multiple strategies (short-lived, permanent, URL-based) to log users in without passwords.
--   **PWA/Browser Storage Limitations:** Navigated the complexities of session/storage separation between installed PWAs and browser tabs on mobile, leading to the token-in-URL approach.
--   **URL-based Authentication:** Progressed from query parameters () to URL paths () and finally to short codes () to create robust bookmarkable links for iOS.
--   **Third-Party Integrations:** Integrated **Twilio** for SMS. Investigated and discarded **WhatsApp Business API** due to complexity.
--   **Public vs. Authenticated Content:** Refactored a key page () and its backend API to support both public, unauthenticated viewing and authenticated-only actions.
+-   **iOS PWA Limitations:** A central theme of the session was the struggle against iOS's behavior of clearing storage and ignoring bookmarked URL paths for PWAs, making a truly permanent login link unfeasible.
+-   **State Management & Persistence:** The agent iterated on storing session data, moving from basic  to  in an attempt to improve data persistence on mobile devices.
+-   **Multi-Device Push Subscriptions:** The backend data model for push subscriptions was changed from a one-to-one (user-to-device) to a one-to-many model, storing subscriptions based on a unique endpoint URL instead of just the user ID.
+-   **Conditional UI Rendering:** Many components were updated to show/hide elements based on user role, login state, or screen size (e.g., mobile logout button).
+-   **Frontend Filtering:** Implemented client-side filtering logic with state management (, ) for the dealer and admin motorcycle lists.
+-   **File Uploads (pending):** The next task requires knowledge of FastAPI's  for backend handling and  for frontend submission.
 
 **key DB schema**
--   **short_codes** (New Collection):
-    -   :  (A unique, short, user-facing code)
-    -   :  (The long-lived JWT this code maps to)
-    -   : 
-    -   : 
+-   **license_plates** (in ,  model):
+    -   :  (ADDED) - Will store the path to the uploaded document.
+-   **push_subscriptions** (in ,  endpoint):
+    -   The unique identifier for a subscription was changed from  to  to allow multiple devices per user.
 
 **changes in tech stack**
--   **Twilio**: The  Python library was added to  for SMS functionality.
+-   None.
 
 **All files of reference**
 -   
@@ -116,56 +132,58 @@ info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this comm
 -   
 -   
 -   
+-   
 
 **Areas that need refactoring**:
--   The  file has become very complex with multiple login/token handling strategies (cookies, localStorage, URL tokens). It could be simplified once a final solution is settled on.
--   The abandoned  component and its related logic in  should be removed.
--   The code for the two failed permanent link implementations ( and ) should be cleaned up from , , and  to avoid confusion.
+-    has grown even larger and is now over 3,000 lines long. It urgently needs to be broken down into routers and services.
+-   , , and  contain remnants and commented-out code from the multiple failed login-link implementations. This should be cleaned up to simplify the authentication flow.
+-   The dealer and admin motorcycle lists (, ) now have separate but similar filtering/search logic. This could be consolidated.
 
 **key api endpoints**
--    (GET): New public endpoint to fetch motorcycle data without auth.
--    (POST): Exchanges a short-lived token from a notification for a session token.
--    (GET/DELETE): Generates/revokes a permanent login token and its associated short code.
--    (POST): Exchanges a permanent token for a session token.
--    (GET): New endpoint to resolve a short code into a session token.
--    (POST): Triggers sending an SMS notification for a specific motorcycle.
--    (GET): Checks if the Twilio configuration is valid.
+-    (POST): **New**. Triggers a test push notification to all subscribed dealers and returns a status report.
+-    (POST): **Modified**. Now uses the subscription  as the unique key to support multiple devices per user.
+-    (POST): **Modified**. Logic updated to work with the new multi-device subscription model.
+-    (GET): **Modified** to return a list of subscriptions instead of a single one.
+-    (GET): **Modified**. The query for counting total dealers was fixed to look in the  collection for .
+-    (GET): **Modified**. Now filters orders to only return those created in the last 24 hours for the admin user.
 
 **Critical Info for New Agent**
--   Your immediate priority is to finish the short code login implementation. The backend and frontend files have been created, but the flow needs to be built and tested end-to-end.
--   The user is focused on eliminating all login friction. The permanent login via bookmark is a critical feature for them. Be aware that this has been a difficult problem with multiple failed attempts, so test the new short code solution thoroughly on mobile, especially simulating the Add to Home Screen feature on an iPhone.
--   The SMS feature is blocked until the user upgrades their Twilio account. Do not spend time debugging it. Simply inform the user of the status if they ask.
--   The original push notification re-login bug is considered solved via the auto-login token workaround. Do not try to re-fix the service worker unless the user explicitly reports that the auto-login link itself is failing.
+-   Your immediate priority is to implement the RDW document upload feature for license plates, starting with the backend endpoint.
+-   **Do not try to solve the permanent login via bookmark issue.** This has been a major source of user frustration, and multiple attempts have failed due to fundamental iOS PWA limitations. The accepted path forward is a robust session and a reliable push-notification auto-login flow. Acknowledge this history if the user brings it up again.
+-   The user makes frequent, rapid-fire requests. It is crucial to bundle related changes, test them, and then present a clear summary and ask for confirmation before deploying.
+-   Always remind the user to deploy their changes from the Emergent UI to see them on the production  domain. Be explicit that the preview URL is only for development.
+-   The user is non-technical and values visual confirmation and simple, direct solutions.
 
 **documents and test reports created in this job**
--    (updated)
+-    (updated multiple times)
+-    (report for the short-code login feature that was later abandoned)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **De link werkt alleen als de dealer bladwijzer aanmaakt moet hij weer inloggen iphone**: User confirms the current permanent link solution () fails when bookmarked on iPhone, triggering the current fix attempt. (IN PROGRESS)
-2.  **En voor android**: User asks if the solution works for Android. (Answered)
-3.  **Ja nog steeds wachtwoord als je het op bladwijzer zet...**: User gives more detail on the iPhone bookmarking failure. (IN PROGRESS)
-4.  **Na registratie moeten de dealer een auto-login link accepteren...**: User restates their core requirement for a permanent, passwordless login method. (IN PROGRESS)
-5.  **Optie 1**: An ambiguous response that the agent handled. (Resolved)
-6.  **Als ik de whatapp deel en hun klikken erop dan kan hij de motor niet laden**: User reports that shared WhatsApp links lead to an error. (Completed)
-7.  **Dit doe,ik,later**: User postpones upgrading their Twilio account to fix the SMS issue. (Blocked)
-8.  **Fout bij versturen**: User reports that sending an SMS failed. (Completed - cause identified)
-9.  **Twilio Credentials**: User provided their Twilio SID and Auth Token. (Completed)
-10. **Nee is te moeilijk laten we eens een sms functie maken**: User pivots from a complex WhatsApp Business API integration to a simpler SMS feature. (Completed)
+1.  **Bij het kopje kentekens beheren... moet ik dat uploaden.**: User requests the ability to upload RDW documents for license plates. (IN PROGRESS - current task)
+2.  **Upload alles naar moto import bv punt nl.**: User confirms readiness to deploy the multi-device push notification fix. (Completed)
+3.  **Als ik inlog op mijn telefoon dan krijgt mijn tablet een push melding en niet op mijn telefoon.**: User reports that push notifications only go to the last logged-in device. (Completed - fixed)
+4.  **Alles uploaden naar motoimport.nl**: User confirms readiness to deploy the push notification reminder feature. (Completed)
+5.  **2**: User chooses option 2 (Verplichte reminder) for ensuring dealers enable push notifications. (Completed)
+6.  **De push-up meldingen moeten altijd op de telefoon actief zijn.**: User expresses the desire for push notifications to be mandatory. (Completed)
+7.  **Alles uploaden naar server www.motoimportbv.nl.**: User confirms readiness to deploy password security features. (Completed)
+8.  **...twee keer het wachtwoord moet invoeren met een oogje...**: User requests password confirmation and a visibility toggle on the registration page. (Completed)
+9.  **Ik wil ook dat de admin een button krijgt zodat wij push up notificatie test...zenden.**: User requests a Test Push button for the admin. (Completed)
+10. **Ik wil dat alle push-up meldingen via www.motoimportbv.nl lopen...**: User requests that all push notification links point to the production domain. (Completed)
 
 **Project Health Check:**
--   **Broken**: The permanent login feature is not working as desired when links are bookmarked on iOS. This is the highest priority issue currently being worked on.
+-   **Broken**: The user's core desire for a 100% reliable, permanent login link saved as a bookmark on an iPhone home screen remains unfulfilled. This is not a bug in the code but a known limitation of the PWA platform on iOS, which has been a major point of friction.
 -   **Mocked**: None.
 
 **3rd Party Integrations**
 -   **Gmail SMTP (Email)** — Functional.
 -   **Web Push (pywebpush)** — Functional, with client-side workarounds (auto-login tokens).
--   **Twilio (SMS)** — Integrated via  library. **BLOCKED** on user's Trial account status. Requires , ,  in .
+-   **Twilio (SMS)** — Integrated but BLOCKED on user's Trial account status. The UI for this feature has since been removed at the user's request.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO
+-   **Testing agent used after significant changes**: YES (once for an abandoned feature).
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None
--   **Known regressions**: None
+-   **Test files created**: None.
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
 -   **Admin**:  / 
