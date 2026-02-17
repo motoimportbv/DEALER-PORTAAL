@@ -1455,6 +1455,20 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
     
     total_price = max(0, motorcycle["price"] + delivery_cost + inspection_cost + valuation_cost - voucher_discount)
     
+    # Create snapshot of motorcycle data for historical reference
+    motorcycle_snapshot = {
+        "id": motorcycle["id"],
+        "brand": motorcycle.get("brand"),
+        "model": motorcycle.get("model"),
+        "year": motorcycle.get("year"),
+        "price": motorcycle.get("price"),
+        "mileage": motorcycle.get("mileage"),
+        "color": motorcycle.get("color"),
+        "condition": motorcycle.get("condition"),
+        "images": motorcycle.get("images", []),
+        "description": motorcycle.get("description"),
+    }
+    
     # Create order
     order = Order(
         motorcycle_id=data.motorcycle_id,
@@ -1463,6 +1477,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(get_cur
         dealer_company=user.get("company_name", ""),
         status="pending",
         needs_delivery=data.needs_delivery,
+        motorcycle_snapshot=motorcycle_snapshot,
         delivery_cost=delivery_cost,
         total_price=total_price,
         deposit_amount=0,
