@@ -301,6 +301,18 @@ const DealerSellMotorcycle = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="chassis_number">{t('motorcycle.chassisNumber')} *</Label>
+                  <Input
+                    id="chassis_number"
+                    name="chassis_number"
+                    value={formData.chassis_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, chassis_number: e.target.value.toUpperCase() }))}
+                    placeholder={t('motorcycle.chassisNumberPlaceholder')}
+                    required
+                    maxLength={17}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="condition">{t('motorcycle.condition')}</Label>
                   <select
                     id="condition"
