@@ -220,35 +220,62 @@ const MotorcycleDetail = () => {
     }).format(price);
   };
 
-  if (loading) {
+  // Simple wrapper for non-logged in users
+  const PublicWrapper = ({ children }) => (
+    <div className="min-h-screen bg-zinc-50">
+      {/* Simple header for public view */}
+      <header className="bg-zinc-900 text-white py-4">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Bike className="w-8 h-8 text-red-500" />
+            <span className="font-barlow text-xl font-bold uppercase tracking-tight">Moto Import</span>
+          </div>
+          <Button 
+            onClick={() => navigate('/login')}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Inloggen
+          </Button>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
+  );
+
+  // Choose wrapper based on login status
+  const Wrapper = user ? Layout : PublicWrapper;
+
+  if (loading || authLoading) {
     return (
-      <Layout>
+      <Wrapper>
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      </Layout>
+      </Wrapper>
     );
   }
 
   if (!motorcycle) {
     return (
-      <Layout>
+      <Wrapper>
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <Bike className="w-16 h-16 text-zinc-300 mb-4" />
           <h2 className="text-xl font-bold text-zinc-900 mb-2">{t('motorcycle.notFound')}</h2>
           <p className="text-zinc-500 mb-4">{t('motorcycle.notFoundDesc')}</p>
-          <Button onClick={() => navigate('/catalog')} className="bg-red-600 hover:bg-red-700">
-            {t('nav.catalog')}
+          <Button onClick={() => navigate('/login')} className="bg-red-600 hover:bg-red-700">
+            Inloggen
           </Button>
         </div>
-      </Layout>
+      </Wrapper>
     );
   }
 
   const images = motorcycle.images?.length > 0 ? motorcycle.images : [];
 
   return (
-    <Layout>
+    <Wrapper>
       <div className="content-header">
         <div className="flex items-center gap-4">
           <Button 
