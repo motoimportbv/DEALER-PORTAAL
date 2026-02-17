@@ -60,6 +60,26 @@ const MotorcycleDetail = () => {
   const [voucherValid, setVoucherValid] = useState(false);
   const [checkingVoucher, setCheckingVoucher] = useState(false);
   const [myVoucher, setMyVoucher] = useState(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const openLightbox = (index = 0) => {
+    setSelectedImage(index);
+    setLightboxOpen(true);
+  };
+
+  const nextImage = () => {
+    const images = motorcycle?.images || [];
+    if (images.length > 1) {
+      setSelectedImage((prev) => (prev + 1) % images.length);
+    }
+  };
+
+  const prevImage = () => {
+    const images = motorcycle?.images || [];
+    if (images.length > 1) {
+      setSelectedImage((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
 
   useEffect(() => {
     // Wait for auth to finish loading before fetching motorcycle data
