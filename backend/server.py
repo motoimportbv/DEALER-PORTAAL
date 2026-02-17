@@ -793,21 +793,30 @@ async def generate_permanent_link(user: dict = Depends(get_current_user)):
     # Create permanent token
     permanent_token = create_permanent_login_token(user["id"])
     
-    # Store token in user profile
+    # Generate a short code for easy URLs
+    short_code = generate_short_code()
+    
+    # Ensure short code is unique
+    while await db.users.find_one({"login_short_code": short_code}):
+        short_code = generate_short_code()
+    
+    # Store token and short code in user profile
     await db.users.update_one(
         {"id": user["id"]},
         {"$set": {
             "permanent_login_token": permanent_token,
+            "login_short_code": short_code,
             "permanent_link_created_at": datetime.now(timezone.utc).isoformat()
         }}
     )
     
-    # Build the permanent login URL - use path-based format for iPhone compatibility
+    # Build the permanent login URL using short code
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
-    permanent_url = f"{base_url}/login/{permanent_token}"
+    permanent_url = f"{base_url}/go/{short_code}"
     
     return {
         "permanent_url": permanent_url,
+        "short_code": short_code,
         "token": permanent_token,
         "message": "Permanente login link aangemaakt"
     }
@@ -816,17 +825,19 @@ async def generate_permanent_link(user: dict = Depends(get_current_user)):
 async def get_my_permanent_link(user: dict = Depends(get_current_user)):
     """Get the user's permanent login link"""
     permanent_token = user.get("permanent_login_token")
+    short_code = user.get("login_short_code")
     
-    if not permanent_token:
+    if not permanent_token or not short_code:
         return {"has_permanent_link": False, "permanent_url": None}
     
-    # Use path-based format for iPhone compatibility
+    # Use short code format
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
-    permanent_url = f"{base_url}/login/{permanent_token}"
+    permanent_url = f"{base_url}/go/{short_code}"
     
     return {
         "has_permanent_link": True,
         "permanent_url": permanent_url,
+        "short_code": short_code,
         "created_at": user.get("permanent_link_created_at")
     }
 
