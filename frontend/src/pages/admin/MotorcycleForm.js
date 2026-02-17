@@ -112,7 +112,9 @@ const MotorcycleForm = () => {
     description: '',
     condition: 'good',
     images: [],
-    is_available: true
+    is_available: true,
+    chassis_number: '',
+    license_plate: ''
   });
   const [newImageUrl, setNewImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
