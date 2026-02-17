@@ -794,9 +794,9 @@ async def generate_permanent_link(user: dict = Depends(get_current_user)):
         }}
     )
     
-    # Build the permanent login URL
+    # Build the permanent login URL - use path-based format for iPhone compatibility
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
-    permanent_url = f"{base_url}/auto-login?token={permanent_token}&redirect=/dealer"
+    permanent_url = f"{base_url}/login/{permanent_token}"
     
     return {
         "permanent_url": permanent_url,
@@ -812,8 +812,9 @@ async def get_my_permanent_link(user: dict = Depends(get_current_user)):
     if not permanent_token:
         return {"has_permanent_link": False, "permanent_url": None}
     
+    # Use path-based format for iPhone compatibility
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
-    permanent_url = f"{base_url}/auto-login?token={permanent_token}&redirect=/dealer"
+    permanent_url = f"{base_url}/login/{permanent_token}"
     
     return {
         "has_permanent_link": True,
