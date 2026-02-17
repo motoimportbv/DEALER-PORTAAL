@@ -24,23 +24,61 @@ const decodeCredentials = (encoded) => {
   }
 };
 
-// Cookie helpers
-const setRememberCookie = (value, days = 365) => {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `moto_remember=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+// Storage helpers - use both cookie AND localStorage for maximum compatibility
+const setRememberCredentials = (value) => {
+  // Set cookie with proper settings for cross-context sharing
+  const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
+  // Try with Secure flag for HTTPS sites
+  document.cookie = `moto_remember=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=None; Secure`;
+  // Also set without Secure as fallback
+  document.cookie = `moto_remember_backup=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+  
+  // Also store in localStorage as additional fallback
+  try {
+    localStorage.setItem('moto_remember', value);
+  } catch (e) {
+    console.log('Could not store in localStorage');
+  }
 };
 
-const getRememberCookie = () => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; moto_remember=`);
+const getRememberCredentials = () => {
+  // Try cookie first
+  const cookies = `; ${document.cookie}`;
+  
+  // Try main cookie
+  let parts = cookies.split(`; moto_remember=`);
   if (parts.length === 2) {
-    return decodeURIComponent(parts.pop().split(';').shift());
+    const value = decodeURIComponent(parts.pop().split(';').shift());
+    if (value) return value;
   }
+  
+  // Try backup cookie
+  parts = cookies.split(`; moto_remember_backup=`);
+  if (parts.length === 2) {
+    const value = decodeURIComponent(parts.pop().split(';').shift());
+    if (value) return value;
+  }
+  
+  // Try localStorage as fallback
+  try {
+    const localValue = localStorage.getItem('moto_remember');
+    if (localValue) return localValue;
+  } catch (e) {
+    console.log('Could not read from localStorage');
+  }
+  
   return null;
 };
 
-const deleteRememberCookie = () => {
+const deleteRememberCredentials = () => {
+  // Clear all storage locations
   document.cookie = `moto_remember=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  document.cookie = `moto_remember_backup=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  try {
+    localStorage.removeItem('moto_remember');
+  } catch (e) {
+    // Ignore
+  }
 };
 
 const LoginPage = () => {
