@@ -306,11 +306,6 @@ const DealerDashboard = () => {
           <PushNotificationToggle token={token} />
         </div>
 
-        {/* Permanent Login Link */}
-        <div className="mb-6">
-          <PermanentLoginLink />
-        </div>
-
         {/* Push Notification Reminder Popup */}
         <PushNotificationReminder 
           isSubscribed={isPushSubscribed} 
