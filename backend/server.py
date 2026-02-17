@@ -2397,6 +2397,20 @@ async def buy_now(motorcycle_id: str, user: dict = Depends(get_current_user)):
     if not motorcycle.get("is_available", True):
         raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
     
+    # Create snapshot of motorcycle data for historical reference
+    motorcycle_snapshot = {
+        "id": motorcycle["id"],
+        "brand": motorcycle.get("brand"),
+        "model": motorcycle.get("model"),
+        "year": motorcycle.get("year"),
+        "price": motorcycle.get("price"),
+        "mileage": motorcycle.get("mileage"),
+        "color": motorcycle.get("color"),
+        "condition": motorcycle.get("condition"),
+        "images": motorcycle.get("images", []),
+        "description": motorcycle.get("description"),
+    }
+    
     # Create order with buy now
     order = Order(
         motorcycle_id=motorcycle_id,
@@ -2404,7 +2418,8 @@ async def buy_now(motorcycle_id: str, user: dict = Depends(get_current_user)):
         dealer_email=user["email"],
         dealer_company=user["company_name"],
         status="approved",
-        notes=f"Koop Nu voor €{motorcycle['price']:,.0f}"
+        notes=f"Koop Nu voor €{motorcycle['price']:,.0f}",
+        motorcycle_snapshot=motorcycle_snapshot
     )
     await db.orders.insert_one(order.model_dump())
     
