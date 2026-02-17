@@ -92,6 +92,9 @@ const MOTORCYCLE_DATABASE = {
 
 const MOTORCYCLE_BRANDS = Object.keys(MOTORCYCLE_DATABASE).sort();
 
+// Bouwjaren van 1960 tot huidig jaar + 1
+const YEARS = Array.from({ length: new Date().getFullYear() - 1960 + 2 }, (_, i) => new Date().getFullYear() + 1 - i);
+
 const MotorcycleForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
