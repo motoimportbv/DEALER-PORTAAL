@@ -13,7 +13,8 @@ import {
   Package,
   Globe,
   Wrench,
-  ClipboardList
+  ClipboardList,
+  CreditCard
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -35,6 +36,7 @@ const Sidebar = () => {
     { path: '/admin/motorcycles/new', icon: Plus, label: t('motorcycle.addMotorcycle') },
     { path: '/admin/pending-foreign', icon: Globe, label: t('nav.pendingListings') },
     { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
+    { path: '/admin/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Kentekens' },
     { path: '/admin/parts', icon: Wrench, label: t('nav.partsManagement') },
     { path: '/admin/part-orders', icon: ClipboardList, label: t('nav.partOrders') },
     { path: '/admin/dealers', icon: Package, label: t('nav.dealers') },
@@ -46,6 +48,7 @@ const Sidebar = () => {
     { path: '/dealer/my-listings', icon: Bike, label: t('nav.myMotorcycles') },
     { path: '/dealer/sell', icon: Plus, label: t('nav.sellMotorcycle') },
     { path: '/dealer/orders', icon: ShoppingCart, label: t('nav.myOrders') },
+    { path: '/dealer/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Mijn Kentekens' },
   ];
 
   const foreignDealerNavItems = [
