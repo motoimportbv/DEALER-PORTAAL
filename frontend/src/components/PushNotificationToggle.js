@@ -5,6 +5,7 @@ import { Bell, BellOff, Check, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import NotificationBlockedModal from './NotificationBlockedModal';
+import BackgroundPermissionModal from './BackgroundPermissionModal';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -15,6 +16,7 @@ const PushNotificationToggle = ({ token }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [permission, setPermission] = useState('default');
   const [showBlockedModal, setShowBlockedModal] = useState(false);
+  const [showBackgroundModal, setShowBackgroundModal] = useState(false);
 
   useEffect(() => {
     // Check if push notifications are supported
