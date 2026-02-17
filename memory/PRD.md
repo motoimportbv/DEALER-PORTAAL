@@ -20,6 +20,35 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 17 February 2025 (Part 4)
+
+#### ✅ Dealer Filters met Voorraad Telling
+- Zoekbalk vervangen door merk/type dropdown filters
+- Filters tonen aantal op voorraad: "BMW (1)", "Honda (2)", etc.
+- "X motoren gevonden" resultaat telling
+
+#### ✅ Mobiele Uitlog Knop
+- Rode uitlog knop toegevoegd aan mobiele header
+- Werkt voor admin en dealers
+
+#### ✅ Admin Dashboard Verbeteringen
+- KPI kaarten zijn nu klikbaar (linken naar relevante pagina's)
+- Dealers telling gefixd (was 0, nu correct)
+- Orders filter: alleen laatste 24 uur zichtbaar voor admin
+
+#### ✅ Alle URLs naar Productie
+- Push notificaties → www.motoimportbv.nl
+- E-mail links → www.motoimportbv.nl
+- WhatsApp links → www.motoimportbv.nl
+
+#### ✅ Verwijderde Features
+- SMS functie uit admin motoren pagina
+- "Bekijk Pakbon Online" link uit e-mails
+- Persoonlijke Login Link component
+
+#### ✅ Bestel Dialog Scroll Fix
+- Dealers kunnen nu scrollen in de bestelpopup op mobiel
+
 ### Session - 17 February 2025 (Part 3)
 
 #### ✅ Short Code Permanent Login System (P0 Feature)
