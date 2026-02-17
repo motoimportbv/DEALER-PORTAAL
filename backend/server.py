@@ -2057,7 +2057,8 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         logger.error(f"Failed to send dealer confirmation email: {e}")
     
     # Send email to Admin with Pakbon
-    base_url = os.environ.get("BASE_URL", "")
+    # Always use production URL for any links
+    base_url = "https://www.motoimportbv.nl"
     order_date = datetime.now(timezone.utc).strftime('%d-%m-%Y')
     order_time = datetime.now(timezone.utc).strftime('%H:%M')
     
