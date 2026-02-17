@@ -142,14 +142,11 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ---
 
 ## Key Files Modified (This Session)
-- `/app/frontend/src/components/ui/searchable-select.jsx` (NEW)
-- `/app/frontend/src/pages/SupplierRegisterPage.js`
-- `/app/frontend/src/pages/admin/MotorcycleForm.js`
-- `/app/frontend/src/pages/dealer/DealerSellMotorcycle.js`
-- `/app/frontend/src/pages/foreign-dealer/ForeignDealerAddMotorcycle.js`
-- `/app/frontend/src/pages/admin/PendingForeignListings.js`
-- `/app/frontend/src/pages/dealer/DealerOrders.js`
-- `/app/backend/server.py` (Order model + snapshot logic)
+- `/app/backend/server.py` (short code login endpoints)
+- `/app/frontend/src/pages/ShortCodeLoginPage.js` (NEW)
+- `/app/frontend/src/App.js` (new `/go/:code` route)
+- `/app/frontend/src/components/PermanentLoginLink.js`
+- `/app/backend/tests/test_shortcode_login.py` (NEW - tests)
 
 ---
 
