@@ -2704,10 +2704,8 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
     
     # Send notification to admin about new bid
     try:
-        # Get base URL for email links
-        base_url = str(request.base_url).rstrip('/')
-        if 'preview.emergentagent.com' in base_url:
-            base_url = os.environ.get('BASE_URL', base_url)
+        # Always use production URL for email links
+        base_url = "https://www.motoimportbv.nl"
         
         # Create in-app notification for admin
         admin_user = await db.users.find_one({"role": "admin"}, {"_id": 0})
