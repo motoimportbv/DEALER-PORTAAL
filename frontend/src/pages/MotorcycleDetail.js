@@ -91,12 +91,20 @@ const MotorcycleDetail = () => {
 
   const fetchMotorcycle = async () => {
     try {
-      const response = await axios.get(`${API}/motorcycles/${id}`);
+      // If user is logged in, use authenticated endpoint
+      // Otherwise, use public endpoint for shared links
+      const endpoint = user 
+        ? `${API}/motorcycles/${id}`
+        : `${API}/motorcycles/${id}/public`;
+      
+      const response = await axios.get(endpoint);
       setMotorcycle(response.data);
     } catch (error) {
       console.error('Failed to load motorcycle:', error);
-      // Only show error toast if not a 401 (authentication issues are handled by AuthContext)
-      if (error.response?.status !== 401) {
+      // If public endpoint fails with 404, motor might not exist or is not active
+      if (error.response?.status === 404) {
+        toast.error('Motor niet gevonden of niet meer beschikbaar');
+      } else if (error.response?.status !== 401) {
         toast.error('Kon motor niet laden');
       }
     } finally {
