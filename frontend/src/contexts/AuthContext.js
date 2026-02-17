@@ -8,16 +8,25 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 // Set axios timeout to prevent infinite loading
 axios.defaults.timeout = 15000;
 
-// Cookie helper functions
+// Cookie helper functions - gebruik meerdere methodes voor maximale compatibiliteit
 const setCookie = (name, value, days = 365) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  // Set cookie with SameSite=Lax to allow it to work across browser/PWA
+  // Probeer meerdere cookie configuraties voor verschillende browsers/PWAs
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+  // Backup cookie met andere settings
+  document.cookie = `${name}_backup=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict`;
 };
 
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
+  // Probeer eerst de hoofdcookie
+  let parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const cookieValue = decodeURIComponent(parts.pop().split(';').shift());
+    if (cookieValue) return cookieValue;
+  }
+  // Probeer de backup cookie
+  parts = value.split(`; ${name}_backup=`);
   if (parts.length === 2) {
     return decodeURIComponent(parts.pop().split(';').shift());
   }
@@ -26,6 +35,7 @@ const getCookie = (name) => {
 
 const deleteCookie = (name) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  document.cookie = `${name}_backup=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
 };
 
 // Helper function to safely get initial user from localStorage or cookie
@@ -34,38 +44,112 @@ const getInitialUser = () => {
     // First try localStorage
     const cachedUser = localStorage.getItem('user');
     if (cachedUser) {
-      return JSON.parse(cachedUser);
+      const parsed = JSON.parse(cachedUser);
+      if (parsed && parsed.id) return parsed;
     }
+  } catch (e) {
+    console.error('[Auth] Failed to parse localStorage user');
+  }
+  
+  try {
     // Then try cookie
     const cookieUser = getCookie('moto_user');
     if (cookieUser) {
-      return JSON.parse(cookieUser);
+      const parsed = JSON.parse(cookieUser);
+      if (parsed && parsed.id) {
+        // Sync cookie to localStorage
+        try { localStorage.setItem('user', cookieUser); } catch(e) {}
+        return parsed;
+      }
     }
   } catch (e) {
-    console.error('Failed to parse cached user');
+    console.error('[Auth] Failed to parse cookie user');
   }
+  
+  try {
+    // Try sessionStorage as last resort
+    const sessionUser = sessionStorage.getItem('user');
+    if (sessionUser) {
+      const parsed = JSON.parse(sessionUser);
+      if (parsed && parsed.id) return parsed;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  
   return null;
 };
 
 // Helper function to get initial token from localStorage or cookie
 const getInitialToken = () => {
   // First try localStorage
-  const localToken = localStorage.getItem('token');
-  if (localToken) {
-    return localToken;
-  }
-  // Then try cookie
-  const cookieToken = getCookie('moto_token');
-  if (cookieToken) {
-    // Sync cookie token to localStorage for future use
-    try {
-      localStorage.setItem('token', cookieToken);
-    } catch (e) {
-      // localStorage might be full or unavailable
+  try {
+    const localToken = localStorage.getItem('token');
+    if (localToken && localToken.length > 20) {
+      return localToken;
     }
-    return cookieToken;
+  } catch (e) {
+    console.error('[Auth] Failed to read localStorage token');
   }
+  
+  // Then try cookie
+  try {
+    const cookieToken = getCookie('moto_token');
+    if (cookieToken && cookieToken.length > 20) {
+      // Sync cookie token to localStorage for future use
+      try { localStorage.setItem('token', cookieToken); } catch (e) {}
+      return cookieToken;
+    }
+  } catch (e) {
+    console.error('[Auth] Failed to read cookie token');
+  }
+  
+  // Try sessionStorage as last resort
+  try {
+    const sessionToken = sessionStorage.getItem('token');
+    if (sessionToken && sessionToken.length > 20) {
+      return sessionToken;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  
   return null;
+};
+
+// Sla credentials op in ALLE beschikbare storage methodes
+const persistCredentials = (token, user) => {
+  const userStr = JSON.stringify(user);
+  
+  // localStorage
+  try {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', userStr);
+  } catch (e) {
+    console.warn('[Auth] localStorage not available');
+  }
+  
+  // sessionStorage
+  try {
+    sessionStorage.setItem('token', token);
+    sessionStorage.setItem('user', userStr);
+  } catch (e) {
+    console.warn('[Auth] sessionStorage not available');
+  }
+  
+  // Cookies (met lange expiry)
+  setCookie('moto_token', token, 365);
+  setCookie('moto_user', userStr, 365);
+};
+
+// Verwijder credentials uit ALLE storage methodes
+const clearCredentials = () => {
+  try { localStorage.removeItem('token'); } catch (e) {}
+  try { localStorage.removeItem('user'); } catch (e) {}
+  try { sessionStorage.removeItem('token'); } catch (e) {}
+  try { sessionStorage.removeItem('user'); } catch (e) {}
+  deleteCookie('moto_token');
+  deleteCookie('moto_user');
 };
 
 export const AuthProvider = ({ children }) => {
@@ -120,9 +204,8 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get(`${API}/auth/me`);
       // Always use fresh data from server
       setUser(response.data);
-      // Update cache in both localStorage AND cookies
-      localStorage.setItem('user', JSON.stringify(response.data));
-      setCookie('moto_user', JSON.stringify(response.data), 365);
+      // Update cache in ALL storage locations
+      persistCredentials(token, response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
       
@@ -147,6 +230,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await axios.get(`${API}/auth/me`);
         setUser(response.data);
+        persistCredentials(token, response.data);
         return response.data;
       } catch (error) {
         console.error('Failed to refresh user:', error);
@@ -159,11 +243,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
     const { token: newToken, user: userData } = response.data;
-    // Store in both localStorage AND cookies for PWA/browser compatibility
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setCookie('moto_token', newToken, 365);
-    setCookie('moto_user', JSON.stringify(userData), 365);
+    // Store in ALL storage locations for maximum compatibility
+    persistCredentials(newToken, userData);
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
     // Ensure we use fresh user data with correct is_approved status
@@ -185,11 +266,8 @@ export const AuthProvider = ({ children }) => {
       contact_person: contactPerson
     });
     const { token: newToken, user: userData } = response.data;
-    // Store in both localStorage AND cookies for PWA/browser compatibility
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setCookie('moto_token', newToken, 365);
-    setCookie('moto_user', JSON.stringify(userData), 365);
+    // Store in ALL storage locations for maximum compatibility
+    persistCredentials(newToken, userData);
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     setToken(newToken);
     setUser(userData);
@@ -197,11 +275,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear both localStorage AND cookies
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    deleteCookie('moto_token');
-    deleteCookie('moto_user');
+    // Clear ALL storage locations
+    clearCredentials();
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
