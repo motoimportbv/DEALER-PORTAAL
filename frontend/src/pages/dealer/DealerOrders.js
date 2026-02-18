@@ -103,6 +103,29 @@ const DealerOrders = () => {
     }
   };
 
+  const handleArchiveClick = (order) => {
+    setOrderToArchive(order);
+    setArchiveDialogOpen(true);
+  };
+
+  const handleConfirmArchive = async () => {
+    if (!orderToArchive) return;
+    
+    setArchiving(true);
+    try {
+      await axios.put(`${API}/orders/${orderToArchive.id}/archive`);
+      setOrders(orders.filter(o => o.id !== orderToArchive.id));
+      toast.success(t('orders.archiveSuccess'));
+      setArchiveDialogOpen(false);
+      setOrderToArchive(null);
+    } catch (error) {
+      console.error('Failed to archive order:', error);
+      toast.error(t('orders.archiveFailed'));
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   const getStatusBadge = (status, paymentStatus) => {
     if (paymentStatus === 'paid') {
       return (
