@@ -477,9 +477,16 @@ const DealerDashboard = () => {
                   <div className="mb-4">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-zinc-500">{t('motorcycle.price')}</span>
-                      <span className="font-barlow text-xl font-bold text-red-600">
-                        {formatPrice(motorcycle.price)}
-                      </span>
+                      <div className="text-right">
+                        <span className="font-barlow text-xl font-bold text-red-600">
+                          {formatPrice(motorcycle.price)}
+                        </span>
+                        {motorcycle.original_currency === 'CHF' && motorcycle.original_price && (
+                          <p className="text-xs text-zinc-400">
+                            (CHF {motorcycle.original_price.toLocaleString('de-CH')})
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
