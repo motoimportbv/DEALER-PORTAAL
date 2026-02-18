@@ -476,6 +476,48 @@ const DealerOrders = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Archive Confirmation Dialog */}
+        <Dialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+          <DialogContent data-testid="archive-order-dialog">
+            <DialogHeader>
+              <DialogTitle>{t('orders.archiveTitle')}</DialogTitle>
+              <DialogDescription>
+                {orderToArchive?.motorcycle ? (
+                  t('orders.archiveConfirm', {
+                    brand: orderToArchive.motorcycle.brand,
+                    model: orderToArchive.motorcycle.model
+                  })
+                ) : (
+                  t('orders.archiveConfirmGeneric')
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setArchiveDialogOpen(false)}
+                disabled={archiving}
+                data-testid="cancel-archive-btn"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                className="bg-amber-600 hover:bg-amber-700"
+                onClick={handleConfirmArchive}
+                disabled={archiving}
+                data-testid="confirm-archive-btn"
+              >
+                {archiving ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <Archive className="w-4 h-4 mr-2" />
+                )}
+                {t('orders.archive')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
