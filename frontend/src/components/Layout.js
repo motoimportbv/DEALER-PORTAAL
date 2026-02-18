@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import Sidebar from './Sidebar';
 import WhatsAppButton from './WhatsAppButton';
 import LanguageSelector from './LanguageSelector';
-import { AlertCircle, RefreshCw, Bike, LogOut } from 'lucide-react';
+import NotificationBell from './NotificationBell';
+import { AlertCircle, RefreshCw, Bike, LogOut, Menu, X, LayoutDashboard, ShoppingCart, Plus, Wrench, CreditCard, Globe } from 'lucide-react';
 import { Button } from './ui/button';
 
 const Layout = ({ children, requiredRole }) => {
