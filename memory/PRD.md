@@ -228,10 +228,10 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ---
 
 ## Key Files Modified (This Session)
-- `/app/backend/server.py` (RDW document upload/delete endpoints)
-- `/app/frontend/src/pages/admin/AdminLicensePlates.js` (upload UI)
-- `/app/backend/uploads/rdw/` (document storage directory)
-- `/app/backend/tests/test_rdw_document.py` (NEW - tests)
+- `/app/backend/server.py` (DELETE /api/orders/{order_id} endpoint)
+- `/app/frontend/src/pages/dealer/DealerOrders.js` (delete button, dialog)
+- `/app/frontend/src/locales/nl.json` (orders vertalingen)
+- `/app/backend/tests/test_delete_order.py` (NEW - tests)
 
 ---
 
