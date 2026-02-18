@@ -389,6 +389,48 @@ const DealerOrders = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent data-testid="delete-order-dialog">
+            <DialogHeader>
+              <DialogTitle>{t('orders.deleteTitle')}</DialogTitle>
+              <DialogDescription>
+                {orderToDelete?.motorcycle ? (
+                  t('orders.deleteConfirm', {
+                    brand: orderToDelete.motorcycle.brand,
+                    model: orderToDelete.motorcycle.model
+                  })
+                ) : (
+                  t('common.confirmDelete')
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={deleting}
+                data-testid="cancel-delete-btn"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                data-testid="confirm-delete-btn"
+              >
+                {deleting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                {t('common.delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
