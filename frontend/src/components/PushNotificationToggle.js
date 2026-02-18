@@ -110,6 +110,7 @@ const PushNotificationToggle = ({ token }) => {
       });
 
       setIsSubscribed(true);
+      localStorage.setItem('pushNotificationsEnabled', 'true'); // Store flag for reminder check
       toast.success(t('pushNotifications.enabled'));
       
       // Show background permission modal if not already accepted
