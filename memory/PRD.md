@@ -38,14 +38,27 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - `orders.deleteConfirm`: "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt verwijderen?"
   - `orders.deleteConfirmGeneric`: Fallback tekst voor verwijderde motoren
   - `orders.deleteFailed`: Error message
-- **Data-testid attributen**:
-  - `delete-order-btn-{order_id}` - Verwijderknop
-  - `delete-order-dialog` - Bevestigingsdialoog
-  - `confirm-delete-btn` - Bevestigknop
-  - `cancel-delete-btn` - Annuleerknop
-- **Bestanden gewijzigd**:
-  - `/app/backend/server.py` (DELETE endpoint)
-  - `/app/frontend/src/pages/dealer/DealerOrders.js` (UI)
+- **Test Status**: 100% geslaagd (backend en frontend)
+
+#### ✅ Bestelling Archiveren Functie (Verbetering)
+- **Feature**: Dealers kunnen bestellingen archiveren in plaats van permanent verwijderen
+- **Backend Endpoints**:
+  - `PUT /api/orders/{order_id}/archive` - Archiveert een bestelling
+  - `PUT /api/orders/{order_id}/restore` - Herstelt een gearchiveerde bestelling
+  - `GET /api/orders/archived` - Haalt gearchiveerde bestellingen op
+  - `GET /api/orders` - Filtert nu gearchiveerde bestellingen uit
+- **Frontend Updates**:
+  - Amber "Archiveren" knop naast de verwijderknop
+  - "Bekijk Archief" knop rechtsboven op de bestellingen pagina
+  - Nieuwe pagina `/dealer/orders/archived` met gearchiveerde bestellingen
+  - Grayscale effect en "Gearchiveerd" badge op gearchiveerde bestellingen
+  - Groene "Herstellen" knop om bestellingen te herstellen
+  - Bevestigingsdialogen voor archiveren en herstellen
+- **Bestanden gewijzigd/toegevoegd**:
+  - `/app/backend/server.py` (archive/restore endpoints)
+  - `/app/frontend/src/pages/dealer/DealerOrders.js` (archive button, dialog)
+  - `/app/frontend/src/pages/dealer/DealerArchivedOrders.js` (NEW)
+  - `/app/frontend/src/App.js` (route)
   - `/app/frontend/src/locales/nl.json` (vertalingen)
 - **Test Status**: 100% geslaagd (backend en frontend)
 
