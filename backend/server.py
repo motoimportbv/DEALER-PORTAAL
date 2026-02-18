@@ -581,6 +581,45 @@ async def send_admin_notification(subject: str, html_content: str):
     """Send email notification to admin"""
     await send_email(ADMIN_EMAIL, subject, html_content)
 
+# ============ EXCHANGE RATE ENDPOINTS ============
+
+@api_router.get("/exchange-rate/chf-eur")
+async def get_exchange_rate():
+    """Get current CHF to EUR exchange rate"""
+    rate = await get_chf_to_eur_rate()
+    return {
+        "from": "CHF",
+        "to": "EUR",
+        "rate": rate,
+        "example": f"1 CHF = {rate} EUR"
+    }
+
+@api_router.post("/exchange-rate/convert")
+async def convert_currency(amount: float, from_currency: str = "CHF", to_currency: str = "EUR"):
+    """Convert currency amount"""
+    if from_currency == "CHF" and to_currency == "EUR":
+        rate = await get_chf_to_eur_rate()
+        converted = convert_chf_to_eur(amount, rate)
+        return {
+            "original_amount": amount,
+            "original_currency": from_currency,
+            "converted_amount": converted,
+            "converted_currency": to_currency,
+            "rate": rate
+        }
+    elif from_currency == "EUR" and to_currency == "CHF":
+        rate = await get_chf_to_eur_rate()
+        converted = round(amount / rate, 2) if rate > 0 else amount
+        return {
+            "original_amount": amount,
+            "original_currency": from_currency,
+            "converted_amount": converted,
+            "converted_currency": to_currency,
+            "rate": 1/rate if rate > 0 else 1
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Only CHF/EUR conversion supported")
+
 # ============ AUTH ENDPOINTS ============
 
 @api_router.post("/auth/register")
