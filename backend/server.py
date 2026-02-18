@@ -1692,7 +1692,7 @@ async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
         except Exception as e:
             logger.error(f"Failed to send new motorcycle email to {dealer.get('email')}: {e}")
 
-@api_router.get("/motorcycles", response_model=List[Motorcycle])
+@api_router.get("/motorcycles")
 async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
     
