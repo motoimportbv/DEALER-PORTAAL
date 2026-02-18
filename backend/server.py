@@ -3026,7 +3026,7 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
         push_sent = 0
         push_failed = 0
         try:
-            subscriptions = await db.push_subscriptions.find({"user_id": dealer_id}).to_list(100)
+            subscriptions = await db.push_subscriptions.find({"user_id": dealer_id}, {"_id": 0}).to_list(100)
             print(f"[ONLINE PUSH] Found {len(subscriptions)} push subscription(s) for dealer {dealer['company_name']}")
             
             for sub in subscriptions:
