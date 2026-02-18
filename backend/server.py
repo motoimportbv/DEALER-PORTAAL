@@ -97,6 +97,7 @@ exchange_rate_cache = {
     "last_updated": None
 }
 EXCHANGE_RATE_CACHE_DURATION = 300  # 5 minutes cache
+CHF_EUR_MARGIN = 0.005  # 0.5% margin on CHF to EUR conversion
 
 async def get_chf_to_eur_rate():
     """Get real-time CHF to EUR exchange rate with caching"""
@@ -132,9 +133,13 @@ async def get_chf_to_eur_rate():
         return exchange_rate_cache["CHF_EUR"]
     return 0.95  # Default fallback
 
-def convert_chf_to_eur(chf_amount: float, rate: float) -> float:
-    """Convert CHF to EUR"""
-    return round(chf_amount * rate, 2)
+def convert_chf_to_eur(chf_amount: float, rate: float, include_margin: bool = True) -> float:
+    """Convert CHF to EUR with optional 0.5% margin"""
+    base_conversion = chf_amount * rate
+    if include_margin:
+        # Add 0.5% margin
+        return round(base_conversion * (1 + CHF_EUR_MARGIN), 2)
+    return round(base_conversion, 2)
 
 # Create the main app
 app = FastAPI()
