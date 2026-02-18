@@ -3103,6 +3103,35 @@ async def reset_user_password(data: ResetPasswordRequest, user: dict = Depends(r
         "email": target_user["email"]
     }
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.post("/auth/change-password")
+async def change_own_password(data: ChangePasswordRequest, user: dict = Depends(get_current_user)):
+    """Gebruiker kan eigen wachtwoord wijzigen"""
+    # Get full user data with password hash
+    full_user = await db.users.find_one({"id": user["id"]})
+    if not full_user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    
+    # Verify current password
+    if not verify_password(data.current_password, full_user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Huidig wachtwoord is onjuist")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Nieuw wachtwoord moet minimaal 6 tekens zijn")
+    
+    # Hash and save new password
+    new_hash = hash_password(data.new_password)
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    return {"message": "Wachtwoord succesvol gewijzigd"}
+
 @api_router.put("/dealers/{dealer_id}/toggle-offline")
 async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_admin)):
     """Zet een dealer tijdelijk offline/online - ontvangt geen meldingen wanneer offline"""
