@@ -97,7 +97,7 @@ exchange_rate_cache = {
     "last_updated": None
 }
 EXCHANGE_RATE_CACHE_DURATION = 300  # 5 minutes cache
-DEFAULT_CHF_EUR_MARGIN = 0.09  # 9% default margin on CHF to EUR conversion
+DEFAULT_CHF_EUR_MARGIN = 0.0  # No default margin - admin sets prices manually
 
 async def get_chf_eur_margin():
     """Get the current CHF to EUR margin from database, or use default"""
