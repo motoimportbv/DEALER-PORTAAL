@@ -103,7 +103,7 @@ const ForeignDealerAddMotorcycle = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(null);
+  const [exchangeData, setExchangeData] = useState(null);
   const [formData, setFormData] = useState({
     brand: '',
     model: '',
@@ -124,7 +124,7 @@ const ForeignDealerAddMotorcycle = () => {
     const fetchRate = async () => {
       try {
         const response = await axios.get(`${API}/exchange-rate/chf-eur`);
-        setExchangeRate(response.data.rate);
+        setExchangeData(response.data);
       } catch (error) {
         console.error('Failed to fetch exchange rate:', error);
       }
