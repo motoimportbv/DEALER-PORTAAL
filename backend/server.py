@@ -88,6 +88,54 @@ def get_vapid_private_key():
         logger.error(f"Failed to load VAPID private key: {e}")
         return None
 
+# ============ EXCHANGE RATE CONFIG ============
+import httpx
+
+# Cache for exchange rates (to avoid too many API calls)
+exchange_rate_cache = {
+    "CHF_EUR": None,
+    "last_updated": None
+}
+EXCHANGE_RATE_CACHE_DURATION = 300  # 5 minutes cache
+
+async def get_chf_to_eur_rate():
+    """Get real-time CHF to EUR exchange rate with caching"""
+    global exchange_rate_cache
+    
+    now = datetime.now(timezone.utc)
+    
+    # Check cache validity
+    if (exchange_rate_cache["CHF_EUR"] is not None and 
+        exchange_rate_cache["last_updated"] is not None and
+        (now - exchange_rate_cache["last_updated"]).total_seconds() < EXCHANGE_RATE_CACHE_DURATION):
+        return exchange_rate_cache["CHF_EUR"]
+    
+    try:
+        # Use exchangerate-api.com (free tier: 1500 requests/month)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.exchangerate-api.com/v4/latest/CHF",
+                timeout=10.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                rate = data.get("rates", {}).get("EUR", 0.95)  # Fallback to ~0.95
+                exchange_rate_cache["CHF_EUR"] = rate
+                exchange_rate_cache["last_updated"] = now
+                logger.info(f"Exchange rate updated: 1 CHF = {rate} EUR")
+                return rate
+    except Exception as e:
+        logger.error(f"Failed to fetch exchange rate: {e}")
+    
+    # Fallback rate if API fails
+    if exchange_rate_cache["CHF_EUR"] is not None:
+        return exchange_rate_cache["CHF_EUR"]
+    return 0.95  # Default fallback
+
+def convert_chf_to_eur(chf_amount: float, rate: float) -> float:
+    """Convert CHF to EUR"""
+    return round(chf_amount * rate, 2)
+
 # Create the main app
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
