@@ -210,7 +210,8 @@
     "addMotorcycle": "Motor Toevoegen",
     "pendingReview": "Wacht op beoordeling",
     "infoMessage": "Uw motor wordt beoordeeld door Moto Import. Na goedkeuring en prijsbepaling wordt deze zichtbaar.",
-    "myListings": "Mijn Ingezonden Motors"
+    "myListings": "Mijn Ingezonden Motors",
+    "priceWarning": "Let op: Dit is de inkoopprijs voor Moto Import, niet de verkoopprijs aan eindklanten."
   },
   "admin": {
     "pendingListings": "Wachtende Motors",
