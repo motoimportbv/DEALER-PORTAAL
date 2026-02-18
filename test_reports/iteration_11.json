@@ -1,0 +1,162 @@
+{
+  "summary": "Comprehensive testing of archive/restore order functionality. All backend API tests and frontend UI tests passed successfully.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: PUT /api/orders/{order_id}/archive requires authentication (returns 403 without token)",
+    "Backend: PUT /api/orders/{order_id}/archive returns 404 for non-existent order",
+    "Backend: PUT /api/orders/{order_id}/archive sets archived=true successfully",
+    "Backend: PUT /api/orders/{order_id}/restore requires authentication (returns 403 without token)",
+    "Backend: PUT /api/orders/{order_id}/restore returns 404 for non-existent order",
+    "Backend: PUT /api/orders/{order_id}/restore sets archived=false successfully",
+    "Backend: GET /api/orders excludes archived orders (archived: {$ne: true})",
+    "Backend: GET /api/orders/archived returns only archived orders",
+    "Backend: Archived orders include motorcycle data",
+    "Backend: Full archive->restore flow works correctly",
+    "Frontend: 'Archiveren' button (amber) appears on each order with data-testid='archive-order-btn-{id}'",
+    "Frontend: Archive confirmation dialog opens with Dutch text 'Bestelling Archiveren?'",
+    "Frontend: Archive dialog shows motorcycle brand and model in confirmation message",
+    "Frontend: Archive dialog has 'Annuleren' and 'Archiveren' buttons with correct data-testid",
+    "Frontend: Archive confirm button has amber styling (bg-amber-600)",
+    "Frontend: 'Bekijk Archief' button links to /dealer/orders/archived with data-testid='view-archived-orders-btn'",
+    "Frontend: Archived orders page shows title 'GEARCHIVEERDE BESTELLINGEN'",
+    "Frontend: Archived orders have grayscale effect on images",
+    "Frontend: Archived orders show 'Gearchiveerd' badge",
+    "Frontend: 'Herstellen' button (green) on archived orders with data-testid='restore-order-btn-{id}'",
+    "Frontend: Restore confirmation dialog opens with Dutch text 'Bestelling Herstellen?'",
+    "Frontend: Restore confirm button has green styling (bg-green-600)",
+    "Frontend: 'Terug naar Bestellingen' button links back to /dealer/orders with data-testid='back-to-orders-btn'",
+    "Frontend: Order moves from main list to archived after archiving",
+    "Frontend: Order moves from archived to main list after restoring",
+    "Frontend: Success toast 'Bestelling gearchiveerd' appears after archiving",
+    "Frontend: Success toast 'Bestelling hersteld' appears after restoring"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_archive_orders.py",
+    "/app/test_reports/pytest/pytest_archive_orders.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Archive/restore endpoints properly check authorization - dealers can only archive/restore their own orders",
+    "GET /api/orders correctly filters out archived orders with {archived: {$ne: true}}",
+    "GET /api/orders/archived correctly returns only archived orders",
+    "Frontend uses proper Dutch translations from nl.json for all archive/restore text",
+    "All interactive elements have data-testid attributes for testing",
+    "Archive button has amber styling, restore button has green styling as specified",
+    "Archived orders display with grayscale effect and 'Gearchiveerd' badge"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_archive_orders.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "dealer_email": "zoektest@dealer.nl",
+    "dealer_password": "ZoekTest123!"
+  },
+  "seed_data_creation": "No new seed data created - used existing archived order (Yamaha MT-07)",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Archive/restore feature fully tested and working. The test dealer (zoektest@dealer.nl) currently has 1 archived order (Yamaha MT-07). The full flow was tested: restore archived order -> verify in main list -> archive again -> verify in archived list.",
+  "verified_features": {
+    "archive_endpoint": {
+      "status": "WORKING",
+      "endpoint": "PUT /api/orders/{order_id}/archive",
+      "authorization": "Dealers can only archive their own orders, admins can archive any",
+      "response": "{\"message\": \"Order archived successfully\"}"
+    },
+    "restore_endpoint": {
+      "status": "WORKING",
+      "endpoint": "PUT /api/orders/{order_id}/restore",
+      "authorization": "Dealers can only restore their own orders, admins can restore any",
+      "response": "{\"message\": \"Order restored successfully\"}"
+    },
+    "get_archived_orders_endpoint": {
+      "status": "WORKING",
+      "endpoint": "GET /api/orders/archived",
+      "behavior": "Returns only archived orders for the current dealer"
+    },
+    "get_orders_excludes_archived": {
+      "status": "WORKING",
+      "endpoint": "GET /api/orders",
+      "behavior": "Excludes archived orders with filter {archived: {$ne: true}}"
+    },
+    "frontend_archive_button": {
+      "status": "WORKING",
+      "location": "DealerOrders.js",
+      "data_testid": "archive-order-btn-{order_id}",
+      "text": "Archiveren",
+      "styling": "amber (text-amber-600 border-amber-200)"
+    },
+    "frontend_archive_dialog": {
+      "status": "WORKING",
+      "data_testid": "archive-order-dialog",
+      "title": "Bestelling Archiveren?",
+      "confirm_button": "confirm-archive-btn (bg-amber-600)",
+      "cancel_button": "cancel-archive-btn"
+    },
+    "frontend_view_archived_button": {
+      "status": "WORKING",
+      "data_testid": "view-archived-orders-btn",
+      "text": "Bekijk Archief",
+      "links_to": "/dealer/orders/archived"
+    },
+    "frontend_archived_orders_page": {
+      "status": "WORKING",
+      "route": "/dealer/orders/archived",
+      "title": "GEARCHIVEERDE BESTELLINGEN",
+      "features": ["grayscale images", "Gearchiveerd badge", "restore button"]
+    },
+    "frontend_restore_button": {
+      "status": "WORKING",
+      "location": "DealerArchivedOrders.js",
+      "data_testid": "restore-order-btn-{order_id}",
+      "text": "Herstellen",
+      "styling": "green (text-green-600 border-green-200)"
+    },
+    "frontend_restore_dialog": {
+      "status": "WORKING",
+      "data_testid": "restore-order-dialog",
+      "title": "Bestelling Herstellen?",
+      "confirm_button": "confirm-restore-btn (bg-green-600)",
+      "cancel_button": "cancel-restore-btn"
+    },
+    "frontend_back_to_orders_button": {
+      "status": "WORKING",
+      "data_testid": "back-to-orders-btn",
+      "text": "Terug naar Bestellingen",
+      "links_to": "/dealer/orders"
+    },
+    "translations": {
+      "status": "WORKING",
+      "keys_verified": [
+        "orders.archive",
+        "orders.archiveTitle",
+        "orders.archiveConfirm",
+        "orders.archiveConfirmGeneric",
+        "orders.archiveFailed",
+        "orders.archiveSuccess",
+        "orders.restore",
+        "orders.restoreTitle",
+        "orders.restoreConfirm",
+        "orders.restoreConfirmGeneric",
+        "orders.restoreFailed",
+        "orders.restoreSuccess",
+        "orders.archivedOrders",
+        "orders.noArchivedOrders",
+        "orders.archivedOrdersDescription",
+        "orders.viewArchivedOrders",
+        "orders.backToOrders"
+      ]
+    }
+  }
+}
