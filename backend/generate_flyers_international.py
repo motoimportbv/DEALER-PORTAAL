@@ -324,3 +324,6 @@ if __name__ == '__main__':
     
     it_path = create_italian_flyer()
     print(f'Italiaanse PDF gegenereerd: {it_path}')
+    
+    de_path = create_german_flyer()
+    print(f'Duitse PDF gegenereerd: {de_path}')
