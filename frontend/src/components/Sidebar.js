@@ -16,7 +16,8 @@ import {
   ClipboardList,
   CreditCard,
   Bell,
-  UserPlus
+  UserPlus,
+  KeyRound
 } from 'lucide-react';
 
 const Sidebar = () => {
