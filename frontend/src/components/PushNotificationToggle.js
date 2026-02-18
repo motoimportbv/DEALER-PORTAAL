@@ -215,6 +215,7 @@ const PushNotificationToggle = ({ token }) => {
       });
 
       setIsSubscribed(false);
+      localStorage.removeItem('pushNotificationsEnabled'); // Remove flag
       toast.success(t('pushNotifications.disabled'));
     } catch (error) {
       console.error('Error unsubscribing:', error);
