@@ -20,6 +20,35 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 18 February 2025 (Part 6)
+
+#### ✅ Bestelling Verwijderen voor Dealers (P0 Feature)
+- **Feature**: Dealers kunnen nu hun eigen bestellingen verwijderen van de "Mijn Bestellingen" pagina
+- **Backend Endpoint**: `DELETE /api/orders/{order_id}`
+  - Dealers kunnen alleen hun eigen bestellingen verwijderen
+  - Admins kunnen elke bestelling verwijderen
+  - Motor wordt weer beschikbaar na verwijdering
+- **Frontend Updates**:
+  - Rode "Verwijderen" knop bij elke bestelling
+  - Bevestigingsdialoog met motor naam (indien beschikbaar)
+  - Success toast "Succesvol verwijderd" na verwijdering
+  - Bestelling verdwijnt direct uit de lijst
+- **Vertalingen toegevoegd**:
+  - `orders.deleteTitle`: "Bestelling Verwijderen?"
+  - `orders.deleteConfirm`: "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt verwijderen?"
+  - `orders.deleteConfirmGeneric`: Fallback tekst voor verwijderde motoren
+  - `orders.deleteFailed`: Error message
+- **Data-testid attributen**:
+  - `delete-order-btn-{order_id}` - Verwijderknop
+  - `delete-order-dialog` - Bevestigingsdialoog
+  - `confirm-delete-btn` - Bevestigknop
+  - `cancel-delete-btn` - Annuleerknop
+- **Bestanden gewijzigd**:
+  - `/app/backend/server.py` (DELETE endpoint)
+  - `/app/frontend/src/pages/dealer/DealerOrders.js` (UI)
+  - `/app/frontend/src/locales/nl.json` (vertalingen)
+- **Test Status**: 100% geslaagd (backend en frontend)
+
 ### Session - 17 February 2025 (Part 5)
 
 #### ✅ RDW Document Upload voor Kentekens
