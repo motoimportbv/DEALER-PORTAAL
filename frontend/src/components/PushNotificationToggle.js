@@ -103,12 +103,14 @@ const PushNotificationToggle = ({ token }) => {
       });
 
       // Send subscription to server
-      await axios.post(`${API}/api/push/subscribe`, {
+      const subscribeResponse = await axios.post(`${API}/api/push/subscribe`, {
         subscription: subscription.toJSON()
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log('[PUSH] Subscription saved successfully:', subscribeResponse.data);
+      
       setIsSubscribed(true);
       localStorage.setItem('pushNotificationsEnabled', 'true'); // Store flag for reminder check
       toast.success(t('pushNotifications.enabled'));
@@ -121,8 +123,17 @@ const PushNotificationToggle = ({ token }) => {
         }, 1000);
       }
     } catch (error) {
-      console.error('Error subscribing:', error);
-      toast.error(t('pushNotifications.enableError'));
+      console.error('[PUSH] Error subscribing:', error);
+      console.error('[PUSH] Error details:', error.response?.data || error.message);
+      
+      // More specific error messages
+      if (error.response?.status === 401) {
+        toast.error('Sessie verlopen. Log opnieuw in en probeer het opnieuw.');
+      } else if (error.message?.includes('network')) {
+        toast.error('Geen internetverbinding. Controleer uw verbinding en probeer opnieuw.');
+      } else {
+        toast.error(t('pushNotifications.enableError'));
+      }
     } finally {
       setIsLoading(false);
     }
