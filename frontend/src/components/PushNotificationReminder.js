@@ -16,43 +16,49 @@ const PushNotificationReminder = ({ isSubscribed, onEnableClick }) => {
   // Check multiple sources to determine if push is enabled
   useEffect(() => {
     const checkPushStatus = async () => {
-      // Check 1: Browser permission
+      // Quick check: if browser permission is granted, don't show reminder
       if ('Notification' in window && Notification.permission === 'granted') {
-        // Check 2: localStorage flag (set when user enables push)
-        const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
-        
-        // Check 3: Actual subscription (if service worker ready)
-        let hasSubscription = false;
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-          try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-            hasSubscription = !!subscription;
-            
-            // Update localStorage based on actual subscription
-            if (hasSubscription) {
-              localStorage.setItem('pushNotificationsEnabled', 'true');
-            }
-          } catch (e) {
-            console.log('Could not check subscription:', e);
+        setPushEnabled(true);
+        localStorage.setItem('pushNotificationsEnabled', 'true');
+        return;
+      }
+      
+      // Check localStorage flag (set when user enables push)
+      const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
+      if (storedEnabled) {
+        setPushEnabled(true);
+        return;
+      }
+      
+      // Check actual subscription (if service worker ready)
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          if (subscription) {
+            setPushEnabled(true);
+            localStorage.setItem('pushNotificationsEnabled', 'true');
+            return;
           }
-        }
-        
-        // If permission granted AND (stored flag OR actual subscription), push is enabled
-        if (storedEnabled || hasSubscription) {
-          setPushEnabled(true);
-          return;
+        } catch (e) {
+          console.log('Could not check subscription:', e);
         }
       }
       
       setPushEnabled(false);
     };
     
+    // Check immediately
     checkPushStatus();
     
-    // Recheck after a delay in case service worker takes time
-    const timer = setTimeout(checkPushStatus, 2000);
-    return () => clearTimeout(timer);
+    // Recheck after delays to catch late-loading service workers
+    const timer1 = setTimeout(checkPushStatus, 1000);
+    const timer2 = setTimeout(checkPushStatus, 3000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, [isSubscribed]);
 
   useEffect(() => {
