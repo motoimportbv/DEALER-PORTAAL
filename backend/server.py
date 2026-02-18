@@ -1861,9 +1861,21 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
+    
     # Add default starting_price if missing
     if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
+    
+    # Real-time price conversion for CHF motorcycles
+    if motorcycle.get("original_currency") == "CHF" and motorcycle.get("original_price"):
+        chf_eur_rate = await get_chf_to_eur_rate()
+        margin = await get_chf_eur_margin()
+        motorcycle["price"] = convert_chf_to_eur(motorcycle["original_price"], chf_eur_rate, margin)
+        motorcycle["starting_price"] = round(motorcycle["price"] * 0.8, 2)
+        motorcycle["exchange_rate"] = chf_eur_rate
+        motorcycle["margin_percent"] = margin * 100
+        motorcycle["price_updated_live"] = True
+    
     return motorcycle
 
 @api_router.put("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
