@@ -54,33 +54,27 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 #### ✅ CHF Wisselkoers Integratie (Verbetering)
 - **Feature**: Real-time CHF naar EUR conversie voor buitenlandse (Zwitserse) dealers
 - **Backend Endpoints**:
-  - `GET /api/exchange-rate/chf-eur` - Haalt huidige wisselkoers + marge op
+  - `GET /api/exchange-rate/chf-eur` - Haalt huidige wisselkoers op
   - `GET /api/exchange-rate/margin` - Haalt huidige marge op
   - `PUT /api/exchange-rate/margin` - Admin past marge aan (0-50%)
-  - `POST /api/exchange-rate/convert` - Converteert bedragen met marge
-  - `GET /api/motorcycles/with-exchange-rate` - Motorcycles met koersinfo
+  - `POST /api/exchange-rate/convert` - Converteert bedragen
+  - `GET /api/motorcycles/available` - Live EUR prijzen voor CHF motors
 - **Exchange Rate API**: exchangerate-api.com (gratis, 5 min cache)
 - **Marge Systeem**:
-  - Standaard: 9% marge op CHF naar EUR conversie
-  - Admin kan marge aanpassen via `/admin/exchange-rate` pagina
-  - Marge wordt opgeslagen in database (`settings` collectie)
-  - Snelknoppen: 5%, 7%, 9%, 10%, 12%, 15%
-- **Data Model Uitgebreid**:
-  - `Motorcycle.original_currency` - Valuta van originele prijs (EUR/CHF)
-  - `MotorcycleCreate.currency` - Valuta bij aanmaken
-  - `settings.chf_eur_margin` - Huidige marge in database
+  - Standaard: **0% marge** (pure wisselkoers)
+  - Admin kan marge aanpassen via `/admin/exchange-rate` indien gewenst
+  - Admin vult verkoopprijzen handmatig in bij activeren
+- **Live Prijzen voor Dealers**:
+  - Nederlandse dealers zien real-time EUR prijzen
+  - Prijzen bewegen mee met CHF/EUR koers
+  - "🟢 Live wisselkoers" indicator bij CHF motors
+  - Zowel EUR als originele CHF prijs worden getoond
 - **Frontend Updates**:
   - CHF/EUR dropdown in buitenlandse dealer formulier
-  - Real-time EUR conversie met marge: "≈ €11.990 EUR (koers: 1.1 + 9% marge)"
-  - Admin pagina `/admin/exchange-rate` met koers overzicht en marge aanpassing
-  - "Wisselkoers" link in admin sidebar
-- **Bestanden gewijzigd/toegevoegd**:
-  - `/app/backend/server.py` (exchange rate endpoints, margin functions)
-  - `/app/frontend/src/pages/admin/AdminExchangeRate.js` (NEW)
-  - `/app/frontend/src/pages/foreign-dealer/ForeignDealerAddMotorcycle.js`
-  - `/app/frontend/src/components/Sidebar.js`
-  - `/app/frontend/src/App.js`
-- **Test Status**: API en UI handmatig getest, 9% marge werkt correct
+  - Real-time EUR conversie preview
+  - Admin pagina `/admin/exchange-rate` met koers overzicht
+  - Catalogus en detail pagina's tonen beide prijzen + live indicator
+- **Test Status**: Volledig getest, live prijzen werken correct
 
 ### Session - 17 February 2025 (Part 5)
 
