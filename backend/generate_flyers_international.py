@@ -85,7 +85,7 @@ def create_french_flyer():
         ("Grand Reseau", "Plus de 200 concessionnaires actifs prets a acheter vos motos."),
         ("Ventes Rapides", "Notre plateforme permet des transactions rapides et efficaces."),
         ("Notifications Push", "Les concessionnaires recoivent une alerte des qu'une nouvelle moto est disponible."),
-        ("Sans Engagement", "Pas de frais mensuels, pas de minimum. Vous ne payez que ce que vous vendez."),
+        ("Totalement Gratuit", "Aucun frais! L'inscription et l'utilisation de notre plateforme sont entierement gratuites."),
         ("Service Personnel", "Contact direct avec notre equipe pour toutes vos questions.")
     ]
     
@@ -174,7 +174,7 @@ def create_italian_flyer():
         ("Grande Rete", "Piu di 200 concessionari attivi pronti ad acquistare le tue moto."),
         ("Vendite Rapide", "La nostra piattaforma permette transazioni rapide ed efficienti."),
         ("Notifiche Push", "I concessionari ricevono un avviso quando una nuova moto e disponibile."),
-        ("Senza Impegno", "Nessun costo mensile, nessun minimo. Paghi solo quello che vendi."),
+        ("Completamente Gratuito", "Nessun costo! La registrazione e l'utilizzo della nostra piattaforma sono completamente gratuiti."),
         ("Servizio Personale", "Contatto diretto con il nostro team per tutte le tue domande.")
     ]
     
