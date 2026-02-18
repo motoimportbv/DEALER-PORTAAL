@@ -54,23 +54,33 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 #### ✅ CHF Wisselkoers Integratie (Verbetering)
 - **Feature**: Real-time CHF naar EUR conversie voor buitenlandse (Zwitserse) dealers
 - **Backend Endpoints**:
-  - `GET /api/exchange-rate/chf-eur` - Haalt huidige wisselkoers op
-  - `POST /api/exchange-rate/convert` - Converteert bedragen tussen CHF/EUR
+  - `GET /api/exchange-rate/chf-eur` - Haalt huidige wisselkoers + marge op
+  - `GET /api/exchange-rate/margin` - Haalt huidige marge op
+  - `PUT /api/exchange-rate/margin` - Admin past marge aan (0-50%)
+  - `POST /api/exchange-rate/convert` - Converteert bedragen met marge
   - `GET /api/motorcycles/with-exchange-rate` - Motorcycles met koersinfo
 - **Exchange Rate API**: exchangerate-api.com (gratis, 5 min cache)
+- **Marge Systeem**:
+  - Standaard: 9% marge op CHF naar EUR conversie
+  - Admin kan marge aanpassen via `/admin/exchange-rate` pagina
+  - Marge wordt opgeslagen in database (`settings` collectie)
+  - Snelknoppen: 5%, 7%, 9%, 10%, 12%, 15%
 - **Data Model Uitgebreid**:
   - `Motorcycle.original_currency` - Valuta van originele prijs (EUR/CHF)
   - `MotorcycleCreate.currency` - Valuta bij aanmaken
+  - `settings.chf_eur_margin` - Huidige marge in database
 - **Frontend Updates**:
   - CHF/EUR dropdown in buitenlandse dealer formulier
-  - Real-time EUR conversie weergave bij CHF invoer
-  - Dealers zien beide prijzen: "€12.500 (CHF 11.364)"
-- **Bestanden gewijzigd**:
-  - `/app/backend/server.py` (exchange rate endpoints, foreign listing update)
+  - Real-time EUR conversie met marge: "≈ €11.990 EUR (koers: 1.1 + 9% marge)"
+  - Admin pagina `/admin/exchange-rate` met koers overzicht en marge aanpassing
+  - "Wisselkoers" link in admin sidebar
+- **Bestanden gewijzigd/toegevoegd**:
+  - `/app/backend/server.py` (exchange rate endpoints, margin functions)
+  - `/app/frontend/src/pages/admin/AdminExchangeRate.js` (NEW)
   - `/app/frontend/src/pages/foreign-dealer/ForeignDealerAddMotorcycle.js`
-  - `/app/frontend/src/pages/dealer/DealerDashboard.js` (prijsweergave)
-  - `/app/frontend/src/locales/nl.json`
-- **Test Status**: Handmatig getest, API werkt (1 CHF = 1.1 EUR)
+  - `/app/frontend/src/components/Sidebar.js`
+  - `/app/frontend/src/App.js`
+- **Test Status**: API en UI handmatig getest, 9% marge werkt correct
 
 ### Session - 17 February 2025 (Part 5)
 
