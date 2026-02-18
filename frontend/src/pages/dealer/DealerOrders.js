@@ -174,11 +174,19 @@ const DealerOrders = () => {
   return (
     <Layout>
       <div className="content-header">
-        <div>
-          <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
-            {t('nav.myOrders')}
-          </h1>
-          <p className="text-zinc-500 mt-1">{orders.length} {t('orders.totalOrders')}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
+              {t('nav.myOrders')}
+            </h1>
+            <p className="text-zinc-500 mt-1">{orders.length} {t('orders.totalOrders')}</p>
+          </div>
+          <Link to="/dealer/orders/archived">
+            <Button variant="outline" data-testid="view-archived-orders-btn">
+              <FolderArchive className="w-4 h-4 mr-2" />
+              {t('orders.viewArchivedOrders')}
+            </Button>
+          </Link>
         </div>
       </div>
 
