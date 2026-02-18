@@ -209,7 +209,8 @@
     "addMotorcycle": "Motorrad hinzufügen",
     "pendingReview": "Wartet auf Überprüfung",
     "infoMessage": "Ihr Motorrad wird von Moto Import geprüft. Nach Genehmigung und Preisfestlegung wird es sichtbar.",
-    "myListings": "Meine eingereichten Motorräder"
+    "myListings": "Meine eingereichten Motorräder",
+    "priceWarning": "Achtung: Dies ist der Einkaufspreis für Moto Import, nicht der Verkaufspreis an Endkunden."
   },
   "admin": {
     "pendingListings": "Ausstehende Motorräder",
