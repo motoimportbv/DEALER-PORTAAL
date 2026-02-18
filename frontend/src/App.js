@@ -173,6 +173,7 @@ function App() {
             <Route path="/admin/license-plates" element={<AdminLicensePlates />} />
             <Route path="/admin/push-status" element={<AdminPushStatus />} />
             <Route path="/admin/create-admin" element={<AdminCreateAdmin />} />
+            <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
