@@ -402,7 +402,7 @@ const DealerOrders = () => {
                     model: orderToDelete.motorcycle.model
                   })
                 ) : (
-                  t('common.confirmDelete')
+                  t('orders.deleteConfirmGeneric')
                 )}
               </DialogDescription>
             </DialogHeader>
