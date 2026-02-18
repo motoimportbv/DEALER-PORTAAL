@@ -17,6 +17,7 @@ import {
 import PushNotificationToggle from '../../components/PushNotificationToggle';
 import PushNotificationReminder from '../../components/PushNotificationReminder';
 import TermsModal from '../../components/TermsModal';
+import { toast } from 'sonner';
 import { 
   Bike, 
   Filter,
