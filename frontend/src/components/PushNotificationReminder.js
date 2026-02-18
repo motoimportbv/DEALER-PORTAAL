@@ -11,45 +11,91 @@ const PushNotificationReminder = ({ isSubscribed, onEnableClick }) => {
   const { t } = useTranslation();
   const [showReminder, setShowReminder] = useState(false);
   const [dismissCount, setDismissCount] = useState(0);
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
 
-  // Check if notification permission is already granted
+  // Check multiple sources to determine if push is enabled
   useEffect(() => {
-    if ('Notification' in window) {
-      setPermissionGranted(Notification.permission === 'granted');
-    }
-  }, []);
+    const checkPushStatus = async () => {
+      // Check 1: Browser permission
+      if ('Notification' in window && Notification.permission === 'granted') {
+        // Check 2: localStorage flag (set when user enables push)
+        const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
+        
+        // Check 3: Actual subscription (if service worker ready)
+        let hasSubscription = false;
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+            hasSubscription = !!subscription;
+            
+            // Update localStorage based on actual subscription
+            if (hasSubscription) {
+              localStorage.setItem('pushNotificationsEnabled', 'true');
+            }
+          } catch (e) {
+            console.log('Could not check subscription:', e);
+          }
+        }
+        
+        // If permission granted AND (stored flag OR actual subscription), push is enabled
+        if (storedEnabled || hasSubscription) {
+          setPushEnabled(true);
+          return;
+        }
+      }
+      
+      setPushEnabled(false);
+    };
+    
+    checkPushStatus();
+    
+    // Recheck after a delay in case service worker takes time
+    const timer = setTimeout(checkPushStatus, 2000);
+    return () => clearTimeout(timer);
+  }, [isSubscribed]);
 
   useEffect(() => {
     // Get dismiss count from localStorage
     const count = parseInt(localStorage.getItem('pushReminderDismissCount') || '0');
     setDismissCount(count);
     
-    // Don't show if subscribed OR if permission is already granted
-    if (!isSubscribed && !permissionGranted) {
+    // Don't show if subscribed OR if push is enabled
+    if (!isSubscribed && !pushEnabled) {
       const timer = setTimeout(() => {
+        // Final check before showing
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
+          if (storedEnabled) {
+            setPushEnabled(true);
+            return;
+          }
+        }
         setShowReminder(true);
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timer);
     } else {
       setShowReminder(false);
     }
-  }, [isSubscribed, permissionGranted]);
+  }, [isSubscribed, pushEnabled]);
 
-  // Show reminder again after dismissing (every 60 seconds instead of 30)
+  // Show reminder again after dismissing (every 2 minutes)
   useEffect(() => {
-    if (!isSubscribed && !permissionGranted && !showReminder) {
+    if (!isSubscribed && !pushEnabled && !showReminder) {
       const timer = setTimeout(() => {
-        // Double-check permission before showing again
+        // Double-check before showing again
         if ('Notification' in window && Notification.permission === 'granted') {
-          setPermissionGranted(true);
-          return;
+          const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
+          if (storedEnabled) {
+            setPushEnabled(true);
+            return;
+          }
         }
         setShowReminder(true);
-      }, 60000); // 60 seconds
+      }, 120000); // 2 minutes
       return () => clearTimeout(timer);
     }
-  }, [isSubscribed, permissionGranted, showReminder]);
+  }, [isSubscribed, pushEnabled, showReminder]);
 
   const handleDismiss = () => {
     const newCount = dismissCount + 1;
