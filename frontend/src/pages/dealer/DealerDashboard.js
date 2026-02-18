@@ -129,6 +129,7 @@ const DealerDashboard = () => {
               const subscription = await registration.pushManager.getSubscription();
               if (subscription) {
                 setIsPushSubscribed(true);
+                localStorage.setItem('pushNotificationsEnabled', 'true'); // Store flag
                 // Show success message
                 toast.success('Push meldingen ingeschakeld! U ontvangt nu meldingen voor nieuwe motoren en updates.', {
                   duration: 5000,
