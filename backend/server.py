@@ -3068,7 +3068,7 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
                     webpush(
                         subscription_info=subscription_info,
                         data=payload,
-                        vapid_private_key=VAPID_PRIVATE_KEY,
+                        vapid_private_key=get_vapid_private_key(),
                         vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
                     )
                     push_sent += 1
