@@ -306,7 +306,10 @@
     "pickupFree": "Gratis (ophalen)",
     "transferInfo": "Maak {{amount}} binnen 5 werkdagen over naar NL23 INGB 0107 0760 63 t.n.v. Moto Import B.V. met kenmerk {{reference}}",
     "yourNote": "Uw notitie",
-    "viewMotorcycleBtn": "Bekijk Motor"
+    "viewMotorcycleBtn": "Bekijk Motor",
+    "deleteTitle": "Bestelling Verwijderen?",
+    "deleteConfirm": "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "deleteFailed": "Kon bestelling niet verwijderen"
   },
   "detail": {
     "orderPlaced": "Bestelling geplaatst"
