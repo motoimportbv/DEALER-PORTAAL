@@ -1856,7 +1856,7 @@ async def get_motorcycle_public(motorcycle_id: str):
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
     return motorcycle
 
-@api_router.get("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
+@api_router.get("/motorcycles/{motorcycle_id}")
 async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
