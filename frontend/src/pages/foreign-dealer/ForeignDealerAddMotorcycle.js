@@ -362,11 +362,13 @@ const ForeignDealerAddMotorcycle = () => {
                       className="flex-1"
                     />
                   </div>
-                  {/* Real-time EUR conversion display */}
-                  {formData.currency === 'CHF' && formData.price && exchangeRate && (
+                  {/* Real-time EUR conversion display with margin */}
+                  {formData.currency === 'CHF' && formData.price && exchangeData && (
                     <p className="text-sm text-zinc-500 mt-1">
-                      ≈ €{(parseFloat(formData.price) * exchangeRate).toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR
-                      <span className="text-xs text-zinc-400 ml-1">(koers: 1 CHF = {exchangeRate.toFixed(4)} EUR)</span>
+                      ≈ €{(parseFloat(formData.price) * exchangeData.effective_rate).toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR
+                      <span className="text-xs text-zinc-400 ml-1">
+                        (koers: {exchangeData.rate.toFixed(4)} + {exchangeData.margin_percent}% marge)
+                      </span>
                     </p>
                   )}
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
