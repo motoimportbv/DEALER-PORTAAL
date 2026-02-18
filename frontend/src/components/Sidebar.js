@@ -18,7 +18,8 @@ import {
   CreditCard,
   Bell,
   UserPlus,
-  KeyRound
+  KeyRound,
+  TrendingUp
 } from 'lucide-react';
 
 const Sidebar = () => {
