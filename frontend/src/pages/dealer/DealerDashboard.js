@@ -127,11 +127,22 @@ const DealerDashboard = () => {
             try {
               const registration = await navigator.serviceWorker.ready;
               const subscription = await registration.pushManager.getSubscription();
-              setIsPushSubscribed(!!subscription);
+              if (subscription) {
+                setIsPushSubscribed(true);
+                // Show success message
+                toast.success('Push meldingen ingeschakeld! U ontvangt nu meldingen voor nieuwe motoren en updates.', {
+                  duration: 5000,
+                  icon: '🔔'
+                });
+              }
             } catch (e) {
               console.error('Error rechecking push status:', e);
             }
           }, 2000);
+        } else if (permission === 'denied') {
+          toast.error('Push meldingen zijn geblokkeerd. Ga naar uw browser instellingen om dit te wijzigen.', {
+            duration: 5000
+          });
         }
       } catch (error) {
         console.error('Error requesting notification permission:', error);
