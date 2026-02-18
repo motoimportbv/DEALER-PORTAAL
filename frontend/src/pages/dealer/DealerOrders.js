@@ -87,7 +87,7 @@ const DealerOrders = () => {
     try {
       await axios.delete(`${API}/orders/${orderToDelete.id}`);
       setOrders(orders.filter(o => o.id !== orderToDelete.id));
-      toast.success(t('common.successDeleted'));
+      toast.success(t('messages.successDeleted'));
       setDeleteDialogOpen(false);
       setOrderToDelete(null);
     } catch (error) {
