@@ -30,6 +30,7 @@ import AdminParts from "./pages/admin/AdminParts";
 import AdminPartOrders from "./pages/admin/AdminPartOrders";
 import AdminLicensePlates from "./pages/admin/AdminLicensePlates";
 import AdminPushStatus from "./pages/admin/AdminPushStatus";
+import AdminCreateAdmin from "./pages/admin/AdminCreateAdmin";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import DealerSellMotorcycle from "./pages/dealer/DealerSellMotorcycle";
