@@ -150,7 +150,7 @@ const Layout = ({ children, requiredRole }) => {
 
           {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
-            <div className="absolute top-full left-0 right-0 bg-white border-b shadow-lg z-50">
+            <div className="absolute top-full left-0 right-0 bg-white border-b shadow-lg z-[100]">
               <nav className="py-2">
                 {mobileNavItems.map((item) => (
                   <Link
@@ -167,6 +167,17 @@ const Layout = ({ children, requiredRole }) => {
                     <span className="font-medium">{item.label}</span>
                   </Link>
                 ))}
+                <div className="border-t my-2"></div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.location.reload();
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 text-zinc-700 hover:bg-zinc-50 w-full"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  <span className="font-medium">Verversen</span>
+                </button>
               </nav>
             </div>
           )}
