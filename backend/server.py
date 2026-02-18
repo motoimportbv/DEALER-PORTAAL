@@ -1400,15 +1400,16 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
     display_price = data.price
     
     if currency == "CHF":
-        # Convert CHF to EUR for display price
+        # Convert CHF to EUR for display price (with margin)
         rate = await get_chf_to_eur_rate()
-        display_price = convert_chf_to_eur(data.price, rate)
+        margin = await get_chf_eur_margin()
+        display_price = convert_chf_to_eur(data.price, rate, margin)
     
     motorcycle = Motorcycle(
         brand=data.brand,
         model=data.model,
         year=data.year,
-        price=display_price,  # EUR price for display
+        price=display_price,  # EUR price for display (with margin)
         starting_price=data.starting_price,
         mileage=data.mileage,
         color=data.color,
