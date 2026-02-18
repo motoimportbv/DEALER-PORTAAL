@@ -611,27 +611,67 @@ async def send_admin_notification(subject: str, html_content: str):
 
 @api_router.get("/exchange-rate/chf-eur")
 async def get_exchange_rate():
-    """Get current CHF to EUR exchange rate"""
+    """Get current CHF to EUR exchange rate with margin info"""
     rate = await get_chf_to_eur_rate()
+    margin = await get_chf_eur_margin()
+    margin_percent = margin * 100
+    
+    # Example calculation with margin
+    example_chf = 10000
+    example_eur_base = round(example_chf * rate, 2)
+    example_eur_with_margin = round(example_chf * rate * (1 + margin), 2)
+    
     return {
         "from": "CHF",
         "to": "EUR",
         "rate": rate,
-        "example": f"1 CHF = {rate} EUR"
+        "margin": margin,
+        "margin_percent": margin_percent,
+        "effective_rate": round(rate * (1 + margin), 4),
+        "example": f"CHF {example_chf:,} = €{example_eur_base:,} + {margin_percent}% marge = €{example_eur_with_margin:,}"
+    }
+
+@api_router.get("/exchange-rate/margin")
+async def get_margin():
+    """Get current CHF to EUR margin"""
+    margin = await get_chf_eur_margin()
+    return {
+        "margin": margin,
+        "margin_percent": margin * 100,
+        "default_margin": DEFAULT_CHF_EUR_MARGIN,
+        "default_margin_percent": DEFAULT_CHF_EUR_MARGIN * 100
+    }
+
+@api_router.put("/exchange-rate/margin")
+async def update_margin(margin_percent: float, user: dict = Depends(require_admin)):
+    """Update CHF to EUR margin (admin only)"""
+    if margin_percent < 0 or margin_percent > 50:
+        raise HTTPException(status_code=400, detail="Marge moet tussen 0% en 50% liggen")
+    
+    margin = margin_percent / 100  # Convert percentage to decimal
+    await set_chf_eur_margin(margin)
+    
+    return {
+        "message": f"Marge bijgewerkt naar {margin_percent}%",
+        "margin": margin,
+        "margin_percent": margin_percent
     }
 
 @api_router.post("/exchange-rate/convert")
 async def convert_currency(amount: float, from_currency: str = "CHF", to_currency: str = "EUR"):
-    """Convert currency amount"""
+    """Convert currency amount with margin"""
+    margin = await get_chf_eur_margin()
+    
     if from_currency == "CHF" and to_currency == "EUR":
         rate = await get_chf_to_eur_rate()
-        converted = convert_chf_to_eur(amount, rate)
+        converted = convert_chf_to_eur(amount, rate, margin)
         return {
             "original_amount": amount,
             "original_currency": from_currency,
             "converted_amount": converted,
             "converted_currency": to_currency,
-            "rate": rate
+            "rate": rate,
+            "margin_percent": margin * 100
         }
     elif from_currency == "EUR" and to_currency == "CHF":
         rate = await get_chf_to_eur_rate()
