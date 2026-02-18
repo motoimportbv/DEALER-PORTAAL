@@ -103,11 +103,13 @@ const ForeignDealerAddMotorcycle = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(null);
   const [formData, setFormData] = useState({
     brand: '',
     model: '',
     year: new Date().getFullYear(),
     price: '',
+    currency: 'CHF',  // Default to CHF for Swiss dealers
     starting_price: '',
     mileage: '',
     color: '',
@@ -116,6 +118,19 @@ const ForeignDealerAddMotorcycle = () => {
     images: [],
     chassis_number: ''
   });
+
+  // Fetch exchange rate on mount
+  React.useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const response = await axios.get(`${API}/exchange-rate/chf-eur`);
+        setExchangeRate(response.data.rate);
+      } catch (error) {
+        console.error('Failed to fetch exchange rate:', error);
+      }
+    };
+    fetchRate();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
