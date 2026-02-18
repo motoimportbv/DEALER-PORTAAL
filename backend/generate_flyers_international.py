@@ -229,6 +229,95 @@ def create_italian_flyer():
     return output_path
 
 
+def create_german_flyer():
+    pdf = DealerFlyer(language='de')
+    pdf.add_page()
+    
+    # Main headline
+    pdf.set_text_color(30, 30, 30)
+    pdf.set_font('Helvetica', 'B', 24)
+    pdf.cell(0, 12, 'Treten Sie dem Moto Import Portal bei!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    pdf.ln(3)
+    
+    # Key message
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_text_color(220, 38, 38)
+    pdf.cell(0, 8, 'Steigern Sie Ihren Motorradverkauf!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    pdf.ln(3)
+    
+    # Subheadline
+    pdf.set_font('Helvetica', '', 12)
+    pdf.set_text_color(80, 80, 80)
+    pdf.multi_cell(0, 6, 
+        'Wir liefern Motorrader an mehr als 200 Handler in den Niederlanden.\n'
+        'Werden Sie unser Partner und erschliessen Sie einen wachsenden Markt!',
+        align='C')
+    
+    pdf.ln(8)
+    
+    # Benefits
+    benefits = [
+        ("Exklusive Handlerpreise", "Verkaufen Sie Ihre Motorrader zu wettbewerbsfahigen Preisen direkt an niederlandische Handler."),
+        ("Grosses Netzwerk", "Mehr als 200 aktive Handler, die bereit sind, Ihre Motorrader zu kaufen."),
+        ("Schnelle Verkaufe", "Unsere Plattform ermoglicht schnelle und effiziente Transaktionen."),
+        ("Push-Benachrichtigungen", "Handler erhalten sofort eine Meldung, wenn ein neues Motorrad verfugbar ist."),
+        ("Komplett Kostenlos", "Keine Gebuhren! Die Registrierung und Nutzung unserer Plattform sind vollig kostenlos."),
+        ("Personlicher Service", "Direkter Kontakt mit unserem Team fur alle Ihre Fragen.")
+    ]
+    
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.set_text_color(220, 38, 38)
+    pdf.cell(0, 10, 'Warum Moto Import wahlen?', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    pdf.ln(2)
+    
+    for title, description in benefits:
+        y_pos = pdf.get_y()
+        pdf.draw_bullet(15, y_pos)
+        
+        pdf.set_xy(25, y_pos)
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_text_color(30, 30, 30)
+        pdf.cell(0, 7, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        
+        pdf.set_x(25)
+        pdf.set_font('Helvetica', '', 10)
+        pdf.set_text_color(80, 80, 80)
+        pdf.multi_cell(165, 5, description)
+        
+        pdf.ln(2)
+    
+    pdf.ln(3)
+    
+    # CTA box
+    pdf.set_fill_color(220, 38, 38)
+    box_y = pdf.get_y()
+    pdf.rect(15, box_y, 180, 40, 'F')
+    
+    pdf.set_xy(15, box_y + 6)
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(180, 8, 'Jetzt Registrieren - Kostenlos!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    pdf.set_x(15)
+    pdf.set_font('Helvetica', '', 11)
+    pdf.cell(180, 6, 'Besuchen Sie:', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    pdf.set_x(15)
+    pdf.set_font('Helvetica', 'B', 14)
+    pdf.cell(180, 8, 'www.motoimportbv.nl/register/supplier', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    pdf.set_x(15)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(180, 5, 'Zugang zu unserem Netzwerk innerhalb von 24 Stunden!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    
+    output_path = Path('/app/backend/uploads/Moto_Import_Dealer_Info_DE.pdf')
+    pdf.output(str(output_path))
+    return output_path
+
+
 if __name__ == '__main__':
     fr_path = create_french_flyer()
     print(f'Franse PDF gegenereerd: {fr_path}')
