@@ -75,6 +75,29 @@ const DealerOrders = () => {
     }
   };
 
+  const handleDeleteClick = (order) => {
+    setOrderToDelete(order);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    
+    setDeleting(true);
+    try {
+      await axios.delete(`${API}/orders/${orderToDelete.id}`);
+      setOrders(orders.filter(o => o.id !== orderToDelete.id));
+      toast.success(t('common.successDeleted'));
+      setDeleteDialogOpen(false);
+      setOrderToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      toast.error(t('orders.deleteFailed'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const getStatusBadge = (status, paymentStatus) => {
     if (paymentStatus === 'paid') {
       return (
