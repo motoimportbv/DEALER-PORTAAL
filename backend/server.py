@@ -3031,18 +3031,22 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
             
             for sub in subscriptions:
                 try:
-                    print(f"[ONLINE PUSH] Raw subscription data: {sub}")
-                    print(f"[ONLINE PUSH] Processing subscription: endpoint={sub.get('endpoint', 'NONE')[:50] if sub.get('endpoint') else 'NONE'}, has_keys={bool(sub.get('keys'))}")
+                    # Handle both old format (endpoint at root) and new format (endpoint inside subscription object)
+                    sub_data = sub.get("subscription", sub)
+                    endpoint = sub_data.get("endpoint") or sub.get("endpoint")
+                    keys = sub_data.get("keys") or sub.get("keys")
+                    
+                    print(f"[ONLINE PUSH] Processing subscription for endpoint: {endpoint[:50] if endpoint else 'NONE'}...")
                     
                     # Validate subscription has required fields
-                    if not sub.get("endpoint") or not sub.get("keys"):
+                    if not endpoint or not keys:
                         print(f"[ONLINE PUSH] Skipping invalid subscription (missing endpoint or keys)")
                         push_failed += 1
                         continue
                     
                     subscription_info = {
-                        "endpoint": sub["endpoint"],
-                        "keys": sub["keys"]
+                        "endpoint": endpoint,
+                        "keys": keys
                     }
                     
                     # Generate auto-login token for this dealer
