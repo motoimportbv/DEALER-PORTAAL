@@ -97,7 +97,22 @@ exchange_rate_cache = {
     "last_updated": None
 }
 EXCHANGE_RATE_CACHE_DURATION = 300  # 5 minutes cache
-CHF_EUR_MARGIN = 0.005  # 0.5% margin on CHF to EUR conversion
+DEFAULT_CHF_EUR_MARGIN = 0.09  # 9% default margin on CHF to EUR conversion
+
+async def get_chf_eur_margin():
+    """Get the current CHF to EUR margin from database, or use default"""
+    settings = await db.settings.find_one({"key": "chf_eur_margin"}, {"_id": 0})
+    if settings and "value" in settings:
+        return settings["value"]
+    return DEFAULT_CHF_EUR_MARGIN
+
+async def set_chf_eur_margin(margin: float):
+    """Set the CHF to EUR margin in database"""
+    await db.settings.update_one(
+        {"key": "chf_eur_margin"},
+        {"$set": {"key": "chf_eur_margin", "value": margin, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
 
 async def get_chf_to_eur_rate():
     """Get real-time CHF to EUR exchange rate with caching"""
@@ -133,12 +148,17 @@ async def get_chf_to_eur_rate():
         return exchange_rate_cache["CHF_EUR"]
     return 0.95  # Default fallback
 
-def convert_chf_to_eur(chf_amount: float, rate: float, include_margin: bool = True) -> float:
-    """Convert CHF to EUR with optional 0.5% margin"""
+async def convert_chf_to_eur_with_margin(chf_amount: float, rate: float) -> float:
+    """Convert CHF to EUR with margin from database"""
+    margin = await get_chf_eur_margin()
     base_conversion = chf_amount * rate
-    if include_margin:
-        # Add 0.5% margin
-        return round(base_conversion * (1 + CHF_EUR_MARGIN), 2)
+    return round(base_conversion * (1 + margin), 2)
+
+def convert_chf_to_eur(chf_amount: float, rate: float, margin: float = 0) -> float:
+    """Convert CHF to EUR with optional margin"""
+    base_conversion = chf_amount * rate
+    if margin > 0:
+        return round(base_conversion * (1 + margin), 2)
     return round(base_conversion, 2)
 
 # Create the main app
