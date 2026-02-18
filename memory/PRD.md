@@ -22,19 +22,16 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ### Session - December 2025 (Lead Generation)
 
-#### ✅ Motordealers Lijst Milaan en Omgeving (P0 Taak)
+#### ✅ Motordealers Lijst Noord-Italië (P0 Taak)
 - **Taak**: Uitgebreide lijst van motordealers met e-mailadressen voor marketing
-- **Focus gebied**: Milaan, Monza-Brianza, Bergamo, Como, Varese, Brescia, Pavia en omliggende provincies
-- **Resultaat**: CSV bestand met **77 dealers** (was 22)
-- **Toegevoegde regio's**:
-  - **Milano stad & provincie**: 31 contacten (Ducati, Giovanelli, Motostar, CMTmotor, etc.)
-  - **Monza-Brianza**: Giava Motors, Valtermoto Group, Motosalone Cavallotti
-  - **Bergamo**: Triumph, RS Moto, Dall'Ara, Farioli KTM
-  - **Como**: ARB Moto, Cavauto Motorcycle
-  - **Varese**: Gallazzi Moto, CMTmotor Busto Arsizio, Sarma Motorrad BMW
-  - **Brescia**: CMTmotor, Schivardi Honda, BMS Moto, GTG Motogamma, Ducati, Forchini
-  - **Pavia**: QJ Motor, Harley-Davidson
-  - **Piemonte**: Alessandria, Alba, Cuneo, Torino (Finotti BMW)
+- **Focus gebieden**: Lombardia, Veneto, Emilia-Romagna, Piemonte, Friuli-Venezia Giulia
+- **Resultaat**: CSV bestand met **110 dealers** (was 22)
+- **Verdeling per regio**:
+  - **Lombardia**: 66 contacten (Milano, Monza, Bergamo, Brescia, Como, Varese, Mantova, Pavia)
+  - **Veneto**: 17 contacten (Verona, Vicenza, Treviso, Padova, Venezia)
+  - **Emilia-Romagna**: 13 contacten (Bologna, Modena, Parma)
+  - **Piemonte**: 10 contacten (Torino, Alessandria, Cuneo, Alba)
+  - **Friuli-Venezia Giulia**: 4 contacten (Udine)
 - **Bestand**: `/app/backend/uploads/Motorzaken_Noord_Italie.csv`
 - **Status**: Voltooid ✓
 
