@@ -34,6 +34,7 @@ import AdminCreateAdmin from "./pages/admin/AdminCreateAdmin";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
+import DealerArchivedOrders from "./pages/dealer/DealerArchivedOrders";
 import DealerSellMotorcycle from "./pages/dealer/DealerSellMotorcycle";
 import DealerMyListings from "./pages/dealer/DealerMyListings";
 import DealerLicensePlates from "./pages/dealer/DealerLicensePlates";
