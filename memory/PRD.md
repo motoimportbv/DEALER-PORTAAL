@@ -241,10 +241,13 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ---
 
 ## Key Files Modified (This Session)
-- `/app/backend/server.py` (DELETE /api/orders/{order_id} endpoint)
-- `/app/frontend/src/pages/dealer/DealerOrders.js` (delete button, dialog)
-- `/app/frontend/src/locales/nl.json` (orders vertalingen)
+- `/app/backend/server.py` (DELETE /api/orders/{order_id}, archive/restore endpoints)
+- `/app/frontend/src/pages/dealer/DealerOrders.js` (delete/archive buttons, dialogs)
+- `/app/frontend/src/pages/dealer/DealerArchivedOrders.js` (NEW - archived orders page)
+- `/app/frontend/src/App.js` (route for /dealer/orders/archived)
+- `/app/frontend/src/locales/nl.json` (orders vertalingen voor delete/archive/restore)
 - `/app/backend/tests/test_delete_order.py` (NEW - tests)
+- `/app/backend/tests/test_archive_orders.py` (NEW - tests)
 
 ---
 
