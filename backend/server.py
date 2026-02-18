@@ -1742,7 +1742,7 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
     
     return {"motorcycles": result, "exchange_rate": {"CHF_EUR": chf_eur_rate}, "margin_percent": margin * 100}
 
-@api_router.get("/motorcycles/available", response_model=List[Motorcycle])
+@api_router.get("/motorcycles/available")
 async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
     # For dealers, exclude their own listings from the available motorcycles
     query = {"is_available": True}
