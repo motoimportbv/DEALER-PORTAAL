@@ -103,6 +103,10 @@ const DealerDashboard = () => {
       }
     };
     checkPushStatus();
+    
+    // Also check periodically in case subscription changes
+    const interval = setInterval(checkPushStatus, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleEnablePush = async () => {
@@ -117,6 +121,16 @@ const DealerDashboard = () => {
             pushToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => pushToggle.click(), 300);
           }
+          // Check subscription status again after enabling
+          setTimeout(async () => {
+            try {
+              const registration = await navigator.serviceWorker.ready;
+              const subscription = await registration.pushManager.getSubscription();
+              setIsPushSubscribed(!!subscription);
+            } catch (e) {
+              console.error('Error rechecking push status:', e);
+            }
+          }, 2000);
         }
       } catch (error) {
         console.error('Error requesting notification permission:', error);
