@@ -38,6 +38,7 @@ const Sidebar = () => {
     { path: '/admin/pending-foreign', icon: Globe, label: t('nav.pendingListings') },
     { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
     { path: '/admin/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Kentekens' },
+    { path: '/admin/push-status', icon: Bell, label: 'Push Status' },
     { path: '/admin/parts', icon: Wrench, label: t('nav.partsManagement') },
     { path: '/admin/part-orders', icon: ClipboardList, label: t('nav.partOrders') },
     { path: '/admin/dealers', icon: Package, label: t('nav.dealers') },
