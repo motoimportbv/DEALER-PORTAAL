@@ -344,6 +344,15 @@ const DealerOrders = () => {
                         )}
                         <Button 
                           variant="outline" 
+                          className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                          onClick={() => handleArchiveClick(order)}
+                          data-testid={`archive-order-btn-${order.id}`}
+                        >
+                          <Archive className="w-4 h-4 mr-2" />
+                          {t('orders.archive')}
+                        </Button>
+                        <Button 
+                          variant="outline" 
                           className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
                           onClick={() => handleDeleteClick(order)}
                           data-testid={`delete-order-btn-${order.id}`}
