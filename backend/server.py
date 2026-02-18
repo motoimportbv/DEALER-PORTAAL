@@ -3397,6 +3397,94 @@ async def send_push_to_all_dealers(title: str, body: str, url: str = "/", exclud
         logger.error(f"Error sending push to all dealers: {e}")
         return 0
 
+@api_router.get("/admin/push-status")
+async def get_dealers_push_status(user: dict = Depends(require_admin)):
+    """Get push notification status for all dealers - shows who has problems"""
+    try:
+        # Get all approved dealers (including offline for full overview)
+        query = {
+            "role": "dealer", 
+            "is_approved": True,
+            "is_foreign_dealer": {"$ne": True}
+        }
+        
+        dealers = await db.users.find(query, {"_id": 0, "id": 1, "company_name": 1, "email": 1, "is_offline": 1}).to_list(1000)
+        
+        results = []
+        active_count = 0
+        no_subscription_count = 0
+        offline_count = 0
+        
+        for dealer in dealers:
+            dealer_id = dealer["id"]
+            is_offline = dealer.get("is_offline", False)
+            
+            # Get all subscriptions for this dealer
+            subscriptions = await db.push_subscriptions.find({"user_id": dealer_id}, {"_id": 0}).to_list(10)
+            
+            # Analyze subscription status
+            sub_details = []
+            valid_subs = 0
+            
+            for sub in subscriptions:
+                sub_obj = sub.get("subscription", sub)
+                endpoint = sub_obj.get("endpoint", "")
+                has_keys = bool(sub_obj.get("keys"))
+                platform = sub.get("platform", "web")
+                updated = sub.get("updated_at", "onbekend")
+                
+                is_valid = bool(endpoint and has_keys)
+                if is_valid:
+                    valid_subs += 1
+                
+                sub_details.append({
+                    "platform": platform,
+                    "valid": is_valid,
+                    "updated_at": updated,
+                    "endpoint_preview": endpoint[:50] + "..." if len(endpoint) > 50 else endpoint
+                })
+            
+            # Determine status
+            if is_offline:
+                status = "offline"
+                status_text = "⏸️ Offline"
+                offline_count += 1
+            elif valid_subs > 0:
+                status = "active"
+                status_text = f"✅ Actief ({valid_subs} apparaat{'en' if valid_subs > 1 else ''})"
+                active_count += 1
+            else:
+                status = "no_subscription"
+                status_text = "❌ Geen push ingeschakeld"
+                no_subscription_count += 1
+            
+            results.append({
+                "id": dealer_id,
+                "company_name": dealer.get("company_name", "Onbekend"),
+                "email": dealer.get("email", ""),
+                "status": status,
+                "status_text": status_text,
+                "is_offline": is_offline,
+                "subscription_count": len(subscriptions),
+                "valid_subscriptions": valid_subs,
+                "subscriptions": sub_details
+            })
+        
+        # Sort: problems first (no subscription), then offline, then active
+        status_order = {"no_subscription": 0, "offline": 1, "active": 2}
+        results.sort(key=lambda x: (status_order.get(x["status"], 3), x["company_name"]))
+        
+        return {
+            "total_dealers": len(dealers),
+            "active_push": active_count,
+            "no_subscription": no_subscription_count,
+            "offline": offline_count,
+            "dealers": results
+        }
+    except Exception as e:
+        logger.error(f"Error getting push status: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout bij ophalen: {str(e)}")
+
 @api_router.post("/admin/test-push")
 async def send_test_push_to_all(user: dict = Depends(require_admin)):
     """Send a test push notification to all dealers and return who received it"""
