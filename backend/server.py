@@ -1772,6 +1772,73 @@ async def delete_order(order_id: str, user: dict = Depends(require_approved_deal
     
     return {"message": "Order deleted successfully"}
 
+@api_router.put("/orders/{order_id}/archive")
+async def archive_order(order_id: str, user: dict = Depends(require_approved_dealer)):
+    """Archive an order - dealers can only archive their own orders"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Check authorization: dealers can only archive their own orders, admins can archive any
+    if user["role"] != "admin" and order.get("dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to archive this order")
+    
+    # Archive the order
+    await db.orders.update_one({"id": order_id}, {"$set": {"archived": True}})
+    
+    return {"message": "Order archived successfully"}
+
+@api_router.put("/orders/{order_id}/restore")
+async def restore_order(order_id: str, user: dict = Depends(require_approved_dealer)):
+    """Restore an archived order - dealers can only restore their own orders"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Check authorization: dealers can only restore their own orders, admins can restore any
+    if user["role"] != "admin" and order.get("dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to restore this order")
+    
+    # Restore the order
+    await db.orders.update_one({"id": order_id}, {"$set": {"archived": False}})
+    
+    return {"message": "Order restored successfully"}
+
+@api_router.get("/orders/archived", response_model=List[OrderWithMotorcycle])
+async def get_archived_orders(user: dict = Depends(require_approved_dealer)):
+    """Get archived orders for the current dealer"""
+    if user["role"] == "admin":
+        # Admin sees all archived orders
+        orders = await db.orders.find(
+            {"archived": True}, 
+            {"_id": 0}
+        ).to_list(1000)
+    else:
+        # Dealers see only their archived orders
+        orders = await db.orders.find(
+            {"dealer_id": user["id"], "archived": True}, 
+            {"_id": 0}
+        ).to_list(1000)
+    
+    # Batch fetch motorcycles
+    motorcycle_ids = list(set(order["motorcycle_id"] for order in orders))
+    motorcycles_list = await db.motorcycles.find(
+        {"id": {"$in": motorcycle_ids}}, 
+        {"_id": 0}
+    ).to_list(1000)
+    motorcycles_map = {m["id"]: m for m in motorcycles_list}
+    
+    # Enrich orders with motorcycle data
+    result = []
+    for order in orders:
+        motorcycle_data = motorcycles_map.get(order["motorcycle_id"])
+        if not motorcycle_data:
+            motorcycle_data = order.get("motorcycle_snapshot")
+        order["motorcycle"] = motorcycle_data
+        result.append(order)
+    
+    return result
+
 # ============ DIRECT ORDER ENDPOINTS ============
 
 INSPECTION_COST = 125.0  # Keuring kosten
