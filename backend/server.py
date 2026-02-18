@@ -202,6 +202,7 @@ class MotorcycleCreate(BaseModel):
     images: List[str] = []
     auction_duration_hours: int = 3  # Standaard 3 uur
     chassis_number: str = ""  # VIN/Chassisnummer
+    currency: str = "EUR"  # Currency for price (EUR or CHF)
 
 class MotorcycleUpdate(BaseModel):
     brand: Optional[str] = None
