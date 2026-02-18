@@ -64,7 +64,7 @@ const PushNotificationReminder = ({ isSubscribed, onEnableClick }) => {
     onEnableClick();
   };
 
-  if (isSubscribed) return null;
+  if (isSubscribed || permissionGranted) return null;
 
   // After 3 dismisses, show more urgent message without Later button
   const isUrgent = dismissCount >= 3;
