@@ -33,11 +33,6 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - Bevestigingsdialoog met motor naam (indien beschikbaar)
   - Success toast "Succesvol verwijderd" na verwijdering
   - Bestelling verdwijnt direct uit de lijst
-- **Vertalingen toegevoegd**:
-  - `orders.deleteTitle`: "Bestelling Verwijderen?"
-  - `orders.deleteConfirm`: "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt verwijderen?"
-  - `orders.deleteConfirmGeneric`: Fallback tekst voor verwijderde motoren
-  - `orders.deleteFailed`: Error message
 - **Test Status**: 100% geslaagd (backend en frontend)
 
 #### ✅ Bestelling Archiveren Functie (Verbetering)
@@ -54,13 +49,28 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - Grayscale effect en "Gearchiveerd" badge op gearchiveerde bestellingen
   - Groene "Herstellen" knop om bestellingen te herstellen
   - Bevestigingsdialogen voor archiveren en herstellen
-- **Bestanden gewijzigd/toegevoegd**:
-  - `/app/backend/server.py` (archive/restore endpoints)
-  - `/app/frontend/src/pages/dealer/DealerOrders.js` (archive button, dialog)
-  - `/app/frontend/src/pages/dealer/DealerArchivedOrders.js` (NEW)
-  - `/app/frontend/src/App.js` (route)
-  - `/app/frontend/src/locales/nl.json` (vertalingen)
 - **Test Status**: 100% geslaagd (backend en frontend)
+
+#### ✅ CHF Wisselkoers Integratie (Verbetering)
+- **Feature**: Real-time CHF naar EUR conversie voor buitenlandse (Zwitserse) dealers
+- **Backend Endpoints**:
+  - `GET /api/exchange-rate/chf-eur` - Haalt huidige wisselkoers op
+  - `POST /api/exchange-rate/convert` - Converteert bedragen tussen CHF/EUR
+  - `GET /api/motorcycles/with-exchange-rate` - Motorcycles met koersinfo
+- **Exchange Rate API**: exchangerate-api.com (gratis, 5 min cache)
+- **Data Model Uitgebreid**:
+  - `Motorcycle.original_currency` - Valuta van originele prijs (EUR/CHF)
+  - `MotorcycleCreate.currency` - Valuta bij aanmaken
+- **Frontend Updates**:
+  - CHF/EUR dropdown in buitenlandse dealer formulier
+  - Real-time EUR conversie weergave bij CHF invoer
+  - Dealers zien beide prijzen: "€12.500 (CHF 11.364)"
+- **Bestanden gewijzigd**:
+  - `/app/backend/server.py` (exchange rate endpoints, foreign listing update)
+  - `/app/frontend/src/pages/foreign-dealer/ForeignDealerAddMotorcycle.js`
+  - `/app/frontend/src/pages/dealer/DealerDashboard.js` (prijsweergave)
+  - `/app/frontend/src/locales/nl.json`
+- **Test Status**: Handmatig getest, API werkt (1 CHF = 1.1 EUR)
 
 ### Session - 17 February 2025 (Part 5)
 
