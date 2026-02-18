@@ -1635,6 +1635,29 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
             m["starting_price"] = m.get("price", 0) * 0.8
     return motorcycles
 
+@api_router.get("/motorcycles/with-exchange-rate")
+async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approved_dealer)):
+    """Get motorcycles with real-time CHF to EUR conversion for foreign listings"""
+    motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
+    
+    # Get current exchange rate
+    chf_eur_rate = await get_chf_to_eur_rate()
+    
+    result = []
+    for m in motorcycles:
+        # Add default starting_price if missing
+        if "starting_price" not in m or m["starting_price"] is None:
+            m["starting_price"] = m.get("price", 0) * 0.8
+        
+        # Add real-time EUR conversion for CHF prices
+        if m.get("original_currency") == "CHF" and m.get("original_price"):
+            m["original_price_eur"] = convert_chf_to_eur(m["original_price"], chf_eur_rate)
+            m["exchange_rate"] = chf_eur_rate
+        
+        result.append(m)
+    
+    return {"motorcycles": result, "exchange_rate": {"CHF_EUR": chf_eur_rate}}
+
 @api_router.get("/motorcycles/available", response_model=List[Motorcycle])
 async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
     # For dealers, exclude their own listings from the available motorcycles
