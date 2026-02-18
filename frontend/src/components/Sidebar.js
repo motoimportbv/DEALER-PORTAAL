@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
 import LanguageSelector from './LanguageSelector';
+import ChangePasswordModal from './ChangePasswordModal';
 import { 
   Bike, 
   LayoutDashboard, 
@@ -25,6 +26,7 @@ const Sidebar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const handleLogout = () => {
     logout();
