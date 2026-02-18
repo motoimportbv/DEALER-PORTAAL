@@ -2994,6 +2994,41 @@ async def delete_dealer(dealer_id: str, user: dict = Depends(require_admin)):
     
     return {"message": f"Dealer {dealer['company_name']} is verwijderd"}
 
+class CreateAdminRequest(BaseModel):
+    email: str
+    password: str
+    company_name: str = "Moto Import Admin"
+
+@api_router.post("/admin/create-admin")
+async def create_admin_user(data: CreateAdminRequest, user: dict = Depends(require_admin)):
+    """Bestaande admin kan een nieuwe admin aanmaken"""
+    # Check if email already exists
+    existing = await db.users.find_one({"email": {"$regex": f"^{data.email}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="E-mailadres is al in gebruik")
+    
+    # Create new admin
+    user_id = str(uuid.uuid4())
+    password_hash = hash_password(data.password)
+    
+    new_admin = {
+        "id": user_id,
+        "email": data.email,
+        "password_hash": password_hash,
+        "company_name": data.company_name,
+        "role": "admin",
+        "is_approved": True,
+        "is_foreign_dealer": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(new_admin)
+    
+    return {
+        "message": f"Admin account aangemaakt voor {data.email}",
+        "user_id": user_id
+    }
+
 @api_router.put("/dealers/{dealer_id}/toggle-offline")
 async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_admin)):
     """Zet een dealer tijdelijk offline/online - ontvangt geen meldingen wanneer offline"""
