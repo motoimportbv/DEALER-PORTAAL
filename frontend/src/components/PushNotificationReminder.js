@@ -69,13 +69,10 @@ const PushNotificationReminder = ({ isSubscribed, onEnableClick }) => {
     // Don't show if subscribed OR if push is enabled
     if (!isSubscribed && !pushEnabled) {
       const timer = setTimeout(() => {
-        // Final check before showing
+        // Final check before showing - if permission is granted, don't show
         if ('Notification' in window && Notification.permission === 'granted') {
-          const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
-          if (storedEnabled) {
-            setPushEnabled(true);
-            return;
-          }
+          setPushEnabled(true);
+          return;
         }
         setShowReminder(true);
       }, 3000);
@@ -85,17 +82,14 @@ const PushNotificationReminder = ({ isSubscribed, onEnableClick }) => {
     }
   }, [isSubscribed, pushEnabled]);
 
-  // Show reminder again after dismissing (every 2 minutes)
+  // Show reminder again after dismissing (every 2 minutes) - but not if permission granted
   useEffect(() => {
     if (!isSubscribed && !pushEnabled && !showReminder) {
       const timer = setTimeout(() => {
-        // Double-check before showing again
+        // If permission is already granted, never show reminder again
         if ('Notification' in window && Notification.permission === 'granted') {
-          const storedEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
-          if (storedEnabled) {
-            setPushEnabled(true);
-            return;
-          }
+          setPushEnabled(true);
+          return;
         }
         setShowReminder(true);
       }, 120000); // 2 minutes
