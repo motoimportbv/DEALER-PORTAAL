@@ -1750,6 +1750,28 @@ async def update_order_status(order_id: str, status: str, user: dict = Depends(r
     
     return {"message": f"Order status updated to {status}"}
 
+@api_router.delete("/orders/{order_id}")
+async def delete_order(order_id: str, user: dict = Depends(require_approved_dealer)):
+    """Delete an order - dealers can only delete their own orders"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Check authorization: dealers can only delete their own orders, admins can delete any
+    if user["role"] != "admin" and order.get("dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this order")
+    
+    # Delete the order
+    await db.orders.delete_one({"id": order_id})
+    
+    # Make the motorcycle available again if it was reserved
+    await db.motorcycles.update_one(
+        {"id": order["motorcycle_id"]}, 
+        {"$set": {"is_available": True}}
+    )
+    
+    return {"message": "Order deleted successfully"}
+
 # ============ DIRECT ORDER ENDPOINTS ============
 
 INSPECTION_COST = 125.0  # Keuring kosten
