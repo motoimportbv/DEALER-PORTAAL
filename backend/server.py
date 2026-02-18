@@ -1911,27 +1911,71 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     if foreign_dealer_id:
         foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0})
         if foreign_dealer:
+            # Determine language based on country
+            country = foreign_dealer.get("country", "").lower()
+            
+            if "schweiz" in country or "suisse" in country or "svizzera" in country or "zwitserland" in country:
+                # German for Switzerland
+                subject = "🎉 Ihr Motorrad wurde verkauft! - Moto Import"
+                greeting = f"Sehr geehrte/r {foreign_dealer.get('company_name', 'Lieferant')}"
+                intro = "Gute Nachrichten! Ihr Motorrad wurde über Moto Import verkauft."
+                sold_title = "Verkauftes Motorrad"
+                year_label = "Baujahr"
+                mileage_label = "Kilometerstand"
+                contact_text = "Wir werden Sie in Kürze bezüglich der Lieferung kontaktieren."
+                thanks_text = "Vielen Dank für die Zusammenarbeit mit Moto Import!"
+            elif "ital" in country:
+                # Italian
+                subject = "🎉 La tua moto è stata venduta! - Moto Import"
+                greeting = f"Gentile {foreign_dealer.get('company_name', 'Fornitore')}"
+                intro = "Ottime notizie! La tua moto è stata venduta tramite Moto Import."
+                sold_title = "Moto Venduta"
+                year_label = "Anno"
+                mileage_label = "Chilometraggio"
+                contact_text = "Ti contatteremo presto per organizzare la consegna."
+                thanks_text = "Grazie per la collaborazione con Moto Import!"
+            elif "france" in country or "frank" in country:
+                # French
+                subject = "🎉 Votre moto a été vendue! - Moto Import"
+                greeting = f"Cher/Chère {foreign_dealer.get('company_name', 'Fournisseur')}"
+                intro = "Bonne nouvelle! Votre moto a été vendue via Moto Import."
+                sold_title = "Moto Vendue"
+                year_label = "Année"
+                mileage_label = "Kilométrage"
+                contact_text = "Nous vous contacterons bientôt concernant la livraison."
+                thanks_text = "Merci de travailler avec Moto Import!"
+            else:
+                # Default English
+                subject = "🎉 Your Motorcycle Has Been Sold! - Moto Import"
+                greeting = f"Dear {foreign_dealer.get('company_name', 'Supplier')}"
+                intro = "Great news! Your motorcycle has been sold through Moto Import."
+                sold_title = "Sold Motorcycle"
+                year_label = "Year"
+                mileage_label = "Mileage"
+                contact_text = "We will contact you shortly regarding the delivery arrangements."
+                thanks_text = "Thank you for working with Moto Import!"
+            
             # Send email notification to foreign dealer (without price)
             foreign_html = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #16a34a; padding: 20px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 24px;">🎉 YOUR MOTORCYCLE HAS BEEN SOLD!</h1>
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🎉 {sold_title.upper()}!</h1>
                 </div>
                 <div style="padding: 30px; background: #f9fafb;">
-                    <p>Dear {foreign_dealer.get('company_name', 'Supplier')},</p>
-                    <p>Great news! Your motorcycle has been sold through Moto Import.</p>
+                    <p>{greeting},</p>
+                    <p>{intro}</p>
                     
                     <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                        <h3 style="margin-top: 0; color: #18181b;">Sold Motorcycle</h3>
+                        <h3 style="margin-top: 0; color: #18181b;">{sold_title}</h3>
                         <p style="font-size: 20px; font-weight: bold; color: #16a34a; margin: 10px 0;">
                             {motorcycle['brand']} {motorcycle['model']}
                         </p>
-                        <p><strong>Year:</strong> {motorcycle['year']}</p>
-                        <p><strong>Mileage:</strong> {motorcycle.get('mileage', 'N/A'):,} km</p>
+                        <p><strong>{year_label}:</strong> {motorcycle['year']}</p>
+                        <p><strong>{mileage_label}:</strong> {motorcycle.get('mileage', 'N/A'):,} km</p>
                     </div>
                     
-                    <p>We will contact you shortly regarding the delivery arrangements.</p>
-                    <p style="color: #6b7280; font-size: 14px;">Thank you for working with Moto Import!</p>
+                    <p>{contact_text}</p>
+                    <p style="color: #6b7280; font-size: 14px;">{thanks_text}</p>
                 </div>
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
@@ -1940,13 +1984,13 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
             </div>
             """
             try:
-                await send_email(foreign_dealer["email"], "🎉 Your Motorcycle Has Been Sold! - Moto Import", foreign_html)
+                await send_email(foreign_dealer["email"], subject, foreign_html)
                 # Also send push notification (without price)
                 await send_push_notification_to_user(
                     foreign_dealer_id,
                     "🎉 Motorcycle Sold!",
                     f"Your {motorcycle['brand']} {motorcycle['model']} has been sold!",
-                    "/foreign-dealer/my-motorcycles"
+                    "/foreign-dealer"
                 )
             except Exception as e:
                 logger.error(f"Failed to notify foreign dealer: {str(e)}")
