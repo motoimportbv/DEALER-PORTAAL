@@ -31,6 +31,7 @@ import AdminPartOrders from "./pages/admin/AdminPartOrders";
 import AdminLicensePlates from "./pages/admin/AdminLicensePlates";
 import AdminPushStatus from "./pages/admin/AdminPushStatus";
 import AdminCreateAdmin from "./pages/admin/AdminCreateAdmin";
+import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import DealerSellMotorcycle from "./pages/dealer/DealerSellMotorcycle";
