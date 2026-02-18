@@ -179,6 +179,7 @@ function App() {
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
             <Route path="/dealer/orders" element={<DealerOrders />} />
+            <Route path="/dealer/orders/archived" element={<DealerArchivedOrders />} />
             <Route path="/dealer/sell" element={<DealerSellMotorcycle />} />
             <Route path="/dealer/my-listings" element={<DealerMyListings />} />
             <Route path="/dealer/parts" element={<PartsShop />} />
