@@ -209,7 +209,8 @@
     "addMotorcycle": "Aggiungi moto",
     "pendingReview": "In attesa di revisione",
     "infoMessage": "La tua moto sarà valutata da Moto Import. Dopo l'approvazione e la determinazione del prezzo, sarà visibile.",
-    "myListings": "Le mie moto inviate"
+    "myListings": "Le mie moto inviate",
+    "priceWarning": "Attenzione: Questo è il prezzo di acquisto per Moto Import, non il prezzo di vendita ai clienti finali."
   },
   "admin": {
     "pendingListings": "Moto in attesa",
