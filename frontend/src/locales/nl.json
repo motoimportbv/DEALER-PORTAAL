@@ -310,7 +310,24 @@
     "deleteTitle": "Bestelling Verwijderen?",
     "deleteConfirm": "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "deleteConfirmGeneric": "Weet u zeker dat u deze bestelling wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
-    "deleteFailed": "Kon bestelling niet verwijderen"
+    "deleteFailed": "Kon bestelling niet verwijderen",
+    "archive": "Archiveren",
+    "archiveTitle": "Bestelling Archiveren?",
+    "archiveConfirm": "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt archiveren? U kunt deze later herstellen.",
+    "archiveConfirmGeneric": "Weet u zeker dat u deze bestelling wilt archiveren? U kunt deze later herstellen.",
+    "archiveFailed": "Kon bestelling niet archiveren",
+    "archiveSuccess": "Bestelling gearchiveerd",
+    "restore": "Herstellen",
+    "restoreTitle": "Bestelling Herstellen?",
+    "restoreConfirm": "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt herstellen?",
+    "restoreConfirmGeneric": "Weet u zeker dat u deze bestelling wilt herstellen?",
+    "restoreFailed": "Kon bestelling niet herstellen",
+    "restoreSuccess": "Bestelling hersteld",
+    "archivedOrders": "Gearchiveerde Bestellingen",
+    "noArchivedOrders": "Geen gearchiveerde bestellingen",
+    "archivedOrdersDescription": "Hier vindt u uw gearchiveerde bestellingen",
+    "viewArchivedOrders": "Bekijk Archief",
+    "backToOrders": "Terug naar Bestellingen"
   },
   "detail": {
     "orderPlaced": "Bestelling geplaatst"
