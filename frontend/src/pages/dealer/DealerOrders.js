@@ -297,16 +297,25 @@ const DealerOrders = () => {
                         </div>
                       )}
 
-                      {order.motorcycle && (
-                        <div className="mt-4">
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {order.motorcycle && (
                           <Link to={`/motorcycle/${order.motorcycle.id}`}>
                             <Button variant="outline" data-testid={`view-motorcycle-btn-${order.id}`}>
                               <Eye className="w-4 h-4 mr-2" />
                               {t('orders.viewMotorcycleBtn')}
                             </Button>
                           </Link>
-                        </div>
-                      )}
+                        )}
+                        <Button 
+                          variant="outline" 
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                          onClick={() => handleDeleteClick(order)}
+                          data-testid={`delete-order-btn-${order.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {t('common.delete')}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
