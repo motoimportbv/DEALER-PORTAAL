@@ -20,6 +20,20 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - December 2025 (Lead Generation)
+
+#### ✅ Motordealers Lijst Milaan en Omgeving (P0 Taak)
+- **Taak**: Uitgebreide lijst van motordealers met e-mailadressen voor marketing
+- **Focus gebied**: Milaan, Monza-Brianza, Bergamo en omliggende provincies
+- **Resultaat**: CSV bestand met **57 dealers** (was 22)
+- **Nieuwe dealers toegevoegd**:
+  - **Milano stad**: Moto Crea, Giovanelli Moto (4 contacten), CMTmotor, Francone Moto, MaMaMoto, Moto 39, Ducati Milano (4 contacten)
+  - **Milano provincie**: Ducati Sesto S.G. (3 contacten), Pogliani, MG Moto (Cormano), MV Moto (Rho), CMTmotor Rozzano
+  - **Monza-Brianza**: Giava Motors, Valtermoto Group, CMTmotor Monza, Motosalone Cavallotti
+  - **Bergamo**: Triumph, RS Moto Honda, Dall'Ara Moto, Dall'Ara Ezio, Farioli SRL (KTM)
+- **Bestand**: `/app/backend/uploads/Motorzaken_Noord_Italie.csv`
+- **Status**: Voltooid ✓
+
 ### Session - 18 February 2025 (Part 6)
 
 #### ✅ Bestelling Verwijderen voor Dealers (P0 Feature)
