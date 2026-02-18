@@ -82,43 +82,94 @@ const Layout = ({ children, requiredRole }) => {
     return <Navigate to={user.role === 'admin' ? '/admin' : '/dealer'} replace />;
   }
 
+  // Mobile navigation items based on user role
+  const getMobileNavItems = () => {
+    if (user?.role === 'admin') {
+      return [
+        { path: '/admin', icon: LayoutDashboard, label: t('nav.dashboard') },
+        { path: '/admin/motorcycles', icon: Bike, label: t('nav.motorcycles') },
+        { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
+        { path: '/admin/dealers', icon: Globe, label: t('nav.dealers') },
+      ];
+    } else if (user?.is_foreign_dealer) {
+      return [
+        { path: '/foreign-dealer', icon: LayoutDashboard, label: t('nav.dashboard') },
+        { path: '/foreign-dealer/add', icon: Plus, label: t('foreignDealer.addMotorcycle') },
+      ];
+    } else {
+      return [
+        { path: '/dealer', icon: LayoutDashboard, label: t('nav.dashboard') },
+        { path: '/dealer/parts', icon: Wrench, label: t('nav.partsShop') },
+        { path: '/dealer/orders', icon: ShoppingCart, label: t('nav.myOrders') },
+        { path: '/dealer/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Kentekens' },
+      ];
+    }
+  };
+
+  const mobileNavItems = getMobileNavItems();
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+
   return (
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
-        {/* Mobile header with language selector - always visible on mobile */}
-        {/* Uses safe-area-inset for iPhone notch */}
+        {/* Mobile header with hamburger menu */}
         <div 
           className="md:hidden sticky top-0 z-50 bg-white border-b shadow-sm"
           style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 10px)' }}
         >
           <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <Bike className="w-4 h-4 text-white" />
-              </div>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                data-testid="mobile-menu-btn"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-5 h-5 text-white" />
+                ) : (
+                  <Menu className="w-5 h-5 text-white" />
+                )}
+              </button>
               <span className="font-barlow text-base font-bold uppercase tracking-tight text-zinc-900">
                 Moto Import
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <button 
-                onClick={() => window.location.reload()}
-                className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
-                title="Verversen"
-              >
-                <RefreshCw className="w-4 h-4 text-zinc-700" />
-              </button>
+              {user?.role === 'dealer' && <NotificationBell />}
               <button 
                 onClick={handleLogout}
-                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                className="p-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
                 title="Uitloggen"
                 data-testid="mobile-logout-btn"
               >
-                <LogOut className="w-4 h-4 text-white" />
+                <LogOut className="w-4 h-4 text-zinc-700" />
               </button>
             </div>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="absolute top-full left-0 right-0 bg-white border-b shadow-lg z-50">
+              <nav className="py-2">
+                {mobileNavItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                      isActive(item.path) 
+                        ? 'bg-red-50 text-red-600 border-l-4 border-red-600' 
+                        : 'text-zinc-700 hover:bg-zinc-50'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
         </div>
         {children}
       </main>
