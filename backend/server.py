@@ -3073,6 +3073,36 @@ async def create_admin_user(data: CreateAdminRequest, user: dict = Depends(requi
         "user_id": user_id
     }
 
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+
+@api_router.post("/admin/reset-password")
+async def reset_user_password(data: ResetPasswordRequest, user: dict = Depends(require_admin)):
+    """Admin kan wachtwoord van een gebruiker resetten"""
+    # Find user by email
+    target_user = await db.users.find_one({"email": {"$regex": f"^{data.email}$", "$options": "i"}})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    
+    # Don't allow resetting other admin passwords (security)
+    if target_user.get("role") == "admin" and target_user.get("id") != user.get("id"):
+        raise HTTPException(status_code=403, detail="Kan wachtwoord van andere admin niet resetten")
+    
+    # Hash new password
+    new_hash = hash_password(data.new_password)
+    
+    # Update password
+    await db.users.update_one(
+        {"id": target_user["id"]},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    return {
+        "message": f"Wachtwoord gereset voor {target_user.get('company_name', data.email)}",
+        "email": target_user["email"]
+    }
+
 @api_router.put("/dealers/{dealer_id}/toggle-offline")
 async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_admin)):
     """Zet een dealer tijdelijk offline/online - ontvangt geen meldingen wanneer offline"""
