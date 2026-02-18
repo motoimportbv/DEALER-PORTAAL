@@ -219,23 +219,36 @@ const AdminPushStatus = () => {
           <CardContent>
             <div className="divide-y">
               {filteredDealers.map((dealer) => (
-                <div key={dealer.id} className="py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {getStatusIcon(dealer.status)}
-                    <div>
-                      <p className="font-semibold text-zinc-900">{dealer.company_name}</p>
-                      <p className="text-sm text-zinc-500">{dealer.email}</p>
+                <div key={dealer.id} className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {getStatusIcon(dealer.status)}
+                      <div>
+                        <p className="font-semibold text-zinc-900">{dealer.company_name}</p>
+                        <p className="text-sm text-zinc-500">{dealer.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {dealer.valid_subscriptions > 0 && (
+                        <div className="flex items-center gap-1 text-sm text-zinc-500">
+                          <Smartphone className="w-4 h-4" />
+                          <span>{dealer.valid_subscriptions}</span>
+                        </div>
+                      )}
+                      {getStatusBadge(dealer.status, dealer.status_text)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {dealer.valid_subscriptions > 0 && (
-                      <div className="flex items-center gap-1 text-sm text-zinc-500">
-                        <Smartphone className="w-4 h-4" />
-                        <span>{dealer.valid_subscriptions}</span>
-                      </div>
-                    )}
-                    {getStatusBadge(dealer.status, dealer.status_text)}
-                  </div>
+                  {/* Show subscription details for debugging */}
+                  {dealer.subscriptions && dealer.subscriptions.length > 0 && (
+                    <div className="mt-2 ml-9 text-xs text-zinc-400">
+                      {dealer.subscriptions.map((sub, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className={sub.valid ? 'text-green-500' : 'text-red-500'}>●</span>
+                          <span>Laatst bijgewerkt: {sub.updated_at ? new Date(sub.updated_at).toLocaleString('nl-NL') : 'Onbekend'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
 
