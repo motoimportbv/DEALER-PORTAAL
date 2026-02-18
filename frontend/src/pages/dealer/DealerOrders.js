@@ -19,7 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
-  Trash2
+  Trash2,
+  Archive,
+  FolderArchive
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,6 +45,9 @@ const DealerOrders = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [orderToArchive, setOrderToArchive] = useState(null);
+  const [archiving, setArchiving] = useState(false);
 
   const openLightbox = (images, index = 0) => {
     if (images && images.length > 0) {
