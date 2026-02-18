@@ -124,6 +124,16 @@ const Sidebar = () => {
           <LanguageSelector />
         </div>
         
+        {/* Change Password Button */}
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="sidebar-nav-item w-full text-left hover:text-yellow-400 mb-2"
+          data-testid="change-password-btn"
+        >
+          <KeyRound className="w-5 h-5" />
+          <span>Wachtwoord Wijzigen</span>
+        </button>
+        
         <button
           onClick={handleLogout}
           className="sidebar-nav-item w-full text-left hover:text-red-400"
@@ -133,6 +143,12 @@ const Sidebar = () => {
           <span>{t('common.logout')}</span>
         </button>
       </div>
+      
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        open={showPasswordModal} 
+        onClose={() => setShowPasswordModal(false)} 
+      />
     </aside>
   );
 };
