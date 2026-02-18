@@ -11,30 +11,45 @@ const PushNotificationReminder = ({ isSubscribed, onEnableClick }) => {
   const { t } = useTranslation();
   const [showReminder, setShowReminder] = useState(false);
   const [dismissCount, setDismissCount] = useState(0);
+  const [permissionGranted, setPermissionGranted] = useState(false);
+
+  // Check if notification permission is already granted
+  useEffect(() => {
+    if ('Notification' in window) {
+      setPermissionGranted(Notification.permission === 'granted');
+    }
+  }, []);
 
   useEffect(() => {
     // Get dismiss count from localStorage
     const count = parseInt(localStorage.getItem('pushReminderDismissCount') || '0');
     setDismissCount(count);
     
-    // Always show reminder if not subscribed (after 2 seconds)
-    if (!isSubscribed) {
+    // Don't show if subscribed OR if permission is already granted
+    if (!isSubscribed && !permissionGranted) {
       const timer = setTimeout(() => {
         setShowReminder(true);
       }, 2000);
       return () => clearTimeout(timer);
+    } else {
+      setShowReminder(false);
     }
-  }, [isSubscribed]);
+  }, [isSubscribed, permissionGranted]);
 
-  // Show reminder again after dismissing (every 30 seconds)
+  // Show reminder again after dismissing (every 60 seconds instead of 30)
   useEffect(() => {
-    if (!isSubscribed && !showReminder) {
+    if (!isSubscribed && !permissionGranted && !showReminder) {
       const timer = setTimeout(() => {
+        // Double-check permission before showing again
+        if ('Notification' in window && Notification.permission === 'granted') {
+          setPermissionGranted(true);
+          return;
+        }
         setShowReminder(true);
-      }, 30000); // 30 seconds
+      }, 60000); // 60 seconds
       return () => clearTimeout(timer);
     }
-  }, [isSubscribed, showReminder]);
+  }, [isSubscribed, permissionGranted, showReminder]);
 
   const handleDismiss = () => {
     const newCount = dismissCount + 1;
