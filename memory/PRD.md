@@ -40,6 +40,14 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - `/app/frontend/src/pages/admin/AdminLicensePlates.js`
 - **Test Status**: 100% geslaagd (16 backend tests, alle frontend tests)
 
+#### ✅ Dealer Online Notificatie
+- **Feature**: Dealers ontvangen automatisch een notificatie wanneer ze weer online worden gezet
+- **Notificatie tekst**: "Goed nieuws! Wij waren bezig met een update en alles is nu afgerond. Uw account is weer online en u kunt weer volop gebruik maken van het platform."
+- **Push notificatie**: "Account weer online! ✅" met auto-login link
+- **In-app notificatie**: Zichtbaar in het notificatiepaneel
+- **Bestanden gewijzigd**:
+  - `/app/backend/server.py` (toggle_dealer_offline endpoint uitgebreid)
+
 ### Session - 17 February 2025 (Part 4)
 
 #### ✅ Dealer Filters met Voorraad Telling
