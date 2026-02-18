@@ -1732,10 +1732,27 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
         query["seller_id"] = {"$ne": user["id"]}  # Don't show own listings
     
     motorcycles = await db.motorcycles.find(query, {"_id": 0}).to_list(1000)
-    # Add default starting_price if missing
+    
+    # Get current exchange rate and margin for CHF motorcycles
+    chf_eur_rate = await get_chf_to_eur_rate()
+    margin = await get_chf_eur_margin()
+    
+    # Process motorcycles - recalculate EUR prices for CHF motorcycles
     for m in motorcycles:
+        # Add default starting_price if missing
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
+        
+        # Real-time price conversion for CHF motorcycles
+        if m.get("original_currency") == "CHF" and m.get("original_price"):
+            # Calculate current EUR price based on live rate + margin
+            m["price"] = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
+            m["starting_price"] = round(m["price"] * 0.8, 2)
+            # Add exchange info for frontend display
+            m["exchange_rate"] = chf_eur_rate
+            m["margin_percent"] = margin * 100
+            m["price_updated_live"] = True
+    
     return motorcycles
 
 @api_router.get("/motorcycles/my-listings")
