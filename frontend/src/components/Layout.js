@@ -11,13 +11,20 @@ import { Button } from './ui/button';
 
 const Layout = ({ children, requiredRole }) => {
   const { user, loading, error, logout } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Store current URL for redirect after login (for notification clicks)
   useEffect(() => {
