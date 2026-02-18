@@ -1325,11 +1325,25 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
     if not user.get("is_foreign_dealer", False):
         raise HTTPException(status_code=403, detail="Alleen buitenlandse dealers kunnen deze functie gebruiken")
     
+    # Get currency - default to CHF for Swiss dealers
+    currency = data.currency.upper() if data.currency else "CHF"
+    if currency not in ["EUR", "CHF"]:
+        currency = "CHF"
+    
+    # Store original price and convert to EUR if needed for display
+    original_price = data.price
+    display_price = data.price
+    
+    if currency == "CHF":
+        # Convert CHF to EUR for display price
+        rate = await get_chf_to_eur_rate()
+        display_price = convert_chf_to_eur(data.price, rate)
+    
     motorcycle = Motorcycle(
         brand=data.brand,
         model=data.model,
         year=data.year,
-        price=data.price,  # Suggested price by foreign dealer
+        price=display_price,  # EUR price for display
         starting_price=data.starting_price,
         mileage=data.mileage,
         color=data.color,
@@ -1343,10 +1357,15 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
         is_pending_approval=True,
         foreign_dealer_id=user["id"],
         foreign_dealer_company=user.get("company_name", ""),
-        original_price=data.price
+        original_price=original_price,
+        original_currency=currency
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
+    
+    # Format price display for email
+    price_display = f"CHF {original_price:,.0f}" if currency == "CHF" else f"€{original_price:,.0f}"
+    eur_display = f"€{display_price:,.0f}" if currency == "CHF" else ""
     
     # Notify admin about new foreign dealer submission
     admin_html = f"""
@@ -1366,15 +1385,15 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
                     <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle.brand} {motorcycle.model} ({motorcycle.year})</td>
                 </tr>
                 <tr style="background: #f4f4f5;">
-                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Voorgestelde Prijs</strong></td>
-                    <td style="padding: 12px; border: 1px solid #e4e4e7;">€{motorcycle.price:,.0f}</td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Inkoopprijs ({currency})</strong></td>
+                    <td style="padding: 12px; border: 1px solid #e4e4e7; font-weight: bold;">{price_display} {f'(≈ {eur_display})' if eur_display else ''}</td>
                 </tr>
                 <tr>
                     <td style="padding: 12px; border: 1px solid #e4e4e7;"><strong>Kilometerstand</strong></td>
                     <td style="padding: 12px; border: 1px solid #e4e4e7;">{motorcycle.mileage:,} km</td>
                 </tr>
             </table>
-            <p style="margin-top: 15px; color: #6b7280;">Log in om de prijs aan te passen en de motor te activeren.</p>
+            <p style="margin-top: 15px; color: #6b7280;">Log in om de verkoopprijs aan te passen en de motor te activeren.</p>
         </div>
     </div>
     """
