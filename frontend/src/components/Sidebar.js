@@ -45,6 +45,7 @@ const Sidebar = () => {
     { path: '/admin/part-orders', icon: ClipboardList, label: t('nav.partOrders') },
     { path: '/admin/dealers', icon: Package, label: t('nav.dealers') },
     { path: '/admin/create-admin', icon: UserPlus, label: 'Admin Aanmaken' },
+    { path: '/admin/reset-password', icon: KeyRound, label: 'Wachtwoord Reset' },
   ];
 
   const dealerNavItems = [
