@@ -335,18 +335,40 @@ const ForeignDealerAddMotorcycle = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="price">Vraagprijs (CHF) *</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={handleChange}
-                    placeholder="e.g. 8500"
-                    required
-                  />
+                  <Label htmlFor="price">{t('foreignDealer.purchasePrice')} *</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.currency}
+                      onValueChange={(value) => handleSelectChange('currency', value)}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={handleChange}
+                      placeholder="e.g. 8500"
+                      required
+                      className="flex-1"
+                    />
+                  </div>
+                  {/* Real-time EUR conversion display */}
+                  {formData.currency === 'CHF' && formData.price && exchangeRate && (
+                    <p className="text-sm text-zinc-500 mt-1">
+                      ≈ €{(parseFloat(formData.price) * exchangeRate).toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR
+                      <span className="text-xs text-zinc-400 ml-1">(koers: 1 CHF = {exchangeRate.toFixed(4)} EUR)</span>
+                    </p>
+                  )}
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
                     <p className="text-sm text-amber-800 font-medium flex items-center gap-2">
                       <span className="text-amber-500">⚠️</span>
