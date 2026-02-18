@@ -4,6 +4,7 @@ Generate a professional PDF flyer for recruiting motorcycle dealers to Moto Impo
 """
 
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 from pathlib import Path
 import os
 
@@ -41,6 +42,11 @@ class DealerFlyer(FPDF):
         self.cell(0, 5, 'Moto Import B.V.  |  Horsterhoekweg 11, 7433 SV Schalkhaar  |  +31 6 81792660', align='C')
         self.set_xy(15, 283)
         self.cell(0, 5, 'www.motoimportbv.nl  |  motoimportbv@gmail.com', align='C')
+    
+    def draw_bullet(self, x, y):
+        """Draw a red filled circle as bullet point"""
+        self.set_fill_color(220, 38, 38)
+        self.ellipse(x, y + 2, 4, 4, 'F')
 
 
 def create_flyer():
@@ -50,7 +56,7 @@ def create_flyer():
     # Main headline
     pdf.set_text_color(30, 30, 30)
     pdf.set_font('Helvetica', 'B', 26)
-    pdf.cell(0, 12, 'Word Partner van Moto Import!', align='C', ln=True)
+    pdf.cell(0, 12, 'Word Partner van Moto Import!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.ln(5)
     
@@ -68,36 +74,30 @@ def create_flyer():
     benefits = [
         ("Exclusieve Dealerprijzen", "Koop motoren tegen scherpe inkoopprijzen, rechtstreeks van importeurs uit heel Europa."),
         ("Groot Aanbod", "Dagelijks nieuwe motoren van alle topmerken: BMW, Honda, Kawasaki, Yamaha, Ducati en meer."),
-        ("Eenvoudig Bestellen", "Bestel met één klik via onze app. Levering binnen enkele dagen mogelijk."),
+        ("Eenvoudig Bestellen", "Bestel met een klik via onze app. Levering binnen enkele dagen mogelijk."),
         ("Push Notificaties", "Ontvang direct een melding wanneer een interessante motor beschikbaar komt."),
         ("Geen Verplichtingen", "Geen maandelijkse kosten, geen minimale afname. Betaal alleen wat u bestelt."),
         ("Persoonlijke Service", "Direct contact met ons team voor vragen, transport en after-sales.")
     ]
     
-    # Draw benefits with icons
+    # Draw benefits header
     pdf.set_font('Helvetica', 'B', 14)
     pdf.set_text_color(220, 38, 38)
-    pdf.cell(0, 10, 'Waarom kiezen voor Moto Import?', ln=True)
+    pdf.cell(0, 10, 'Waarom kiezen voor Moto Import?', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.ln(3)
     
     for title, description in benefits:
-        # Checkmark bullet
-        pdf.set_fill_color(220, 38, 38)
-        pdf.set_draw_color(220, 38, 38)
-        
-        # Red bullet point
         y_pos = pdf.get_y()
-        pdf.set_xy(15, y_pos + 2)
-        pdf.set_font('Helvetica', 'B', 14)
-        pdf.set_text_color(220, 38, 38)
-        pdf.cell(8, 6, chr(0x2713), ln=False)  # Checkmark
+        
+        # Red bullet point (circle)
+        pdf.draw_bullet(15, y_pos)
         
         # Title
         pdf.set_xy(25, y_pos)
         pdf.set_font('Helvetica', 'B', 11)
         pdf.set_text_color(30, 30, 30)
-        pdf.cell(0, 7, title, ln=True)
+        pdf.cell(0, 7, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Description
         pdf.set_x(25)
@@ -117,19 +117,19 @@ def create_flyer():
     pdf.set_xy(15, box_y + 8)
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(180, 8, 'Registreer Nu - Gratis!', align='C', ln=True)
+    pdf.cell(180, 8, 'Registreer Nu - Gratis!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_x(15)
     pdf.set_font('Helvetica', '', 11)
-    pdf.cell(180, 6, 'Scan de QR-code of ga naar:', align='C', ln=True)
+    pdf.cell(180, 6, 'Ga naar:', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_x(15)
     pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(180, 8, 'www.motoimportbv.nl/register', align='C', ln=True)
+    pdf.cell(180, 8, 'www.motoimportbv.nl/register', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     pdf.set_x(15)
     pdf.set_font('Helvetica', '', 10)
-    pdf.cell(180, 6, 'Binnen 24 uur krijgt u toegang tot ons complete aanbod!', align='C', ln=True)
+    pdf.cell(180, 6, 'Binnen 24 uur krijgt u toegang tot ons complete aanbod!', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     # Save PDF
     output_path = Path('/app/backend/uploads/Moto_Import_Dealer_Info.pdf')
