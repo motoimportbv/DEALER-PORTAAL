@@ -1695,10 +1695,25 @@ async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
 @api_router.get("/motorcycles", response_model=List[Motorcycle])
 async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
-    # Add default starting_price if missing
+    
+    # Get current exchange rate and margin for CHF motorcycles
+    chf_eur_rate = await get_chf_to_eur_rate()
+    margin = await get_chf_eur_margin()
+    
+    # Process motorcycles
     for m in motorcycles:
+        # Add default starting_price if missing
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
+        
+        # Real-time price conversion for CHF motorcycles
+        if m.get("original_currency") == "CHF" and m.get("original_price"):
+            m["price"] = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
+            m["starting_price"] = round(m["price"] * 0.8, 2)
+            m["exchange_rate"] = chf_eur_rate
+            m["margin_percent"] = margin * 100
+            m["price_updated_live"] = True
+    
     return motorcycles
 
 @api_router.get("/motorcycles/with-exchange-rate")
@@ -1706,8 +1721,9 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
     """Get motorcycles with real-time CHF to EUR conversion for foreign listings"""
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
     
-    # Get current exchange rate
+    # Get current exchange rate and margin
     chf_eur_rate = await get_chf_to_eur_rate()
+    margin = await get_chf_eur_margin()
     
     result = []
     for m in motorcycles:
@@ -1715,14 +1731,16 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
         
-        # Add real-time EUR conversion for CHF prices
+        # Real-time price conversion for CHF motorcycles
         if m.get("original_currency") == "CHF" and m.get("original_price"):
-            m["original_price_eur"] = convert_chf_to_eur(m["original_price"], chf_eur_rate)
+            m["price"] = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
+            m["starting_price"] = round(m["price"] * 0.8, 2)
             m["exchange_rate"] = chf_eur_rate
+            m["margin_percent"] = margin * 100
         
         result.append(m)
     
-    return {"motorcycles": result, "exchange_rate": {"CHF_EUR": chf_eur_rate}}
+    return {"motorcycles": result, "exchange_rate": {"CHF_EUR": chf_eur_rate}, "margin_percent": margin * 100}
 
 @api_router.get("/motorcycles/available", response_model=List[Motorcycle])
 async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
