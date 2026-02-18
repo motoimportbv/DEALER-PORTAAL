@@ -15,7 +15,8 @@ import {
   Wrench,
   ClipboardList,
   CreditCard,
-  Bell
+  Bell,
+  UserPlus
 } from 'lucide-react';
 
 const Sidebar = () => {
