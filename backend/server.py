@@ -3023,8 +3023,12 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
         await db.notifications.insert_one(notification.model_dump())
         
         # Send push notification to all devices of this dealer
+        push_sent = 0
+        push_failed = 0
         try:
             subscriptions = await db.push_subscriptions.find({"user_id": dealer_id}).to_list(100)
+            print(f"[ONLINE PUSH] Found {len(subscriptions)} push subscription(s) for dealer {dealer['company_name']}")
+            
             for sub in subscriptions:
                 try:
                     subscription_info = {
@@ -3054,10 +3058,22 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
                         vapid_private_key=VAPID_PRIVATE_KEY,
                         vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
                     )
+                    push_sent += 1
+                    print(f"[ONLINE PUSH] Successfully sent to endpoint: {sub['endpoint'][:50]}...")
                 except Exception as push_error:
-                    print(f"Push to device failed: {push_error}")
+                    push_failed += 1
+                    print(f"[ONLINE PUSH] Failed to send: {push_error}")
+            
+            print(f"[ONLINE PUSH] Result: {push_sent} sent, {push_failed} failed")
         except Exception as e:
-            print(f"Error sending online notification: {e}")
+            print(f"[ONLINE PUSH] Error: {e}")
+    
+        return {
+            "message": f"Dealer {dealer['company_name']} is nu {status_text}",
+            "is_offline": new_status,
+            "push_notifications_sent": push_sent,
+            "push_notifications_failed": push_failed
+        }
     
     return {
         "message": f"Dealer {dealer['company_name']} is nu {status_text}",
