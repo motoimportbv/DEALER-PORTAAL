@@ -3031,6 +3031,12 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
             
             for sub in subscriptions:
                 try:
+                    # Validate subscription has required fields
+                    if not sub.get("endpoint") or not sub.get("keys"):
+                        print(f"[ONLINE PUSH] Skipping invalid subscription (missing endpoint or keys)")
+                        push_failed += 1
+                        continue
+                    
                     subscription_info = {
                         "endpoint": sub["endpoint"],
                         "keys": sub["keys"]
