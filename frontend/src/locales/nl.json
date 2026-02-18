@@ -309,6 +309,7 @@
     "viewMotorcycleBtn": "Bekijk Motor",
     "deleteTitle": "Bestelling Verwijderen?",
     "deleteConfirm": "Weet u zeker dat u de bestelling voor {{brand}} {{model}} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "deleteConfirmGeneric": "Weet u zeker dat u deze bestelling wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "deleteFailed": "Kon bestelling niet verwijderen"
   },
   "detail": {
