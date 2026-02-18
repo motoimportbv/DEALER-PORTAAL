@@ -24,13 +24,17 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 #### ✅ Motordealers Lijst Milaan en Omgeving (P0 Taak)
 - **Taak**: Uitgebreide lijst van motordealers met e-mailadressen voor marketing
-- **Focus gebied**: Milaan, Monza-Brianza, Bergamo en omliggende provincies
-- **Resultaat**: CSV bestand met **57 dealers** (was 22)
-- **Nieuwe dealers toegevoegd**:
-  - **Milano stad**: Moto Crea, Giovanelli Moto (4 contacten), CMTmotor, Francone Moto, MaMaMoto, Moto 39, Ducati Milano (4 contacten)
-  - **Milano provincie**: Ducati Sesto S.G. (3 contacten), Pogliani, MG Moto (Cormano), MV Moto (Rho), CMTmotor Rozzano
-  - **Monza-Brianza**: Giava Motors, Valtermoto Group, CMTmotor Monza, Motosalone Cavallotti
-  - **Bergamo**: Triumph, RS Moto Honda, Dall'Ara Moto, Dall'Ara Ezio, Farioli SRL (KTM)
+- **Focus gebied**: Milaan, Monza-Brianza, Bergamo, Como, Varese, Brescia, Pavia en omliggende provincies
+- **Resultaat**: CSV bestand met **77 dealers** (was 22)
+- **Toegevoegde regio's**:
+  - **Milano stad & provincie**: 31 contacten (Ducati, Giovanelli, Motostar, CMTmotor, etc.)
+  - **Monza-Brianza**: Giava Motors, Valtermoto Group, Motosalone Cavallotti
+  - **Bergamo**: Triumph, RS Moto, Dall'Ara, Farioli KTM
+  - **Como**: ARB Moto, Cavauto Motorcycle
+  - **Varese**: Gallazzi Moto, CMTmotor Busto Arsizio, Sarma Motorrad BMW
+  - **Brescia**: CMTmotor, Schivardi Honda, BMS Moto, GTG Motogamma, Ducati, Forchini
+  - **Pavia**: QJ Motor, Harley-Davidson
+  - **Piemonte**: Alessandria, Alba, Cuneo, Torino (Finotti BMW)
 - **Bestand**: `/app/backend/uploads/Motorzaken_Noord_Italie.csv`
 - **Status**: Voltooid ✓
 
