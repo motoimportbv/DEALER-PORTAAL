@@ -3039,7 +3039,7 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
                         "role": dealer.get("role"),
                         "exp": (datetime.now(timezone.utc) + timedelta(hours=24)).timestamp()
                     }
-                    auto_login_token = jwt.encode(token_payload, SECRET_KEY, algorithm="HS256")
+                    auto_login_token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
                     
                     payload = json.dumps({
                         "title": "Account weer online! ✅",
