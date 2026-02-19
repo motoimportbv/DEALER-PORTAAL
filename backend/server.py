@@ -4498,10 +4498,10 @@ async def get_stats(user: dict = Depends(require_admin)):
 
 @api_router.get("/stats/top-dealers")
 async def get_top_dealers(user: dict = Depends(require_admin)):
-    """Get most active dealers by login count"""
+    """Get most active dealers by login count with last_active time"""
     dealers = await db.users.find(
         {"role": "dealer", "is_approved": True},
-        {"_id": 0, "id": 1, "company_name": 1, "email": 1, "login_count": 1, "last_login": 1}
+        {"_id": 0, "id": 1, "company_name": 1, "email": 1, "login_count": 1, "last_login": 1, "last_active": 1}
     ).sort("login_count", -1).to_list(10)
     
     return dealers
