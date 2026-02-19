@@ -1675,13 +1675,6 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
             for dealer in dealers
         ]
         await db.notifications.insert_many(notifications)
-        
-        # Send push notifications with detailed motor info
-        asyncio.create_task(send_push_to_all_dealers(
-            title=f"🏍️ {motorcycle['brand']} {motorcycle['model']}",
-            body=f"Jaar: {motorcycle.get('year', 'N/A')} | Prijs: €{price:,.0f} | Import motor",
-            url=f"/motorcycle/{motorcycle_id}"
-        ))
     
     return {"message": "Motor geactiveerd", "price": price}
 
