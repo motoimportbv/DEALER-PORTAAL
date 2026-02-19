@@ -62,7 +62,8 @@ if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
         logging.warning(f"Failed to initialize Twilio client: {e}")
 
 # VAPID Config for Push Notifications
-VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'BOxwQdD7jKfEIziijbv7Gz7lffbc6pOcO7iHI90tUhIkX_VbCcbNQCMq3FEx5jnRYRgNg9_ObiT4XnSta4X9jeY')
+# Production keys - these must match what's deployed on motoimportbv.nl
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'BFOF4XWyJwQkj-BrIwQIV6cVuhNN11SBg4ehxSCrlVUGg-am_gwNPydACsNO7NP_TGt56j8JkSduaXci_7nVGB4')
 VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgTTZnHAl9dVGQz5Zi7FqHDy8wR3SwLN6lpi5RIKFhmcShRANCAATscEHQ+4ynxCM4oo27+xs+5X323OqTnDu4hyPdLVISJF/1WwnGzUAjKtxRMeY50WEYDYPfzm4k+F50rWuF/Y3m')
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
