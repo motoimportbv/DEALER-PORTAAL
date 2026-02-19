@@ -1638,7 +1638,7 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
     """Send email notifications to all approved dealers who are not offline about a new motorcycle"""
     # Always use production URL for email links
-    base_url = "https://www.motoimportbv.nl"
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     
     for dealer in dealers:
         # Skip dealers without email or who are offline
@@ -2445,7 +2445,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     
     # Send email to Admin with Pakbon
     # Always use production URL for any links
-    base_url = "https://www.motoimportbv.nl"
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     order_date = datetime.now(timezone.utc).strftime('%d-%m-%Y')
     order_time = datetime.now(timezone.utc).strftime('%H:%M')
     
@@ -3092,7 +3092,7 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
     # Send notification to admin about new bid
     try:
         # Always use production URL for email links
-        base_url = "https://www.motoimportbv.nl"
+        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
         
         # Create in-app notification for admin
         admin_user = await db.users.find_one({"role": "admin"}, {"_id": 0})
@@ -3233,7 +3233,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
     is_foreign = dealer.get("is_foreign_dealer", False)
     
     # Always use production URL for email links
-    base_url = "https://www.motoimportbv.nl"
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     login_url = f"{base_url}/login"
     
     # Buitenlandse dealers krijgen GEEN voucher
@@ -3790,7 +3790,7 @@ async def send_push_notification_to_user(user_id: str, title: str, body: str, ur
             return False
         
         # Always use production URL for push notifications
-        base_url = "https://www.motoimportbv.nl"
+        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
         
         # Get user info for auto-login token
         final_url = url
