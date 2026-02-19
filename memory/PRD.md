@@ -20,6 +20,58 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 19 February 2025 (Email & Notificatie Verbeteringen)
+
+#### ✅ Email Notificaties Alleen voor Nederlandse Dealers (P0 Feature)
+- **Feature**: Nieuwe motor notificaties worden nu alleen naar Nederlandse dealers gestuurd
+- **Wijziging**: Buitenlandse dealers (is_foreign_dealer=true) ontvangen geen email/notificatie bij nieuwe motoren
+- **Logica**: Query filter `is_foreign_dealer: {"$ne": True}` toegevoegd aan dealer ophaal
+- **Reden**: Buitenlandse dealers zijn leveranciers, geen kopers
+
+#### ✅ CSV Upload voor Marketing Emails (P0 Feature)
+- **Feature**: Admin kan nu eigen email lijsten uploaden via CSV
+- **Endpoint**: `POST /api/admin/upload-marketing-csv`
+- **Ondersteunde formaten**: 
+  - Komma-gescheiden (internationaal)
+  - Puntkomma-gescheiden (Europees/Nederlands)
+- **Auto-detectie**: Kolom met "email", "e-mail", "mail" wordt automatisch gevonden
+- **Response**: `{message, filename, count, emails[]}`
+- **Frontend**: Drag-drop upload zone op `/admin/bulk-email`
+
+#### ✅ Flyer Bijlagen bij Marketing Emails (P0 Feature)
+- **Feature**: Admin kan PDF flyers bijvoegen bij bulk emails
+- **Endpoint**: `GET /api/admin/available-flyers` - Lijst van beschikbare PDFs
+- **Backend**: `send_email_with_attachment()` functie voor PDF bijlagen
+- **Beschikbare flyers**:
+  - `Moto_Import_Dealer_Flyer_NL.pdf`
+  - `Moto_Import_Dealer_Flyer_DE.pdf`
+  - `Moto_Import_Dealer_Flyer_FR.pdf`
+  - `Moto_Import_Dealer_Flyer_IT.pdf`
+- **Frontend**: Dropdown met bestandsnaam en grootte in KB
+
+#### ✅ "Over Ons" Sectie bij Marketing Emails (P0 Feature)
+- **Feature**: Admin kan bedrijfsinformatie toevoegen aan marketing emails
+- **Parameter**: `include_about_us: true` in bulk-email request
+- **Inhoud**: `ABOUT_US_HTML` constante met:
+  - Bedrijfsbeschrijving
+  - Voordelen opsomming (ruim aanbod, scherpe prijzen, snelle levering, etc.)
+  - Contactgegevens en adres
+- **Frontend**: Checkbox "Over Ons sectie toevoegen" met beschrijving
+
+#### ✅ Marketing Lijsten Verbeterd (Verbetering)
+- **Wijziging**: `GET /api/admin/marketing-lists` toont nu ook geüploade CSV's
+- **Velden**: `filename, display_name, count, is_uploaded, url`
+- **Sortering**: Pre-made lijsten eerst, dan geüploade
+- **Bestaande lijsten**:
+  - Motorzaken_Benelux_Frankrijk.csv (40 dealers)
+  - Motorzaken_Noord_Italie.csv (110 dealers)
+  - Motorzaken_Zwitserland.csv (39 dealers)
+
+#### ✅ Test Status: 100% Geslaagd
+- Backend: 21 tests geslaagd
+- Frontend: Alle UI elementen aanwezig en werkend
+- Test rapport: `/app/test_reports/iteration_12.json`
+
 ### Session - December 2025 (Lead Generation)
 
 #### ✅ Motordealers Lijst Noord-Italië (P0 Taak)
