@@ -1884,6 +1884,14 @@ async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: di
         raise HTTPException(status_code=404, detail="Motorcycle not found")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    # If admin manually sets price on a CHF motorcycle, mark it as overridden
+    # This prevents live exchange rate from overwriting the admin's price
+    if "price" in update_data and motorcycle.get("original_currency") == "CHF":
+        update_data["price_override"] = True
+        update_data["price_override_amount"] = update_data["price"]
+        logger.info(f"Admin override price for CHF motorcycle {motorcycle_id}: €{update_data['price']}")
+    
     if update_data:
         await db.motorcycles.update_one({"id": motorcycle_id}, {"$set": update_data})
     
