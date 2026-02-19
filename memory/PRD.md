@@ -20,22 +20,40 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 19 February 2025 (Part 5 - Finale)
+
+#### ✅ Real-time Dealer Online Status
+- Admin kan nu precies zien wanneer een dealer online is
+- **"Nu online"** (groene indicator) - actief in laatste 5 minuten
+- **"Recent actief"** (blauwe indicator) - actief in laatste uur
+- `last_active` wordt bijgewerkt bij elke API call
+- Bestanden: `server.py`, `AdminDashboard.js`
+
+#### ✅ Voucher Beveiliging voor Buitenlandse Dealers
+- Buitenlandse leveranciers kunnen GEEN vouchers krijgen of gebruiken
+- 3 lagen beveiliging: backend (goedkeuring), API check, frontend hide
+- Bestanden: `server.py`, `MotorcycleDetail.js`
+
+#### ✅ Notificaties Verwijderen Fix
+- Route conflict opgelost (`/notifications/all` vs `/{id}`)
+- Dealers kunnen nu notificaties permanent verwijderen
+- Verwijderde notificaties blijven weg na opnieuw inloggen
+
+#### ✅ Admin Menu Scrollbaar
+- Sidebar menu is nu scrollbaar bij kleinere schermen
+- Compactere footer voor meer ruimte
+- Bestanden: `App.css`, `Sidebar.js`
+
 ### Session - 19 February 2025 (Part 4 - E-mail Sjablonen)
 
 #### ✅ Taal Sjabloon Selector voor Marketing E-mails
-- **Nieuwe feature**: 1-klik taal selector toegevoegd aan de Marketing E-mails pagina
-- **4 talen beschikbaar**: 🇩🇪 Duits, 🇫🇷 Frans, 🇮🇹 Italiaans, 🇳🇱 Nederlands
-- **Functionaliteit**: Klik op een vlag-knop → onderwerp en bericht worden automatisch ingevuld
-- **UI/UX**: Blauwe gradient achtergrond, geselecteerde taal wordt blauw gemarkeerd
-- **Toast notificatie**: Bevestiging wanneer sjabloon is geladen
-- **Bestand gewijzigd**: `/app/frontend/src/pages/admin/AdminBulkEmail.js`
+- 1-klik taal selector: 🇩🇪 DE, 🇫🇷 FR, 🇮🇹 IT, 🇳🇱 NL
+- Korte B2B teksten met vertrouwenwekkende toon
+- Bestand: `AdminBulkEmail.js`
 
-#### ✅ E-mail Sjablonen in 4 Talen Goedgekeurd
-- **Bestand**: `/app/backend/uploads/Email_Templates_4_Talen.md`
-- **Inhoud**: Professionele e-mail teksten voor leverancier werving
-- **Contactgegevens**: Correct opgenomen (motoimportbv@gmail.com, +31 6 81792660)
-
-### Session - 19 February 2025 (Part 3 - Cleanup & UX Verbeteringen)
+#### ✅ CSV Dealer Contacten
+- `Dealer_Contacten.csv` aangemaakt met contacten
+- Download via: `/api/uploads/Dealer_Contacten.csv`
 
 #### ✅ Push Notification Backend Volledig Verwijderd
 - **Verwijderd uit server.py**:
