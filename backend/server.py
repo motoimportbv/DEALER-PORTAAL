@@ -3808,6 +3808,10 @@ class SMSRequest(BaseModel):
 class BulkSMSRequest(BaseModel):
     message: str
 
+class SelectedSMSRequest(BaseModel):
+    message: str
+    dealer_ids: List[str]
+
 @api_router.post("/sms/send")
 async def send_single_sms(data: SMSRequest, user: dict = Depends(require_admin)):
     """Send SMS to a single phone number (admin only)"""
@@ -3815,6 +3819,66 @@ async def send_single_sms(data: SMSRequest, user: dict = Depends(require_admin))
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "SMS verzenden mislukt"))
     return result
+
+@api_router.post("/sms/send-to-selected")
+async def send_sms_to_selected_dealers(data: SelectedSMSRequest, user: dict = Depends(require_admin)):
+    """Send SMS to selected dealers only (admin only)"""
+    if not twilio_client:
+        raise HTTPException(status_code=400, detail="SMS niet geconfigureerd")
+    
+    if not data.dealer_ids:
+        raise HTTPException(status_code=400, detail="Geen dealers geselecteerd")
+    
+    # Get selected dealers
+    dealers = await db.users.find(
+        {
+            "id": {"$in": data.dealer_ids},
+            "role": "dealer",
+            "is_approved": True,
+            "phone": {"$exists": True, "$ne": ""}
+        },
+        {"_id": 0, "id": 1, "company_name": 1, "phone": 1}
+    ).to_list(500)
+    
+    sent_count = 0
+    failed_count = 0
+    results = []
+    
+    for dealer in dealers:
+        phone = dealer.get("phone", "").replace(" ", "").replace("-", "")
+        if not phone:
+            continue
+            
+        # Format phone number
+        if not phone.startswith("+"):
+            if phone.startswith("0"):
+                phone = "+31" + phone[1:]
+            elif phone.startswith("31"):
+                phone = "+" + phone
+            else:
+                phone = "+" + phone
+        
+        try:
+            twilio_client.messages.create(
+                body=data.message,
+                from_=TWILIO_PHONE_NUMBER,
+                to=phone
+            )
+            sent_count += 1
+            results.append({"dealer": dealer.get("company_name"), "status": "sent"})
+            logger.info(f"SMS sent to {dealer.get('company_name')} ({phone})")
+            await asyncio.sleep(0.3)
+        except Exception as e:
+            failed_count += 1
+            results.append({"dealer": dealer.get("company_name"), "status": "failed", "error": str(e)})
+            logger.error(f"Failed to send SMS to {phone}: {e}")
+    
+    return {
+        "sent": sent_count,
+        "failed": failed_count,
+        "total": len(dealers),
+        "results": results
+    }
 
 @api_router.post("/sms/send-all")
 async def send_sms_to_all(data: BulkSMSRequest, user: dict = Depends(require_admin)):
