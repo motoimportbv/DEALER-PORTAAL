@@ -53,6 +53,7 @@ const Sidebar = () => {
     { path: '/admin/reset-password', icon: KeyRound, label: 'Wachtwoord Reset' },
     { path: '/admin/exchange-rate', icon: TrendingUp, label: 'Wisselkoers' },
     { path: '/admin/bulk-email', icon: Mail, label: 'Marketing E-mails' },
+    { path: '/admin/sms', icon: MessageSquare, label: '📱 SMS Broadcast' },
     { path: '/admin/whatsapp', icon: MessageCircle, label: 'WhatsApp Broadcast' },
   ];
 
