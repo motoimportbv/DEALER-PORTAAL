@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -9,6 +10,7 @@ import { MessageCircle, Send, ExternalLink, Check, Loader2, Bike } from 'lucide-
 const API = process.env.REACT_APP_BACKEND_URL;
 
 export default function AdminWhatsAppBroadcast() {
+  const [searchParams] = useSearchParams();
   const [motorcycles, setMotorcycles] = useState([]);
   const [selectedMotorcycle, setSelectedMotorcycle] = useState(null);
   const [dealerLinks, setDealerLinks] = useState([]);
@@ -19,6 +21,14 @@ export default function AdminWhatsAppBroadcast() {
   useEffect(() => {
     fetchMotorcycles();
   }, []);
+
+  // Auto-select motorcycle from URL parameter
+  useEffect(() => {
+    const motorcycleId = searchParams.get('motorcycle');
+    if (motorcycleId && motorcycles.length > 0) {
+      loadDealerLinks(motorcycleId);
+    }
+  }, [searchParams, motorcycles]);
 
   const fetchMotorcycles = async () => {
     try {
