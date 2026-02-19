@@ -114,40 +114,35 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="mb-4 px-1 pb-4 border-b border-zinc-800">
-          <p className="font-barlow uppercase tracking-wider text-xs text-zinc-500 mb-1">{t('auth.loginTitle')}</p>
-          <p className="text-white font-semibold truncate">{user?.company_name}</p>
-          <p className="text-zinc-400 text-sm truncate">{user?.email}</p>
-        </div>
-        <div className="mb-4 px-1 text-xs text-zinc-500">
-          <p className="font-semibold text-zinc-400">Moto Import B.V.</p>
-          <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
-          <p>+31 6 81792660</p>
-          <p>Motoimportbv@gmail.com</p>
+        <div className="mb-2 px-1 pb-2 border-b border-zinc-800">
+          <p className="text-white font-semibold truncate text-sm">{user?.company_name}</p>
+          <p className="text-zinc-400 text-xs truncate">{user?.email}</p>
         </div>
         
-        {/* Language Selector */}
-        <div className="mb-4 px-1">
-          <LanguageSelector />
-        </div>
+        {/* Language Selector - only for dealers */}
+        {user?.role !== 'admin' && (
+          <div className="mb-2 px-1">
+            <LanguageSelector />
+          </div>
+        )}
         
         {/* Change Password Button */}
         <button
           onClick={() => setShowPasswordModal(true)}
-          className="sidebar-nav-item w-full text-left hover:text-yellow-400 mb-2"
+          className="sidebar-nav-item w-full text-left hover:text-yellow-400 mb-1 py-2"
           data-testid="change-password-btn"
         >
-          <KeyRound className="w-5 h-5" />
-          <span>Wachtwoord Wijzigen</span>
+          <KeyRound className="w-4 h-4" />
+          <span className="text-sm">Wachtwoord Wijzigen</span>
         </button>
         
         <button
           onClick={handleLogout}
-          className="sidebar-nav-item w-full text-left hover:text-red-400"
+          className="sidebar-nav-item w-full text-left hover:text-red-400 py-2"
           data-testid="logout-btn"
         >
-          <LogOut className="w-5 h-5" />
-          <span>{t('common.logout')}</span>
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm">{t('common.logout')}</span>
         </button>
       </div>
       
