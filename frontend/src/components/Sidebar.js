@@ -51,6 +51,7 @@ const Sidebar = () => {
     { path: '/admin/create-admin', icon: UserPlus, label: 'Admin Aanmaken' },
     { path: '/admin/reset-password', icon: KeyRound, label: 'Wachtwoord Reset' },
     { path: '/admin/exchange-rate', icon: TrendingUp, label: 'Wisselkoers' },
+    { path: '/admin/bulk-email', icon: Mail, label: 'Marketing E-mails' },
   ];
 
   const dealerNavItems = [
