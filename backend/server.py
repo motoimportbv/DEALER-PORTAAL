@@ -581,26 +581,20 @@ async def require_approved_dealer(user: dict = Depends(get_current_user)):
 # ============ EMAIL HELPER ============
 
 async def send_email(to_email: str, subject: str, html_content: str):
-    """Send email via SMTP (Mijndomein.nl)"""
+    """Send email via Gmail SMTP"""
     try:
-        smtp_host = os.environ.get('SMTP_HOST', 'smtp.mijndomein.nl')
-        smtp_port = int(os.environ.get('SMTP_PORT', 587))
-        smtp_email = os.environ.get('SMTP_EMAIL', GMAIL_EMAIL)
-        smtp_password = os.environ.get('SMTP_PASSWORD', GMAIL_APP_PASSWORD)
-        
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = f"Moto Import <{smtp_email}>"
+        msg['From'] = f"Moto Import <{GMAIL_EMAIL}>"
         msg['To'] = to_email
         
         html_part = MIMEText(html_content, 'html')
         msg.attach(html_part)
         
         def send_sync():
-            with smtplib.SMTP(smtp_host, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_email, smtp_password)
-                server.sendmail(smtp_email, to_email, msg.as_string())
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+                server.sendmail(GMAIL_EMAIL, to_email, msg.as_string())
         
         await asyncio.to_thread(send_sync)
         logger.info(f"Email sent to {to_email}")
