@@ -14,8 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import PushNotificationToggle from '../../components/PushNotificationToggle';
-import PushNotificationReminder from '../../components/PushNotificationReminder';
 import TermsModal from '../../components/TermsModal';
 import { toast } from 'sonner';
 import { 
@@ -41,8 +39,6 @@ const DealerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
-  const pushToggleRef = useRef(null);
 
   // Get unique brands with count
   const brandsWithCount = useMemo(() => {
