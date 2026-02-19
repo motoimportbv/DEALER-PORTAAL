@@ -220,10 +220,13 @@ def create_flyer(lang_code, content, output_path):
     y_pos -= 6*mm
     c.drawCentredString(width/2, y_pos, f"📞 {content['phone']}")
     
-    y_pos -= 6*mm
-    c.setFillColor(HexColor("#71717A"))
-    c.setFont("Helvetica", 10)
-    c.drawCentredString(width/2, y_pos, content["address"])
+    y_pos -= 8*mm
+    c.setFillColor(white)
+    c.setFont("Helvetica", 11)
+    c.drawCentredString(width/2, y_pos, content["address1"])
+    
+    y_pos -= 5*mm
+    c.drawCentredString(width/2, y_pos, content["address2"])
     
     # Bottom bar with logo text
     c.setFillColor(RED)
