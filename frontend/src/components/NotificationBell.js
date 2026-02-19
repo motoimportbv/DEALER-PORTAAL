@@ -144,18 +144,31 @@ const NotificationBell = () => {
           <span className="font-barlow uppercase tracking-wide text-sm font-semibold">
             Meldingen
           </span>
-          {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-xs text-zinc-400 hover:text-white h-7"
-              onClick={markAllAsRead}
-              data-testid="mark-all-read-btn"
-            >
-              <CheckCheck className="w-4 h-4 mr-1" />
-              Alles gelezen
-            </Button>
-          )}
+          <div className="flex gap-1">
+            {unreadCount > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs text-zinc-400 hover:text-white h-7"
+                onClick={markAllAsRead}
+                data-testid="mark-all-read-btn"
+              >
+                <CheckCheck className="w-4 h-4 mr-1" />
+                Gelezen
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs text-zinc-400 hover:text-red-400 h-7"
+                onClick={deleteAllNotifications}
+                data-testid="delete-all-notifications-btn"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
         
         <ScrollArea className="h-[300px]">
