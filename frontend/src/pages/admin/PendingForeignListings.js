@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,7 +15,8 @@ import {
   Check, 
   Clock,
   DollarSign,
-  MapPin
+  MapPin,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
