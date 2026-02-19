@@ -1532,14 +1532,19 @@ _Moto Import_"""
 
 @api_router.get("/motorcycles/{motorcycle_id}/whatsapp-share-all-dealers")
 async def get_whatsapp_share_all_dealers(motorcycle_id: str, user: dict = Depends(require_admin)):
-    """Get WhatsApp share links for ALL dealers with phone numbers"""
+    """Get WhatsApp share links for DUTCH dealers only (not foreign dealers) with phone numbers"""
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
-    # Get all approved dealers with phone numbers
+    # Get only Dutch approved dealers with phone numbers (exclude foreign dealers)
     dealers = await db.users.find(
-        {"role": "dealer", "is_approved": True, "phone": {"$exists": True, "$ne": ""}},
+        {
+            "role": "dealer", 
+            "is_approved": True, 
+            "phone": {"$exists": True, "$ne": ""},
+            "is_foreign_dealer": {"$ne": True}  # Only Dutch dealers
+        },
         {"_id": 0, "id": 1, "company_name": 1, "phone": 1, "email": 1}
     ).to_list(500)
     
