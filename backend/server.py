@@ -1673,8 +1673,9 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
         # Send email notifications to Dutch dealers
         asyncio.create_task(notify_dealers_new_motorcycle_email(moto_notify, dealers))
         
-        # Send SMS notifications to Dutch dealers with phone numbers
-        asyncio.create_task(notify_dealers_new_motorcycle_sms(moto_notify, dealers))
+        # NOTE: Automatic SMS is disabled - use SMS Broadcast page to manually select recipients
+        # Twilio trial accounts can only send to verified numbers
+        # asyncio.create_task(notify_dealers_new_motorcycle_sms(moto_notify, dealers))
     
     return {"message": "Motor geactiveerd", "price": price}
 
