@@ -8,13 +8,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog';
 import { 
   Bike, 
   ShoppingCart, 
@@ -24,7 +17,6 @@ import {
   ArrowRight,
   Package,
   Trophy,
-  Bell,
   Send
 } from 'lucide-react';
 import { toast } from 'sonner';
