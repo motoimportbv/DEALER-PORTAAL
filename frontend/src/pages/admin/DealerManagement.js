@@ -170,7 +170,10 @@ const DealerManagement = () => {
 
   const removeForeignDealer = async (dealerId) => {
     try {
-      await axios.post(`${API}/dealers/${dealerId}/unset-foreign`);
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/dealers/${dealerId}/unset-foreign`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('adminDealers.foreignRemoved'));
       fetchDealers();
     } catch (error) {
@@ -180,7 +183,10 @@ const DealerManagement = () => {
 
   const toggleOffline = async (dealerId, currentStatus) => {
     try {
-      const response = await axios.put(`${API}/dealers/${dealerId}/toggle-offline`);
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${API}/dealers/${dealerId}/toggle-offline`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(response.data.message);
       fetchDealers();
     } catch (error) {
