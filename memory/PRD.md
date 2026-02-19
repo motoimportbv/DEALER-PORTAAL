@@ -338,13 +338,19 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Native app build (iOS/Android) - guide exists at `NATIVE_APP_BUILD_GUIDE.md`
 - Frontend refactoring: extract MOTORCYCLE_DATABASE to shared hook/data file
 - Extract parts wizard from AdminParts.js to separate component
+- WhatsApp Business API integratie - user requested automatic notifications
 
 ### P2 - Medium Priority
-- Backend refactoring: split server.py into routers/services
+- Backend refactoring: split server.py into routers/services (5138+ lines)
 - Remove obsolete Bid model and auction code
 - Replace hardcoded VAPID keys with environment variables
 - Clean up abandoned permanent login implementations (token URL params, `/login/:token` route)
 - Simplify AuthContext.js (multiple login/token strategies accumulated)
+- Remove push notification code (feature abandoned by user)
+
+### Notities
+- **CHF/EUR Koers**: De koers 1.10 is de ECHTE live koers van exchangerate-api.com (geen bug!)
+- **Push Notifications**: Feature is verlaten door user, vervangen door email notificaties
 
 ---
 
