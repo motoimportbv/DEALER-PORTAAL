@@ -180,6 +180,7 @@ function App() {
             <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/admin/exchange-rate" element={<AdminExchangeRate />} />
             <Route path="/admin/bulk-email" element={<AdminBulkEmail />} />
+            <Route path="/admin/whatsapp" element={<AdminWhatsAppBroadcast />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
