@@ -174,7 +174,6 @@ function App() {
             <Route path="/admin/parts" element={<AdminParts />} />
             <Route path="/admin/part-orders" element={<AdminPartOrders />} />
             <Route path="/admin/license-plates" element={<AdminLicensePlates />} />
-            <Route path="/admin/push-status" element={<AdminPushStatus />} />
             <Route path="/admin/create-admin" element={<AdminCreateAdmin />} />
             <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/admin/exchange-rate" element={<AdminExchangeRate />} />
