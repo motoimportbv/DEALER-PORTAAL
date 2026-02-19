@@ -4685,6 +4685,112 @@ async def get_top_dealers(user: dict = Depends(require_admin)):
     
     return dealers
 
+# ============ BULK EMAIL / MARKETING ENDPOINTS ============
+
+class BulkEmailRequest(BaseModel):
+    subject: str
+    message: str
+    recipient_emails: List[str]
+
+class BulkEmailResponse(BaseModel):
+    total: int
+    sent: int
+    failed: int
+    failed_emails: List[str]
+
+@api_router.post("/admin/bulk-email", response_model=BulkEmailResponse)
+async def send_bulk_email(data: BulkEmailRequest, user: dict = Depends(require_admin)):
+    """Admin sends bulk marketing emails"""
+    sent = 0
+    failed = 0
+    failed_emails = []
+    
+    html_template = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #1a1a1a;">Moto Import</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 10px;">
+            {data.message.replace(chr(10), '<br>')}
+        </div>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
+            <p>Moto Import BV</p>
+            <p>www.motoimportbv.nl</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    for email in data.recipient_emails:
+        try:
+            success = await send_email(email, data.subject, html_template)
+            if success:
+                sent += 1
+            else:
+                failed += 1
+                failed_emails.append(email)
+        except Exception as e:
+            logger.error(f"Failed to send to {email}: {str(e)}")
+            failed += 1
+            failed_emails.append(email)
+        
+        # Small delay to avoid rate limiting
+        await asyncio.sleep(0.5)
+    
+    return BulkEmailResponse(
+        total=len(data.recipient_emails),
+        sent=sent,
+        failed=failed,
+        failed_emails=failed_emails
+    )
+
+@api_router.get("/admin/marketing-lists")
+async def get_marketing_lists(user: dict = Depends(require_admin)):
+    """Get available marketing CSV files"""
+    import glob
+    upload_dir = ROOT_DIR / "uploads"
+    csv_files = glob.glob(str(upload_dir / "Motorzaken_*.csv"))
+    
+    lists = []
+    for filepath in csv_files:
+        filename = os.path.basename(filepath)
+        # Count lines (excluding header)
+        with open(filepath, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            count = len([l for l in lines[1:] if l.strip()])
+        
+        lists.append({
+            "filename": filename,
+            "count": count,
+            "url": f"/api/uploads/{filename}"
+        })
+    
+    return lists
+
+@api_router.get("/admin/marketing-list/{filename}")
+async def get_marketing_list_emails(filename: str, user: dict = Depends(require_admin)):
+    """Get emails from a marketing CSV file"""
+    import csv
+    filepath = ROOT_DIR / "uploads" / filename
+    
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    emails = []
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter=';')
+        for row in reader:
+            if 'Email' in row and row['Email']:
+                emails.append({
+                    "email": row['Email'],
+                    "name": row.get('Bedrijfsnaam', ''),
+                    "city": row.get('Stad', ''),
+                    "region": row.get('Land/Regio', row.get('Regio', row.get('Kanton/Regio', '')))
+                })
+    
+    return emails
+
 # ============ LICENSE PLATE (KENTEKEN) ENDPOINTS ============
 
 @api_router.post("/license-plates")
