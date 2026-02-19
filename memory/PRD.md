@@ -12,7 +12,7 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Motorcycle catalog with search/filter
 - Order management system
 - Parts shop (admin managed)
-- Push notifications
+- Email notifications (automatic for Dutch dealers)
 - Multi-language support (NL, DE, FR, IT)
 - JWT Authentication
 
@@ -20,7 +20,29 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
-### Session - 19 February 2025 (Email & Notificatie Verbeteringen)
+### Session - 19 February 2025 (Part 2 - Push Notificaties Verwijderd)
+
+#### ✅ Push Notification Systeem Verwijderd
+- **Feature**: Alle push notification UI/UX verwijderd (werkte niet betrouwbaar)
+- **Verwijderd**:
+  - `PushNotificationToggle.js` component
+  - `PushNotificationReminder.js` component  
+  - `AdminPushStatus.js` pagina
+  - Push Status menu item in sidebar
+  - Push notification toggle op admin en dealer dashboards
+- **Reden**: Push notifications waren onbetrouwbaar, veel klachten van dealers
+
+#### ✅ Nieuwe Email Notificatie Banner (Vervanging)
+- **Feature**: Simpele groene banner op dealer dashboard
+- **Component**: `EmailNotificationBanner.js`
+- **Functie**: 
+  - Toont "Email Meldingen Actief ✓"
+  - Toont dealer email adres
+  - Meldt dat ze automatisch emails ontvangen bij nieuwe motoren
+  - Dismiss knop (X) om te verbergen (localStorage)
+- **Voordeel**: Duidelijk, simpel, geen complexe browser permissions nodig
+
+### Session - 19 February 2025 (Part 1 - Email & Notificatie Verbeteringen)
 
 #### ✅ Email Notificaties Alleen voor Nederlandse Dealers (P0 Feature)
 - **Feature**: Nieuwe motor notificaties worden nu alleen naar Nederlandse dealers gestuurd
