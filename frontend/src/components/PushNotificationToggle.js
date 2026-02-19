@@ -78,31 +78,58 @@ const PushNotificationToggle = ({ token }) => {
   const subscribe = async () => {
     setIsLoading(true);
     try {
+      // Check if service worker is supported
+      if (!('serviceWorker' in navigator)) {
+        toast.error('Service Worker niet ondersteund in deze browser.');
+        return;
+      }
+      
+      // Check if push is supported
+      if (!('PushManager' in window)) {
+        toast.error('Push notificaties niet ondersteund in deze browser. Probeer Chrome.');
+        return;
+      }
+
       // Request notification permission
+      console.log('[PUSH] Requesting permission...');
       const currentPermission = await Notification.requestPermission();
+      console.log('[PUSH] Permission result:', currentPermission);
       setPermission(currentPermission);
       
       if (currentPermission !== 'granted') {
-        toast.error(t('pushNotifications.denied'));
-        // Show the help modal when permission is denied
+        toast.error('Notificaties geblokkeerd. Sta meldingen toe in uw browser instellingen.');
         setShowBlockedModal(true);
         return;
       }
 
       // Get VAPID public key from server
+      console.log('[PUSH] Getting VAPID key...');
       const vapidResponse = await axios.get(`${API}/api/push/vapid-key`);
       const vapidKey = vapidResponse.data.vapidKey;
+      console.log('[PUSH] VAPID key received:', vapidKey?.substring(0, 20) + '...');
 
       // Get service worker registration
+      console.log('[PUSH] Waiting for service worker...');
       const registration = await navigator.serviceWorker.ready;
+      console.log('[PUSH] Service worker ready');
+
+      // Unsubscribe from any existing subscription first (to handle key changes)
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        console.log('[PUSH] Removing old subscription...');
+        await existingSub.unsubscribe();
+      }
 
       // Subscribe to push notifications
+      console.log('[PUSH] Subscribing with new key...');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey)
       });
+      console.log('[PUSH] Subscription created');
 
       // Send subscription to server
+      console.log('[PUSH] Saving to server...');
       const subscribeResponse = await axios.post(`${API}/api/push/subscribe`, {
         subscription: subscription.toJSON()
       }, {
@@ -112,8 +139,8 @@ const PushNotificationToggle = ({ token }) => {
       console.log('[PUSH] Subscription saved successfully:', subscribeResponse.data);
       
       setIsSubscribed(true);
-      localStorage.setItem('pushNotificationsEnabled', 'true'); // Store flag for reminder check
-      toast.success(t('pushNotifications.enabled'));
+      localStorage.setItem('pushNotificationsEnabled', 'true');
+      toast.success('Push notificaties ingeschakeld!');
       
       // Show background permission modal if not already accepted
       const hasAcceptedBackground = localStorage.getItem('backgroundPermissionAccepted');
@@ -124,15 +151,23 @@ const PushNotificationToggle = ({ token }) => {
       }
     } catch (error) {
       console.error('[PUSH] Error subscribing:', error);
-      console.error('[PUSH] Error details:', error.response?.data || error.message);
+      console.error('[PUSH] Error name:', error.name);
+      console.error('[PUSH] Error message:', error.message);
       
       // More specific error messages
-      if (error.response?.status === 401) {
-        toast.error('Sessie verlopen. Log opnieuw in en probeer het opnieuw.');
-      } else if (error.message?.includes('network')) {
-        toast.error('Geen internetverbinding. Controleer uw verbinding en probeer opnieuw.');
+      if (error.name === 'NotAllowedError') {
+        toast.error('Notificaties geweigerd. Sta meldingen toe in browser instellingen.');
+        setShowBlockedModal(true);
+      } else if (error.name === 'AbortError') {
+        toast.error('Actie geannuleerd. Probeer opnieuw.');
+      } else if (error.message?.includes('applicationServerKey')) {
+        toast.error('Push configuratie fout. Ververs de pagina en probeer opnieuw.');
+      } else if (error.response?.status === 401) {
+        toast.error('Sessie verlopen. Log opnieuw in.');
+      } else if (error.message?.includes('network') || error.message?.includes('Network')) {
+        toast.error('Geen internetverbinding.');
       } else {
-        toast.error(t('pushNotifications.enableError'));
+        toast.error(`Kon niet inschakelen: ${error.message || 'Onbekende fout'}`);
       }
     } finally {
       setIsLoading(false);
