@@ -1269,8 +1269,9 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
         # Send email notifications only to Dutch dealers (not foreign)
         asyncio.create_task(notify_dealers_new_motorcycle_email(motorcycle, dutch_dealers))
         
-        # Send SMS notifications to Dutch dealers with phone numbers
-        asyncio.create_task(notify_dealers_new_motorcycle_sms(motorcycle, dutch_dealers))
+        # NOTE: Automatic SMS is disabled - use SMS Broadcast page to manually select recipients
+        # Twilio trial accounts can only send to verified numbers
+        # asyncio.create_task(notify_dealers_new_motorcycle_sms(motorcycle, dutch_dealers))
         
         # Log notification sent
         logger.info(f"Notified {len(dutch_dealers)} Dutch dealers about new motorcycle {motorcycle.brand} {motorcycle.model}")
