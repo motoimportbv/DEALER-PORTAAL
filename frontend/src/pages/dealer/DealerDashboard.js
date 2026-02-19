@@ -326,6 +326,9 @@ const DealerDashboard = () => {
       </div>
 
       <div className="content-body" data-testid="dealer-dashboard">
+        {/* Email Notification Banner */}
+        <EmailNotificationBanner userEmail={user?.email} />
+        
         {filteredMotorcycles.length === 0 ? (
           <Card>
             <CardContent className="py-16">
