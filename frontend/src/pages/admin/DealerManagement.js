@@ -535,6 +535,46 @@ const DealerManagement = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Phone Edit Dialog */}
+        <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Phone className="w-5 h-5 text-blue-600" />
+                Telefoonnummer Bewerken
+              </DialogTitle>
+              <DialogDescription>
+                {editingDealer?.company_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <label className="text-sm font-medium text-zinc-700 block mb-2">
+                Telefoonnummer
+              </label>
+              <Input
+                type="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="+31612345678"
+              />
+              <p className="text-xs text-zinc-500 mt-2">
+                Vul het nummer in met landcode, bijv: +31612345678
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPhoneDialogOpen(false)}>
+                Annuleren
+              </Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={updateDealerPhone}
+              >
+                Opslaan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
