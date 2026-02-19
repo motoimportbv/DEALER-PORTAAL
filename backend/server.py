@@ -2218,6 +2218,10 @@ class BuyNowRequest(BaseModel):
 @api_router.get("/voucher/check/{code}")
 async def check_voucher(code: str, user: dict = Depends(get_current_user)):
     """Check if a voucher code is valid for the current user"""
+    # Foreign dealers cannot use vouchers
+    if user.get("is_foreign_dealer"):
+        raise HTTPException(status_code=403, detail="Buitenlandse leveranciers kunnen geen vouchers gebruiken")
+    
     voucher = await db.vouchers.find_one({
         "code": code.upper(),
         "dealer_id": user["id"],
@@ -2243,6 +2247,10 @@ async def check_voucher(code: str, user: dict = Depends(get_current_user)):
 @api_router.get("/voucher/my-voucher")
 async def get_my_voucher(user: dict = Depends(get_current_user)):
     """Get the user's voucher if they have one"""
+    # Foreign dealers don't get vouchers
+    if user.get("is_foreign_dealer"):
+        return {"has_voucher": False}
+    
     voucher = await db.vouchers.find_one({
         "dealer_id": user["id"]
     }, {"_id": 0})
