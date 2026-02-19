@@ -168,7 +168,7 @@ def create_flyer(lang_code, content, output_path):
     c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(width/2, y_pos + 1*mm, content["cta"])
     
-    # Contact section
+    # Contact section - moved up to avoid cutoff
     y_pos -= 18*mm
     c.setFillColor(white)
     c.setFont("Helvetica-Bold", 10)
@@ -184,17 +184,17 @@ def create_flyer(lang_code, content, output_path):
     y_pos -= 5*mm
     c.drawCentredString(width/2, y_pos, content["phone"])
     
-    y_pos -= 6*mm
+    y_pos -= 7*mm
     c.setFont("Helvetica", 9)
     c.setFillColor(HexColor("#A1A1AA"))
     c.drawCentredString(width/2, y_pos, content["address"])
     
-    # Bottom bar
+    # Bottom bar - with more space above
     c.setFillColor(RED)
-    c.rect(0, 0, width, 10*mm, fill=True, stroke=False)
+    c.rect(0, 0, width, 8*mm, fill=True, stroke=False)
     c.setFillColor(white)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(width/2, 3*mm, "MOTO IMPORT B.V.")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(width/2, 2.5*mm, "MOTO IMPORT B.V.")
     
     c.save()
     print(f"✅ Created: {output_path}")
