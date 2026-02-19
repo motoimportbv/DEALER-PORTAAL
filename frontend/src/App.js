@@ -33,6 +33,7 @@ import AdminPushStatus from "./pages/admin/AdminPushStatus";
 import AdminCreateAdmin from "./pages/admin/AdminCreateAdmin";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import AdminExchangeRate from "./pages/admin/AdminExchangeRate";
+import AdminBulkEmail from "./pages/admin/AdminBulkEmail";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import DealerArchivedOrders from "./pages/dealer/DealerArchivedOrders";
