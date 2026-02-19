@@ -1565,6 +1565,62 @@ _Moto Import_"""
         "dealer_company": dealer.get("company_name", "")
     }
 
+@api_router.get("/motorcycles/{motorcycle_id}/whatsapp-share-all-dealers")
+async def get_whatsapp_share_all_dealers(motorcycle_id: str, user: dict = Depends(require_admin)):
+    """Get WhatsApp share links for ALL dealers with phone numbers"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Get all approved dealers with phone numbers
+    dealers = await db.users.find(
+        {"role": "dealer", "is_approved": True, "phone": {"$exists": True, "$ne": ""}},
+        {"_id": 0, "id": 1, "company_name": 1, "phone": 1, "email": 1}
+    ).to_list(500)
+    
+    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    
+    # Create message
+    message = f"""🏍️ *Nieuwe Motor Beschikbaar!*
+
+*{motorcycle.get('brand', '')} {motorcycle.get('model', '')}*
+• Jaar: {motorcycle.get('year', '')}
+• KM stand: {motorcycle.get('mileage', 0):,} km
+• Prijs: €{motorcycle.get('price', 0):,.0f}
+
+👉 Bekijk direct: {base_url}/dealer/motorcycles/{motorcycle_id}
+
+_Moto Import BV_"""
+    
+    encoded_message = urllib.parse.quote(message)
+    
+    dealer_links = []
+    for dealer in dealers:
+        phone = dealer.get("phone", "").replace(" ", "").replace("-", "").replace("+", "")
+        if not phone.startswith("31") and not phone.startswith("32") and not phone.startswith("41"):
+            if phone.startswith("0"):
+                phone = "31" + phone[1:]  # Dutch number
+        
+        if phone:
+            dealer_links.append({
+                "dealer_id": dealer.get("id"),
+                "company_name": dealer.get("company_name", dealer.get("email", "")),
+                "phone": phone,
+                "whatsapp_url": f"https://wa.me/{phone}?text={encoded_message}"
+            })
+    
+    return {
+        "motorcycle": {
+            "id": motorcycle_id,
+            "brand": motorcycle.get("brand"),
+            "model": motorcycle.get("model"),
+            "price": motorcycle.get("price")
+        },
+        "message": message,
+        "dealers": dealer_links,
+        "total_dealers": len(dealer_links)
+    }
+
 @api_router.get("/motorcycles/foreign-listings")
 async def get_foreign_listings(user: dict = Depends(get_current_user)):
     """Get motorcycles submitted by the current foreign dealer"""
