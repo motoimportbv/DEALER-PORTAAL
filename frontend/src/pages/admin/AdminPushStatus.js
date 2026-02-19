@@ -76,6 +76,22 @@ const AdminPushStatus = () => {
     }
   };
 
+  const resetAllSubscriptions = async () => {
+    setResetting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.delete(`${API}/admin/push-subscriptions/reset`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(res.data.message);
+      fetchPushStatus(); // Refresh data
+    } catch (error) {
+      toast.error('Fout bij resetten push subscripties');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const filteredDealers = data?.dealers?.filter(dealer => {
     const search = searchTerm.toLowerCase();
     return (
