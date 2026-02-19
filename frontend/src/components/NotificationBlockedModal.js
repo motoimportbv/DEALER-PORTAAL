@@ -159,7 +159,7 @@ const NotificationBlockedModal = ({ isOpen, onClose }) => {
             )}
 
             {/* Android Mobile Instructions */}
-            {isAndroid && (
+            {isAndroid && !isSamsungBrowser && (
               <ol className="space-y-3 text-sm">
                 <li className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg">
                   <span className="flex-shrink-0 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
@@ -180,6 +180,40 @@ const NotificationBlockedModal = ({ isOpen, onClose }) => {
                   <div>
                     <p className="font-medium text-zinc-900">{t('pushBlocked.android.step3Title')}</p>
                     <p className="text-zinc-600 mt-1">{t('pushBlocked.android.step3Desc')}</p>
+                  </div>
+                </li>
+              </ol>
+            )}
+
+            {/* Samsung Internet Browser Instructions */}
+            {isSamsungBrowser && (
+              <ol className="space-y-3 text-sm">
+                <li className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg">
+                  <span className="flex-shrink-0 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <div>
+                    <p className="font-medium text-zinc-900">Open Samsung Internet Instellingen</p>
+                    <p className="text-zinc-600 mt-1">Tik op het menu (☰) → Instellingen → Sites en downloads</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg">
+                  <span className="flex-shrink-0 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <div>
+                    <p className="font-medium text-zinc-900">Ga naar Meldingen</p>
+                    <p className="text-zinc-600 mt-1">Tik op "Meldingen" of "Notifications"</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3 p-3 bg-zinc-50 rounded-lg">
+                  <span className="flex-shrink-0 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <div>
+                    <p className="font-medium text-zinc-900">Sta meldingen toe voor deze site</p>
+                    <p className="text-zinc-600 mt-1">Zoek "motoimportbv.nl" en zet meldingen aan, of verwijder de blokkade</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">💡</span>
+                  <div>
+                    <p className="font-medium text-blue-900">Alternatief: Gebruik Chrome</p>
+                    <p className="text-blue-700 mt-1">Push notificaties werken het beste in Google Chrome. Open de site in Chrome voor de beste ervaring.</p>
                   </div>
                 </li>
               </ol>
