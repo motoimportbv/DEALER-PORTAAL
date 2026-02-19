@@ -3644,6 +3644,29 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
         "is_offline": new_status
     }
 
+class DealerPhoneUpdate(BaseModel):
+    phone: str
+
+@api_router.put("/dealers/{dealer_id}/phone")
+async def update_dealer_phone(dealer_id: str, data: DealerPhoneUpdate, user: dict = Depends(require_admin)):
+    """Admin updates dealer phone number"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": {"$in": ["dealer", "foreign_dealer"]}})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    # Clean phone number
+    phone = data.phone.strip().replace(" ", "").replace("-", "")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"phone": phone}}
+    )
+    
+    return {
+        "message": f"Telefoonnummer bijgewerkt voor {dealer['company_name']}",
+        "phone": phone
+    }
+
 # ============ NOTIFICATION ENDPOINTS ============
 
 @api_router.get("/notifications", response_model=List[Notification])
