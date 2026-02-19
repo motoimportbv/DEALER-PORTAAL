@@ -465,22 +465,44 @@ const DealerManagement = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="approved">
-            {approvedDealers.length === 0 ? (
+          <TabsContent value="dutch">
+            {dutchDealers.length === 0 ? (
               <Card>
                 <CardContent className="py-16">
                   <div className="text-center">
                     <Users className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
                     <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
-                      {t('adminDealers.noApprovedYet')}
+                      Geen Nederlandse Dealers
                     </h3>
-                    <p className="text-zinc-500">{t('adminDealers.approvedAppearHere')}</p>
+                    <p className="text-zinc-500">Goedgekeurde Nederlandse dealers verschijnen hier</p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {approvedDealers.map(dealer => (
+                {dutchDealers.map(dealer => (
+                  <DealerCard key={dealer.id} dealer={dealer} showDelete={true} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="foreign">
+            {foreignDealers.length === 0 ? (
+              <Card>
+                <CardContent className="py-16">
+                  <div className="text-center">
+                    <Globe className="w-16 h-16 mx-auto mb-4 text-purple-300" />
+                    <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
+                      Geen Buitenlandse Dealers
+                    </h3>
+                    <p className="text-zinc-500">Buitenlandse leveranciers verschijnen hier</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {foreignDealers.map(dealer => (
                   <DealerCard key={dealer.id} dealer={dealer} showDelete={true} />
                 ))}
               </div>
