@@ -20,6 +20,21 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 19 February 2025 (Part 4 - E-mail Sjablonen)
+
+#### ✅ Taal Sjabloon Selector voor Marketing E-mails
+- **Nieuwe feature**: 1-klik taal selector toegevoegd aan de Marketing E-mails pagina
+- **4 talen beschikbaar**: 🇩🇪 Duits, 🇫🇷 Frans, 🇮🇹 Italiaans, 🇳🇱 Nederlands
+- **Functionaliteit**: Klik op een vlag-knop → onderwerp en bericht worden automatisch ingevuld
+- **UI/UX**: Blauwe gradient achtergrond, geselecteerde taal wordt blauw gemarkeerd
+- **Toast notificatie**: Bevestiging wanneer sjabloon is geladen
+- **Bestand gewijzigd**: `/app/frontend/src/pages/admin/AdminBulkEmail.js`
+
+#### ✅ E-mail Sjablonen in 4 Talen Goedgekeurd
+- **Bestand**: `/app/backend/uploads/Email_Templates_4_Talen.md`
+- **Inhoud**: Professionele e-mail teksten voor leverancier werving
+- **Contactgegevens**: Correct opgenomen (motoimportbv@gmail.com, +31 6 81792660)
+
 ### Session - 19 February 2025 (Part 3 - Cleanup & UX Verbeteringen)
 
 #### ✅ Push Notification Backend Volledig Verwijderd
