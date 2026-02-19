@@ -208,7 +208,7 @@ const NotificationBell = () => {
                       <span className="text-xs text-zinc-500">
                         {formatTime(notification.created_at)}
                       </span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         {notification.motorcycle_id && (
                           <Link 
                             to={`/motorcycle/${notification.motorcycle_id}`}
@@ -228,10 +228,21 @@ const NotificationBell = () => {
                             variant="ghost" 
                             className="h-6 text-xs text-zinc-500 hover:text-white"
                             onClick={() => markAsRead(notification.id)}
+                            title="Markeer als gelezen"
                           >
                             <Check className="w-3 h-3" />
                           </Button>
                         )}
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 text-xs text-zinc-500 hover:text-red-400"
+                          onClick={() => deleteNotification(notification.id)}
+                          title="Verwijder melding"
+                          data-testid={`delete-notification-${notification.id}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
                       </div>
                     </div>
                   </div>
