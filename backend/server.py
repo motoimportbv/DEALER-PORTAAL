@@ -3724,17 +3724,17 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
     return {"message": "All notifications marked as read"}
 
 
+@api_router.delete("/notifications/all")
+async def delete_all_notifications(user: dict = Depends(get_current_user)):
+    await db.notifications.delete_many({"user_id": user["id"]})
+    return {"message": "All notifications deleted"}
+
 @api_router.delete("/notifications/{notification_id}")
 async def delete_notification(notification_id: str, user: dict = Depends(get_current_user)):
     result = await db.notifications.delete_one({"id": notification_id, "user_id": user["id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Notification not found")
     return {"message": "Notification deleted"}
-
-@api_router.delete("/notifications/all")
-async def delete_all_notifications(user: dict = Depends(get_current_user)):
-    await db.notifications.delete_many({"user_id": user["id"]})
-    return {"message": "All notifications deleted"}
 
 
 # ============ SMS NOTIFICATION ENDPOINTS ============
