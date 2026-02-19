@@ -100,7 +100,10 @@ const MotorcycleList = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API}/motorcycles/${id}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/motorcycles/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('adminMotorcycles.deleted'));
       fetchMotorcycles();
     } catch (error) {
