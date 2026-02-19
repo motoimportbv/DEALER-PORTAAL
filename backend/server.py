@@ -3194,14 +3194,6 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
                 subject=f"💰 Nieuw bod: €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
                 html_content=email_body
             )
-            
-            # Send push notification to admin
-            await send_push_notification_to_user(
-                admin_user["id"],
-                "💰 Nieuw Bod!",
-                f"{user['company_name']} biedt €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
-                "/admin/motorcycles"
-            )
     except Exception as e:
         logger.error(f"Error sending bid notification: {e}")
     
