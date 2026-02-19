@@ -33,12 +33,15 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const PendingForeignListings = () => {
   const { t } = useTranslation();
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activateDialogOpen, setActivateDialogOpen] = useState(false);
   const [selectedMotorcycle, setSelectedMotorcycle] = useState(null);
   const [newPrice, setNewPrice] = useState('');
   const [activating, setActivating] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [activatedMotorcycleId, setActivatedMotorcycleId] = useState(null);
 
   useEffect(() => {
     fetchPendingListings();
