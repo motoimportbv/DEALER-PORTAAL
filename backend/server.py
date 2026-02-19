@@ -1347,14 +1347,6 @@ async def create_dealer_listing(data: MotorcycleCreate, user: dict = Depends(req
             for dealer in dealers
         ]
         await db.notifications.insert_many(notifications)
-        
-        # Send push notifications with detailed motor info
-        asyncio.create_task(send_push_to_all_dealers(
-            title=f"🏍️ {motorcycle.brand} {motorcycle.model}",
-            body=f"Jaar: {motorcycle.year} | Prijs: €{motorcycle.price:,.0f} | Van: {user.get('company_name', 'dealer')}",
-            url=f"/motorcycle/{motorcycle.id}",
-            exclude_user_id=user["id"]
-        ))
     
     # Notify admin about new dealer listing
     admin_html = f"""
