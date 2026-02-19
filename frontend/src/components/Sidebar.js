@@ -20,7 +20,8 @@ import {
   UserPlus,
   KeyRound,
   TrendingUp,
-  Mail
+  Mail,
+  MessageCircle
 } from 'lucide-react';
 
 const Sidebar = () => {
