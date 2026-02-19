@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { toast } from 'sonner';
-import { Mail, Send, FileText, Check, X, Loader2, Upload, Paperclip, Info } from 'lucide-react';
+import { Mail, Send, FileText, Check, X, Loader2, Upload, Paperclip, Info, File, Trash2 } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -17,7 +17,8 @@ export default function AdminBulkEmail() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingCSV, setUploadingCSV] = useState(false);
+  const [uploadingPDF, setUploadingPDF] = useState(false);
   const [selectedFlyer, setSelectedFlyer] = useState('');
   const [includeAboutUs, setIncludeAboutUs] = useState(false);
 
@@ -64,7 +65,7 @@ export default function AdminBulkEmail() {
     }
   };
 
-  const handleFileUpload = async (e) => {
+  const handleCSVUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -73,7 +74,7 @@ export default function AdminBulkEmail() {
       return;
     }
 
-    setUploading(true);
+    setUploadingCSV(true);
     const formData = new FormData();
     formData.append('file', file);
 
@@ -87,20 +88,56 @@ export default function AdminBulkEmail() {
       });
 
       toast.success(response.data.message);
-      
-      // Refresh lists and load the new one
       await fetchLists();
       
-      // Set the uploaded emails directly
       setEmails(response.data.emails);
       setSelectedEmails(response.data.emails.map(e => e.email));
       setSelectedList(response.data.filename);
       
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Fout bij uploaden');
+      toast.error(error.response?.data?.detail || 'Fout bij uploaden CSV');
     } finally {
-      setUploading(false);
-      e.target.value = ''; // Reset file input
+      setUploadingCSV(false);
+      e.target.value = '';
+    }
+  };
+
+  const handlePDFUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.pdf')) {
+      toast.error('Alleen PDF bestanden toegestaan');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Bestand te groot (max 5MB)');
+      return;
+    }
+
+    setUploadingPDF(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/api/admin/upload-flyer`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast.success(response.data.message);
+      await fetchFlyers();
+      setSelectedFlyer(response.data.filename);
+      
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Fout bij uploaden PDF');
+    } finally {
+      setUploadingPDF(false);
+      e.target.value = '';
     }
   };
 
@@ -112,13 +149,8 @@ export default function AdminBulkEmail() {
     }
   };
 
-  const selectAll = () => {
-    setSelectedEmails(emails.map(e => e.email));
-  };
-
-  const deselectAll = () => {
-    setSelectedEmails([]);
-  };
+  const selectAll = () => setSelectedEmails(emails.map(e => e.email));
+  const deselectAll = () => setSelectedEmails([]);
 
   const sendEmails = async () => {
     if (!subject.trim()) {
@@ -166,73 +198,127 @@ export default function AdminBulkEmail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Lijsten selectie */}
+        {/* Linker kolom: Lijsten & Uploads */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              E-mail Lijsten
+              E-mail Lijsten & Bestanden
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* CSV Upload */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="csv-upload"
-                disabled={uploading}
-              />
-              <label htmlFor="csv-upload" className="cursor-pointer">
-                {uploading ? (
-                  <div className="flex items-center justify-center gap-2 text-gray-500">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Uploaden...
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      Upload CSV bestand
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      (met kolom: Email)
-                    </span>
-                  </div>
-                )}
-              </label>
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">📋 CSV met Email Adressen</p>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  className="hidden"
+                  id="csv-upload"
+                  disabled={uploadingCSV}
+                />
+                <label htmlFor="csv-upload" className="cursor-pointer">
+                  {uploadingCSV ? (
+                    <div className="flex items-center justify-center gap-2 text-gray-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploaden...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <Upload className="h-5 w-5 text-gray-400" />
+                      <span className="text-sm text-gray-600">Upload CSV</span>
+                    </div>
+                  )}
+                </label>
+              </div>
             </div>
 
+            {/* PDF Upload */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">📄 PDF Flyer Uploaden</p>
+              <div className="border-2 border-dashed border-orange-300 rounded-lg p-3 text-center hover:border-orange-400 transition-colors bg-orange-50">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handlePDFUpload}
+                  className="hidden"
+                  id="pdf-upload"
+                  disabled={uploadingPDF}
+                />
+                <label htmlFor="pdf-upload" className="cursor-pointer">
+                  {uploadingPDF ? (
+                    <div className="flex items-center justify-center gap-2 text-orange-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploaden...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <File className="h-5 w-5 text-orange-500" />
+                      <span className="text-sm text-orange-700">Upload PDF (max 5MB)</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            {/* Beschikbare Lijsten */}
             <div className="border-t pt-4">
               <p className="text-sm font-medium text-gray-700 mb-2">Beschikbare Lijsten:</p>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-48 overflow-y-auto">
                 {lists.map((list) => (
                   <button
                     key={list.filename}
                     onClick={() => loadList(list.filename)}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    className={`w-full text-left p-2 rounded-lg border transition-colors text-sm ${
                       selectedList === list.filename
                         ? 'bg-blue-50 border-blue-500'
                         : 'hover:bg-gray-50 border-gray-200'
                     }`}
                   >
-                    <div className="font-medium text-sm">
-                      {list.display_name || list.filename.replace('Motorzaken_', '').replace('.csv', '')}
+                    <div className="font-medium truncate">
+                      {list.display_name || list.filename.replace('.csv', '')}
                     </div>
-                    <div className="text-xs text-gray-500">{list.count} dealers</div>
+                    <div className="text-xs text-gray-500">{list.count} emails</div>
                   </button>
                 ))}
                 {lists.length === 0 && (
-                  <p className="text-gray-500 text-sm">Geen lijsten beschikbaar</p>
+                  <p className="text-gray-500 text-sm">Geen lijsten - upload een CSV</p>
+                )}
+              </div>
+            </div>
+
+            {/* Beschikbare Flyers */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Beschikbare Flyers ({flyers.length}):</p>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {flyers.map((flyer) => (
+                  <div
+                    key={flyer.filename}
+                    className={`flex items-center justify-between p-2 rounded text-sm ${
+                      selectedFlyer === flyer.filename ? 'bg-orange-100' : 'bg-gray-50'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedFlyer(selectedFlyer === flyer.filename ? '' : flyer.filename)}
+                      className="flex items-center gap-2 flex-1 text-left"
+                    >
+                      <File className="h-4 w-4 text-orange-500" />
+                      <span className="truncate">{flyer.filename}</span>
+                    </button>
+                    <span className="text-xs text-gray-500">{flyer.size_kb}KB</span>
+                  </div>
+                ))}
+                {flyers.length === 0 && (
+                  <p className="text-gray-500 text-xs">Geen flyers - upload een PDF</p>
                 )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* E-mail compositie */}
+        {/* Rechter kolom: E-mail opstellen */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -258,14 +344,13 @@ export default function AdminBulkEmail() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Typ hier uw bericht..."
-                rows={6}
+                rows={5}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             {/* Extra opties */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-              {/* About Us checkbox */}
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -279,33 +364,29 @@ export default function AdminBulkEmail() {
                     <Info className="h-4 w-4" />
                     "Over Ons" sectie toevoegen
                   </span>
-                  <span className="text-gray-500 block text-xs">
-                    Voegt bedrijfsinformatie toe aan de email
-                  </span>
                 </label>
               </div>
 
-              {/* Flyer attachment */}
               <div>
                 <label className="block text-sm font-medium mb-1 flex items-center gap-1">
                   <Paperclip className="h-4 w-4" />
-                  Flyer bijvoegen
+                  Geselecteerde flyer: 
                 </label>
-                <select
-                  value={selectedFlyer}
-                  onChange={(e) => setSelectedFlyer(e.target.value)}
-                  className="w-full p-2 border rounded-lg text-sm"
-                >
-                  <option value="">Geen bijlage</option>
-                  {flyers.map((flyer) => (
-                    <option key={flyer.filename} value={flyer.filename}>
-                      {flyer.filename} ({flyer.size_kb} KB)
-                    </option>
-                  ))}
-                </select>
+                {selectedFlyer ? (
+                  <div className="flex items-center gap-2 p-2 bg-orange-100 rounded text-sm">
+                    <File className="h-4 w-4 text-orange-600" />
+                    <span className="truncate flex-1">{selectedFlyer}</span>
+                    <button onClick={() => setSelectedFlyer('')} className="text-gray-500 hover:text-red-500">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Geen bijlage (klik op flyer in linker kolom)</p>
+                )}
               </div>
             </div>
 
+            {/* Ontvangers */}
             {selectedList && (
               <div className="border rounded-lg p-4 bg-gray-50">
                 <div className="flex items-center justify-between mb-3">
@@ -313,19 +394,15 @@ export default function AdminBulkEmail() {
                     Ontvangers: {selectedEmails.length} van {emails.length}
                   </span>
                   <div className="space-x-2">
-                    <Button variant="outline" size="sm" onClick={selectAll}>
-                      Alles selecteren
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={deselectAll}>
-                      Niets selecteren
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={selectAll}>Alles</Button>
+                    <Button variant="outline" size="sm" onClick={deselectAll}>Niets</Button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto space-y-1">
+                <div className="max-h-40 overflow-y-auto space-y-1">
                   {emails.map((item) => (
                     <label
                       key={item.email}
-                      className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer"
+                      className="flex items-center gap-2 p-1.5 hover:bg-white rounded cursor-pointer text-sm"
                     >
                       <input
                         type="checkbox"
@@ -333,8 +410,8 @@ export default function AdminBulkEmail() {
                         onChange={() => toggleEmail(item.email)}
                         className="rounded"
                       />
-                      <span className="text-sm flex-1">{item.name || 'Onbekend'}</span>
-                      <span className="text-xs text-gray-500">{item.email}</span>
+                      <span className="flex-1 truncate">{item.name || 'Onbekend'}</span>
+                      <span className="text-xs text-gray-500 truncate">{item.email}</span>
                     </label>
                   ))}
                 </div>
@@ -350,34 +427,29 @@ export default function AdminBulkEmail() {
               {sending ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Verzenden... ({selectedEmails.length} e-mails)
+                  Verzenden...
                 </>
               ) : (
                 <>
                   <Send className="h-5 w-5 mr-2" />
                   Verstuur naar {selectedEmails.length} ontvangers
-                  {selectedFlyer && ' (met bijlage)'}
+                  {selectedFlyer && ' (+ bijlage)'}
                 </>
               )}
             </Button>
 
             {result && (
               <div className={`p-4 rounded-lg ${result.failed > 0 ? 'bg-yellow-50' : 'bg-green-50'}`}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2">
                   {result.failed === 0 ? (
                     <Check className="h-5 w-5 text-green-600" />
                   ) : (
                     <X className="h-5 w-5 text-yellow-600" />
                   )}
                   <span className="font-medium">
-                    {result.sent} van {result.total} e-mails succesvol verzonden
+                    {result.sent} van {result.total} e-mails verzonden
                   </span>
                 </div>
-                {result.failed > 0 && (
-                  <div className="text-sm text-yellow-700">
-                    Mislukt: {result.failed_emails.join(', ')}
-                  </div>
-                )}
               </div>
             )}
           </CardContent>
