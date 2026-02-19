@@ -236,28 +236,26 @@ export default function AdminBulkEmail() {
             {/* PDF Upload */}
             <div>
               <p className="text-sm font-medium text-gray-700 mb-2">📄 PDF Flyer Uploaden</p>
-              <div className="border-2 border-dashed border-orange-300 rounded-lg p-3 text-center hover:border-orange-400 transition-colors bg-orange-50">
+              <div className="border-2 border-dashed border-orange-300 rounded-lg p-3 text-center hover:border-orange-400 transition-colors bg-orange-50 cursor-pointer" onClick={() => document.getElementById('pdf-upload').click()}>
                 <input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,application/pdf"
                   onChange={handlePDFUpload}
                   className="hidden"
                   id="pdf-upload"
                   disabled={uploadingPDF}
                 />
-                <label htmlFor="pdf-upload" className="cursor-pointer">
-                  {uploadingPDF ? (
-                    <div className="flex items-center justify-center gap-2 text-orange-600">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Uploaden...
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2">
-                      <File className="h-5 w-5 text-orange-500" />
-                      <span className="text-sm text-orange-700">Upload PDF (max 5MB)</span>
-                    </div>
-                  )}
-                </label>
+                {uploadingPDF ? (
+                  <div className="flex items-center justify-center gap-2 text-orange-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploaden...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <File className="h-5 w-5 text-orange-500" />
+                    <span className="text-sm text-orange-700">Klik hier om PDF te uploaden (max 5MB)</span>
+                  </div>
+                )}
               </div>
             </div>
 
