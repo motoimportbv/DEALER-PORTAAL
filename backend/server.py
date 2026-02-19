@@ -4808,6 +4808,8 @@ class BulkEmailRequest(BaseModel):
     subject: str
     message: str
     recipient_emails: List[str]
+    include_about_us: Optional[bool] = False
+    flyer_filename: Optional[str] = None
 
 class BulkEmailResponse(BaseModel):
     total: int
@@ -4815,25 +4817,102 @@ class BulkEmailResponse(BaseModel):
     failed: int
     failed_emails: List[str]
 
+# About Us content for marketing emails
+ABOUT_US_HTML = """
+<div style="background: #f0f4f8; padding: 25px; border-radius: 10px; margin: 20px 0;">
+    <h3 style="color: #DC2626; margin-top: 0;">Over Moto Import B.V.</h3>
+    <p style="color: #333; line-height: 1.6;">
+        Moto Import B.V. is gespecialiseerd in de import en verkoop van kwaliteitsmotoren voor dealers in Europa. 
+        Wij bieden een breed assortiment aan motorfietsen tegen competitieve prijzen, met snelle levering en 
+        professionele service.
+    </p>
+    <p style="color: #333; line-height: 1.6;">
+        <strong>Waarom kiezen voor Moto Import?</strong>
+    </p>
+    <ul style="color: #333; line-height: 1.8;">
+        <li>✓ Ruim aanbod uit heel Europa</li>
+        <li>✓ Scherpe dealerprijzen</li>
+        <li>✓ Snelle levering binnen Europa</li>
+        <li>✓ Betrouwbare partner sinds jaren</li>
+        <li>✓ Persoonlijke service</li>
+    </ul>
+    <p style="color: #666; font-size: 14px; margin-bottom: 0;">
+        <strong>Contact:</strong> +31 6 81792660 | info@motoimportbv.nl<br>
+        <strong>Adres:</strong> Horsterhoekweg 11, 7433 SV Schalkhaar, Nederland
+    </p>
+</div>
+"""
+
+async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_path: str = None):
+    """Send email via Gmail SMTP with optional PDF attachment"""
+    from email.mime.base import MIMEBase
+    from email import encoders
+    
+    if not GMAIL_EMAIL or not GMAIL_APP_PASSWORD:
+        logger.error("Gmail credentials not configured")
+        return False
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = GMAIL_EMAIL
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        # Attach HTML body
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        # Attach PDF if provided
+        if attachment_path and os.path.exists(attachment_path):
+            with open(attachment_path, 'rb') as f:
+                part = MIMEBase('application', 'pdf')
+                part.set_payload(f.read())
+                encoders.encode_base64(part)
+                filename = os.path.basename(attachment_path)
+                part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                msg.attach(part)
+                logger.info(f"Attached file: {filename}")
+        
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_EMAIL, to_email, msg.as_string())
+            return True
+    except Exception as e:
+        logger.error(f"Failed to send email with attachment: {str(e)}")
+        return False
+
 @api_router.post("/admin/bulk-email", response_model=BulkEmailResponse)
 async def send_bulk_email(data: BulkEmailRequest, user: dict = Depends(require_admin)):
-    """Admin sends bulk marketing emails"""
+    """Admin sends bulk marketing emails with optional flyer attachment and about us section"""
     sent = 0
     failed = 0
     failed_emails = []
+    
+    # Build about us section if requested
+    about_us_section = ABOUT_US_HTML if data.include_about_us else ""
+    
+    # Get attachment path if flyer is specified
+    attachment_path = None
+    if data.flyer_filename:
+        flyer_path = ROOT_DIR / "uploads" / data.flyer_filename
+        if flyer_path.exists():
+            attachment_path = str(flyer_path)
+            logger.info(f"Will attach flyer: {data.flyer_filename}")
     
     html_template = f"""
     <html>
     <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #1a1a1a;">Moto Import</h1>
+            <h1 style="color: #DC2626; margin: 0;">🏍️ Moto Import</h1>
+            <p style="color: #666; margin-top: 5px;">Uw partner in motoren</p>
         </div>
         <div style="background: #f9f9f9; padding: 30px; border-radius: 10px;">
             {data.message.replace(chr(10), '<br>')}
         </div>
+        {about_us_section}
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
-            <p>Moto Import BV</p>
-            <p>www.motoimportbv.nl</p>
+            <p><strong>Moto Import BV</strong></p>
+            <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            <p>Tel: +31 6 81792660 | www.motoimportbv.nl</p>
         </div>
     </body>
     </html>
@@ -4841,7 +4920,11 @@ async def send_bulk_email(data: BulkEmailRequest, user: dict = Depends(require_a
     
     for email in data.recipient_emails:
         try:
-            success = await send_email(email, data.subject, html_template)
+            if attachment_path:
+                success = await send_email_with_attachment(email, data.subject, html_template, attachment_path)
+            else:
+                success = await send_email(email, data.subject, html_template)
+            
             if success:
                 sent += 1
             else:
