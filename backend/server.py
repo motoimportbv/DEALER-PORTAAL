@@ -21,7 +21,6 @@ import bcrypt
 import jwt
 import json
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
-from pywebpush import webpush, WebPushException
 from twilio.rest import Client as TwilioClient
 
 ROOT_DIR = Path(__file__).parent
