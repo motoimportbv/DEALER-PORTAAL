@@ -3843,10 +3843,21 @@ async def get_sms_status(user: dict = Depends(require_admin)):
 
 @api_router.get("/motorcycles/{motorcycle_id}/sms-share")
 async def get_sms_share_message(motorcycle_id: str, user: dict = Depends(require_admin)):
-    """Generate SMS message for sharing a motorcycle"""
+    """Generate SMS message for sharing a motorcycle and get list of Dutch dealers with phone"""
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Get Dutch dealers with phone numbers (exclude foreign dealers)
+    dealers = await db.users.find(
+        {
+            "role": "dealer", 
+            "is_approved": True, 
+            "phone": {"$exists": True, "$ne": ""},
+            "is_foreign_dealer": {"$ne": True}
+        },
+        {"_id": 0, "id": 1, "company_name": 1, "phone": 1}
+    ).to_list(500)
     
     base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
     
@@ -3855,21 +3866,38 @@ async def get_sms_share_message(motorcycle_id: str, user: dict = Depends(require
     year = motorcycle.get("year", "")
     price = motorcycle.get("price", 0)
     
-    message = f"""NIEUWE MOTOR: {brand} {model} ({year})
-Prijs: €{price:,.0f}
+    message = f"""🏍️ NIEUWE MOTOR: {brand} {model} ({year})
+💰 €{price:,.0f}
 
 Bekijk: {base_url}/motorcycle/{motorcycle_id}
 
 - Moto Import"""
 
+    dealer_list = []
+    for dealer in dealers:
+        phone = dealer.get("phone", "").replace(" ", "").replace("-", "")
+        if phone:
+            dealer_list.append({
+                "dealer_id": dealer.get("id"),
+                "company_name": dealer.get("company_name", ""),
+                "phone": phone
+            })
+
     return {
         "message": message,
-        "motorcycle_id": motorcycle_id
+        "motorcycle": {
+            "id": motorcycle_id,
+            "brand": brand,
+            "model": model,
+            "year": year,
+            "price": price
+        },
+        "dealers": dealer_list
     }
 
 @api_router.post("/motorcycles/{motorcycle_id}/sms-send-all")
 async def send_motorcycle_sms_to_all(motorcycle_id: str, user: dict = Depends(require_admin)):
-    """Send SMS about a motorcycle to all dealers"""
+    """Send SMS about a motorcycle to all Dutch dealers with phone numbers"""
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
@@ -3880,16 +3908,45 @@ async def send_motorcycle_sms_to_all(motorcycle_id: str, user: dict = Depends(re
     model = motorcycle.get("model", "")
     year = motorcycle.get("year", "")
     price = motorcycle.get("price", 0)
+    mileage = motorcycle.get("mileage", 0)
     
-    message = f"""NIEUWE MOTOR: {brand} {model} ({year})
-Prijs: €{price:,.0f}
+    message = f"""🏍️ NIEUWE MOTOR bij Moto Import!
 
-Bekijk: {base_url}/motorcycle/{motorcycle_id}
+{brand} {model} ({year})
+💰 €{price:,.0f}
+📍 {mileage:,} km
 
-- Moto Import"""
+Bekijk: {base_url}/motorcycle/{motorcycle_id}"""
 
-    result = await send_sms_to_all_dealers(message)
-    return result
+    # Get only Dutch dealers
+    dealers = await db.users.find(
+        {
+            "role": "dealer", 
+            "is_approved": True, 
+            "phone": {"$exists": True, "$ne": ""},
+            "is_foreign_dealer": {"$ne": True}
+        },
+        {"_id": 0, "id": 1, "company_name": 1, "phone": 1}
+    ).to_list(500)
+    
+    sent_count = 0
+    failed_count = 0
+    
+    for dealer in dealers:
+        phone = dealer.get("phone", "").replace(" ", "").replace("-", "")
+        if phone:
+            result = await send_sms_to_dealer(phone, message)
+            if result.get("success"):
+                sent_count += 1
+            else:
+                failed_count += 1
+            await asyncio.sleep(0.3)
+    
+    return {
+        "sent": sent_count,
+        "failed": failed_count,
+        "total": len(dealers)
+    }
 
 # ============ PARTS SHOP ENDPOINTS ============
 
