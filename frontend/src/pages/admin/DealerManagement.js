@@ -405,6 +405,8 @@ const DealerManagement = () => {
   }
 
   const approvedDealers = dealers.filter(d => d.is_approved);
+  const dutchDealers = approvedDealers.filter(d => !d.is_foreign_dealer);
+  const foreignDealers = approvedDealers.filter(d => d.is_foreign_dealer);
 
   return (
     <Layout requiredRole="admin">
@@ -414,14 +416,14 @@ const DealerManagement = () => {
             {t('adminDealers.title')}
           </h1>
           <p className="text-zinc-500 mt-1">
-            {pendingDealers.length} {t('adminDealers.waitingApproval')} • {approvedDealers.length} {t('adminDealers.activeDealers')}
+            {pendingDealers.length} {t('adminDealers.waitingApproval')} • {dutchDealers.length} NL Dealers • {foreignDealers.length} Buitenlandse Dealers
           </p>
         </div>
       </div>
 
       <div className="content-body" data-testid="dealer-management">
         <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="pending" className="relative">
               {t('adminDealers.waitingApproval')}
               {pendingDealers.length > 0 && (
@@ -430,11 +432,14 @@ const DealerManagement = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="approved">
-              {t('adminDealers.approvedDealers')} ({approvedDealers.length})
+            <TabsTrigger value="dutch">
+              🇳🇱 Nederlandse Dealers ({dutchDealers.length})
+            </TabsTrigger>
+            <TabsTrigger value="foreign">
+              🌍 Buitenlandse Dealers ({foreignDealers.length})
             </TabsTrigger>
             <TabsTrigger value="all">
-              {t('adminDealers.allDealers')} ({dealers.length})
+              Alle ({dealers.length})
             </TabsTrigger>
           </TabsList>
 
