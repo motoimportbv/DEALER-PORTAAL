@@ -163,6 +163,30 @@ const AdminPushStatus = () => {
               <Send className={`w-4 h-4 mr-2 ${sendingTest ? 'animate-pulse' : ''}`} />
               {sendingTest ? 'Verzenden...' : 'Test Push Sturen'}
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={resetting}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Reset Alle Push
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Push Subscripties Resetten?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Dit verwijdert alle push subscripties. Alle dealers moeten daarna opnieuw push notificaties inschakelen in de app.
+                    <br /><br />
+                    <strong>Gebruik dit alleen als push notificaties niet werken door een VAPID key mismatch.</strong>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction onClick={resetAllSubscriptions} className="bg-red-600 hover:bg-red-700">
+                    Ja, Reset Alles
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>
