@@ -113,7 +113,8 @@ const MotorcycleDetail = () => {
   };
 
   const fetchMyVoucher = async () => {
-    if (!user) return; // Don't fetch if not logged in
+    // Don't fetch if not logged in or if foreign dealer (they don't get vouchers)
+    if (!user || user.is_foreign_dealer) return;
     try {
       const response = await axios.get(`${API}/voucher/my-voucher`);
       if (response.data.has_voucher && !response.data.is_used) {
