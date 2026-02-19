@@ -21,7 +21,8 @@ import {
   KeyRound,
   TrendingUp,
   Mail,
-  MessageCircle
+  MessageCircle,
+  MessageSquare
 } from 'lucide-react';
 
 const Sidebar = () => {
