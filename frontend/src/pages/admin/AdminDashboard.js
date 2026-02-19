@@ -38,9 +38,6 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [topDealers, setTopDealers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sendingTestPush, setSendingTestPush] = useState(false);
-  const [testPushResults, setTestPushResults] = useState(null);
-  const [showPushResultsModal, setShowPushResultsModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -60,26 +57,6 @@ const AdminDashboard = () => {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const sendTestPush = async () => {
-    setSendingTestPush(true);
-    try {
-      const response = await axios.post(`${API}/admin/test-push`);
-      setTestPushResults(response.data);
-      setShowPushResultsModal(true);
-      
-      if (response.data.sent_count > 0) {
-        toast.success(`Test push verzonden naar ${response.data.sent_count} dealers!`);
-      } else {
-        toast.warning('Geen dealers hebben push notificaties ingeschakeld');
-      }
-    } catch (error) {
-      console.error('Failed to send test push:', error);
-      toast.error('Fout bij verzenden van test push');
-    } finally {
-      setSendingTestPush(false);
     }
   };
 
