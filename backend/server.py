@@ -61,10 +61,9 @@ if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
     except Exception as e:
         logging.warning(f"Failed to initialize Twilio client: {e}")
 
-# VAPID Config for Push Notifications - Hardcoded to ensure consistency between preview and production
-# These keys are a matching pair and must stay together
-VAPID_PUBLIC_KEY = 'BOxwQdD7jKfEIziijbv7Gz7lffbc6pOcO7iHI90tUhIkX_VbCcbNQCMq3FEx5jnRYRgNg9_ObiT4XnSta4X9jeY'
-VAPID_PRIVATE_KEY_DER = 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgTTZnHAl9dVGQz5Zi7FqHDy8wR3SwLN6lpi5RIKFhmcShRANCAATscEHQ+4ynxCM4oo27+xs+5X323OqTnDu4hyPdLVISJF/1WwnGzUAjKtxRMeY50WEYDYPfzm4k+F50rWuF/Y3m'
+# VAPID Config for Push Notifications
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'BOxwQdD7jKfEIziijbv7Gz7lffbc6pOcO7iHI90tUhIkX_VbCcbNQCMq3FEx5jnRYRgNg9_ObiT4XnSta4X9jeY')
+VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgTTZnHAl9dVGQz5Zi7FqHDy8wR3SwLN6lpi5RIKFhmcShRANCAATscEHQ+4ynxCM4oo27+xs+5X323OqTnDu4hyPdLVISJF/1WwnGzUAjKtxRMeY50WEYDYPfzm4k+F50rWuF/Y3m')
 VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
 
 def get_vapid_private_key():
