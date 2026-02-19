@@ -1875,8 +1875,8 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
     
-    # Real-time price conversion for CHF motorcycles
-    if motorcycle.get("original_currency") == "CHF" and motorcycle.get("original_price"):
+    # Real-time price conversion for CHF motorcycles (unless admin has overridden)
+    if motorcycle.get("original_currency") == "CHF" and motorcycle.get("original_price") and not motorcycle.get("price_override"):
         chf_eur_rate = await get_chf_to_eur_rate()
         margin = await get_chf_eur_margin()
         motorcycle["price"] = convert_chf_to_eur(motorcycle["original_price"], chf_eur_rate, margin)
@@ -1884,6 +1884,9 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
         motorcycle["exchange_rate"] = chf_eur_rate
         motorcycle["margin_percent"] = margin * 100
         motorcycle["price_updated_live"] = True
+    elif motorcycle.get("price_override") and motorcycle.get("price_override_amount"):
+        motorcycle["price"] = motorcycle["price_override_amount"]
+        motorcycle["price_override_active"] = True
     
     return motorcycle
 
