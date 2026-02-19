@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Generate spectacular dealer recruitment flyers in 4 languages"""
+"""Generate spectacular dealer recruitment flyers in 4 languages - COMPACT VERSION"""
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor, white, black
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 import urllib.request
 import os
 from pathlib import Path
@@ -35,16 +33,12 @@ FLYER_CONTENT = {
             "✓ Snelle levering binnen Europa", 
             "✓ Betrouwbare partner",
             "✓ Persoonlijke service",
-            "✓ Exclusief dealernetwerk"
         ],
         "cta": "START VANDAAG",
-        "contact_title": "NEEM CONTACT OP",
         "website": "www.motoimportbv.nl",
         "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address1": "Horsterhoekweg 11",
-        "address2": "7433 SV Schalkhaar, Nederland",
-        "footer": "Nederland"
+        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar, Nederland",
     },
     "DE": {
         "title": "WERDEN SIE HÄNDLER",
@@ -57,16 +51,12 @@ FLYER_CONTENT = {
             "✓ Schnelle Lieferung in Europa",
             "✓ Zuverlässiger Partner",
             "✓ Persönlicher Service",
-            "✓ Exklusives Händlernetzwerk"
         ],
         "cta": "HEUTE STARTEN",
-        "contact_title": "KONTAKTIEREN SIE UNS",
         "website": "www.motoimportbv.nl",
         "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address1": "Horsterhoekweg 11",
-        "address2": "7433 SV Schalkhaar, Niederlande",
-        "footer": "Niederlande"
+        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar, Niederlande",
     },
     "FR": {
         "title": "DEVENEZ REVENDEUR",
@@ -79,16 +69,12 @@ FLYER_CONTENT = {
             "✓ Livraison rapide en Europe",
             "✓ Partenaire fiable",
             "✓ Service personnalisé",
-            "✓ Réseau de revendeurs exclusif"
         ],
         "cta": "COMMENCEZ AUJOURD'HUI",
-        "contact_title": "CONTACTEZ-NOUS",
         "website": "www.motoimportbv.nl",
         "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address1": "Horsterhoekweg 11",
-        "address2": "7433 SV Schalkhaar, Pays-Bas",
-        "footer": "Pays-Bas"
+        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar, Pays-Bas",
     },
     "IT": {
         "title": "DIVENTA RIVENDITORE",
@@ -101,155 +87,127 @@ FLYER_CONTENT = {
             "✓ Consegna rapida in Europa",
             "✓ Partner affidabile",
             "✓ Servizio personalizzato",
-            "✓ Rete di rivenditori esclusiva"
         ],
         "cta": "INIZIA OGGI",
-        "contact_title": "CONTATTACI",
         "website": "www.motoimportbv.nl",
         "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address1": "Horsterhoekweg 11",
-        "address2": "7433 SV Schalkhaar, Paesi Bassi",
-        "footer": "Paesi Bassi"
+        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar, Paesi Bassi",
     }
 }
 
 # Colors
 RED = HexColor("#DC2626")
-DARK_RED = HexColor("#991B1B")
 DARK_GRAY = HexColor("#18181B")
-LIGHT_GRAY = HexColor("#F4F4F5")
 
 def create_flyer(lang_code, content, output_path):
-    """Create a spectacular PDF flyer"""
+    """Create a compact spectacular PDF flyer"""
     c = canvas.Canvas(str(output_path), pagesize=A4)
     width, height = A4
     
-    # Background - dark gradient effect (solid dark)
+    # Background
     c.setFillColor(DARK_GRAY)
     c.rect(0, 0, width, height, fill=True, stroke=False)
     
-    # Top red accent bar
+    # Top red bar
     c.setFillColor(RED)
-    c.rect(0, height - 15*mm, width, 15*mm, fill=True, stroke=False)
+    c.rect(0, height - 12*mm, width, 12*mm, fill=True, stroke=False)
     
-    # Hero image area (top section)
+    # Hero image (smaller)
     try:
-        # Draw hero image
-        img_width = width - 20*mm
-        img_height = 80*mm
-        c.drawImage(str(HERO_IMAGE_PATH), 10*mm, height - 100*mm, 
+        img_width = width - 30*mm
+        img_height = 60*mm
+        c.drawImage(str(HERO_IMAGE_PATH), 15*mm, height - 75*mm, 
                     width=img_width, height=img_height, preserveAspectRatio=True)
     except:
-        # Fallback if image fails
-        c.setFillColor(HexColor("#27272A"))
-        c.rect(10*mm, height - 100*mm, width - 20*mm, 80*mm, fill=True, stroke=False)
+        pass
     
-    # Main title section
-    y_pos = height - 120*mm
+    # Title section
+    y_pos = height - 90*mm
     
-    # Title
     c.setFillColor(RED)
-    c.setFont("Helvetica-Bold", 36)
+    c.setFont("Helvetica-Bold", 28)
     c.drawCentredString(width/2, y_pos, content["title"])
     
-    # Subtitle
-    y_pos -= 12*mm
+    y_pos -= 10*mm
     c.setFillColor(white)
-    c.setFont("Helvetica-Bold", 28)
+    c.setFont("Helvetica-Bold", 22)
     c.drawCentredString(width/2, y_pos, content["subtitle"])
     
-    # Tagline
-    y_pos -= 10*mm
+    y_pos -= 8*mm
     c.setFillColor(HexColor("#A1A1AA"))
-    c.setFont("Helvetica", 14)
+    c.setFont("Helvetica", 11)
     c.drawCentredString(width/2, y_pos, content["tagline"])
     
-    # Red divider line
-    y_pos -= 8*mm
+    # Divider
+    y_pos -= 6*mm
     c.setStrokeColor(RED)
     c.setLineWidth(2)
-    c.line(width/2 - 40*mm, y_pos, width/2 + 40*mm, y_pos)
+    c.line(width/2 - 35*mm, y_pos, width/2 + 35*mm, y_pos)
     
-    # Benefits section
-    y_pos -= 15*mm
+    # Benefits
+    y_pos -= 10*mm
     c.setFillColor(RED)
-    c.setFont("Helvetica-Bold", 16)
+    c.setFont("Helvetica-Bold", 12)
     c.drawCentredString(width/2, y_pos, content["benefits_title"])
     
-    # Benefits list
-    y_pos -= 10*mm
     c.setFillColor(white)
-    c.setFont("Helvetica", 13)
+    c.setFont("Helvetica", 11)
     for benefit in content["benefits"]:
-        y_pos -= 7*mm
+        y_pos -= 6*mm
         c.drawCentredString(width/2, y_pos, benefit)
     
     # CTA Button
-    y_pos -= 18*mm
-    btn_width = 70*mm
-    btn_height = 12*mm
+    y_pos -= 12*mm
+    btn_width = 55*mm
+    btn_height = 10*mm
     btn_x = (width - btn_width) / 2
-    
-    # Button background
     c.setFillColor(RED)
-    c.roundRect(btn_x, y_pos - 3*mm, btn_width, btn_height, 3*mm, fill=True, stroke=False)
-    
-    # Button text
+    c.roundRect(btn_x, y_pos - 2*mm, btn_width, btn_height, 2*mm, fill=True, stroke=False)
     c.setFillColor(white)
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(width/2, y_pos + 1*mm, content["cta"])
     
-    # Contact section (bottom)
-    y_pos -= 25*mm
-    
-    # Contact title
-    c.setFillColor(RED)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width/2, y_pos, content["contact_title"])
-    
-    # Contact details
-    y_pos -= 8*mm
+    # Contact section
+    y_pos -= 18*mm
     c.setFillColor(white)
-    c.setFont("Helvetica", 11)
-    c.drawCentredString(width/2, y_pos, f"🌐 {content['website']}")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(width/2, y_pos, "CONTACT")
     
-    y_pos -= 6*mm
-    c.drawCentredString(width/2, y_pos, f"📧 {content['email']}")
-    
-    y_pos -= 6*mm
-    c.drawCentredString(width/2, y_pos, f"📞 {content['phone']}")
-    
-    y_pos -= 8*mm
-    c.setFillColor(white)
-    c.setFont("Helvetica", 11)
-    c.drawCentredString(width/2, y_pos, content["address1"])
+    y_pos -= 7*mm
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(width/2, y_pos, content["website"])
     
     y_pos -= 5*mm
-    c.drawCentredString(width/2, y_pos, content["address2"])
+    c.drawCentredString(width/2, y_pos, content["email"])
     
-    # Bottom bar with logo text
+    y_pos -= 5*mm
+    c.drawCentredString(width/2, y_pos, content["phone"])
+    
+    y_pos -= 6*mm
+    c.setFont("Helvetica", 9)
+    c.setFillColor(HexColor("#A1A1AA"))
+    c.drawCentredString(width/2, y_pos, content["address"])
+    
+    # Bottom bar
     c.setFillColor(RED)
-    c.rect(0, 0, width, 12*mm, fill=True, stroke=False)
-    
+    c.rect(0, 0, width, 10*mm, fill=True, stroke=False)
     c.setFillColor(white)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(width/2, 4*mm, f"🏍️ MOTO IMPORT B.V. • {content['footer']}")
+    c.setFont("Helvetica-Bold", 12)
+    c.drawCentredString(width/2, 3*mm, "MOTO IMPORT B.V.")
     
     c.save()
     print(f"✅ Created: {output_path}")
 
 def main():
-    """Generate all 4 language flyers"""
-    print("\n🏍️ Generating Moto Import Dealer Flyers...")
+    print("\n🏍️ Generating Compact Moto Import Flyers...")
     print("=" * 50)
     
     for lang_code, content in FLYER_CONTENT.items():
         output_path = UPLOADS_DIR / f"Moto_Import_Dealer_Flyer_2025_{lang_code}.pdf"
         create_flyer(lang_code, content, output_path)
     
-    print("\n" + "=" * 50)
-    print("✅ All 4 flyers generated successfully!")
+    print("\n✅ All 4 flyers generated!")
     print(f"📁 Location: {UPLOADS_DIR}")
 
 if __name__ == "__main__":
