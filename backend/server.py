@@ -4044,6 +4044,27 @@ async def send_test_push_to_all(user: dict = Depends(require_admin)):
         logger.error(f"Error sending test push: {e}")
         raise HTTPException(status_code=500, detail=f"Fout bij verzenden: {str(e)}")
 
+@api_router.delete("/admin/push-subscriptions/reset")
+async def reset_all_push_subscriptions(user: dict = Depends(require_admin)):
+    """Reset all push subscriptions (use when VAPID keys change)"""
+    try:
+        # Count existing subscriptions
+        count = await db.push_subscriptions.count_documents({})
+        
+        # Delete all subscriptions
+        result = await db.push_subscriptions.delete_many({})
+        
+        logger.info(f"Reset {result.deleted_count} push subscriptions by admin {user['email']}")
+        
+        return {
+            "success": True,
+            "message": f"{result.deleted_count} push subscripties verwijderd. Alle dealers moeten opnieuw inschakelen.",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Error resetting push subscriptions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/push-token")
 async def register_push_token(data: PushTokenCreate, user: dict = Depends(get_current_user)):
     """Register or update a push notification token for the current user"""
