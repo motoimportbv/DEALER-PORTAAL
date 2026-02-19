@@ -86,7 +86,10 @@ const DealerManagement = () => {
 
   const approveDealer = async (dealerId) => {
     try {
-      await axios.put(`${API}/dealers/${dealerId}/approve`);
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/dealers/${dealerId}/approve`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('adminDealers.approved'));
       fetchDealers();
     } catch (error) {
@@ -96,7 +99,10 @@ const DealerManagement = () => {
 
   const rejectDealer = async (dealerId) => {
     try {
-      await axios.put(`${API}/dealers/${dealerId}/reject`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/dealers/${dealerId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('adminDealers.rejected'));
       fetchDealers();
     } catch (error) {
@@ -106,7 +112,10 @@ const DealerManagement = () => {
 
   const deleteDealer = async (dealerId, companyName) => {
     try {
-      await axios.delete(`${API}/dealers/${dealerId}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/dealers/${dealerId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('adminDealers.deleted', { company: companyName }));
       fetchDealers();
     } catch (error) {
@@ -120,7 +129,10 @@ const DealerManagement = () => {
       return;
     }
     try {
-      await axios.post(`${API}/dealers/${selectedDealer.id}/set-foreign?country=${encodeURIComponent(countryInput)}`);
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/dealers/${selectedDealer.id}/set-foreign?country=${encodeURIComponent(countryInput)}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('adminDealers.foreignSet', { company: selectedDealer.company_name, country: countryInput }));
       setForeignDialogOpen(false);
       setCountryInput('');
