@@ -3700,6 +3700,477 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
     )
     return {"message": "All notifications marked as read"}
 
+# ============ PUSH NOTIFICATIONS ============
+
+class PushTokenCreate(BaseModel):
+    token: str
+    platform: str  # "ios", "android", or "web"
+
+class WebPushSubscriptionCreate(BaseModel):
+    subscription: dict  # Contains endpoint, keys (p256dh, auth)
+
+@api_router.get("/push/vapid-key")
+async def get_vapid_key():
+    """Get the public VAPID key for web push subscriptions"""
+    return {"vapidKey": VAPID_PUBLIC_KEY}
+
+@api_router.get("/push/debug")
+async def debug_vapid_keys():
+    """Debug endpoint to verify VAPID key configuration"""
+    import base64
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.backends import default_backend
+    
+    try:
+        # Load private key and derive public key
+        der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
+        private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
+        public_key = private_key.public_key()
+        public_numbers = public_key.public_numbers()
+        x_bytes = public_numbers.x.to_bytes(32, 'big')
+        y_bytes = public_numbers.y.to_bytes(32, 'big')
+        uncompressed = b'\x04' + x_bytes + y_bytes
+        derived_public_key = base64.urlsafe_b64encode(uncompressed).rstrip(b'=').decode('utf-8')
+        
+        return {
+            "configured_public_key": VAPID_PUBLIC_KEY,
+            "derived_public_key": derived_public_key,
+            "keys_match": VAPID_PUBLIC_KEY == derived_public_key,
+            "private_key_loaded": True
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "configured_public_key": VAPID_PUBLIC_KEY,
+            "private_key_loaded": False
+        }
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(data: WebPushSubscriptionCreate, user: dict = Depends(get_current_user)):
+    """Subscribe to web push notifications - supports multiple devices per user"""
+    subscription = data.subscription
+    endpoint = subscription.get("endpoint", "")
+    
+    if not endpoint:
+        raise HTTPException(status_code=400, detail="Invalid subscription - no endpoint")
+    
+    # Use endpoint as unique identifier for device
+    # This allows multiple devices per user
+    await db.push_subscriptions.update_one(
+        {
+            "user_id": user["id"],
+            "subscription.endpoint": endpoint  # Match by user AND endpoint
+        },
+        {
+            "$set": {
+                "user_id": user["id"],
+                "subscription": subscription,
+                "platform": "web",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    # Count how many devices user has
+    device_count = await db.push_subscriptions.count_documents({"user_id": user["id"]})
+    
+    return {"message": f"Push ingeschakeld voor dit apparaat ({device_count} apparaat/apparaten actief)"}
+
+@api_router.get("/push/status")
+async def get_push_status(user: dict = Depends(get_current_user)):
+    """Check if user has an active push subscription on any device"""
+    sub_count = await db.push_subscriptions.count_documents({"user_id": user["id"]})
+    return {"subscribed": sub_count > 0, "device_count": sub_count}
+
+@api_router.get("/push/test")
+async def test_push_notification(user: dict = Depends(get_current_user)):
+    """Test push notification for current user"""
+    # Check if user has subscription
+    sub = await db.push_subscriptions.find_one({"user_id": user["id"]})
+    if not sub:
+        return {"success": False, "error": "Geen push subscription gevonden. Klik eerst op Inschakelen."}
+    
+    # Check subscription details
+    subscription = sub.get("subscription", {})
+    endpoint = subscription.get("endpoint", "")
+    
+    if not endpoint:
+        return {"success": False, "error": "Subscription heeft geen endpoint"}
+    
+    # Debug info
+    keys = subscription.get("keys", {})
+    p256dh = keys.get("p256dh", "")
+    auth = keys.get("auth", "")
+    
+    debug_info = {
+        "endpoint_preview": endpoint[:60] + "..." if len(endpoint) > 60 else endpoint,
+        "p256dh_length": len(p256dh),
+        "auth_length": len(auth),
+        "has_valid_keys": bool(p256dh and auth and len(p256dh) > 50)
+    }
+    
+    # Get VAPID private key
+    private_key = get_vapid_private_key()
+    
+    if not private_key:
+        return {"success": False, "error": "VAPID private key niet geconfigureerd", "debug": debug_info}
+    
+    # Try to send
+    try:
+        payload = json.dumps({
+            "title": "🧪 Test Notificatie",
+            "body": "Push notificaties werken!",
+            "icon": "/icons/icon-192x192.png",
+            "url": "/dealer"
+        })
+        
+        webpush(
+            subscription_info=subscription,
+            data=payload,
+            vapid_private_key=private_key,
+            vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+        )
+        return {"success": True, "message": "Test notificatie verzonden!", "debug": debug_info}
+    except WebPushException as e:
+        error_msg = str(e)
+        response_text = ""
+        if e.response:
+            response_text = e.response.text[:200] if e.response.text else ""
+            error_msg = f"Status {e.response.status_code}: {response_text}"
+        
+        # Check for VAPID key mismatch - multiple error patterns
+        vapid_mismatch = (
+            "VapidPkHashMismatch" in response_text or 
+            "VapidPkHashMismatch" in str(e) or
+            "VAPID credentials" in response_text or
+            (e.response and e.response.status_code == 403 and "credentials" in response_text.lower())
+        )
+        
+        if vapid_mismatch:
+            await db.push_subscriptions.delete_many({"user_id": user["id"]})
+            return {
+                "success": False, 
+                "error": "Push instellingen verouderd. Subscription verwijderd.",
+                "needs_resubscribe": True,
+                "debug": debug_info
+            }
+        
+        # Check for expired/invalid subscription
+        if e.response and e.response.status_code in [404, 410]:
+            await db.push_subscriptions.delete_many({"user_id": user["id"]})
+            return {
+                "success": False,
+                "error": "Subscription verlopen. Klik op 'Inschakelen' om opnieuw te registreren.",
+                "needs_resubscribe": True,
+                "debug": debug_info
+            }
+        
+        return {"success": False, "error": f"Push fout: {error_msg}", "debug": debug_info}
+    except Exception as e:
+        return {"success": False, "error": f"Fout: {str(e)[:150]}", "debug": debug_info}
+
+@api_router.delete("/push/subscribe")
+async def unsubscribe_from_push(user: dict = Depends(get_current_user)):
+    """Unsubscribe from web push notifications"""
+    await db.push_subscriptions.delete_many({"user_id": user["id"]})
+    return {"message": "Unsubscribed from push notifications"}
+
+async def send_push_notification_to_user(user_id: str, title: str, body: str, url: str = "/", include_auto_login: bool = True):
+    """Send a web push notification to ALL devices of a specific user"""
+    try:
+        # Get ALL subscriptions for this user (multiple devices)
+        subscription_docs = await db.push_subscriptions.find({"user_id": user_id}).to_list(100)
+        
+        if not subscription_docs:
+            return False
+        
+        # Get private key using helper function
+        private_key = get_vapid_private_key()
+        
+        if not private_key:
+            logger.warning("VAPID private key not configured - push notifications disabled")
+            return False
+        
+        # Always use production URL for push notifications
+        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+        
+        # Get user info for auto-login token
+        final_url = url
+        if include_auto_login:
+            user = await db.users.find_one({"id": user_id}, {"_id": 0})
+            if user and not user.get("is_offline"):
+                # Create auto-login token
+                auto_token = create_notification_token(user_id, user.get("email", ""), user.get("role", "dealer"))
+                # Build absolute URL with auto-login
+                final_url = f"{base_url}/auto-login?token={auto_token}&redirect={url}"
+        else:
+            # Make URL absolute even without auto-login
+            if url.startswith("/"):
+                final_url = f"{base_url}{url}"
+        
+        # Prepare notification payload
+        payload = json.dumps({
+            "title": title,
+            "body": body,
+            "icon": "/icons/icon-192x192.png",
+            "badge": "/icons/icon-72x72.png",
+            "url": final_url,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Send to ALL devices
+        sent_count = 0
+        for sub_doc in subscription_docs:
+            subscription = sub_doc.get("subscription")
+            if not subscription:
+                continue
+                
+            try:
+                webpush(
+                    subscription_info=subscription,
+                    data=payload,
+                    vapid_private_key=private_key,
+                    vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+                )
+                sent_count += 1
+            except WebPushException as e:
+                logger.error(f"Web push failed for device: {e}")
+                # If subscription is expired/invalid, remove it
+                if e.response and e.response.status_code in [404, 410]:
+                    await db.push_subscriptions.delete_one({"_id": sub_doc["_id"]})
+            except Exception as e:
+                logger.error(f"Error sending to device: {e}")
+        
+        if sent_count > 0:
+            logger.info(f"Push notification sent to {sent_count} device(s) for user {user_id}")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Error sending push notification: {e}")
+        return False
+        return False
+
+async def send_push_to_all_dealers(title: str, body: str, url: str = "/", exclude_user_id: str = None):
+    """Send push notification to all approved dealers who are not offline"""
+    try:
+        # Get all approved dealers who are NOT offline and NOT foreign dealers
+        query = {"role": "dealer", "is_approved": True, "is_offline": {"$ne": True}, "is_foreign_dealer": {"$ne": True}}
+        if exclude_user_id:
+            query["id"] = {"$ne": exclude_user_id}
+        
+        dealers = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
+        
+        sent_count = 0
+        for dealer in dealers:
+            success = await send_push_notification_to_user(dealer["id"], title, body, url)
+            if success:
+                sent_count += 1
+        
+        logger.info(f"Push notifications sent to {sent_count} dealers")
+        return sent_count
+    except Exception as e:
+        logger.error(f"Error sending push to all dealers: {e}")
+        return 0
+
+@api_router.get("/admin/push-status")
+async def get_dealers_push_status(user: dict = Depends(require_admin)):
+    """Get push notification status for all dealers - shows who has problems"""
+    try:
+        # Get all approved dealers (including offline for full overview)
+        query = {
+            "role": "dealer", 
+            "is_approved": True,
+            "is_foreign_dealer": {"$ne": True}
+        }
+        
+        dealers = await db.users.find(query, {"_id": 0, "id": 1, "company_name": 1, "email": 1, "is_offline": 1}).to_list(1000)
+        
+        results = []
+        active_count = 0
+        no_subscription_count = 0
+        offline_count = 0
+        
+        for dealer in dealers:
+            dealer_id = dealer["id"]
+            is_offline = dealer.get("is_offline", False)
+            
+            # Get all subscriptions for this dealer
+            subscriptions = await db.push_subscriptions.find({"user_id": dealer_id}, {"_id": 0}).to_list(10)
+            
+            # Analyze subscription status
+            sub_details = []
+            valid_subs = 0
+            
+            for sub in subscriptions:
+                sub_obj = sub.get("subscription", sub)
+                endpoint = sub_obj.get("endpoint", "")
+                has_keys = bool(sub_obj.get("keys"))
+                platform = sub.get("platform", "web")
+                updated = sub.get("updated_at", "onbekend")
+                
+                is_valid = bool(endpoint and has_keys)
+                if is_valid:
+                    valid_subs += 1
+                
+                sub_details.append({
+                    "platform": platform,
+                    "valid": is_valid,
+                    "updated_at": updated,
+                    "endpoint_preview": endpoint[:50] + "..." if len(endpoint) > 50 else endpoint
+                })
+            
+            # Determine status
+            if is_offline:
+                status = "offline"
+                status_text = "⏸️ Offline"
+                offline_count += 1
+            elif valid_subs > 0:
+                status = "active"
+                status_text = f"✅ Actief ({valid_subs} apparaat{'en' if valid_subs > 1 else ''})"
+                active_count += 1
+            else:
+                status = "no_subscription"
+                status_text = "❌ Geen push ingeschakeld"
+                no_subscription_count += 1
+            
+            results.append({
+                "id": dealer_id,
+                "company_name": dealer.get("company_name", "Onbekend"),
+                "email": dealer.get("email", ""),
+                "status": status,
+                "status_text": status_text,
+                "is_offline": is_offline,
+                "subscription_count": len(subscriptions),
+                "valid_subscriptions": valid_subs,
+                "subscriptions": sub_details
+            })
+        
+        # Sort: problems first (no subscription), then offline, then active
+        status_order = {"no_subscription": 0, "offline": 1, "active": 2}
+        results.sort(key=lambda x: (status_order.get(x["status"], 3), x["company_name"]))
+        
+        return {
+            "total_dealers": len(dealers),
+            "active_push": active_count,
+            "no_subscription": no_subscription_count,
+            "offline": offline_count,
+            "dealers": results
+        }
+    except Exception as e:
+        logger.error(f"Error getting push status: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout bij ophalen: {str(e)}")
+
+@api_router.post("/admin/test-push")
+async def send_test_push_to_all(user: dict = Depends(require_admin)):
+    """Send a test push notification to all dealers and return who received it"""
+    try:
+        # Get all approved dealers who are NOT offline and NOT foreign dealers
+        query = {
+            "role": "dealer", 
+            "is_approved": True, 
+            "is_offline": {"$ne": True}, 
+            "is_foreign_dealer": {"$ne": True}
+        }
+        
+        dealers = await db.users.find(query, {"_id": 0, "id": 1, "company_name": 1, "email": 1}).to_list(1000)
+        
+        # Check which dealers have push subscriptions
+        results = []
+        sent_count = 0
+        no_subscription_count = 0
+        
+        for dealer in dealers:
+            # Check if dealer has a push subscription
+            subscription = await db.push_subscriptions.find_one({"user_id": dealer["id"]})
+            
+            if subscription:
+                # Send test push
+                success = await send_push_notification_to_user(
+                    dealer["id"],
+                    "🔔 Test Notificatie",
+                    "Dit is een test push notificatie van Moto Import",
+                    "/dealer",
+                    include_auto_login=True
+                )
+                
+                if success:
+                    sent_count += 1
+                    results.append({
+                        "company_name": dealer.get("company_name", "Onbekend"),
+                        "email": dealer.get("email", ""),
+                        "status": "✅ Verzonden"
+                    })
+                else:
+                    results.append({
+                        "company_name": dealer.get("company_name", "Onbekend"),
+                        "email": dealer.get("email", ""),
+                        "status": "❌ Mislukt"
+                    })
+            else:
+                no_subscription_count += 1
+                results.append({
+                    "company_name": dealer.get("company_name", "Onbekend"),
+                    "email": dealer.get("email", ""),
+                    "status": "⚠️ Geen push ingeschakeld"
+                })
+        
+        return {
+            "success": True,
+            "total_dealers": len(dealers),
+            "sent_count": sent_count,
+            "no_subscription_count": no_subscription_count,
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Error sending test push: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout bij verzenden: {str(e)}")
+
+@api_router.delete("/admin/push-subscriptions/reset")
+async def reset_all_push_subscriptions(user: dict = Depends(require_admin)):
+    """Reset all push subscriptions (use when VAPID keys change)"""
+    try:
+        # Count existing subscriptions
+        count = await db.push_subscriptions.count_documents({})
+        
+        # Delete all subscriptions
+        result = await db.push_subscriptions.delete_many({})
+        
+        logger.info(f"Reset {result.deleted_count} push subscriptions by admin {user['email']}")
+        
+        return {
+            "success": True,
+            "message": f"{result.deleted_count} push subscripties verwijderd. Alle dealers moeten opnieuw inschakelen.",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        logger.error(f"Error resetting push subscriptions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/push-token")
+async def register_push_token(data: PushTokenCreate, user: dict = Depends(get_current_user)):
+    """Register or update a push notification token for the current user"""
+    # Update or insert the token
+    await db.push_tokens.update_one(
+        {"user_id": user["id"], "platform": data.platform},
+        {
+            "$set": {
+                "user_id": user["id"],
+                "token": data.token,
+                "platform": data.platform,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    return {"message": "Push token registered"}
+
+@api_router.delete("/push-token")
+async def remove_push_token(user: dict = Depends(get_current_user)):
+    """Remove push token when user logs out"""
+    await db.push_tokens.delete_many({"user_id": user["id"]})
+    return {"message": "Push token removed"}
+
 # ============ SMS NOTIFICATION ENDPOINTS ============
 
 async def send_sms_to_dealer(phone_number: str, message: str) -> dict:
