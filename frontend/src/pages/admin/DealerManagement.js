@@ -68,9 +68,12 @@ const DealerManagement = () => {
 
   const fetchDealers = async () => {
     try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
       const [allRes, pendingRes] = await Promise.all([
-        axios.get(`${API}/dealers`),
-        axios.get(`${API}/dealers/pending`)
+        axios.get(`${API}/dealers`, { headers }),
+        axios.get(`${API}/dealers/pending`, { headers })
       ]);
       setDealers(allRes.data);
       setPendingDealers(pendingRes.data);
