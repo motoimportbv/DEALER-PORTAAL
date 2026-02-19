@@ -482,20 +482,10 @@ const DealerDashboard = () => {
                           {formatPrice(motorcycle.price)}
                         </span>
                         {motorcycle.original_currency === 'CHF' && (
-                          <>
-                            {motorcycle.price_updated_live && (
-                              <p className="text-xs text-green-600 flex items-center justify-end gap-1">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                                Live CHF koers
-                              </p>
-                            )}
-                            {motorcycle.price_override_active && (
-                              <p className="text-xs text-blue-600 flex items-center justify-end gap-1">
-                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                Vaste prijs
-                              </p>
-                            )}
-                          </>
+                          <p className="text-xs text-green-600 flex items-center justify-end gap-1">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                            Live CHF koers
+                          </p>
                         )}
                       </div>
                     </div>
