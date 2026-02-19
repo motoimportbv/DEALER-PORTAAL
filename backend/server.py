@@ -4615,6 +4615,42 @@ async def upload_marketing_csv(file: UploadFile = File(...), user: dict = Depend
         logger.error(f"Error uploading CSV: {e}")
         raise HTTPException(status_code=500, detail=f"Fout bij uploaden: {str(e)}")
 
+@api_router.post("/admin/upload-flyer")
+async def upload_flyer_pdf(file: UploadFile = File(...), user: dict = Depends(require_admin)):
+    """Upload a PDF flyer for marketing emails"""
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Alleen PDF bestanden toegestaan")
+    
+    try:
+        content = await file.read()
+        
+        # Check file size (max 5MB)
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Bestand te groot (max 5MB)")
+        
+        # Create safe filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"Flyer_{timestamp}_{file.filename.replace(' ', '_')}"
+        filepath = ROOT_DIR / "uploads" / safe_filename
+        
+        with open(filepath, 'wb') as f:
+            f.write(content)
+        
+        size_kb = len(content) / 1024
+        logger.info(f"Uploaded flyer: {safe_filename} ({size_kb:.1f} KB)")
+        
+        return {
+            "message": f"Flyer geüpload: {safe_filename}",
+            "filename": safe_filename,
+            "size_kb": round(size_kb, 1),
+            "url": f"/api/uploads/{safe_filename}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading PDF: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout bij uploaden: {str(e)}")
+
 @api_router.get("/admin/available-flyers")
 async def get_available_flyers(user: dict = Depends(require_admin)):
     """Get list of available PDF flyers for email attachments"""
