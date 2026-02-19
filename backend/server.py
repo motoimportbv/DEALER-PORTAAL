@@ -4945,6 +4945,88 @@ async def send_bulk_email(data: BulkEmailRequest, user: dict = Depends(require_a
         failed_emails=failed_emails
     )
 
+@api_router.post("/admin/upload-marketing-csv")
+async def upload_marketing_csv(file: UploadFile = File(...), user: dict = Depends(require_admin)):
+    """Upload a CSV file with email addresses for marketing"""
+    import csv
+    from io import StringIO
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Alleen CSV bestanden toegestaan")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        text = content.decode('utf-8')
+        
+        # Auto-detect delimiter (semicolon or comma)
+        first_line = text.split('\n')[0]
+        delimiter = ';' if ';' in first_line else ','
+        
+        # Parse CSV
+        reader = csv.DictReader(StringIO(text), delimiter=delimiter)
+        
+        # Find email column (case insensitive)
+        emails = []
+        for row in reader:
+            # Try different email column names
+            email = None
+            for key in row.keys():
+                if key and key.lower() in ['email', 'e-mail', 'emailaddress', 'email_address', 'mail']:
+                    email = row[key]
+                    break
+            
+            if email and '@' in email:
+                name = row.get('Bedrijfsnaam', row.get('Company', row.get('Name', row.get('Naam', ''))))
+                emails.append({
+                    "email": email.strip(),
+                    "name": name.strip() if name else ""
+                })
+        
+        if not emails:
+            raise HTTPException(status_code=400, detail="Geen geldige email adressen gevonden in CSV")
+        
+        # Save file to uploads folder with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"Upload_{timestamp}_{file.filename}"
+        filepath = ROOT_DIR / "uploads" / safe_filename
+        
+        with open(filepath, 'wb') as f:
+            f.write(content)
+        
+        logger.info(f"Uploaded marketing CSV: {safe_filename} with {len(emails)} emails")
+        
+        return {
+            "message": f"Succesvol geüpload: {len(emails)} email adressen gevonden",
+            "filename": safe_filename,
+            "count": len(emails),
+            "emails": emails
+        }
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Kan bestand niet lezen. Zorg voor UTF-8 encoding.")
+    except Exception as e:
+        logger.error(f"Error uploading CSV: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout bij uploaden: {str(e)}")
+
+@api_router.get("/admin/available-flyers")
+async def get_available_flyers(user: dict = Depends(require_admin)):
+    """Get list of available PDF flyers for email attachments"""
+    import glob
+    upload_dir = ROOT_DIR / "uploads"
+    pdf_files = glob.glob(str(upload_dir / "*.pdf"))
+    
+    flyers = []
+    for filepath in pdf_files:
+        filename = os.path.basename(filepath)
+        size_kb = os.path.getsize(filepath) / 1024
+        flyers.append({
+            "filename": filename,
+            "size_kb": round(size_kb, 1),
+            "url": f"/api/uploads/{filename}"
+        })
+    
+    return flyers
+
 @api_router.get("/admin/marketing-lists")
 async def get_marketing_lists(user: dict = Depends(require_admin)):
     """Get available marketing CSV files"""
