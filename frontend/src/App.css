@@ -75,8 +75,11 @@
 }
 
 .sidebar-footer {
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
     border-top: 1px solid #27272A;
+    flex-shrink: 0;
+    max-height: 40vh;
+    overflow-y: auto;
 }
 
 .main-content {
