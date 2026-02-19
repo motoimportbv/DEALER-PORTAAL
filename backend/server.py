@@ -1273,11 +1273,15 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
     
-    # Get all approved dealers
-    dealers = await db.users.find({"role": "dealer", "is_approved": True}, {"_id": 0}).to_list(1000)
+    # Get Dutch dealers only (not foreign dealers) for notifications
+    dutch_dealers = await db.users.find({
+        "role": "dealer", 
+        "is_approved": True,
+        "is_foreign_dealer": {"$ne": True}
+    }, {"_id": 0}).to_list(1000)
     
-    if dealers:
-        # Create in-app notifications (batch insert for efficiency)
+    if dutch_dealers:
+        # Create in-app notifications only for Dutch dealers
         notifications = [
             Notification(
                 user_id=dealer["id"],
@@ -1286,19 +1290,15 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
                 message=f"{motorcycle.brand} {motorcycle.model} ({motorcycle.year}) - Koop Nu voor €{motorcycle.price:,.0f}",
                 motorcycle_id=motorcycle.id
             ).model_dump()
-            for dealer in dealers
+            for dealer in dutch_dealers
         ]
         await db.notifications.insert_many(notifications)
         
-        # Send email notifications to all approved dealers
-        asyncio.create_task(notify_dealers_new_motorcycle_email(motorcycle, dealers))
+        # Send email notifications only to Dutch dealers (not foreign)
+        asyncio.create_task(notify_dealers_new_motorcycle_email(motorcycle, dutch_dealers))
         
-        # Send push notifications to all dealers with detailed motor info
-        asyncio.create_task(send_push_to_all_dealers(
-            title=f"🏍️ {motorcycle.brand} {motorcycle.model}",
-            body=f"Jaar: {motorcycle.year} | Prijs: €{motorcycle.price:,.0f} | {motorcycle.condition.title() if motorcycle.condition else 'Goed'}",
-            url=f"/motorcycle/{motorcycle.id}"
-        ))
+        # Log notification sent
+        logger.info(f"Notified {len(dutch_dealers)} Dutch dealers about new motorcycle {motorcycle.brand} {motorcycle.model}")
     
     return motorcycle
 
