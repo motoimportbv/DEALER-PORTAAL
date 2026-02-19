@@ -7,17 +7,24 @@ import { Mail, Send, FileText, Check, X, Loader2, Upload, Paperclip, Info, File,
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
-// E-mail sjablonen in 4 talen - Kort & Zakelijk B2B
+// E-mail sjablonen in 4 talen - Kort & Zakelijk B2B met vertrouwen
 const EMAIL_TEMPLATES = {
   de: {
     flag: '🇩🇪',
     name: 'Duits (Deutschland)',
-    subject: 'Verkaufen Sie Ihre Motorräder an Händler in den Benelux - Moto Import B.V.',
+    subject: 'Partnerschaf mit Moto Import - Verkaufen Sie direkt an Benelux-Händler',
     message: `Sehr geehrte Damen und Herren,
 
-Stellen Sie Ihre Motorräder mit Einkaufspreisen auf unsere Plattform. Ihre Motorräder werden Motorradhändlern in den Benelux-Ländern präsentiert.
+Wir sind Moto Import B.V. aus den Niederlanden – ein zuverlässiger Partner für Motorradhändler in der gesamten Benelux-Region.
 
-Sie erhalten automatisch eine E-Mail, wenn Ihr Motorrad verkauft wurde.
+Unser Angebot ist einfach:
+→ Sie stellen Ihre Motorräder mit Einkaufspreisen auf unsere Plattform
+→ Wir präsentieren sie unserem Netzwerk von professionellen Motorradhändlern
+→ Sie erhalten automatisch eine E-Mail, sobald Ihr Motorrad verkauft ist
+
+Schnell, transparent und ohne versteckte Kosten.
+
+Interesse? Antworten Sie einfach auf diese E-Mail – wir helfen Ihnen gerne weiter.
 
 Mit freundlichen Grüßen,
 
@@ -28,12 +35,19 @@ Moto Import B.V.
   fr: {
     flag: '🇫🇷',
     name: 'Frans (France)',
-    subject: 'Vendez vos motos aux revendeurs du Benelux - Moto Import B.V.',
+    subject: 'Partenariat avec Moto Import - Vendez directement aux revendeurs du Benelux',
     message: `Madame, Monsieur,
 
-Mettez vos motos sur notre plateforme avec vos prix d'achat. Vos motos seront présentées aux professionnels de la moto dans le Benelux.
+Nous sommes Moto Import B.V. des Pays-Bas – un partenaire fiable pour les professionnels de la moto dans tout le Benelux.
 
-Vous recevrez automatiquement un e-mail lorsque votre moto sera vendue.
+Notre proposition est simple :
+→ Vous placez vos motos sur notre plateforme avec vos prix d'achat
+→ Nous les présentons à notre réseau de revendeurs professionnels
+→ Vous recevez automatiquement un e-mail dès que votre moto est vendue
+
+Rapide, transparent et sans frais cachés.
+
+Intéressé ? Répondez simplement à cet e-mail – nous serons ravis de vous accompagner.
 
 Cordialement,
 
@@ -44,12 +58,19 @@ Moto Import B.V.
   it: {
     flag: '🇮🇹',
     name: 'Italiaans (Italia)',
-    subject: 'Vendete le vostre moto ai rivenditori del Benelux - Moto Import B.V.',
+    subject: 'Partnership con Moto Import - Vendete direttamente ai rivenditori del Benelux',
     message: `Gentile Signore/Signora,
 
-Inserite le vostre moto sulla nostra piattaforma con i vostri prezzi di acquisto. Le vostre moto saranno presentate ai professionisti del settore moto nel Benelux.
+Siamo Moto Import B.V. dai Paesi Bassi – un partner affidabile per i professionisti delle moto in tutto il Benelux.
 
-Riceverete automaticamente un'e-mail quando la vostra moto sarà venduta.
+La nostra proposta è semplice:
+→ Inserite le vostre moto sulla nostra piattaforma con i vostri prezzi di acquisto
+→ Le presentiamo alla nostra rete di rivenditori professionali
+→ Ricevete automaticamente un'e-mail quando la vostra moto viene venduta
+
+Veloce, trasparente e senza costi nascosti.
+
+Interessati? Rispondete semplicemente a questa e-mail – saremo lieti di assistervi.
 
 Cordiali saluti,
 
@@ -60,12 +81,19 @@ Moto Import B.V.
   nl: {
     flag: '🇳🇱',
     name: 'Nederlands',
-    subject: 'Verkoop uw motoren aan dealers in de Benelux - Moto Import B.V.',
+    subject: 'Samenwerking met Moto Import - Verkoop direct aan Benelux dealers',
     message: `Geachte heer/mevrouw,
 
-Zet uw motoren op ons platform met de inkoopprijzen. Uw motoren worden gepresenteerd aan motorzaken in de Benelux.
+Wij zijn Moto Import B.V. – een betrouwbare partner voor motorzaken in de Benelux.
 
-U krijgt automatisch een e-mail als uw motorfiets verkocht is.
+Ons aanbod is eenvoudig:
+→ U plaatst uw motoren op ons platform met uw inkoopprijzen
+→ Wij presenteren ze aan ons netwerk van professionele motordealers
+→ U ontvangt automatisch een e-mail zodra uw motor verkocht is
+
+Snel, transparant en zonder verborgen kosten.
+
+Interesse? Reageer gerust op deze e-mail – wij helpen u graag verder.
 
 Met vriendelijke groet,
 
