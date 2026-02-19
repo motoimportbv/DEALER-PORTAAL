@@ -410,4 +410,4 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## URLs
 - **Foreign Dealer Registration**: `/register/supplier` (or `?lang=de|it|fr|nl`)
-- **Preview**: https://moto-import-dealer-1.preview.emergentagent.com
+- **Preview**: https://moto-wholesale.preview.emergentagent.com
