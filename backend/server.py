@@ -5029,24 +5029,49 @@ async def get_available_flyers(user: dict = Depends(require_admin)):
 
 @api_router.get("/admin/marketing-lists")
 async def get_marketing_lists(user: dict = Depends(require_admin)):
-    """Get available marketing CSV files"""
+    """Get available marketing CSV files (both pre-made and uploaded)"""
     import glob
     upload_dir = ROOT_DIR / "uploads"
-    csv_files = glob.glob(str(upload_dir / "Motorzaken_*.csv"))
+    
+    # Get both Motorzaken_*.csv and Upload_*.csv files
+    csv_patterns = [
+        str(upload_dir / "Motorzaken_*.csv"),
+        str(upload_dir / "Upload_*.csv")
+    ]
+    
+    all_csv_files = []
+    for pattern in csv_patterns:
+        all_csv_files.extend(glob.glob(pattern))
     
     lists = []
-    for filepath in csv_files:
+    for filepath in all_csv_files:
         filename = os.path.basename(filepath)
         # Count lines (excluding header)
-        with open(filepath, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            count = len([l for l in lines[1:] if l.strip()])
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                count = len([l for l in lines[1:] if l.strip()])
+        except:
+            count = 0
+        
+        # Determine display name
+        if filename.startswith("Motorzaken_"):
+            display_name = filename.replace('Motorzaken_', '').replace('.csv', '')
+        elif filename.startswith("Upload_"):
+            display_name = "📤 " + filename.replace('Upload_', '').replace('.csv', '').split('_', 2)[-1] if '_' in filename else filename
+        else:
+            display_name = filename.replace('.csv', '')
         
         lists.append({
             "filename": filename,
+            "display_name": display_name,
             "count": count,
-            "url": f"/api/uploads/{filename}"
+            "url": f"/api/uploads/{filename}",
+            "is_uploaded": filename.startswith("Upload_")
         })
+    
+    # Sort: pre-made lists first, then uploaded
+    lists.sort(key=lambda x: (x["is_uploaded"], x["filename"]))
     
     return lists
 
