@@ -19,7 +19,8 @@ import {
   Bell,
   UserPlus,
   KeyRound,
-  TrendingUp
+  TrendingUp,
+  Mail
 } from 'lucide-react';
 
 const Sidebar = () => {
