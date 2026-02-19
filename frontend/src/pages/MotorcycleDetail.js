@@ -379,15 +379,18 @@ const MotorcycleDetail = () => {
                   <p className="font-barlow text-4xl font-bold">
                     {formatPrice(motorcycle.price)}
                   </p>
-                  {motorcycle.original_currency === 'CHF' && motorcycle.original_price && (
+                  {motorcycle.original_currency === 'CHF' && (
                     <div className="mt-2 pt-2 border-t border-zinc-700">
-                      <p className="text-sm text-zinc-400">
-                        CHF {motorcycle.original_price.toLocaleString('de-CH')}
-                      </p>
                       {motorcycle.price_updated_live && (
-                        <p className="text-xs text-green-400 flex items-center gap-1 mt-1">
+                        <p className="text-xs text-green-400 flex items-center gap-1">
                           <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                          Live wisselkoers
+                          Live CHF wisselkoers
+                        </p>
+                      )}
+                      {motorcycle.price_override_active && (
+                        <p className="text-xs text-blue-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                          Vaste prijs
                         </p>
                       )}
                     </div>
