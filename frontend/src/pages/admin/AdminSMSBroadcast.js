@@ -151,41 +151,28 @@ export default function AdminSMSBroadcast() {
           </div>
         </div>
 
-        {/* SMS Status & Twilio Warning */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {smsStatus && (
-            <Card className={smsStatus.configured ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-              <CardContent className="py-4">
-                <div className="flex items-center gap-3">
-                  {smsStatus.configured ? (
-                    <>
-                      <Check className="h-5 w-5 text-green-600" />
-                      <span className="text-green-800">
-                        SMS actief • {allDealers.length} dealers met telefoon
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <X className="h-5 w-5 text-red-600" />
-                      <span className="text-red-800">SMS niet geconfigureerd</span>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
-          <Card className="border-amber-200 bg-amber-50">
+        {/* SMS Status */}
+        {smsStatus && (
+          <Card className={smsStatus.configured ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-amber-600" />
-                <span className="text-amber-800 text-sm">
-                  ⚠️ Twilio Trial: Alleen geverifieerde nummers ontvangen SMS
-                </span>
+                {smsStatus.configured ? (
+                  <>
+                    <Check className="h-5 w-5 text-green-600" />
+                    <span className="text-green-800">
+                      SMS actief • {allDealers.length} dealers met telefoon
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <X className="h-5 w-5 text-red-600" />
+                    <span className="text-red-800">SMS niet geconfigureerd</span>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Dealer Selectie */}
