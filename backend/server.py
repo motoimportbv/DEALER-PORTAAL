@@ -531,6 +531,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        
+        # Update last_active timestamp for activity tracking (non-blocking)
+        asyncio.create_task(
+            db.users.update_one(
+                {"id": user["id"]},
+                {"$set": {"last_active": datetime.now(timezone.utc).isoformat()}}
+            )
+        )
+        
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
