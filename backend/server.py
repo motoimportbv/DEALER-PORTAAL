@@ -9,6 +9,7 @@ import logging
 import asyncio
 import smtplib
 import shutil
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
