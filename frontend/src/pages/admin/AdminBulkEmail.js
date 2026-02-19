@@ -177,6 +177,19 @@ export default function AdminBulkEmail() {
   const [uploadingPDF, setUploadingPDF] = useState(false);
   const [selectedFlyer, setSelectedFlyer] = useState('');
   const [includeAboutUs, setIncludeAboutUs] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+
+  const applyTemplate = (langCode) => {
+    if (langCode && EMAIL_TEMPLATES[langCode]) {
+      const template = EMAIL_TEMPLATES[langCode];
+      setSubject(template.subject);
+      setMessage(template.message);
+      setSelectedLanguage(langCode);
+      toast.success(`${template.flag} ${template.name} sjabloon geladen`);
+    } else {
+      setSelectedLanguage('');
+    }
+  };
 
   useEffect(() => {
     fetchLists();
