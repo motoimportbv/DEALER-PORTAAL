@@ -8,15 +8,17 @@ const NotificationBlockedModal = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   
   // Detect browser type
-  const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+  const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent) && !/SamsungBrowser/.test(navigator.userAgent);
   const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
   const isFirefox = /Firefox/.test(navigator.userAgent);
   const isEdge = /Edg/.test(navigator.userAgent);
+  const isSamsungBrowser = /SamsungBrowser/.test(navigator.userAgent);
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isAndroid = /Android/i.test(navigator.userAgent);
 
   const getBrowserName = () => {
+    if (isSamsungBrowser) return 'Samsung Internet';
     if (isChrome) return 'Chrome';
     if (isSafari) return 'Safari';
     if (isFirefox) return 'Firefox';
