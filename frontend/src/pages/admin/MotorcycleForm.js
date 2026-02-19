@@ -247,7 +247,10 @@ const MotorcycleForm = () => {
       };
 
       if (isEditing) {
-        await axios.put(`${API}/motorcycles/${id}`, payload);
+        const token = localStorage.getItem('token');
+        await axios.put(`${API}/motorcycles/${id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Motor bijgewerkt');
         navigate('/admin/motorcycles');
       } else {
