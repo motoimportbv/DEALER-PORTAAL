@@ -577,7 +577,8 @@ const MotorcycleDetail = () => {
               </div>
             </div>
 
-            {/* Voucher Input */}
+            {/* Voucher Input - Only for Dutch dealers, not for foreign dealers */}
+            {!user?.is_foreign_dealer && (
             <div className="p-4 border rounded-lg bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-red-600" />
@@ -624,6 +625,7 @@ const MotorcycleDetail = () => {
                 </p>
               )}
             </div>
+            )}
 
             {/* Delivery Option */}
             <div className="p-4 border rounded-lg">
