@@ -277,7 +277,14 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {topDealers.slice(0, 5).map((dealer, index) => (
+                  {topDealers.slice(0, 5).map((dealer, index) => {
+                    // Check if dealer was active in last 5 minutes
+                    const lastActive = dealer.last_active ? new Date(dealer.last_active) : null;
+                    const now = new Date();
+                    const isOnline = lastActive && (now - lastActive) < 5 * 60 * 1000; // 5 minutes
+                    const isRecent = lastActive && (now - lastActive) < 60 * 60 * 1000; // 1 hour
+                    
+                    return (
                     <tr key={dealer.id} data-testid={`top-dealer-row-${dealer.id}`}>
                       <td>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
@@ -290,9 +297,19 @@ const AdminDashboard = () => {
                         </div>
                       </td>
                       <td>
-                        <div>
-                          <p className="font-semibold text-zinc-900">{dealer.company_name}</p>
-                          <p className="text-sm text-zinc-500">{dealer.email}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            {isOnline && (
+                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" title="Nu online"></span>
+                            )}
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${isOnline ? 'bg-green-500' : isRecent ? 'bg-blue-500' : 'bg-zinc-400'}`}>
+                              {dealer.company_name?.charAt(0) || '?'}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-zinc-900">{dealer.company_name}</p>
+                            <p className="text-sm text-zinc-500">{dealer.email}</p>
+                          </div>
                         </div>
                       </td>
                       <td>
@@ -301,19 +318,42 @@ const AdminDashboard = () => {
                         </span>
                         <span className="text-zinc-500 text-sm ml-1">{t('dealer.times')}</span>
                       </td>
-                      <td className="text-zinc-500">
-                        {dealer.last_login 
-                          ? new Date(dealer.last_login).toLocaleDateString('nl-NL', {
-                              day: 'numeric',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : t('dealer.neverLoggedIn')
-                        }
+                      <td>
+                        <div className="flex flex-col">
+                          {isOnline ? (
+                            <span className="text-green-600 font-medium flex items-center gap-1">
+                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              Nu online
+                            </span>
+                          ) : lastActive ? (
+                            <>
+                              <span className={`font-medium ${isRecent ? 'text-blue-600' : 'text-zinc-600'}`}>
+                                {new Date(dealer.last_active).toLocaleDateString('nl-NL', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                              {isRecent && <span className="text-xs text-blue-500">Recent actief</span>}
+                            </>
+                          ) : dealer.last_login ? (
+                            <span className="text-zinc-500">
+                              {new Date(dealer.last_login).toLocaleDateString('nl-NL', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400">{t('dealer.neverLoggedIn')}</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}
