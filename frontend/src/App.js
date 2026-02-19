@@ -178,6 +178,7 @@ function App() {
             <Route path="/admin/create-admin" element={<AdminCreateAdmin />} />
             <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/admin/exchange-rate" element={<AdminExchangeRate />} />
+            <Route path="/admin/bulk-email" element={<AdminBulkEmail />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
