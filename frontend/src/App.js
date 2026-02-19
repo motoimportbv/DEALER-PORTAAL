@@ -180,6 +180,7 @@ function App() {
             <Route path="/admin/exchange-rate" element={<AdminExchangeRate />} />
             <Route path="/admin/bulk-email" element={<AdminBulkEmail />} />
             <Route path="/admin/whatsapp" element={<AdminWhatsAppBroadcast />} />
+            <Route path="/admin/sms" element={<AdminSMSBroadcast />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
