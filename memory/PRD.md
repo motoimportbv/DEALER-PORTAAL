@@ -20,6 +20,31 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 19 February 2025 (Part 3 - Cleanup & UX Verbeteringen)
+
+#### ✅ Push Notification Backend Volledig Verwijderd
+- **Verwijderd uit server.py**:
+  - `pywebpush` import
+  - VAPID config en keys
+  - `get_vapid_private_key()` functie
+  - Alle `/push/*` endpoints (subscribe, unsubscribe, test, etc.)
+  - `send_push_notification_to_user()` en `send_push_to_all_dealers()` functies
+  - Push notification calls bij nieuwe motoren en biedingen
+- **Resultaat**: ~500 regels code verwijderd, backend is nu schoner
+
+#### ✅ Dealer Beheer Gesplitst in NL en Buitenlandse Dealers
+- **Nieuwe tabs**:
+  - "Wachtend op goedkeuring" (bestaand)
+  - "🇳🇱 Nederlandse Dealers (X)"
+  - "🌍 Buitenlandse Dealers (X)"
+  - "Alle (X)"
+- **Filter logica**: `is_foreign_dealer` boolean bepaalt in welke tab een dealer verschijnt
+- **Header**: Toont nu "X NL Dealers • X Buitenlandse Dealers"
+
+#### ✅ Dashboard Scrollbaar Gemaakt
+- **CSS wijziging**: `overflow-y: auto` toegevoegd aan `.main-content` en `.content-body`
+- **Resultaat**: Lange lijsten zijn nu scrollbaar zonder pagina-overflow
+
 ### Session - 19 February 2025 (Part 2 - Push Notificaties Verwijderd)
 
 #### ✅ Push Notification Systeem Verwijderd
