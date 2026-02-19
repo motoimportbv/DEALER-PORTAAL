@@ -627,48 +627,40 @@ const MotorcycleForm = () => {
               Motor Toegevoegd!
             </DialogTitle>
             <DialogDescription>
-              Wilt u deze motor delen met alle dealers via WhatsApp?
+              Wilt u alle dealers direct informeren via WhatsApp?
             </DialogDescription>
           </DialogHeader>
 
-          {whatsappData && (
-            <div className="space-y-4">
-              <div className="bg-zinc-50 rounded-lg p-4">
-                <p className="text-sm text-zinc-600 mb-2 font-medium">Voorbeeld bericht:</p>
-                <pre className="text-xs bg-white p-3 rounded border whitespace-pre-wrap font-sans">
-                  {whatsappData.message}
-                </pre>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowWhatsAppModal(false);
-                    navigate('/admin/motorcycles');
-                  }}
-                >
-                  Later
-                </Button>
-                <Button
-                  className="flex-1 bg-green-500 hover:bg-green-600"
-                  onClick={() => {
-                    openWhatsApp();
-                    setShowWhatsAppModal(false);
-                    navigate('/admin/motorcycles');
-                  }}
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Deel via WhatsApp
-                </Button>
-              </div>
-
-              <p className="text-xs text-zinc-500 text-center">
-                Tip: Stuur dit naar uw WhatsApp groep met alle dealers
+          <div className="space-y-4">
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+              <p className="text-sm text-green-800">
+                📱 Met één klik opent WhatsApp voor elke dealer met een vooraf ingevuld bericht over deze motor.
               </p>
             </div>
-          )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowWhatsAppModal(false);
+                  navigate('/admin/motorcycles');
+                }}
+              >
+                Later
+              </Button>
+              <Button
+                className="flex-1 bg-green-500 hover:bg-green-600"
+                onClick={() => {
+                  setShowWhatsAppModal(false);
+                  navigate(`/admin/whatsapp?motorcycle=${newMotorcycleId}`);
+                }}
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Deel via WhatsApp
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>
