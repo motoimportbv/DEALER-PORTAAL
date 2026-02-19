@@ -225,6 +225,12 @@ const DealerManagement = () => {
           <div className="flex items-center gap-3 text-sm">
             <Phone className="w-4 h-4 text-zinc-400" />
             <span className="text-zinc-600">{dealer.phone || '-'}</span>
+            <button 
+              onClick={() => openPhoneDialog(dealer)}
+              className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {dealer.phone ? 'wijzig' : '+ toevoegen'}
+            </button>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <MapPin className="w-4 h-4 text-zinc-400" />
