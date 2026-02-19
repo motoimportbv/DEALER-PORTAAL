@@ -61,33 +61,6 @@ if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
     except Exception as e:
         logging.warning(f"Failed to initialize Twilio client: {e}")
 
-# VAPID Config for Push Notifications
-# These keys were regenerated - all dealers must re-enable push after deployment
-VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', 'BFnMQGl2p4hAHKvBWH0NSeg41S2cdUUPtPqAB33I0z_DyCa5cgNOq2VCx7YEiAipUTT_VMVduRKioGSS8lSM3zw')
-VAPID_PRIVATE_KEY_DER = os.environ.get('VAPID_PRIVATE_KEY_DER', 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgLMmdyirEX63PQZoO+AYDr2bp/ITeXbR7B3TlZb0J2PWhRANCAARZzEBpdqeIQByrwVh9DUnoONUtnHVFD7T6gAd9yNM/w8gmuXIDTqtlQse2BIgIqVE0/1TFXbkSoqBkkvJUjN88')
-VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:Motoimportbv@gmail.com')
-
-def get_vapid_private_key():
-    """Get VAPID private key in raw base64 format for pywebpush"""
-    import base64
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.backends import default_backend
-    
-    try:
-        # Decode PKCS8 DER format
-        der_bytes = base64.b64decode(VAPID_PRIVATE_KEY_DER)
-        private_key = serialization.load_der_private_key(der_bytes, password=None, backend=default_backend())
-        
-        # Extract raw 32-byte private key value (required by py_vapid/pywebpush)
-        private_numbers = private_key.private_numbers()
-        raw_private_bytes = private_numbers.private_value.to_bytes(32, 'big')
-        
-        # Return as URL-safe base64 without padding (VAPID format)
-        return base64.urlsafe_b64encode(raw_private_bytes).decode('utf-8').rstrip('=')
-    except Exception as e:
-        logger.error(f"Failed to load VAPID private key: {e}")
-        return None
-
 # ============ EXCHANGE RATE CONFIG ============
 import httpx
 
