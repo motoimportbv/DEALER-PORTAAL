@@ -254,7 +254,10 @@ const MotorcycleForm = () => {
         toast.success('Motor bijgewerkt');
         navigate('/admin/motorcycles');
       } else {
-        const response = await axios.post(`${API}/motorcycles`, payload);
+        const token = localStorage.getItem('token');
+        const response = await axios.post(`${API}/motorcycles`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Motor toegevoegd');
         
         // Show WhatsApp share option for new motorcycles
