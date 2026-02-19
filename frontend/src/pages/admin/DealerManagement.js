@@ -128,6 +128,31 @@ const DealerManagement = () => {
     }
   };
 
+  const openPhoneDialog = (dealer) => {
+    setEditingDealer(dealer);
+    setPhoneInput(dealer.phone || '');
+    setPhoneDialogOpen(true);
+  };
+
+  const updateDealerPhone = async () => {
+    if (!editingDealer) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/dealers/${editingDealer.id}/phone`, 
+        { phone: phoneInput },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      toast.success(`Telefoonnummer bijgewerkt voor ${editingDealer.company_name}`);
+      setPhoneDialogOpen(false);
+      setPhoneInput('');
+      setEditingDealer(null);
+      fetchDealers();
+    } catch (error) {
+      toast.error('Kon telefoonnummer niet bijwerken');
+    }
+  };
+
   const removeForeignDealer = async (dealerId) => {
     try {
       await axios.post(`${API}/dealers/${dealerId}/unset-foreign`);
