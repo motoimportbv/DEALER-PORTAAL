@@ -210,28 +210,26 @@ export default function AdminBulkEmail() {
             {/* CSV Upload */}
             <div>
               <p className="text-sm font-medium text-gray-700 mb-2">📋 CSV met Email Adressen</p>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 transition-colors cursor-pointer" onClick={() => document.getElementById('csv-upload').click()}>
                 <input
                   type="file"
-                  accept=".csv"
+                  accept=".csv,text/csv,application/vnd.ms-excel"
                   onChange={handleCSVUpload}
                   className="hidden"
                   id="csv-upload"
                   disabled={uploadingCSV}
                 />
-                <label htmlFor="csv-upload" className="cursor-pointer">
-                  {uploadingCSV ? (
-                    <div className="flex items-center justify-center gap-2 text-gray-500">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Uploaden...
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2">
-                      <Upload className="h-5 w-5 text-gray-400" />
-                      <span className="text-sm text-gray-600">Upload CSV</span>
-                    </div>
-                  )}
-                </label>
+                {uploadingCSV ? (
+                  <div className="flex items-center justify-center gap-2 text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploaden...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <Upload className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">Klik hier om CSV te uploaden</span>
+                  </div>
+                )}
               </div>
             </div>
 
