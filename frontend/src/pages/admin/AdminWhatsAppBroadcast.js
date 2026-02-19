@@ -90,7 +90,7 @@ export default function AdminWhatsAppBroadcast() {
           <MessageCircle className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-2xl font-bold">WhatsApp Broadcast</h1>
-            <p className="text-gray-500">Stuur motor updates naar alle dealers via WhatsApp</p>
+            <p className="text-gray-500">Stuur motor updates naar 🇳🇱 Nederlandse dealers via WhatsApp</p>
           </div>
         </div>
 
