@@ -1712,6 +1712,58 @@ async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
         except Exception as e:
             logger.error(f"Failed to send new motorcycle email to {dealer.get('email')}: {e}")
 
+async def notify_dealers_new_motorcycle_sms(motorcycle, dealers):
+    """Send SMS notifications to Dutch dealers with phone numbers about a new motorcycle"""
+    if not twilio_client:
+        logger.warning("Twilio client not configured - skipping SMS notifications")
+        return
+    
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    
+    # Short SMS message
+    message = f"""🏍️ NIEUWE MOTOR bij Moto Import!
+
+{motorcycle.brand} {motorcycle.model} ({motorcycle.year})
+💰 €{motorcycle.price:,.0f}
+📍 {motorcycle.mileage:,} km
+
+Bekijk: {base_url}/motorcycle/{motorcycle.id}"""
+
+    sent_count = 0
+    for dealer in dealers:
+        phone = dealer.get("phone", "")
+        if not phone:
+            continue
+        
+        # Skip foreign dealers
+        if dealer.get("is_foreign_dealer", False):
+            continue
+            
+        # Format phone number
+        phone = phone.replace(" ", "").replace("-", "")
+        if not phone.startswith("+"):
+            if phone.startswith("0"):
+                phone = "+31" + phone[1:]  # Dutch number
+            elif phone.startswith("31"):
+                phone = "+" + phone
+            else:
+                phone = "+" + phone
+        
+        try:
+            twilio_client.messages.create(
+                body=message,
+                from_=TWILIO_PHONE_NUMBER,
+                to=phone
+            )
+            sent_count += 1
+            logger.info(f"SMS sent to {dealer.get('company_name')} ({phone})")
+            # Delay between SMS to avoid rate limiting
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.error(f"Failed to send SMS to {phone}: {e}")
+    
+    logger.info(f"Sent {sent_count} SMS notifications for new motorcycle {motorcycle.brand} {motorcycle.model}")
+
 @api_router.get("/motorcycles")
 async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
