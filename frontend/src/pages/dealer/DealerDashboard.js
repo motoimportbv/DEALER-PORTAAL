@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import TermsModal from '../../components/TermsModal';
+import EmailNotificationBanner from '../../components/EmailNotificationBanner';
 import { toast } from 'sonner';
 import { 
   Bike, 
