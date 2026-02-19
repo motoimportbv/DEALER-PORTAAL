@@ -2385,13 +2385,6 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
             """
             try:
                 await send_email(foreign_dealer["email"], subject, foreign_html)
-                # Also send push notification (without price)
-                await send_push_notification_to_user(
-                    foreign_dealer_id,
-                    "🎉 Motorcycle Sold!",
-                    f"Your {motorcycle['brand']} {motorcycle['model']} has been sold!",
-                    "/foreign-dealer"
-                )
             except Exception as e:
                 logger.error(f"Failed to notify foreign dealer: {str(e)}")
     
