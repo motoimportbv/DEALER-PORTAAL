@@ -1655,6 +1655,25 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
             for dealer in dealers
         ]
         await db.notifications.insert_many(notifications)
+        
+        # Create a simple motorcycle object for notifications
+        class MotorcycleNotify:
+            def __init__(self, moto, new_price):
+                self.id = moto.get('id')
+                self.brand = moto.get('brand', '')
+                self.model = moto.get('model', '')
+                self.year = moto.get('year', '')
+                self.price = new_price
+                self.mileage = moto.get('mileage', 0)
+                self.color = moto.get('color', '')
+        
+        moto_notify = MotorcycleNotify(motorcycle, price)
+        
+        # Send email notifications to Dutch dealers
+        asyncio.create_task(notify_dealers_new_motorcycle_email(moto_notify, dealers))
+        
+        # Send SMS notifications to Dutch dealers with phone numbers
+        asyncio.create_task(notify_dealers_new_motorcycle_sms(moto_notify, dealers))
     
     return {"message": "Motor geactiveerd", "price": price}
 
