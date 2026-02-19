@@ -58,6 +58,9 @@ const DealerManagement = () => {
   const [foreignDialogOpen, setForeignDialogOpen] = useState(false);
   const [selectedDealer, setSelectedDealer] = useState(null);
   const [countryInput, setCountryInput] = useState('');
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [editingDealer, setEditingDealer] = useState(null);
 
   useEffect(() => {
     fetchDealers();
