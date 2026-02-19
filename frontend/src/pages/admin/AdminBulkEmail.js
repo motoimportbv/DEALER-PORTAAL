@@ -492,6 +492,36 @@ export default function AdminBulkEmail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Taal Sjabloon Selector */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+              <label className="block text-sm font-semibold mb-3 flex items-center gap-2 text-blue-800">
+                <Globe className="h-5 w-5" />
+                Kies Taal Sjabloon (1-klik invullen)
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Object.entries(EMAIL_TEMPLATES).map(([code, template]) => (
+                  <button
+                    key={code}
+                    onClick={() => applyTemplate(code)}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all font-medium ${
+                      selectedLanguage === code
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                        : 'bg-white hover:bg-blue-50 border-gray-200 hover:border-blue-400 text-gray-700'
+                    }`}
+                  >
+                    <span className="text-xl">{template.flag}</span>
+                    <span className="text-sm hidden sm:inline">{code.toUpperCase()}</span>
+                  </button>
+                ))}
+              </div>
+              {selectedLanguage && (
+                <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                  <Check className="h-3 w-3" />
+                  {EMAIL_TEMPLATES[selectedLanguage].name} sjabloon actief
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Onderwerp</label>
               <input
