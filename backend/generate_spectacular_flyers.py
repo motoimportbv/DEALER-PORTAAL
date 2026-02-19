@@ -40,9 +40,10 @@ FLYER_CONTENT = {
         "cta": "START VANDAAG",
         "contact_title": "NEEM CONTACT OP",
         "website": "www.motoimportbv.nl",
-        "email": "info@motoimportbv.nl",
+        "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar",
+        "address1": "Horsterhoekweg 11",
+        "address2": "7433 SV Schalkhaar, Nederland",
         "footer": "Nederland"
     },
     "DE": {
@@ -61,9 +62,10 @@ FLYER_CONTENT = {
         "cta": "HEUTE STARTEN",
         "contact_title": "KONTAKTIEREN SIE UNS",
         "website": "www.motoimportbv.nl",
-        "email": "info@motoimportbv.nl",
+        "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar",
+        "address1": "Horsterhoekweg 11",
+        "address2": "7433 SV Schalkhaar, Niederlande",
         "footer": "Niederlande"
     },
     "FR": {
@@ -82,9 +84,10 @@ FLYER_CONTENT = {
         "cta": "COMMENCEZ AUJOURD'HUI",
         "contact_title": "CONTACTEZ-NOUS",
         "website": "www.motoimportbv.nl",
-        "email": "info@motoimportbv.nl",
+        "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar",
+        "address1": "Horsterhoekweg 11",
+        "address2": "7433 SV Schalkhaar, Pays-Bas",
         "footer": "Pays-Bas"
     },
     "IT": {
@@ -103,9 +106,10 @@ FLYER_CONTENT = {
         "cta": "INIZIA OGGI",
         "contact_title": "CONTATTACI",
         "website": "www.motoimportbv.nl",
-        "email": "info@motoimportbv.nl",
+        "email": "motoimportbv@gmail.com",
         "phone": "+31 6 81792660",
-        "address": "Horsterhoekweg 11, 7433 SV Schalkhaar",
+        "address1": "Horsterhoekweg 11",
+        "address2": "7433 SV Schalkhaar, Paesi Bassi",
         "footer": "Paesi Bassi"
     }
 }
