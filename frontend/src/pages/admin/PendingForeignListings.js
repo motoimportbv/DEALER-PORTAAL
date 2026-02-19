@@ -82,9 +82,14 @@ const PendingForeignListings = () => {
       });
       
       toast.success(t('adminPending.activated', { brand: selectedMotorcycle.brand, model: selectedMotorcycle.model }));
+      
+      // Store the activated motorcycle ID and show WhatsApp modal
+      setActivatedMotorcycleId(selectedMotorcycle.id);
       setActivateDialogOpen(false);
       setSelectedMotorcycle(null);
       setNewPrice('');
+      setShowWhatsAppModal(true);
+      
       fetchPendingListings();
     } catch (error) {
       console.error('Error activating:', error);
