@@ -297,14 +297,14 @@ const PendingForeignListings = () => {
                 Motor Geactiveerd!
               </DialogTitle>
               <DialogDescription>
-                Wilt u alle dealers direct informeren via WhatsApp?
+                Wilt u alle 🇳🇱 Nederlandse dealers direct informeren via WhatsApp?
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                 <p className="text-sm text-green-800">
-                  📱 Met één klik opent WhatsApp voor elke dealer met een vooraf ingevuld bericht over deze motor.
+                  📱 Met één klik opent WhatsApp voor elke Nederlandse dealer met een vooraf ingevuld bericht over deze motor.
                 </p>
               </div>
 
