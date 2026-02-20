@@ -35,6 +35,7 @@ import AdminExchangeRate from "./pages/admin/AdminExchangeRate";
 import AdminBulkEmail from "./pages/admin/AdminBulkEmail";
 import AdminWhatsAppBroadcast from "./pages/admin/AdminWhatsAppBroadcast";
 import AdminSMSBroadcast from "./pages/admin/AdminSMSBroadcast";
+import AdminPriceProposals from "./pages/admin/AdminPriceProposals";
 import DealerDashboard from "./pages/dealer/DealerDashboard";
 import DealerOrders from "./pages/dealer/DealerOrders";
 import DealerArchivedOrders from "./pages/dealer/DealerArchivedOrders";
