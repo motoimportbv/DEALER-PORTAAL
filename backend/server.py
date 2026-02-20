@@ -5319,6 +5319,64 @@ async def startup_db_client():
             category = PartCategory(name=cat["name"], description=cat["description"])
             await db.part_categories.insert_one(category.model_dump())
             logger.info(f"Created default category: {cat['name']}")
+    
+    # Start background task for auto-deleting expired motorcycles
+    asyncio.create_task(auto_delete_expired_motorcycles())
+
+async def auto_delete_expired_motorcycles():
+    """Background task to delete motorcycles that have expired (not sold within time limit)"""
+    while True:
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            
+            # Find motorcycles that should be auto-deleted
+            expired_motorcycles = await db.motorcycles.find({
+                "auto_delete_at": {"$lte": now},
+                "is_available": True  # Only delete if not sold
+            }, {"_id": 0, "id": 1, "brand": 1, "model": 1, "year": 1}).to_list(100)
+            
+            for moto in expired_motorcycles:
+                # Delete the motorcycle
+                await db.motorcycles.delete_one({"id": moto["id"]})
+                
+                # Also delete related notifications
+                await db.notifications.delete_many({"motorcycle_id": moto["id"]})
+                
+                # Delete any pending bids
+                await db.bids.delete_many({"motorcycle_id": moto["id"]})
+                
+                # Delete any pending price proposals
+                await db.price_proposals.delete_many({"motorcycle_id": moto["id"]})
+                
+                logger.info(f"Auto-deleted expired motorcycle: {moto['brand']} {moto['model']} ({moto['year']})")
+            
+            if expired_motorcycles:
+                # Notify admin about deleted motorcycles
+                try:
+                    deleted_list = "<br>".join([f"• {m['brand']} {m['model']} ({m['year']})" for m in expired_motorcycles])
+                    html_content = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background: #18181b; padding: 25px; text-align: center;">
+                            <h1 style="color: white; margin: 0;">⏰ Auto-Verwijdering</h1>
+                        </div>
+                        <div style="padding: 30px; background: #fef3c7; border: 2px solid #f59e0b;">
+                            <p>De volgende {len(expired_motorcycles)} motor(en) zijn automatisch verwijderd omdat ze niet verkocht zijn binnen de gestelde tijd:</p>
+                            <div style="padding: 15px; background: white; border-radius: 8px; margin: 15px 0;">
+                                {deleted_list}
+                            </div>
+                            <p style="color: #666; font-size: 12px;">Dit is een automatisch bericht van het Moto Import systeem.</p>
+                        </div>
+                    </div>
+                    """
+                    await send_email(ADMIN_EMAIL, f"⏰ {len(expired_motorcycles)} motor(en) automatisch verwijderd", html_content)
+                except Exception as e:
+                    logger.error(f"Failed to send auto-delete notification: {e}")
+        
+        except Exception as e:
+            logger.error(f"Error in auto_delete_expired_motorcycles: {e}")
+        
+        # Check every 5 minutes
+        await asyncio.sleep(300)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
