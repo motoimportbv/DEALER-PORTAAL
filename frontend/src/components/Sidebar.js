@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
 import LanguageSelector from './LanguageSelector';
 import ChangePasswordModal from './ChangePasswordModal';
+import axios from 'axios';
 import { 
   Bike, 
   LayoutDashboard, 
@@ -22,8 +23,11 @@ import {
   TrendingUp,
   Mail,
   MessageCircle,
-  MessageSquare
+  MessageSquare,
+  BadgeEuro
 } from 'lucide-react';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Sidebar = () => {
   const { t } = useTranslation();
