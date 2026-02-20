@@ -240,6 +240,7 @@ class Motorcycle(BaseModel):
     license_plate: Optional[str] = None  # Kenteken (set by admin)
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str = ""
+    auto_delete_at: Optional[str] = None  # Auto-delete time if not sold
     # Dealer marketplace fields
     is_dealer_listing: bool = False  # True if listed by dealer
     seller_company: Optional[str] = None  # Company name of selling dealer
