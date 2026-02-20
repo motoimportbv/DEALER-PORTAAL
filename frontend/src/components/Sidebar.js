@@ -31,10 +31,31 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Sidebar = () => {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingProposals, setPendingProposals] = useState(0);
+
+  // Fetch pending proposals count for admin
+  useEffect(() => {
+    if (user?.role === 'admin' && token) {
+      const fetchProposalsCount = async () => {
+        try {
+          const response = await axios.get(`${API}/price-proposals/count`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setPendingProposals(response.data.count);
+        } catch (error) {
+          console.error('Failed to fetch proposals count');
+        }
+      };
+      fetchProposalsCount();
+      // Refresh every 60 seconds
+      const interval = setInterval(fetchProposalsCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user, token]);
 
   const handleLogout = () => {
     logout();
