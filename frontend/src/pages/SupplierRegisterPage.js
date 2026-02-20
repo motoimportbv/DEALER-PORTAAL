@@ -90,15 +90,15 @@ const SupplierRegisterPage = () => {
   };
 
   const countries = [
-    { value: 'switzerland', label: t('dealers.switzerland') },
-    { value: 'germany', label: t('dealers.germany') },
-    { value: 'italy', label: t('dealers.italy') },
-    { value: 'france', label: t('dealers.france') },
-    { value: 'belgium', label: t('dealers.belgium') },
-    { value: 'austria', label: t('dealers.austria') },
-    { value: 'spain', label: t('dealers.spain') },
-    { value: 'poland', label: t('dealers.poland') },
-    { value: 'other', label: t('dealers.other') }
+    { value: 'switzerland', label: '🇨🇭 Schweiz / Zwitserland' },
+    { value: 'germany', label: '🇩🇪 Deutschland / Duitsland' },
+    { value: 'italy', label: '🇮🇹 Italia / Italië' },
+    { value: 'france', label: '🇫🇷 France / Frankrijk' },
+    { value: 'belgium', label: '🇧🇪 Belgique / België' },
+    { value: 'austria', label: '🇦🇹 Österreich / Oostenrijk' },
+    { value: 'spain', label: '🇪🇸 España / Spanje' },
+    { value: 'poland', label: '🇵🇱 Polska / Polen' },
+    { value: 'other', label: '🌍 Other / Anders' }
   ];
 
   return (
