@@ -425,6 +425,33 @@ const LoginPage = () => {
           </Link>
         </p>
 
+        {/* Buitenlandse Leverancier Registratie - Opvallend */}
+        <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl">🇨🇭🇩🇪🇮🇹🇫🇷</span>
+            </div>
+            <h3 className="font-barlow font-bold text-amber-800 uppercase tracking-wide mb-1">
+              Buitenlandse Leverancier?
+            </h3>
+            <p className="text-sm text-amber-700 mb-3">
+              Verkoop uw motoren aan Nederlandse dealers
+            </p>
+            <Link 
+              to="/register/supplier"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors shadow-lg hover:shadow-xl"
+              data-testid="supplier-register-link"
+            >
+              <Globe className="w-5 h-5" />
+              Registreer als Leverancier
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <p className="text-xs text-amber-600 mt-2">
+              Schweiz • Deutschland • Italia • France • België
+            </p>
+          </div>
+        </div>
+
         {/* Handleidingen sectie */}
         <div className="mt-8 pt-6 border-t border-zinc-200">
           <p className="text-center text-sm font-semibold text-zinc-600 mb-4">
