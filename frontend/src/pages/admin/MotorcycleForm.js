@@ -482,6 +482,45 @@ const MotorcycleForm = () => {
                 </CardContent>
               </Card>
 
+              {/* Auto-Delete Settings */}
+              {!isEditing && (
+                <Card className="border-amber-200 bg-amber-50">
+                  <CardHeader>
+                    <CardTitle className="font-barlow text-lg font-bold uppercase tracking-tight flex items-center gap-2">
+                      ⏰ Auto-Verwijdering
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <p className="text-sm text-amber-800">
+                        Motor wordt automatisch verwijderd als deze niet verkocht is binnen:
+                      </p>
+                      <Select
+                        value={String(formData.auto_delete_hours)}
+                        onValueChange={(value) => handleChange('auto_delete_hours', parseInt(value))}
+                      >
+                        <SelectTrigger data-testid="auto-delete-select">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">❌ Niet automatisch verwijderen</SelectItem>
+                          <SelectItem value="12">12 uur</SelectItem>
+                          <SelectItem value="24">24 uur (standaard)</SelectItem>
+                          <SelectItem value="48">48 uur</SelectItem>
+                          <SelectItem value="72">72 uur (3 dagen)</SelectItem>
+                          <SelectItem value="168">1 week</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {formData.auto_delete_hours > 0 && (
+                        <p className="text-xs text-amber-600">
+                          ⚠️ Na {formData.auto_delete_hours} uur wordt deze motor automatisch verwijderd als hij niet verkocht is.
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Images */}
               <Card>
                 <CardHeader>
