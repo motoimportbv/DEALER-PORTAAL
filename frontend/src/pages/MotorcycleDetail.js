@@ -399,10 +399,10 @@ const MotorcycleDetail = () => {
                   )}
                 </div>
 
-                {user?.role === 'dealer' && motorcycle.is_available && (
+                {(user?.role === 'dealer' || user?.role === 'admin') && motorcycle.is_available && (
                   <div className="space-y-3">
                     {/* Warning for dealer listings - buyer fee */}
-                    {motorcycle.is_dealer_listing && (
+                    {motorcycle.is_dealer_listing && user?.role === 'dealer' && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-amber-800 text-sm font-medium flex items-center gap-2">
                           <Tag className="w-4 h-4" />
@@ -430,7 +430,7 @@ const MotorcycleDetail = () => {
                     </Button>
                     
                     {/* Price Proposal Button - Only for logged in dealers (not foreign) */}
-                    {user && !user.is_foreign_dealer && (
+                    {user && user.role === 'dealer' && !user.is_foreign_dealer && (
                       <Button 
                         variant="outline"
                         className="w-full h-12 border-2 border-amber-500 text-amber-700 hover:bg-amber-50 font-barlow uppercase tracking-wide mt-2"
