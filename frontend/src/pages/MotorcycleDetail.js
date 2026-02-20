@@ -742,6 +742,109 @@ const MotorcycleDetail = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Price Proposal Dialog */}
+      <Dialog open={priceProposalOpen} onOpenChange={setPriceProposalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
+              💰 Prijsvoorstel Indienen
+            </DialogTitle>
+            <DialogDescription>
+              {motorcycle.brand} {motorcycle.model} ({motorcycle.year})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {/* Current Price */}
+            <div className="p-4 bg-zinc-100 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-600">Huidige vraagprijs:</span>
+                <span className="text-xl font-bold text-zinc-900">{formatPrice(motorcycle.price)}</span>
+              </div>
+            </div>
+
+            {/* Proposed Price Input */}
+            <div className="space-y-2">
+              <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                Uw voorstel (€)
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">€</span>
+                <Input
+                  type="number"
+                  placeholder="Bijv. 7500"
+                  value={proposedPrice}
+                  onChange={(e) => setProposedPrice(e.target.value)}
+                  className="pl-8 h-12 text-lg font-bold"
+                  data-testid="proposal-price-input"
+                />
+              </div>
+              {proposedPrice && motorcycle.price && (
+                <p className={`text-sm ${Number(proposedPrice) < motorcycle.price ? 'text-amber-600' : 'text-green-600'}`}>
+                  {Number(proposedPrice) < motorcycle.price 
+                    ? `€${(motorcycle.price - Number(proposedPrice)).toLocaleString('nl-NL')} onder vraagprijs`
+                    : Number(proposedPrice) === motorcycle.price 
+                      ? 'Gelijk aan vraagprijs'
+                      : `€${(Number(proposedPrice) - motorcycle.price).toLocaleString('nl-NL')} boven vraagprijs`
+                  }
+                </p>
+              )}
+            </div>
+
+            {/* Reason (Optional) */}
+            <div className="space-y-2">
+              <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                Toelichting (optioneel)
+              </Label>
+              <Textarea
+                placeholder="Bijv. klant heeft beperkt budget, interesse in meerdere motors..."
+                value={proposalReason}
+                onChange={(e) => setProposalReason(e.target.value)}
+                rows={3}
+                data-testid="proposal-reason-input"
+              />
+            </div>
+
+            {/* Info */}
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
+              <p>📧 Uw voorstel wordt direct naar de admin gestuurd. U ontvangt een reactie per e-mail.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPriceProposalOpen(false)}>
+              Annuleren
+            </Button>
+            <Button 
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              onClick={async () => {
+                if (!proposedPrice || Number(proposedPrice) <= 0) {
+                  toast.error('Vul een geldig bedrag in');
+                  return;
+                }
+                setSubmittingProposal(true);
+                try {
+                  await axios.post(`${API}/price-proposals`, {
+                    motorcycle_id: motorcycle.id,
+                    proposed_price: Number(proposedPrice),
+                    reason: proposalReason
+                  });
+                  toast.success('Prijsvoorstel verstuurd!');
+                  setPriceProposalOpen(false);
+                } catch (error) {
+                  toast.error('Fout bij versturen voorstel');
+                } finally {
+                  setSubmittingProposal(false);
+                }
+              }}
+              disabled={submittingProposal || !proposedPrice}
+              data-testid="submit-proposal-btn"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {submittingProposal ? 'Versturen...' : 'Verstuur Voorstel'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Image Lightbox */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-5xl w-full p-0 bg-black/95 border-none">
