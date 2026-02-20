@@ -371,6 +371,29 @@ class Voucher(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     used_at: Optional[str] = None
 
+# ============ PRICE PROPOSAL MODELS ============
+
+class PriceProposalCreate(BaseModel):
+    motorcycle_id: str
+    proposed_price: float
+    reason: str = ""
+
+class PriceProposal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    motorcycle_id: str
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    original_price: float
+    proposed_price: float
+    reason: str = ""
+    status: str = "pending"  # pending, accepted, rejected, counter
+    admin_response: str = ""
+    counter_price: Optional[float] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
+
 # ============ PARTS SHOP MODELS ============
 
 # Predefined motorcycle brands for parts compatibility
