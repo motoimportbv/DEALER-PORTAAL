@@ -441,6 +441,7 @@
     "rejectConfirm": "Weet u zeker dat u {{company}} wilt afwijzen? Het account wordt permanent verwijderd.",
     "deleteTitle": "Dealer Verwijderen?",
     "deleteConfirm": "Weet u zeker dat u {{company}} wilt verwijderen? Dit kan niet ongedaan worden gemaakt. Alle gegevens van deze dealer worden permanent verwijderd.",
+    "switzerland": "Zwitserland",
     "germany": "Duitsland",
     "italy": "Italië",
     "france": "Frankrijk",
