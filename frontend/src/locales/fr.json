@@ -417,6 +417,7 @@
     "rejectConfirm": "Êtes-vous sûr de vouloir rejeter {{company}} ? Le compte sera définitivement supprimé.",
     "deleteTitle": "Supprimer le revendeur ?",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{company}} ? Cette action est irréversible. Toutes les données de ce revendeur seront définitivement supprimées.",
+    "switzerland": "Suisse",
     "germany": "Allemagne",
     "italy": "Italie",
     "france": "France",
