@@ -20,40 +20,44 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
-### Session - 19 February 2025 (Part 5 - Finale)
+### Session - 20 February 2025 (Part 6 - Nieuwe Features)
+
+#### ✅ Prijsvoorstel Systeem
+- Dealers kunnen prijsvoorstellen indienen bij elke motor
+- Admin ontvangt e-mail notificatie bij nieuw voorstel
+- Admin pagina `/admin/price-proposals` met filter tabs
+- Accepteren / Afwijzen / Tegenbod mogelijkheden
+- Dealer ontvangt e-mail bij reactie
+- Badge in sidebar toont aantal openstaande voorstellen
+
+#### ✅ Auto-Verwijdering van Motoren
+- Optie bij motor toevoegen: auto-delete na X uur als niet verkocht
+- Opties: 12u, 24u (standaard), 48u, 72u, 1 week, of uitgeschakeld
+- Background task controleert elke 5 minuten
+- Admin ontvangt e-mail met overzicht verwijderde motoren
+
+#### ✅ Extra E-mail Ontvanger
+- daniel2002jay@hotmail.com ontvangt nu alle admin notificaties
+- Verkochte motoren, nieuwe dealers, prijsvoorstellen, etc.
+
+#### ✅ E-mail Links Gefixed
+- Alle e-mail links verwijzen nu naar www.motoimportbv.nl
+- Niet meer naar preview URL
+
+### Session - 19 February 2025 (Part 5)
 
 #### ✅ Real-time Dealer Online Status
-- Admin kan nu precies zien wanneer een dealer online is
-- **"Nu online"** (groene indicator) - actief in laatste 5 minuten
-- **"Recent actief"** (blauwe indicator) - actief in laatste uur
+- Admin ziet "Nu online" / "Recent actief" per dealer
 - `last_active` wordt bijgewerkt bij elke API call
-- Bestanden: `server.py`, `AdminDashboard.js`
 
-#### ✅ Voucher Beveiliging voor Buitenlandse Dealers
-- Buitenlandse leveranciers kunnen GEEN vouchers krijgen of gebruiken
-- 3 lagen beveiliging: backend (goedkeuring), API check, frontend hide
-- Bestanden: `server.py`, `MotorcycleDetail.js`
+#### ✅ Voucher Beveiliging
+- Buitenlandse dealers kunnen geen vouchers gebruiken
 
-#### ✅ Notificaties Verwijderen Fix
-- Route conflict opgelost (`/notifications/all` vs `/{id}`)
-- Dealers kunnen nu notificaties permanent verwijderen
-- Verwijderde notificaties blijven weg na opnieuw inloggen
+#### ✅ Notificaties Verwijderen
+- Dealers kunnen meldingen permanent verwijderen
 
 #### ✅ Admin Menu Scrollbaar
-- Sidebar menu is nu scrollbaar bij kleinere schermen
-- Compactere footer voor meer ruimte
-- Bestanden: `App.css`, `Sidebar.js`
-
-### Session - 19 February 2025 (Part 4 - E-mail Sjablonen)
-
-#### ✅ Taal Sjabloon Selector voor Marketing E-mails
-- 1-klik taal selector: 🇩🇪 DE, 🇫🇷 FR, 🇮🇹 IT, 🇳🇱 NL
-- Korte B2B teksten met vertrouwenwekkende toon
-- Bestand: `AdminBulkEmail.js`
-
-#### ✅ CSV Dealer Contacten
-- `Dealer_Contacten.csv` aangemaakt met contacten
-- Download via: `/api/uploads/Dealer_Contacten.csv`
+- Sidebar scrollt nu correct bij kleinere schermen
 
 #### ✅ Push Notification Backend Volledig Verwijderd
 - **Verwijderd uit server.py**:
