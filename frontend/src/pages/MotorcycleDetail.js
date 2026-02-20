@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
+import { Textarea } from '../components/ui/textarea';
 import { 
   ArrowLeft, 
   Bike, 
@@ -26,7 +27,9 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ZoomIn
+  ZoomIn,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
