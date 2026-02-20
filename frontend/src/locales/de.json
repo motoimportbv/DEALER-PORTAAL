@@ -417,6 +417,7 @@
     "rejectConfirm": "Sind Sie sicher, dass Sie {{company}} ablehnen möchten? Das Konto wird dauerhaft gelöscht.",
     "deleteTitle": "Händler löschen?",
     "deleteConfirm": "Sind Sie sicher, dass Sie {{company}} löschen möchten? Dies kann nicht rückgängig gemacht werden. Alle Daten dieses Händlers werden dauerhaft gelöscht.",
+    "switzerland": "Schweiz",
     "germany": "Deutschland",
     "italy": "Italien",
     "france": "Frankreich",
