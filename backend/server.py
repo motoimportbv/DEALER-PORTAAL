@@ -1265,6 +1265,11 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     # Bereken auction end time (3 uur vanaf nu)
     auction_end = datetime.now(timezone.utc) + timedelta(hours=data.auction_duration_hours)
     
+    # Bereken auto-delete time (standaard 24 uur)
+    auto_delete_at = None
+    if data.auto_delete_hours > 0:
+        auto_delete_at = (datetime.now(timezone.utc) + timedelta(hours=data.auto_delete_hours)).isoformat()
+    
     motorcycle = Motorcycle(
         brand=data.brand,
         model=data.model,
@@ -1277,7 +1282,8 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
         condition=data.condition,
         images=data.images,
         auction_end_time=auction_end.isoformat(),
-        created_by=user["id"]
+        created_by=user["id"],
+        auto_delete_at=auto_delete_at
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
