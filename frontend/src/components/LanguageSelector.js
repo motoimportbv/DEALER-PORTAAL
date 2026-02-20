@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Globe } from 'lucide-react';
+import { setLanguageManually } from '../hooks/useGeoLanguage';
 
 const languages = [
   { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
@@ -16,7 +17,8 @@ const LanguageSelector = ({ variant = 'dark' }) => {
 
   const handleLanguageChange = (langCode) => {
     i18n.changeLanguage(langCode);
-    localStorage.setItem('i18nextLng', langCode);
+    // Mark as manually selected so auto-detection won't override
+    setLanguageManually(langCode);
     setIsOpen(false);
   };
 
