@@ -182,6 +182,7 @@ function App() {
             <Route path="/admin/bulk-email" element={<AdminBulkEmail />} />
             <Route path="/admin/whatsapp" element={<AdminWhatsAppBroadcast />} />
             <Route path="/admin/sms" element={<AdminSMSBroadcast />} />
+            <Route path="/admin/price-proposals" element={<AdminPriceProposals />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
