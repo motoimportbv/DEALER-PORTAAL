@@ -428,6 +428,23 @@ const MotorcycleDetail = () => {
                       <ShoppingCart className="w-5 h-5 mr-2" />
                       {user ? t('motorcycle.orderNow') : 'Inloggen om te bestellen'}
                     </Button>
+                    
+                    {/* Price Proposal Button - Only for logged in dealers (not foreign) */}
+                    {user && !user.is_foreign_dealer && (
+                      <Button 
+                        variant="outline"
+                        className="w-full h-12 border-2 border-amber-500 text-amber-700 hover:bg-amber-50 font-barlow uppercase tracking-wide mt-2"
+                        onClick={() => {
+                          setProposedPrice('');
+                          setProposalReason('');
+                          setPriceProposalOpen(true);
+                        }}
+                        data-testid="price-proposal-btn"
+                      >
+                        <MessageSquare className="w-5 h-5 mr-2" />
+                        💰 Prijsvoorstel
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
