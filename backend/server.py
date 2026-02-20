@@ -3338,6 +3338,228 @@ async def buy_now(motorcycle_id: str, user: dict = Depends(get_current_user)):
     
     return {"message": "Motor gekocht!", "order": order.model_dump()}
 
+# ============ PRICE PROPOSAL ENDPOINTS ============
+
+@api_router.post("/price-proposals")
+async def create_price_proposal(data: PriceProposalCreate, user: dict = Depends(get_current_user)):
+    """Dealer submits a price proposal for a motorcycle"""
+    # Foreign dealers cannot submit proposals
+    if user.get("is_foreign_dealer"):
+        raise HTTPException(status_code=403, detail="Buitenlandse leveranciers kunnen geen prijsvoorstellen indienen")
+    
+    # Get motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if not motorcycle.get("is_available", True):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+    
+    # Check if dealer already has a pending proposal for this motorcycle
+    existing = await db.price_proposals.find_one({
+        "motorcycle_id": data.motorcycle_id,
+        "dealer_id": user["id"],
+        "status": "pending"
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="U heeft al een openstaand voorstel voor deze motor")
+    
+    # Create proposal
+    proposal = PriceProposal(
+        motorcycle_id=data.motorcycle_id,
+        dealer_id=user["id"],
+        dealer_company=user.get("company_name", "Onbekend"),
+        dealer_email=user.get("email", ""),
+        original_price=motorcycle.get("price", 0),
+        proposed_price=data.proposed_price,
+        reason=data.reason
+    )
+    
+    await db.price_proposals.insert_one(proposal.model_dump())
+    
+    # Send email notification to admin
+    try:
+        difference = motorcycle.get("price", 0) - data.proposed_price
+        diff_text = f"€{abs(difference):,.0f}".replace(",", ".") + (" onder" if difference > 0 else " boven" if difference < 0 else " gelijk aan")
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #18181b; padding: 25px; text-align: center;">
+                <h1 style="color: white; margin: 0;">💰 NIEUW PRIJSVOORSTEL</h1>
+            </div>
+            
+            <div style="padding: 30px; background: #fffbeb; border: 2px solid #f59e0b;">
+                <h2 style="color: #b45309; margin-top: 0;">Prijsvoorstel ontvangen</h2>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #666;">Dealer:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{user.get('company_name', 'Onbekend')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #666;">E-mail:</td>
+                        <td style="padding: 8px 0;">{user.get('email', '')}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #666;">Motor:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{motorcycle.get('brand', '')} {motorcycle.get('model', '')} ({motorcycle.get('year', '')})</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #666;">Vraagprijs:</td>
+                        <td style="padding: 8px 0;">€{motorcycle.get('price', 0):,.0f}</td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 12px 8px; color: #666; font-weight: bold;">Voorstel:</td>
+                        <td style="padding: 12px 8px; font-weight: bold; font-size: 1.2em; color: #b45309;">€{data.proposed_price:,.0f}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #666;">Verschil:</td>
+                        <td style="padding: 8px 0; color: {'#dc2626' if difference > 0 else '#16a34a'};">{diff_text} vraagprijs</td>
+                    </tr>
+                </table>
+                
+                {f'<div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;"><strong>Toelichting dealer:</strong><br><em>"{data.reason}"</em></div>' if data.reason else ''}
+                
+                <div style="margin-top: 25px; text-align: center;">
+                    <a href="https://www.motoimportbv.nl/admin/price-proposals" 
+                       style="display: inline-block; background: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                        Bekijk Voorstellen
+                    </a>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
+                <p>Moto Import B.V. | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            </div>
+        </div>
+        """
+        
+        await send_email(
+            to_email=os.environ.get("GMAIL_EMAIL", "motoimportbv@gmail.com"),
+            subject=f"💰 Prijsvoorstel: {motorcycle.get('brand', '')} {motorcycle.get('model', '')} - €{data.proposed_price:,.0f}",
+            html_content=html_content
+        )
+    except Exception as e:
+        logger.error(f"Failed to send price proposal email: {e}")
+    
+    return {"message": "Prijsvoorstel verstuurd!", "proposal_id": proposal.id}
+
+
+@api_router.get("/price-proposals")
+async def get_price_proposals(user: dict = Depends(require_admin)):
+    """Admin gets all price proposals"""
+    proposals = await db.price_proposals.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Enrich with motorcycle info
+    for proposal in proposals:
+        motorcycle = await db.motorcycles.find_one({"id": proposal.get("motorcycle_id")}, {"_id": 0, "brand": 1, "model": 1, "year": 1, "images": 1, "price": 1, "is_available": 1})
+        proposal["motorcycle"] = motorcycle
+    
+    return proposals
+
+
+@api_router.get("/price-proposals/my")
+async def get_my_price_proposals(user: dict = Depends(get_current_user)):
+    """Dealer gets their own price proposals"""
+    proposals = await db.price_proposals.find({"dealer_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    
+    # Enrich with motorcycle info
+    for proposal in proposals:
+        motorcycle = await db.motorcycles.find_one({"id": proposal.get("motorcycle_id")}, {"_id": 0, "brand": 1, "model": 1, "year": 1, "images": 1})
+        proposal["motorcycle"] = motorcycle
+    
+    return proposals
+
+
+@api_router.put("/price-proposals/{proposal_id}/respond")
+async def respond_to_proposal(proposal_id: str, response: str, admin_message: str = "", counter_price: float = None, user: dict = Depends(require_admin)):
+    """Admin responds to a price proposal (accept/reject/counter)"""
+    proposal = await db.price_proposals.find_one({"id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Voorstel niet gevonden")
+    
+    if proposal.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="Dit voorstel is al beantwoord")
+    
+    if response not in ["accepted", "rejected", "counter"]:
+        raise HTTPException(status_code=400, detail="Ongeldige reactie")
+    
+    # Update proposal
+    update_data = {
+        "status": response,
+        "admin_response": admin_message,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    if response == "counter" and counter_price:
+        update_data["counter_price"] = counter_price
+    
+    await db.price_proposals.update_one({"id": proposal_id}, {"$set": update_data})
+    
+    # Get motorcycle info for email
+    motorcycle = await db.motorcycles.find_one({"id": proposal.get("motorcycle_id")}, {"_id": 0})
+    
+    # Send email to dealer
+    try:
+        if response == "accepted":
+            status_text = "✅ GEACCEPTEERD"
+            status_color = "#16a34a"
+            message = f"Goed nieuws! Uw prijsvoorstel van €{proposal.get('proposed_price'):,.0f} voor de {motorcycle.get('brand', '')} {motorcycle.get('model', '')} is geaccepteerd."
+        elif response == "rejected":
+            status_text = "❌ AFGEWEZEN"
+            status_color = "#dc2626"
+            message = f"Helaas is uw prijsvoorstel van €{proposal.get('proposed_price'):,.0f} voor de {motorcycle.get('brand', '')} {motorcycle.get('model', '')} afgewezen."
+        else:  # counter
+            status_text = "💬 TEGENBOD"
+            status_color = "#f59e0b"
+            message = f"Wij hebben een tegenbod voor uw voorstel op de {motorcycle.get('brand', '')} {motorcycle.get('model', '')}: €{counter_price:,.0f}"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #18181b; padding: 25px; text-align: center;">
+                <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+            </div>
+            
+            <div style="padding: 30px; background: #f9fafb;">
+                <div style="background: {status_color}; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">{status_text}</h2>
+                </div>
+                
+                <p>{message}</p>
+                
+                {f'<div style="padding: 15px; background: white; border-left: 4px solid {status_color}; margin: 20px 0;"><strong>Bericht van Moto Import:</strong><br>{admin_message}</div>' if admin_message else ''}
+                
+                <div style="margin-top: 25px; text-align: center;">
+                    <a href="https://www.motoimportbv.nl/dealer" 
+                       style="display: inline-block; background: #dc2626; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                        Ga naar Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
+                <p>Moto Import B.V. | +31 6 81792660 | motoimportbv@gmail.com</p>
+            </div>
+        </div>
+        """
+        
+        await send_email(
+            to_email=proposal.get("dealer_email"),
+            subject=f"{status_text} - Uw prijsvoorstel voor {motorcycle.get('brand', '')} {motorcycle.get('model', '')}",
+            html_content=html_content
+        )
+    except Exception as e:
+        logger.error(f"Failed to send proposal response email: {e}")
+    
+    return {"message": f"Voorstel {response}"}
+
+
+@api_router.get("/price-proposals/count")
+async def get_pending_proposals_count(user: dict = Depends(require_admin)):
+    """Get count of pending proposals for admin badge"""
+    count = await db.price_proposals.count_documents({"status": "pending"})
+    return {"count": count}
+
+
 # ============ DEALER MANAGEMENT ENDPOINTS ============
 
 @api_router.get("/dealers")
