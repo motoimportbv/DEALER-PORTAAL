@@ -3511,16 +3511,182 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
     
     await db.price_proposals.update_one({"id": proposal_id}, {"$set": update_data})
     
-    # Get motorcycle info for email
+    # Get motorcycle info
     motorcycle = await db.motorcycles.find_one({"id": proposal.get("motorcycle_id")}, {"_id": 0})
     
-    # Send email to dealer
+    # Get dealer info
+    dealer = await db.users.find_one({"id": proposal.get("dealer_id")}, {"_id": 0, "password_hash": 0})
+    
+    # If ACCEPTED: Create order, mark as sold, send pakbon
+    if response == "accepted":
+        # Create order with the accepted price
+        order_id = str(uuid.uuid4())
+        order = {
+            "id": order_id,
+            "motorcycle_id": proposal.get("motorcycle_id"),
+            "dealer_id": proposal.get("dealer_id"),
+            "price": proposal.get("proposed_price"),  # Use the accepted proposal price
+            "original_price": proposal.get("original_price"),
+            "discount_amount": proposal.get("original_price", 0) - proposal.get("proposed_price", 0),
+            "status": "confirmed",
+            "payment_status": "pending",
+            "needs_delivery": False,
+            "delivery_cost": 0,
+            "order_type": "price_proposal",
+            "proposal_id": proposal_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.orders.insert_one(order)
+        
+        # Mark motorcycle as SOLD
+        await db.motorcycles.update_one(
+            {"id": proposal.get("motorcycle_id")},
+            {"$set": {"is_available": False}}
+        )
+        
+        # Generate pakbon HTML
+        pakbon_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+            <div style="background: #18181b; padding: 25px; text-align: center; margin-bottom: 20px;">
+                <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT B.V.</h1>
+                <p style="color: #a1a1aa; margin: 5px 0 0 0;">Pakbon / Delivery Note</p>
+            </div>
+            
+            <div style="background: #f0fdf4; border: 2px solid #22c55e; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #16a34a; margin: 0 0 10px 0;">✅ BESTELLING BEVESTIGD</h2>
+                <p style="margin: 0; color: #166534;">Uw prijsvoorstel is geaccepteerd!</p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 12px; font-weight: bold; width: 40%;">Order Nummer:</td>
+                    <td style="padding: 12px;">{order_id[:8].upper()}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: bold;">Datum:</td>
+                    <td style="padding: 12px;">{datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')}</td>
+                </tr>
+            </table>
+            
+            <h3 style="border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;">📋 Klantgegevens</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: bold; width: 40%;">Bedrijf:</td>
+                    <td style="padding: 8px 12px;">{dealer.get('company_name', 'N/A')}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 8px 12px; font-weight: bold;">E-mail:</td>
+                    <td style="padding: 8px 12px;">{dealer.get('email', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: bold;">Telefoon:</td>
+                    <td style="padding: 8px 12px;">{dealer.get('phone', 'N/A')}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 8px 12px; font-weight: bold;">Adres:</td>
+                    <td style="padding: 8px 12px;">{dealer.get('address', 'N/A')}</td>
+                </tr>
+            </table>
+            
+            <h3 style="border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;">🏍️ Motorgegevens</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: bold; width: 40%;">Merk / Model:</td>
+                    <td style="padding: 8px 12px; font-weight: bold; font-size: 1.1em;">{motorcycle.get('brand', '')} {motorcycle.get('model', '')}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 8px 12px; font-weight: bold;">Bouwjaar:</td>
+                    <td style="padding: 8px 12px;">{motorcycle.get('year', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: bold;">Kilometerstand:</td>
+                    <td style="padding: 8px 12px;">{motorcycle.get('mileage', 0):,} km</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 8px 12px; font-weight: bold;">Kleur:</td>
+                    <td style="padding: 8px 12px;">{motorcycle.get('color', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 12px; font-weight: bold;">Chassisnummer:</td>
+                    <td style="padding: 8px 12px; font-family: monospace;">{motorcycle.get('chassis_number', 'N/A')}</td>
+                </tr>
+            </table>
+            
+            <h3 style="border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;">💰 Prijsoverzicht</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td style="padding: 8px 12px;">Oorspronkelijke prijs:</td>
+                    <td style="padding: 8px 12px; text-align: right; text-decoration: line-through; color: #666;">€{proposal.get('original_price', 0):,.2f}</td>
+                </tr>
+                <tr style="background: #fef3c7;">
+                    <td style="padding: 8px 12px; font-weight: bold;">Uw voorstel (geaccepteerd):</td>
+                    <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: #b45309;">-€{proposal.get('original_price', 0) - proposal.get('proposed_price', 0):,.2f}</td>
+                </tr>
+                <tr style="background: #18181b; color: white;">
+                    <td style="padding: 15px 12px; font-weight: bold; font-size: 1.2em;">TOTAAL:</td>
+                    <td style="padding: 15px 12px; text-align: right; font-weight: bold; font-size: 1.3em;">€{proposal.get('proposed_price', 0):,.2f}</td>
+                </tr>
+            </table>
+            
+            {f'<div style="padding: 15px; background: #f0f9ff; border-left: 4px solid #3b82f6; margin-bottom: 20px;"><strong>Bericht van Moto Import:</strong><br>{admin_message}</div>' if admin_message else ''}
+            
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #b45309;">⚠️ Volgende stappen:</h4>
+                <ol style="margin: 0; padding-left: 20px; color: #92400e;">
+                    <li>Neem contact op voor betaling en ophaalafspraak</li>
+                    <li>Breng legitimatie en dit document mee bij ophalen</li>
+                    <li>Controleer de motor bij ontvangst</li>
+                </ol>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; background: #f4f4f5; border-radius: 8px;">
+                <p style="margin: 0 0 10px 0; font-weight: bold;">Moto Import B.V.</p>
+                <p style="margin: 0; color: #666;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                <p style="margin: 5px 0; color: #666;">📞 +31 6 81792660 | ✉️ motoimportbv@gmail.com</p>
+                <p style="margin: 5px 0; color: #666;">🌐 www.motoimportbv.nl</p>
+            </div>
+        </div>
+        """
+        
+        # Send pakbon to dealer
+        try:
+            await send_email(
+                to_email=proposal.get("dealer_email"),
+                subject=f"✅ PAKBON - {motorcycle.get('brand', '')} {motorcycle.get('model', '')} - Order #{order_id[:8].upper()}",
+                html_content=pakbon_html
+            )
+        except Exception as e:
+            logger.error(f"Failed to send pakbon: {e}")
+        
+        # Send notification to admin
+        try:
+            admin_html = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #16a34a; padding: 25px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">✅ MOTOR VERKOCHT</h1>
+                </div>
+                <div style="padding: 30px; background: #f0fdf4;">
+                    <h2 style="margin-top: 0;">{motorcycle.get('brand', '')} {motorcycle.get('model', '')} ({motorcycle.get('year', '')})</h2>
+                    <p><strong>Koper:</strong> {dealer.get('company_name', 'N/A')}</p>
+                    <p><strong>Oorspronkelijke prijs:</strong> €{proposal.get('original_price', 0):,.2f}</p>
+                    <p><strong>Verkocht voor:</strong> <span style="color: #16a34a; font-weight: bold; font-size: 1.2em;">€{proposal.get('proposed_price', 0):,.2f}</span></p>
+                    <p><strong>Korting gegeven:</strong> €{proposal.get('original_price', 0) - proposal.get('proposed_price', 0):,.2f}</p>
+                    <p><strong>Order #:</strong> {order_id[:8].upper()}</p>
+                </div>
+            </div>
+            """
+            await send_admin_notification(
+                f"✅ VERKOCHT: {motorcycle.get('brand', '')} {motorcycle.get('model', '')} voor €{proposal.get('proposed_price', 0):,.0f}",
+                admin_html
+            )
+        except Exception as e:
+            logger.error(f"Failed to send admin notification: {e}")
+        
+        return {"message": "Voorstel geaccepteerd! Order aangemaakt en pakbon verstuurd.", "order_id": order_id}
+    
+    # For rejected or counter: just send notification email
     try:
-        if response == "accepted":
-            status_text = "✅ GEACCEPTEERD"
-            status_color = "#16a34a"
-            message = f"Goed nieuws! Uw prijsvoorstel van €{proposal.get('proposed_price'):,.0f} voor de {motorcycle.get('brand', '')} {motorcycle.get('model', '')} is geaccepteerd."
-        elif response == "rejected":
+        if response == "rejected":
             status_text = "❌ AFGEWEZEN"
             status_color = "#dc2626"
             message = f"Helaas is uw prijsvoorstel van €{proposal.get('proposed_price'):,.0f} voor de {motorcycle.get('brand', '')} {motorcycle.get('model', '')} afgewezen."
