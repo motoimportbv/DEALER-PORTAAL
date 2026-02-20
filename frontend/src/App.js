@@ -50,10 +50,13 @@ import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Pakbon from "./pages/Pakbon";
 
-// Helper component to handle service worker navigation
+// Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Auto-detect language based on visitor's country
+  useGeoLanguage();
   
   useEffect(() => {
     // Store navigate function globally for service worker messages
