@@ -417,6 +417,7 @@
     "rejectConfirm": "Sei sicuro di voler rifiutare {{company}}? L'account verrà eliminato permanentemente.",
     "deleteTitle": "Eliminare il rivenditore?",
     "deleteConfirm": "Sei sicuro di voler eliminare {{company}}? Questa azione non può essere annullata. Tutti i dati di questo rivenditore verranno eliminati permanentemente.",
+    "switzerland": "Svizzera",
     "germany": "Germania",
     "italy": "Italia",
     "france": "Francia",
