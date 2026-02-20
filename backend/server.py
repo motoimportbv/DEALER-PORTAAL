@@ -1115,14 +1115,8 @@ async def forgot_password(request: Request, data: PasswordResetRequest):
         "created_at": datetime.now(timezone.utc).isoformat()
     })
     
-    # Get base URL from request origin or fallback to env
-    origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
-    if origin:
-        from urllib.parse import urlparse
-        parsed = urlparse(origin)
-        base_url = f"{parsed.scheme}://{parsed.netloc}"
-    else:
-        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    # Always use production URL for email links
+    base_url = "https://www.motoimportbv.nl"
     
     reset_link = f"{base_url}/reset-password?token={reset_token}"
     
