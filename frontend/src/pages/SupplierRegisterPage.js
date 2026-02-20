@@ -90,6 +90,7 @@ const SupplierRegisterPage = () => {
   };
 
   const countries = [
+    { value: 'switzerland', label: t('dealers.switzerland') },
     { value: 'germany', label: t('dealers.germany') },
     { value: 'italy', label: t('dealers.italy') },
     { value: 'france', label: t('dealers.france') },
