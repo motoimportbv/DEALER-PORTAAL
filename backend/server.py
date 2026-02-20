@@ -610,8 +610,16 @@ async def send_email(to_email: str, subject: str, html_content: str):
         return False
 
 async def send_admin_notification(subject: str, html_content: str):
-    """Send email notification to admin"""
+    """Send email notification to admin and additional recipients"""
+    # Primary admin email
     await send_email(ADMIN_EMAIL, subject, html_content)
+    
+    # Additional recipient for sales notifications
+    additional_sales_email = "daniel2002jay@hotmail.com"
+    try:
+        await send_email(additional_sales_email, subject, html_content)
+    except Exception as e:
+        logger.error(f"Failed to send to additional recipient: {e}")
 
 # ============ EXCHANGE RATE ENDPOINTS ============
 
