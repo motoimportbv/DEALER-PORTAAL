@@ -121,7 +121,8 @@ const MotorcycleForm = () => {
     images: [],
     is_available: true,
     chassis_number: '',
-    license_plate: ''
+    license_plate: '',
+    auto_delete_hours: 24  // Default 24 hours
   });
   const [newImageUrl, setNewImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
