@@ -1761,10 +1761,6 @@ async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
                             BEKIJK MOTOR
                         </a>
                     </div>
-                    
-                    <p style="color: #6b7280; font-size: 14px; text-align: center;">
-                        Wees er snel bij - op is op!
-                    </p>
                 </div>
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
