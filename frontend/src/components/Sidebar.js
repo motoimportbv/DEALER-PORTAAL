@@ -134,7 +134,12 @@ const Sidebar = () => {
             data-testid={`nav-${item.path.split('/').pop()}`}
           >
             <item.icon className="w-5 h-5" />
-            <span>{item.label}</span>
+            <span className="flex-1">{item.label}</span>
+            {item.badge > 0 && (
+              <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {item.badge}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
