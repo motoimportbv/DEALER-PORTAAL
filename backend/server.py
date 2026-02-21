@@ -1956,15 +1956,21 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
         
-        # Real-time price conversion for CHF motorcycles (unless admin has overridden)
-        if m.get("original_currency") == "CHF" and m.get("original_price") and not m.get("price_override"):
-            m["price"] = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
-            m["starting_price"] = round(m["price"] * 0.8, 2)
-            m["exchange_rate"] = chf_eur_rate
-            m["margin_percent"] = margin * 100
-        elif m.get("price_override") and m.get("price_override_amount"):
+        # Check if admin has manually set a price
+        if m.get("price_override") and m.get("price_override_amount"):
             m["price"] = m["price_override_amount"]
             m["price_override_active"] = True
+        elif m.get("original_currency") == "CHF" and m.get("original_price"):
+            live_eur_price = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
+            stored_price = m.get("price", 0)
+            # If stored price differs significantly from live, admin set a custom price
+            if stored_price and abs(stored_price - live_eur_price) > 100:
+                m["price_override_active"] = True
+            else:
+                m["price"] = live_eur_price
+                m["starting_price"] = round(live_eur_price * 0.8, 2)
+                m["exchange_rate"] = chf_eur_rate
+                m["margin_percent"] = margin * 100
         
         result.append(m)
     
