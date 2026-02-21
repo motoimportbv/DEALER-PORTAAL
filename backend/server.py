@@ -1732,14 +1732,21 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
     if not motorcycle.get("is_foreign_listing", False):
         raise HTTPException(status_code=400, detail="Dit is geen buitenlandse dealer motor")
     
+    # Save original supplier price if not already saved
+    original_price = motorcycle.get("original_price") or motorcycle.get("price")
+    
     # Update motorcycle with new price and activate it
+    # Keep original_price for reference (supplier's asking price)
     await db.motorcycles.update_one(
         {"id": motorcycle_id},
         {"$set": {
             "price": price,
             "starting_price": starting_price or price * 0.8,
             "is_available": True,
-            "is_pending_approval": False
+            "is_pending_approval": False,
+            "original_price": original_price,  # Keep supplier's original price
+            "price_override": True if price != original_price else False,
+            "price_override_amount": price if price != original_price else None
         }}
     )
     
