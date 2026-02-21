@@ -45,6 +45,22 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - Auto-login token generatie
 - **Resultaat**: Alle e-mails, SMS'en en WhatsApp berichten gebruiken nu consistent de correcte productie URL
 
+#### ✅ Valuta Keuze (EUR/CHF) bij Motor Toevoegen
+- **Feature**: Admin kan nu kiezen tussen EUR of CHF bij het toevoegen van een motor
+- **Frontend wijzigingen** (`MotorcycleForm.js`):
+  - Nieuwe "Valuta" dropdown met opties: 🇪🇺 EUR (Euro) en 🇨🇭 CHF (Zwitserse Frank)
+  - Live wisselkoers preview wanneer CHF is geselecteerd (groen pulsend balkje)
+  - Prijs label past zich automatisch aan ("Prijs (€)" of "Prijs (CHF)")
+- **Backend wijzigingen** (`server.py`):
+  - `create_motorcycle` endpoint converteert nu automatisch CHF naar EUR
+  - Slaat `original_price` en `original_currency` op in de database
+  - Gebruikt live wisselkoers van exchangerate-api.com
+- **Flow**:
+  1. Admin kiest "CHF" in valuta dropdown
+  2. Voert prijs in CHF in (bijv. 10.000)
+  3. Ziet live preview: "≈ €10.900 EUR (live koers: 1 CHF = 1.0900 EUR)"
+  4. Bij opslaan wordt de EUR prijs automatisch berekend en opgeslagen
+
 ---
 
 ### Session - 20 February 2025 (Part 7 - Bug Fixes)
