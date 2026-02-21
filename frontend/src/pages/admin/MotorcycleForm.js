@@ -122,13 +122,41 @@ const MotorcycleForm = () => {
     is_available: true,
     chassis_number: '',
     license_plate: '',
-    auto_delete_hours: 24  // Default 24 hours
+    auto_delete_hours: 24,  // Default 24 hours
+    currency: 'EUR'  // EUR or CHF
   });
   const [newImageUrl, setNewImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fetching, setFetching] = useState(isEditing);
   const fileInputRef = useRef(null);
+  
+  // CHF/EUR exchange rate
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [eurPreview, setEurPreview] = useState(null);
+  
+  // Fetch exchange rate on mount
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        const response = await axios.get(`${API}/exchange-rate/chf-eur`);
+        setExchangeRate(response.data.rate);
+      } catch (error) {
+        console.error('Could not fetch exchange rate:', error);
+      }
+    };
+    fetchExchangeRate();
+  }, []);
+  
+  // Calculate EUR preview when CHF price changes
+  useEffect(() => {
+    if (formData.currency === 'CHF' && formData.price && exchangeRate) {
+      const eurAmount = parseFloat(formData.price) * exchangeRate;
+      setEurPreview(eurAmount.toFixed(0));
+    } else {
+      setEurPreview(null);
+    }
+  }, [formData.price, formData.currency, exchangeRate]);
 
   useEffect(() => {
     if (isEditing) {
