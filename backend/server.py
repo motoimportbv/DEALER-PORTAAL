@@ -2116,17 +2116,26 @@ async def get_orders(user: dict = Depends(require_approved_dealer)):
             {"_id": 0}
         ).to_list(1000)
     
+    # Filter out orders without required fields and collect motorcycle IDs
+    valid_orders = []
+    motorcycle_ids = set()
+    for order in orders:
+        # Skip orders without required fields
+        if not order.get("id") or not order.get("motorcycle_id") or not order.get("dealer_id"):
+            continue
+        valid_orders.append(order)
+        motorcycle_ids.add(order["motorcycle_id"])
+    
     # Batch fetch motorcycles to avoid N+1 query
-    motorcycle_ids = list(set(order["motorcycle_id"] for order in orders))
     motorcycles_list = await db.motorcycles.find(
-        {"id": {"$in": motorcycle_ids}}, 
+        {"id": {"$in": list(motorcycle_ids)}}, 
         {"_id": 0}
     ).to_list(1000)
     motorcycles_map = {m["id"]: m for m in motorcycles_list}
     
     # Enrich orders with motorcycle data (use snapshot as fallback)
     result = []
-    for order in orders:
+    for order in valid_orders:
         # Try to get live motorcycle data, fallback to snapshot
         motorcycle_data = motorcycles_map.get(order["motorcycle_id"])
         if not motorcycle_data:
