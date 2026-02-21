@@ -3403,11 +3403,13 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
                 </div>
             </div>
             """
-            await send_email(
-                to_email=ADMIN_EMAIL,
-                subject=f"💰 Nieuw bod: €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
-                html_content=email_body
-            )
+            # Send to all admin emails
+            for admin_email in ADMIN_EMAILS:
+                await send_email(
+                    to_email=admin_email,
+                    subject=f"💰 Nieuw bod: €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
+                    html_content=email_body
+                )
     except Exception as e:
         logger.error(f"Error sending bid notification: {e}")
     
