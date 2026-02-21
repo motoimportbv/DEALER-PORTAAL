@@ -45,7 +45,10 @@ const DealerDashboard = () => {
   const brandsWithCount = useMemo(() => {
     const brandCounts = {};
     motorcycles.forEach(m => {
-      brandCounts[m.brand] = (brandCounts[m.brand] || 0) + 1;
+      // Skip empty brands
+      if (m.brand && m.brand.trim()) {
+        brandCounts[m.brand] = (brandCounts[m.brand] || 0) + 1;
+      }
     });
     return Object.entries(brandCounts)
       .map(([brand, count]) => ({ brand, count }))
@@ -60,7 +63,10 @@ const DealerDashboard = () => {
     
     const modelCounts = {};
     relevantMotorcycles.forEach(m => {
-      modelCounts[m.model] = (modelCounts[m.model] || 0) + 1;
+      // Skip empty models
+      if (m.model && m.model.trim()) {
+        modelCounts[m.model] = (modelCounts[m.model] || 0) + 1;
+      }
     });
     return Object.entries(modelCounts)
       .map(([model, count]) => ({ model, count }))
