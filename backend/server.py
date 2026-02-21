@@ -44,7 +44,8 @@ JWT_ALGORITHM = "HS256"
 # Gmail Config
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
 ADMIN_EMAIL_2 = os.environ.get('ADMIN_EMAIL_2', '')  # Second admin email
-ADMIN_EMAILS = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2] if e.strip()]  # List of all admin emails
+ADMIN_EMAIL_3 = os.environ.get('ADMIN_EMAIL_3', '')  # Third admin email
+ADMIN_EMAILS = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3] if e.strip()]  # List of all admin emails
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
