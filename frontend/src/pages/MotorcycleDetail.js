@@ -430,7 +430,22 @@ const MotorcycleDetail = () => {
                   <p className="font-barlow text-4xl font-bold">
                     {formatPrice(motorcycle.price)}
                   </p>
-                  {motorcycle.original_currency === 'CHF' && (
+                  
+                  {/* Show original supplier price for admin */}
+                  {user?.role === 'admin' && motorcycle.original_price && motorcycle.original_price !== motorcycle.price && (
+                    <div className="mt-2 pt-2 border-t border-zinc-700">
+                      <p className="text-xs text-amber-400">
+                        💰 Leveranciersprijs: {motorcycle.original_currency === 'CHF' 
+                          ? `CHF ${motorcycle.original_price.toLocaleString('nl-NL')}` 
+                          : `€${motorcycle.original_price.toLocaleString('nl-NL')}`}
+                      </p>
+                      {motorcycle.price_override_active && (
+                        <p className="text-xs text-blue-400 mt-1">✏️ Prijs handmatig aangepast</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {motorcycle.original_currency === 'CHF' && !motorcycle.price_override_active && (
                     <div className="mt-2 pt-2 border-t border-zinc-700">
                       <p className="text-xs text-green-400 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
