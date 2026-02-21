@@ -5891,6 +5891,63 @@ async def auto_delete_expired_motorcycles():
         # Check every 5 minutes
         await asyncio.sleep(300)
 
+# Test endpoint to send a sample motorcycle email
+@api_router.post("/test/send-motorcycle-email/{motorcycle_id}")
+async def test_send_motorcycle_email(motorcycle_id: str, user: dict = Depends(require_admin)):
+    """Send a test email about a motorcycle to the admin email"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #DC2626; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">🏍️ TEST E-MAIL - NIEUWE MOTOR!</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+            <p>Dit is een <strong>TEST e-mail</strong> om de link te controleren.</p>
+            <p>Motor details:</p>
+            
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                <h2 style="margin: 0 0 10px 0; color: #DC2626;">
+                    {motorcycle.get('brand')} {motorcycle.get('model')}
+                </h2>
+                <p style="color: #6b7280; margin: 5px 0;">Bouwjaar: {motorcycle.get('year')}</p>
+                <p style="color: #6b7280; margin: 5px 0;">Kleur: {motorcycle.get('color')}</p>
+                <p style="color: #6b7280; margin: 5px 0;">Kilometerstand: {motorcycle.get('mileage', 0):,} km</p>
+                <p style="font-size: 28px; font-weight: bold; color: #18181b; margin: 15px 0;">
+                    €{motorcycle.get('price', 0):,.0f}
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin: 25px 0;">
+                <a href="{base_url}/motorcycle/{motorcycle.get('id')}" 
+                   style="background: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    BEKIJK MOTOR
+                </a>
+            </div>
+            
+            <p style="background: #fef3c7; padding: 10px; border-radius: 5px; color: #92400e;">
+                <strong>Link in deze email:</strong><br>
+                {base_url}/motorcycle/{motorcycle.get('id')}
+            </p>
+        </div>
+        <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+            <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+            <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        </div>
+    </div>
+    """
+    
+    try:
+        await send_email(ADMIN_EMAIL, f"🧪 TEST: {motorcycle.get('brand')} {motorcycle.get('model')}", html_content)
+        return {"message": f"Test e-mail verstuurd naar {ADMIN_EMAIL}", "link": f"{base_url}/motorcycle/{motorcycle.get('id')}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fout bij versturen: {str(e)}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
