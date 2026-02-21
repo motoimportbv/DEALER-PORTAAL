@@ -177,6 +177,7 @@ function App() {
       <div className="App">
         <Toaster position="top-right" richColors />
         <BrowserRouter>
+          <PreviewRedirect />
           <NotificationHandler />
           <Routes>
             {/* Public Routes */}
