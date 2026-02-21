@@ -24,7 +24,8 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
-  BadgeEuro
+  BadgeEuro,
+  Search
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -36,23 +37,31 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pendingProposals, setPendingProposals] = useState(0);
+  const [pendingWantedRequests, setPendingWantedRequests] = useState(0);
 
   // Fetch pending proposals count for admin
   useEffect(() => {
     if (user?.role === 'admin' && token) {
-      const fetchProposalsCount = async () => {
+      const fetchCounts = async () => {
         try {
-          const response = await axios.get(`${API}/price-proposals/count`, {
+          // Fetch proposals count
+          const proposalsRes = await axios.get(`${API}/price-proposals/count`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setPendingProposals(response.data.count);
+          setPendingProposals(proposalsRes.data.count);
+          
+          // Fetch wanted requests count
+          const wantedRes = await axios.get(`${API}/wanted-requests/pending-count`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setPendingWantedRequests(wantedRes.data.count);
         } catch (error) {
-          console.error('Failed to fetch proposals count');
+          console.error('Failed to fetch counts');
         }
       };
-      fetchProposalsCount();
+      fetchCounts();
       // Refresh every 60 seconds
-      const interval = setInterval(fetchProposalsCount, 60000);
+      const interval = setInterval(fetchCounts, 60000);
       return () => clearInterval(interval);
     }
   }, [user, token]);
