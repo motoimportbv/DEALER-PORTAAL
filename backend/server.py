@@ -1645,7 +1645,7 @@ async def get_whatsapp_share_all_dealers(motorcycle_id: str, user: dict = Depend
 • KM stand: {motorcycle.get('mileage', 0):,} km
 • Prijs: €{motorcycle.get('price', 0):,.0f}
 
-👉 Bekijk direct: {base_url}/dealer/motorcycles/{motorcycle_id}
+👉 Bekijk direct: {base_url}/motorcycle/{motorcycle_id}
 
 _Moto Import BV_"""
     
