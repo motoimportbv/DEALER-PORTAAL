@@ -381,7 +381,24 @@ const MotorcycleForm = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
-                      Prijs (€) *
+                      Valuta
+                    </Label>
+                    <Select 
+                      value={formData.currency} 
+                      onValueChange={(value) => handleChange('currency', value)}
+                    >
+                      <SelectTrigger data-testid="currency-select">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">🇪🇺 EUR (Euro)</SelectItem>
+                        <SelectItem value="CHF">🇨🇭 CHF (Zwitserse Frank)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">
+                      Prijs ({formData.currency === 'CHF' ? 'CHF' : '€'}) *
                     </Label>
                     <Input
                       type="number"
@@ -392,6 +409,12 @@ const MotorcycleForm = () => {
                       data-testid="price-input"
                       required
                     />
+                    {formData.currency === 'CHF' && eurPreview && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        ≈ €{Number(eurPreview).toLocaleString('nl-NL')} EUR (live koers: 1 CHF = {exchangeRate?.toFixed(4)} EUR)
+                      </p>
+                    )}
                   </div>
                 </div>
 
