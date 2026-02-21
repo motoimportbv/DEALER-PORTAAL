@@ -34,7 +34,20 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - **Oplossing**: 
   - OrderWithMotorcycle model robuuster gemaakt met optionele velden en default waarden
   - get_orders() functie filtert nu orders zonder vereiste velden
-- **Status**: Fix in preview, moet nog gedeployed worden naar productie
+- **Status**: Gedeployed en werkend in productie
+
+#### ✅ Motor Zoekertje Systeem (Wanted Requests)
+- **Functie**: Dealers kunnen zoekverzoeken indienen voor specifieke motorfietsen
+- **Flow**:
+  1. Nederlandse dealer dient zoekertje in (merk, model, jaar, km, budget)
+  2. Admin ontvangt notificatie en keurt goed met aangepaste leveranciersprijs
+  3. E-mail wordt automatisch verstuurd naar alle buitenlandse leveranciers
+  4. Admin kan zoekertje markeren als "Gevonden" - dealer ontvangt melding
+  5. Zoekertjes verlopen automatisch na 7 dagen
+- **Nieuwe pagina's**:
+  - `/dealer/wanted-requests` - Dealer zoekertjes pagina
+  - `/admin/wanted-requests` - Admin beheer pagina met tabs
+- **Nieuwe sidebar items**: "Motor Zoekertje" (dealer) en "Zoekertjes" met badge (admin)
 
 ### Session - 20 February 2025 (Part 6 - Nieuwe Features)
 
