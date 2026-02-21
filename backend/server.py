@@ -5271,13 +5271,8 @@ Moto Import
             except Exception as e:
                 logger.error(f"Failed to send invoice email: {e}")
         
-        # Also notify admin
-        if ADMIN_EMAIL and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
-            admin_msg = MIMEMultipart()
-            admin_msg['Subject'] = f'Nieuwe onderdelen bestelling: {order_number}'
-            admin_msg['From'] = GMAIL_EMAIL
-            admin_msg['To'] = ADMIN_EMAIL
-            
+        # Also notify all admins
+        if ADMIN_EMAILS and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
             items_list = "\n".join([f"- {item['part_name']} x{item['quantity']} (€{item['price'] * item['quantity']:.2f})" for item in order_items])
             admin_body = f"""
 Nieuwe onderdelen bestelling ontvangen!
@@ -5295,14 +5290,21 @@ TOTAAL: €{total:.2f}
 
 {"Verzending gewenst" if data.needs_shipping else "Wordt opgehaald"}
             """
-            admin_msg.attach(MIMEText(admin_body, 'plain'))
             
-            try:
-                with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-                    smtp.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
-                    smtp.send_message(admin_msg)
-            except Exception as e:
-                logger.error(f"Failed to send admin notification: {e}")
+            for admin_email in ADMIN_EMAILS:
+                try:
+                    admin_msg = MIMEMultipart()
+                    admin_msg['Subject'] = f'Nieuwe onderdelen bestelling: {order_number}'
+                    admin_msg['From'] = GMAIL_EMAIL
+                    admin_msg['To'] = admin_email
+                    admin_msg.attach(MIMEText(admin_body, 'plain'))
+                    
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                        smtp.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+                        smtp.send_message(admin_msg)
+                    logger.info(f"Admin notification sent to {admin_email}")
+                except Exception as e:
+                    logger.error(f"Failed to send admin notification to {admin_email}: {e}")
                 
     except Exception as e:
         logger.error(f"Failed to generate/send invoice: {e}")
