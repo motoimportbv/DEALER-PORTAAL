@@ -1892,7 +1892,8 @@ Bekijk: {base_url}/motorcycle/{motorcycle.id}"""
 
 @api_router.get("/motorcycles")
 async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
-    motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
+    # Sort by created_at descending (newest first)
+    motorcycles = await db.motorcycles.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     # Get current exchange rate and margin for CHF motorcycles
     chf_eur_rate = await get_chf_to_eur_rate()
