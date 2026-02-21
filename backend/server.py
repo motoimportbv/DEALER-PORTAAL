@@ -5809,6 +5809,9 @@ async def startup_db_client():
     
     # Start background task for auto-deleting expired motorcycles
     asyncio.create_task(auto_delete_expired_motorcycles())
+    
+    # Start background task for expiring wanted requests
+    asyncio.create_task(expire_wanted_requests())
 
 async def auto_delete_expired_motorcycles():
     """Background task to delete motorcycles that have expired (not sold within time limit)"""
