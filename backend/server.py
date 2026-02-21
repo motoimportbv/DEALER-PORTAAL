@@ -3195,10 +3195,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
         parsed = urlparse(origin)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
     else:
-        base_url = os.environ.get("BASE_URL", "")
-    
-    if not base_url:
-        raise HTTPException(status_code=500, detail="BASE_URL niet geconfigureerd")
+        base_url = PRODUCTION_BASE_URL
     
     image_url = f"{base_url}/api/images/{image_id}"
     
