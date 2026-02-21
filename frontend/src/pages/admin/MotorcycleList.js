@@ -258,9 +258,27 @@ const MotorcycleList = () => {
                     <span>{motorcycle.mileage.toLocaleString('nl-NL')} km</span>
                   </div>
 
-                  <p className="font-barlow text-2xl font-bold text-red-600 mb-4">
+                  <p className="font-barlow text-2xl font-bold text-red-600 mb-1">
                     {formatPrice(motorcycle.price)}
                   </p>
+                  
+                  {/* Show original supplier price if price was adjusted */}
+                  {motorcycle.original_price && motorcycle.original_price !== motorcycle.price && (
+                    <p className="text-xs text-zinc-500 mb-3">
+                      <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                        Leverancier: {motorcycle.original_currency === 'CHF' 
+                          ? `CHF ${motorcycle.original_price.toLocaleString('nl-NL')}` 
+                          : formatPrice(motorcycle.original_price)}
+                      </span>
+                    </p>
+                  )}
+                  
+                  {/* Show if price was overridden by admin */}
+                  {motorcycle.price_override_active && (
+                    <p className="text-xs text-blue-600 mb-3">
+                      ✏️ Prijs handmatig aangepast
+                    </p>
+                  )}
 
                   <div className="flex gap-2">
                     <Link to={`/motorcycle/${motorcycle.id}`} className="flex-1">
