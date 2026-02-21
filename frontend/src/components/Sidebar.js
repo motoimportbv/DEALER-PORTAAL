@@ -84,6 +84,7 @@ const Sidebar = () => {
     { path: '/admin/part-orders', icon: ClipboardList, label: t('nav.partOrders') },
     { path: '/admin/dealers', icon: Package, label: t('nav.dealers') },
     { path: '/admin/price-proposals', icon: BadgeEuro, label: '💰 Prijsvoorstellen', badge: pendingProposals },
+    { path: '/admin/wanted-requests', icon: Search, label: '🔍 Zoekertjes', badge: pendingWantedRequests },
     { path: '/admin/create-admin', icon: UserPlus, label: 'Admin Aanmaken' },
     { path: '/admin/reset-password', icon: KeyRound, label: 'Wachtwoord Reset' },
     { path: '/admin/exchange-rate', icon: TrendingUp, label: 'Wisselkoers' },
@@ -99,6 +100,7 @@ const Sidebar = () => {
     { path: '/dealer/sell', icon: Plus, label: t('nav.sellMotorcycle') },
     { path: '/dealer/orders', icon: ShoppingCart, label: t('nav.myOrders') },
     { path: '/dealer/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Mijn Kentekens' },
+    { path: '/dealer/wanted-requests', icon: Search, label: '🔍 Motor Zoekertje' },
   ];
 
   const foreignDealerNavItems = [
