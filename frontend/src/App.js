@@ -88,14 +88,12 @@ function PreviewRedirect() {
     const hostname = window.location.hostname;
     const PRODUCTION_URL = 'https://www.motoimportbv.nl';
     
-    // Check if we're on an old preview URL (not the current preview and not localhost)
-    if (hostname.includes('preview.emergentagent.com') && 
-        !hostname.includes('dealership-portal-8') &&
-        !hostname.includes('localhost')) {
+    // ALWAYS redirect preview URLs to production (except localhost)
+    if (hostname.includes('preview.emergentagent.com') && !hostname.includes('localhost')) {
       // Redirect to production URL with same path
       const productionUrl = `${PRODUCTION_URL}${window.location.pathname}${window.location.search}`;
-      console.log('Redirecting from old preview to production:', productionUrl);
-      window.location.href = productionUrl;
+      console.log('Redirecting from preview to production:', productionUrl);
+      window.location.replace(productionUrl);  // Use replace to not add to history
     }
   }, []);
   
