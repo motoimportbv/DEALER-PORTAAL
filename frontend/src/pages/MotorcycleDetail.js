@@ -42,6 +42,7 @@ import {
 } from '../components/ui/dialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const PRODUCTION_URL = 'https://www.motoimportbv.nl';
 
 const MotorcycleDetail = () => {
   const { t } = useTranslation();
@@ -51,6 +52,7 @@ const MotorcycleDetail = () => {
   
   const [motorcycle, setMotorcycle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [buyNowDialogOpen, setBuyNowDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +60,17 @@ const MotorcycleDetail = () => {
   const [needsInspection, setNeedsInspection] = useState(false);
   const [needsValuation, setNeedsValuation] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
+
+  // Redirect from preview URLs to production
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    // Check if we're on a preview URL (not production and not localhost)
+    if (hostname.includes('preview.emergentagent.com') && !hostname.includes('dealership-portal-8')) {
+      // Redirect to production URL with same path
+      const productionUrl = `${PRODUCTION_URL}${window.location.pathname}`;
+      window.location.href = productionUrl;
+    }
+  }, []);
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherDiscount, setVoucherDiscount] = useState(0);
   const [voucherValid, setVoucherValid] = useState(false);
