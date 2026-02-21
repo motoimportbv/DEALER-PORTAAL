@@ -341,38 +341,29 @@ const DealerDashboard = () => {
             })}
           </div>
           
-          {/* Filter Dropdowns */}
+          {/* Model/Type Filter Dropdown - Only show when brand is selected */}
           <div className="flex flex-wrap gap-3 items-center">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-zinc-500" />
-              <span className="text-sm text-zinc-500 hidden sm:inline">Filter:</span>
-            </div>
-            
-            {/* Brand Filter */}
-            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-              <SelectTrigger className="w-[180px]" data-testid="brand-filter">
-                <SelectValue placeholder="Alle merken" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle merken ({motorcycles.length})</SelectItem>
-                {brandsWithCount.map(({ brand, count }) => (
-                  <SelectItem key={brand} value={brand}>{brand} ({count})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {/* Model/Type Filter */}
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[200px]" data-testid="model-filter">
-                <SelectValue placeholder="Alle types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle types ({selectedBrand === 'all' ? motorcycles.length : motorcycles.filter(m => m.brand === selectedBrand).length})</SelectItem>
-                {modelsWithCount.map(({ model, count }) => (
-                  <SelectItem key={model} value={model}>{model} ({count})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {selectedBrand !== 'all' && modelsWithCount.length > 1 && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-500">Model:</span>
+                </div>
+                
+                {/* Model/Type Filter */}
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-[200px]" data-testid="model-filter">
+                    <SelectValue placeholder="Alle types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle types ({motorcycles.filter(m => m.brand === selectedBrand).length})</SelectItem>
+                    {modelsWithCount.map(({ model, count }) => (
+                      <SelectItem key={model} value={model}>{model} ({count})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
             
             {/* Clear Filters */}
             {(selectedBrand !== 'all' || selectedModel !== 'all') && (
