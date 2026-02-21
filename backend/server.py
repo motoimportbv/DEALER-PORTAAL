@@ -1023,7 +1023,7 @@ async def generate_permanent_link(user: dict = Depends(get_current_user)):
     )
     
     # Build the permanent login URL using query parameter format (works better with iOS bookmarks)
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     permanent_url = f"{base_url}/login?code={short_code}"
     
     return {
@@ -1043,7 +1043,7 @@ async def get_my_permanent_link(user: dict = Depends(get_current_user)):
         return {"has_permanent_link": False, "permanent_url": None}
     
     # Use query parameter format (works better with iOS bookmarks)
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     permanent_url = f"{base_url}/login?code={short_code}"
     
     return {
@@ -1527,7 +1527,7 @@ async def get_whatsapp_share_link(motorcycle_id: str, user: dict = Depends(requi
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
     # Get the base URL from environment or use default
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     
     # Create a generic share message (dealers will get auto-login when they click their personalized link)
     brand = motorcycle.get("brand", "")
@@ -1580,7 +1580,7 @@ async def get_personal_whatsapp_share(motorcycle_id: str, dealer_id: str, user: 
     auto_token = create_notification_token(dealer["id"], dealer.get("email", ""), dealer.get("role", "dealer"))
     
     # Get the base URL
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     
     # Build personalized URL with auto-login
     auto_login_url = f"{base_url}/auto-login?token={auto_token}&redirect=/motorcycle/{motorcycle_id}"
@@ -1635,7 +1635,7 @@ async def get_whatsapp_share_all_dealers(motorcycle_id: str, user: dict = Depend
         {"_id": 0, "id": 1, "company_name": 1, "phone": 1, "email": 1}
     ).to_list(500)
     
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     
     # Create message
     message = f"""🏍️ *Nieuwe Motor Beschikbaar!*
@@ -4722,7 +4722,7 @@ async def get_sms_share_message(motorcycle_id: str, user: dict = Depends(require
         {"_id": 0, "id": 1, "company_name": 1, "phone": 1}
     ).to_list(500)
     
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     
     brand = motorcycle.get("brand", "")
     model = motorcycle.get("model", "")
@@ -4765,7 +4765,7 @@ async def send_motorcycle_sms_to_all(motorcycle_id: str, user: dict = Depends(re
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
-    base_url = os.environ.get("FRONTEND_URL", "https://motoimportbv.nl")
+    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
     
     brand = motorcycle.get("brand", "")
     model = motorcycle.get("model", "")
