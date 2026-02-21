@@ -206,7 +206,7 @@ def create_supplier_guide_nl():
     
     story.append(Spacer(1, 10))
     story.append(Paragraph("Registratie URL:", styles['GuideBodyText']))
-    story.append(Paragraph("https://dealership-portal-8.preview.emergentagent.com/register/supplier", styles['URLStyle']))
+    story.append(Paragraph("https://www.motoimportbv.nl/register/supplier", styles['URLStyle']))
     
     # Step 2
     story.append(Paragraph("STAP 2: APP DOWNLOADEN", styles['SectionTitle']))
