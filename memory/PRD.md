@@ -20,13 +20,21 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
-### Session - 20 February 2025 (Part 7 - Bug Fix)
+### Session - 20 February 2025 (Part 7 - Bug Fixes)
 
 #### ✅ Admin Bestellen Bug Fix
 - **Probleem**: Admin kon geen bestellingen plaatsen via de UI - "Nu Bestellen" knop was onzichtbaar
 - **Oorzaak**: Frontend conditie toonde knop alleen voor `role === 'dealer'`, niet voor `role === 'admin'`
 - **Oplossing**: Aangepast naar `(role === 'dealer' || role === 'admin')` in MotorcycleDetail.js
 - **Getest**: Admin kan nu succesvol motors bestellen via de UI
+
+#### ✅ Orders Endpoint 500 Error Fix
+- **Probleem**: GET /api/orders gaf 500 Internal Server Error in productie
+- **Oorzaak**: Orders met ontbrekende/lege velden (created_at, dealer_email, etc.) in de database
+- **Oplossing**: 
+  - OrderWithMotorcycle model robuuster gemaakt met optionele velden en default waarden
+  - get_orders() functie filtert nu orders zonder vereiste velden
+- **Status**: Fix in preview, moet nog gedeployed worden naar productie
 
 ### Session - 20 February 2025 (Part 6 - Nieuwe Features)
 
