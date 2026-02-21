@@ -189,6 +189,7 @@ function App() {
             <Route path="/admin/whatsapp" element={<AdminWhatsAppBroadcast />} />
             <Route path="/admin/sms" element={<AdminSMSBroadcast />} />
             <Route path="/admin/price-proposals" element={<AdminPriceProposals />} />
+            <Route path="/admin/wanted-requests" element={<AdminWantedRequests />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
@@ -198,6 +199,7 @@ function App() {
             <Route path="/dealer/my-listings" element={<DealerMyListings />} />
             <Route path="/dealer/parts" element={<PartsShop />} />
             <Route path="/dealer/license-plates" element={<DealerLicensePlates />} />
+            <Route path="/dealer/wanted-requests" element={<WantedRequestPage />} />
             
             {/* Foreign Dealer Routes */}
             <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
