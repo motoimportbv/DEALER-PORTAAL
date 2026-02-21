@@ -1912,16 +1912,31 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
         
-        # Real-time price conversion for CHF motorcycles (unless admin has overridden)
-        if m.get("original_currency") == "CHF" and m.get("original_price") and not m.get("price_override"):
-            m["price"] = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
-            m["starting_price"] = round(m["price"] * 0.8, 2)
-            m["exchange_rate"] = chf_eur_rate
-            m["margin_percent"] = margin * 100
-            m["price_updated_live"] = True
-        elif m.get("price_override") and m.get("price_override_amount"):
+        # Check if admin has manually set a price (price_override flag)
+        if m.get("price_override") and m.get("price_override_amount"):
+            # Admin has overridden the price - use that
             m["price"] = m["price_override_amount"]
             m["price_override_active"] = True
+        # For CHF motorcycles WITHOUT override, show live conversion
+        # But ONLY if we don't already have a saved EUR price that differs from original
+        elif m.get("original_currency") == "CHF" and m.get("original_price"):
+            # Calculate what the live CHF->EUR price would be
+            live_eur_price = convert_chf_to_eur(m["original_price"], chf_eur_rate, margin)
+            
+            # Check if the stored price is significantly different from live conversion
+            # If so, it means admin set a custom price - respect that
+            stored_price = m.get("price", 0)
+            if stored_price and abs(stored_price - live_eur_price) > 100:
+                # Admin has set a custom price, keep it
+                m["price_override_active"] = True
+                logger.info(f"Keeping admin price €{stored_price} instead of live €{live_eur_price} for {m.get('brand')} {m.get('model')}")
+            else:
+                # Use live conversion
+                m["price"] = live_eur_price
+                m["starting_price"] = round(live_eur_price * 0.8, 2)
+                m["exchange_rate"] = chf_eur_rate
+                m["margin_percent"] = margin * 100
+                m["price_updated_live"] = True
     
     return motorcycles
 
