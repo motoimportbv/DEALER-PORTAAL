@@ -396,6 +396,43 @@ class PriceProposal(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Optional[str] = None
 
+# ============ WANTED REQUEST MODELS (Motor Zoekertje) ============
+
+class WantedRequestCreate(BaseModel):
+    brand: str
+    model: str = ""
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    max_mileage: Optional[int] = None
+    max_budget: float
+    notes: str = ""
+
+class WantedRequestApprove(BaseModel):
+    supplier_price: float  # Price to show to suppliers
+    admin_notes: str = ""
+
+class WantedRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    dealer_phone: str = ""
+    brand: str
+    model: str = ""
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    max_mileage: Optional[int] = None
+    max_budget: float  # Dealer's budget (private)
+    supplier_price: Optional[float] = None  # Price shown to suppliers (set by admin)
+    notes: str = ""
+    status: str = "pending"  # pending, active, fulfilled, expired, cancelled
+    admin_notes: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    approved_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    fulfilled_by: Optional[str] = None  # Supplier who fulfilled the request
+
 # ============ PARTS SHOP MODELS ============
 
 # Predefined motorcycle brands for parts compatibility
