@@ -1921,7 +1921,8 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
 @api_router.get("/motorcycles/with-exchange-rate")
 async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approved_dealer)):
     """Get motorcycles with real-time CHF to EUR conversion for foreign listings"""
-    motorcycles = await db.motorcycles.find({}, {"_id": 0}).to_list(1000)
+    # Sort by created_at descending (newest first)
+    motorcycles = await db.motorcycles.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     # Get current exchange rate and margin
     chf_eur_rate = await get_chf_to_eur_rate()
