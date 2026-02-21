@@ -82,6 +82,26 @@ function NotificationHandler() {
   return null;
 }
 
+// Redirect old preview URLs to production
+function PreviewRedirect() {
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const PRODUCTION_URL = 'https://www.motoimportbv.nl';
+    
+    // Check if we're on an old preview URL (not the current preview and not localhost)
+    if (hostname.includes('preview.emergentagent.com') && 
+        !hostname.includes('dealership-portal-8') &&
+        !hostname.includes('localhost')) {
+      // Redirect to production URL with same path
+      const productionUrl = `${PRODUCTION_URL}${window.location.pathname}${window.location.search}`;
+      console.log('Redirecting from old preview to production:', productionUrl);
+      window.location.href = productionUrl;
+    }
+  }, []);
+  
+  return null;
+}
+
 function App() {
   useEffect(() => {
     // Initialize native features when running as mobile app
