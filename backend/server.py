@@ -26,6 +26,10 @@ from twilio.rest import Client as TwilioClient
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# PRODUCTION URL - ALWAYS use this for customer-facing links
+# This ensures links work correctly regardless of environment variables
+PRODUCTION_BASE_URL = "https://www.motoimportbv.nl"
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
