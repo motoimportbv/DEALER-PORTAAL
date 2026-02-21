@@ -121,10 +121,12 @@ const MotorcycleDetail = () => {
       
       const response = await axios.get(endpoint);
       setMotorcycle(response.data);
+      setNotFound(false);
     } catch (error) {
       console.error('Failed to load motorcycle:', error);
       // If public endpoint fails with 404, motor might not exist or is not active
       if (error.response?.status === 404) {
+        setNotFound(true);
         toast.error('Motor niet gevonden of niet meer beschikbaar');
       } else if (error.response?.status !== 401) {
         toast.error('Kon motor niet laden');
