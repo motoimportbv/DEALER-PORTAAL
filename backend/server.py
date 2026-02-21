@@ -2108,18 +2108,24 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
     
-    # Real-time price conversion for CHF motorcycles (unless admin has overridden)
-    if motorcycle.get("original_currency") == "CHF" and motorcycle.get("original_price") and not motorcycle.get("price_override"):
-        chf_eur_rate = await get_chf_to_eur_rate()
-        margin = await get_chf_eur_margin()
-        motorcycle["price"] = convert_chf_to_eur(motorcycle["original_price"], chf_eur_rate, margin)
-        motorcycle["starting_price"] = round(motorcycle["price"] * 0.8, 2)
-        motorcycle["exchange_rate"] = chf_eur_rate
-        motorcycle["margin_percent"] = margin * 100
-        motorcycle["price_updated_live"] = True
-    elif motorcycle.get("price_override") and motorcycle.get("price_override_amount"):
+    # Check if admin has manually set a price
+    if motorcycle.get("price_override") and motorcycle.get("price_override_amount"):
         motorcycle["price"] = motorcycle["price_override_amount"]
         motorcycle["price_override_active"] = True
+    elif motorcycle.get("original_currency") == "CHF" and motorcycle.get("original_price"):
+        chf_eur_rate = await get_chf_to_eur_rate()
+        margin = await get_chf_eur_margin()
+        live_eur_price = convert_chf_to_eur(motorcycle["original_price"], chf_eur_rate, margin)
+        stored_price = motorcycle.get("price", 0)
+        # If stored price differs significantly from live, admin set a custom price
+        if stored_price and abs(stored_price - live_eur_price) > 100:
+            motorcycle["price_override_active"] = True
+        else:
+            motorcycle["price"] = live_eur_price
+            motorcycle["starting_price"] = round(live_eur_price * 0.8, 2)
+            motorcycle["exchange_rate"] = chf_eur_rate
+            motorcycle["margin_percent"] = margin * 100
+            motorcycle["price_updated_live"] = True
     
     return motorcycle
 
