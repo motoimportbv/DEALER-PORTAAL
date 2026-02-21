@@ -64,11 +64,11 @@ const MotorcycleDetail = () => {
   // Redirect from preview URLs to production
   useEffect(() => {
     const hostname = window.location.hostname;
-    // Check if we're on a preview URL (not production and not localhost)
-    if (hostname.includes('preview.emergentagent.com') && !hostname.includes('dealership-portal-8')) {
+    // ALWAYS redirect preview URLs to production (except localhost)
+    if (hostname.includes('preview.emergentagent.com') && !hostname.includes('localhost')) {
       // Redirect to production URL with same path
       const productionUrl = `${PRODUCTION_URL}${window.location.pathname}`;
-      window.location.href = productionUrl;
+      window.location.replace(productionUrl);  // Use replace to not add to history
     }
   }, []);
   const [voucherCode, setVoucherCode] = useState('');
