@@ -3840,19 +3840,39 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
     
     # If ACCEPTED: Create order, mark as sold, send pakbon
     if response == "accepted":
+        # Create snapshot of motorcycle data with the ACCEPTED price
+        motorcycle_snapshot = {
+            "id": motorcycle.get("id"),
+            "brand": motorcycle.get("brand"),
+            "model": motorcycle.get("model"),
+            "year": motorcycle.get("year"),
+            "price": proposal.get("proposed_price"),  # Use accepted price in snapshot!
+            "original_price": proposal.get("original_price"),
+            "mileage": motorcycle.get("mileage"),
+            "color": motorcycle.get("color"),
+            "condition": motorcycle.get("condition"),
+            "images": motorcycle.get("images", []),
+            "description": motorcycle.get("description"),
+        }
+        
         # Create order with the accepted price
         order_id = str(uuid.uuid4())
         order = {
             "id": order_id,
             "motorcycle_id": proposal.get("motorcycle_id"),
             "dealer_id": proposal.get("dealer_id"),
+            "dealer_email": dealer.get("email", ""),
+            "dealer_company": dealer.get("company_name", ""),
             "price": proposal.get("proposed_price"),  # Use the accepted proposal price
+            "total_price": proposal.get("proposed_price"),  # Total price = accepted price
             "original_price": proposal.get("original_price"),
             "discount_amount": proposal.get("original_price", 0) - proposal.get("proposed_price", 0),
+            "motorcycle_snapshot": motorcycle_snapshot,
             "status": "confirmed",
             "payment_status": "pending",
             "needs_delivery": False,
             "delivery_cost": 0,
+            "deposit_amount": 0,
             "order_type": "price_proposal",
             "proposal_id": proposal_id,
             "created_at": datetime.now(timezone.utc).isoformat()
