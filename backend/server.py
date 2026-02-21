@@ -5950,7 +5950,9 @@ async def auto_delete_expired_motorcycles():
                         </div>
                     </div>
                     """
-                    await send_email(ADMIN_EMAIL, f"⏰ {len(expired_motorcycles)} motor(en) automatisch verwijderd", html_content)
+                    # Send to all admin emails
+                    for admin_email in ADMIN_EMAILS:
+                        await send_email(admin_email, f"⏰ {len(expired_motorcycles)} motor(en) automatisch verwijderd", html_content)
                 except Exception as e:
                     logger.error(f"Failed to send auto-delete notification: {e}")
         
