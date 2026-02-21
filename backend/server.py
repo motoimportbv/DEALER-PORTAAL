@@ -1027,7 +1027,7 @@ async def generate_permanent_link(user: dict = Depends(get_current_user)):
     )
     
     # Build the permanent login URL using query parameter format (works better with iOS bookmarks)
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     permanent_url = f"{base_url}/login?code={short_code}"
     
     return {
@@ -1047,7 +1047,7 @@ async def get_my_permanent_link(user: dict = Depends(get_current_user)):
         return {"has_permanent_link": False, "permanent_url": None}
     
     # Use query parameter format (works better with iOS bookmarks)
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     permanent_url = f"{base_url}/login?code={short_code}"
     
     return {
@@ -1550,7 +1550,7 @@ async def get_whatsapp_share_link(motorcycle_id: str, user: dict = Depends(requi
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
     # Get the base URL from environment or use default
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     # Create a generic share message (dealers will get auto-login when they click their personalized link)
     brand = motorcycle.get("brand", "")
@@ -1603,7 +1603,7 @@ async def get_personal_whatsapp_share(motorcycle_id: str, dealer_id: str, user: 
     auto_token = create_notification_token(dealer["id"], dealer.get("email", ""), dealer.get("role", "dealer"))
     
     # Get the base URL
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     # Build personalized URL with auto-login
     auto_login_url = f"{base_url}/auto-login?token={auto_token}&redirect=/motorcycle/{motorcycle_id}"
@@ -1658,7 +1658,7 @@ async def get_whatsapp_share_all_dealers(motorcycle_id: str, user: dict = Depend
         {"_id": 0, "id": 1, "company_name": 1, "phone": 1, "email": 1}
     ).to_list(500)
     
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     # Create message
     message = f"""🏍️ *Nieuwe Motor Beschikbaar!*
@@ -1788,7 +1788,7 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
     """Send email notifications to DUTCH dealers only (not foreign dealers) about a new motorcycle"""
     # Always use production URL for email links
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     for dealer in dealers:
         # Skip dealers without email, who are offline, or who are foreign dealers
@@ -1844,7 +1844,7 @@ async def notify_dealers_new_motorcycle_sms(motorcycle, dealers):
         logger.warning("Twilio client not configured - skipping SMS notifications")
         return
     
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     # Short SMS message
     message = f"""🏍️ NIEUWE MOTOR bij Moto Import!
@@ -2675,7 +2675,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     
     # Send email to Admin with Pakbon
     # Always use production URL for any links
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     order_date = datetime.now(timezone.utc).strftime('%d-%m-%Y')
     order_time = datetime.now(timezone.utc).strftime('%H:%M')
     
@@ -3322,7 +3322,7 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
     # Send notification to admin about new bid
     try:
         # Always use production URL for email links
-        base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+        base_url = PRODUCTION_BASE_URL
         
         # Create in-app notification for admin
         admin_user = await db.users.find_one({"role": "admin"}, {"_id": 0})
@@ -4142,7 +4142,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
     is_foreign = dealer.get("is_foreign_dealer", False)
     
     # Always use production URL for email links
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     login_url = f"{base_url}/login"
     
     # Buitenlandse dealers krijgen GEEN voucher
@@ -4745,7 +4745,7 @@ async def get_sms_share_message(motorcycle_id: str, user: dict = Depends(require
         {"_id": 0, "id": 1, "company_name": 1, "phone": 1}
     ).to_list(500)
     
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     brand = motorcycle.get("brand", "")
     model = motorcycle.get("model", "")
@@ -4788,7 +4788,7 @@ async def send_motorcycle_sms_to_all(motorcycle_id: str, user: dict = Depends(re
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
-    base_url = os.environ.get("BASE_URL", "https://www.motoimportbv.nl")
+    base_url = PRODUCTION_BASE_URL
     
     brand = motorcycle.get("brand", "")
     model = motorcycle.get("model", "")
