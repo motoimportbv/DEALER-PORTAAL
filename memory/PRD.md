@@ -35,6 +35,16 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - **Actie**: Endpoint verwijderd uit `server.py` (~55 regels code verwijderd)
 - **Reden**: Endpoint was alleen voor one-off test, niet nodig voor productie
 
+#### ✅ E-mail URLs Consistent Gemaakt (Belangrijke Fix)
+- **Probleem**: Sommige e-mail functies gebruikten `FRONTEND_URL` met fallback naar `motoimportbv.nl` (zonder `www.`)
+- **Actie**: Alle 7 instanties vervangen door `BASE_URL` met fallback naar `https://www.motoimportbv.nl`
+- **Gefixte functies**:
+  - WhatsApp share link generatie
+  - Persoonlijke WhatsApp links met auto-login
+  - SMS notificaties
+  - Auto-login token generatie
+- **Resultaat**: Alle e-mails, SMS'en en WhatsApp berichten gebruiken nu consistent de correcte productie URL
+
 ---
 
 ### Session - 20 February 2025 (Part 7 - Bug Fixes)
