@@ -20,6 +20,23 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 20 February 2025 (Part 8 - Test Email & Cleanup)
+
+#### ✅ Test E-mail Verzonden voor Link Verificatie
+- **Taak**: Gebruiker wilde test e-mail ontvangen om te verifiëren dat links naar productie URL wijzen
+- **Probleem**: Ducati 1098 (origineel gevraagd) bestond niet meer in database
+- **Oplossing**: Test e-mail verzonden met beschikbare Ducati Monster 600
+- **E-mail verzonden naar**: motoimportbv@gmail.com
+- **Link in e-mail**: https://www.motoimportbv.nl/motorcycle/10fe6d5a-9aef-4e9c-8918-1a52d8ab5c0f
+- **Status**: ✅ Succesvol verzonden
+
+#### ✅ Niet-werkend Test Endpoint Verwijderd
+- **Probleem**: Tijdelijk endpoint `/api/test/send-motorcycle-email/{motorcycle_id}` werkte niet (404 errors)
+- **Actie**: Endpoint verwijderd uit `server.py` (~55 regels code verwijderd)
+- **Reden**: Endpoint was alleen voor one-off test, niet nodig voor productie
+
+---
+
 ### Session - 20 February 2025 (Part 7 - Bug Fixes)
 
 #### ✅ Admin Bestellen Bug Fix
