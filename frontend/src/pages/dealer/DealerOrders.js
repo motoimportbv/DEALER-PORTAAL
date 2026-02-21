@@ -281,6 +281,12 @@ const DealerOrders = () => {
                             <p className="font-barlow text-lg font-bold text-zinc-900">
                               {formatPrice(order.total_price || order.motorcycle?.price)}
                             </p>
+                            {/* Show discount if price proposal was accepted */}
+                            {order.order_type === 'price_proposal' && order.discount_amount > 0 && (
+                              <p className="text-xs text-green-600 font-medium">
+                                💰 Korting: -{formatPrice(order.discount_amount)}
+                              </p>
+                            )}
                           </div>
                           <div>
                             <p className="text-xs text-zinc-500 uppercase flex items-center gap-1">
