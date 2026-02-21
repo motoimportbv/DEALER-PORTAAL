@@ -285,13 +285,39 @@ const MotorcycleDetail = () => {
   if (!motorcycle) {
     return (
       <Wrapper>
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Bike className="w-16 h-16 text-zinc-300 mb-4" />
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">{t('motorcycle.notFound')}</h2>
-          <p className="text-zinc-500 mb-4">{t('motorcycle.notFoundDesc')}</p>
-          <Button onClick={() => navigate('/login')} className="bg-red-600 hover:bg-red-700">
-            Inloggen
-          </Button>
+        <div className="flex flex-col items-center justify-center h-96 text-center px-4">
+          <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mb-6">
+            <Bike className="w-10 h-10 text-zinc-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-zinc-900 mb-3">
+            {notFound ? 'Motor niet meer beschikbaar' : t('motorcycle.notFound')}
+          </h2>
+          <p className="text-zinc-500 mb-6 max-w-md">
+            {notFound 
+              ? 'Deze motor is helaas niet meer beschikbaar. Mogelijk is deze al verkocht of uit het assortiment gehaald.'
+              : t('motorcycle.notFoundDesc')
+            }
+          </p>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => window.location.href = 'https://www.motoimportbv.nl'} 
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Bike className="w-4 h-4 mr-2" />
+              Bekijk ons aanbod
+            </Button>
+            {!user && (
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/login')}
+              >
+                Inloggen
+              </Button>
+            )}
+          </div>
+          <p className="text-sm text-zinc-400 mt-8">
+            Heeft u vragen? Neem contact op: +31 6 81792660
+          </p>
         </div>
       </Wrapper>
     );
