@@ -284,30 +284,61 @@ const DealerDashboard = () => {
             >
               Alle Merken ({motorcycles.length})
             </button>
-            {brandsWithCount.map(({ brand, count }) => (
-              <button
-                key={brand}
-                onClick={() => setSelectedBrand(brand)}
-                className={`px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
-                  selectedBrand === brand 
-                    ? 'border-red-600 bg-red-50 text-red-700 font-semibold' 
-                    : 'border-zinc-200 hover:border-zinc-300 bg-white'
-                }`}
-                data-testid={`brand-${brand.toLowerCase()}-btn`}
-              >
-                {/* Brand Logo */}
-                <img 
-                  src={`https://logo.clearbit.com/${brand.toLowerCase().replace(/\s+/g, '')}.com`}
-                  alt={brand}
-                  className="w-6 h-6 object-contain"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-                <span>{brand}</span>
-                <span className="text-xs text-zinc-500">({count})</span>
-              </button>
-            ))}
+            {brandsWithCount.map(({ brand, count }) => {
+              // Brand logo mapping - using manufacturer logo URLs
+              const brandLogos = {
+                'Yamaha': 'https://www.yamaha-motor.eu/content/dam/regional/shared/logo/yamaha-logo-black.svg',
+                'Honda': 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Honda_Logo.svg',
+                'BMW': 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',
+                'Ducati': 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Ducati_red_logo.svg',
+                'Kawasaki': 'https://upload.wikimedia.org/wikipedia/commons/5/54/Kawasaki_logo_vert.svg',
+                'Suzuki': 'https://upload.wikimedia.org/wikipedia/commons/1/12/Suzuki_logo_2.svg',
+                'KTM': 'https://upload.wikimedia.org/wikipedia/commons/b/b1/KTM-Logo.svg',
+                'Triumph': 'https://upload.wikimedia.org/wikipedia/commons/c/c5/Triumph_Motorcycles_logo.svg',
+                'Harley-Davidson': 'https://upload.wikimedia.org/wikipedia/commons/d/de/Harley-Davidson_logo.svg',
+                'Aprilia': 'https://upload.wikimedia.org/wikipedia/commons/4/46/Aprilia-logo.svg',
+                'Moto Guzzi': 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Moto_Guzzi_logo.svg',
+                'MV Agusta': 'https://upload.wikimedia.org/wikipedia/commons/c/c6/MV-Agusta-Logo.svg',
+                'Indian': 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Indian_Motorcycle_logo.svg',
+                'Husqvarna': 'https://upload.wikimedia.org/wikipedia/commons/5/58/Husqvarna_logo.svg',
+                'Royal Enfield': 'https://upload.wikimedia.org/wikipedia/commons/4/41/Royal-enfield-logo-vector.svg',
+                'Benelli': 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Benelli_logo.svg',
+              };
+              const logoUrl = brandLogos[brand];
+              
+              return (
+                <button
+                  key={brand}
+                  onClick={() => setSelectedBrand(brand)}
+                  className={`px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
+                    selectedBrand === brand 
+                      ? 'border-red-600 bg-red-50 text-red-700 font-semibold' 
+                      : 'border-zinc-200 hover:border-zinc-300 bg-white hover:bg-zinc-50'
+                  }`}
+                  data-testid={`brand-${brand.toLowerCase().replace(/\s+/g, '-')}-btn`}
+                >
+                  {/* Brand Logo or First Letter */}
+                  {logoUrl ? (
+                    <img 
+                      src={logoUrl}
+                      alt={brand}
+                      className="w-6 h-6 object-contain"
+                      onError={(e) => {
+                        e.target.parentElement.querySelector('.brand-fallback').style.display = 'flex';
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span 
+                    className={`brand-fallback w-6 h-6 rounded-full bg-zinc-800 text-white text-xs font-bold items-center justify-center ${logoUrl ? 'hidden' : 'flex'}`}
+                  >
+                    {brand.charAt(0)}
+                  </span>
+                  <span>{brand}</span>
+                  <span className="text-xs text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded">{count}</span>
+                </button>
+              );
+            })}
           </div>
           
           {/* Filter Dropdowns */}
