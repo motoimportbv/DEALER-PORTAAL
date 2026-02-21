@@ -271,6 +271,45 @@ const DealerDashboard = () => {
             </Link>
           </div>
           
+          {/* Brand Logo Filter */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setSelectedBrand('all')}
+              className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                selectedBrand === 'all' 
+                  ? 'border-red-600 bg-red-50 text-red-700 font-semibold' 
+                  : 'border-zinc-200 hover:border-zinc-300 bg-white'
+              }`}
+              data-testid="brand-all-btn"
+            >
+              Alle Merken ({motorcycles.length})
+            </button>
+            {brandsWithCount.map(({ brand, count }) => (
+              <button
+                key={brand}
+                onClick={() => setSelectedBrand(brand)}
+                className={`px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
+                  selectedBrand === brand 
+                    ? 'border-red-600 bg-red-50 text-red-700 font-semibold' 
+                    : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                }`}
+                data-testid={`brand-${brand.toLowerCase()}-btn`}
+              >
+                {/* Brand Logo */}
+                <img 
+                  src={`https://logo.clearbit.com/${brand.toLowerCase().replace(/\s+/g, '')}.com`}
+                  alt={brand}
+                  className="w-6 h-6 object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+                <span>{brand}</span>
+                <span className="text-xs text-zinc-500">({count})</span>
+              </button>
+            ))}
+          </div>
+          
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2">
