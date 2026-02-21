@@ -319,16 +319,16 @@ class OrderWithMotorcycle(BaseModel):
     id: str
     motorcycle_id: str
     dealer_id: str
-    dealer_email: str
-    dealer_company: str
-    status: str
+    dealer_email: str = ""
+    dealer_company: str = ""
+    status: str = "pending"
     notes: str = ""
     needs_delivery: bool = False
     delivery_cost: float = 0.0
     deposit_amount: float = 0.0
     total_price: float = 0.0
     payment_status: str = "unpaid"
-    created_at: str
+    created_at: Optional[str] = None  # Made optional for legacy orders
     motorcycle: Optional[dict] = None
     motorcycle_snapshot: Optional[dict] = None  # Fallback data if motorcycle is deleted
 
