@@ -331,6 +331,9 @@ class OrderWithMotorcycle(BaseModel):
     created_at: Optional[str] = None  # Made optional for legacy orders
     motorcycle: Optional[dict] = None
     motorcycle_snapshot: Optional[dict] = None  # Fallback data if motorcycle is deleted
+    order_type: Optional[str] = None  # "price_proposal" if from accepted proposal
+    discount_amount: float = 0.0  # Discount given (original_price - total_price)
+    original_price: Optional[float] = None  # Original price before discount
 
 class Notification(BaseModel):
     model_config = ConfigDict(extra="ignore")
