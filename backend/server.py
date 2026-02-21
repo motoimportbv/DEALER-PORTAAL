@@ -1310,12 +1310,29 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     if data.auto_delete_hours > 0:
         auto_delete_at = (datetime.now(timezone.utc) + timedelta(hours=data.auto_delete_hours)).isoformat()
     
+    # Handle currency conversion for CHF
+    original_price = data.price
+    original_currency = data.currency
+    final_price = data.price
+    
+    if data.currency == "CHF":
+        # Get current exchange rate and convert to EUR
+        try:
+            rate = await get_chf_to_eur_rate()
+            if rate:
+                final_price = round(data.price * rate, 0)  # Convert CHF to EUR
+                logger.info(f"Converted CHF {data.price} to EUR {final_price} (rate: {rate})")
+        except Exception as e:
+            logger.error(f"Failed to convert CHF to EUR: {e}")
+            # If conversion fails, keep original price as EUR
+            original_currency = "EUR"
+    
     motorcycle = Motorcycle(
         brand=data.brand,
         model=data.model,
         year=data.year,
-        price=data.price,
-        starting_price=data.starting_price,
+        price=final_price,  # EUR price (converted if CHF)
+        starting_price=final_price,
         mileage=data.mileage,
         color=data.color,
         description=data.description,
@@ -1323,7 +1340,9 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
         images=data.images,
         auction_end_time=auction_end.isoformat(),
         created_by=user["id"],
-        auto_delete_at=auto_delete_at
+        auto_delete_at=auto_delete_at,
+        original_price=original_price,  # Original price in original currency
+        original_currency=original_currency  # EUR or CHF
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
