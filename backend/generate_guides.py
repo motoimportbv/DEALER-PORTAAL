@@ -331,7 +331,7 @@ def create_supplier_guide_de():
     
     story.append(Spacer(1, 10))
     story.append(Paragraph("Registrierungs-URL:", styles['GuideBodyText']))
-    story.append(Paragraph("https://dealership-portal-8.preview.emergentagent.com/register/supplier", styles['URLStyle']))
+    story.append(Paragraph("https://www.motoimportbv.nl/register/supplier", styles['URLStyle']))
     
     story.append(Paragraph("SCHRITT 2: APP INSTALLIEREN", styles['SectionTitle']))
     story.append(Paragraph("<b>Für iPhone:</b> Safari → Teilen → 'Zum Home-Bildschirm'", styles['BulletText']))
