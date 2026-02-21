@@ -3235,7 +3235,7 @@ async def upload_multiple_images(request: Request, files: List[UploadFile] = Fil
         parsed = urlparse(origin)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
     else:
-        base_url = os.environ.get("BASE_URL", "")
+        base_url = PRODUCTION_BASE_URL
     
     for file in files:
         if file.content_type not in allowed_types:
