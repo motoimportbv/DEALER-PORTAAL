@@ -2891,7 +2891,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
             
             <!-- Footer -->
             <div style="border-top: 1px solid #e4e4e7; padding: 15px; text-align: center; color: #a1a1aa; font-size: 11px;">
-                <p style="margin: 0;">Moto Import B.V. | KVK: 94622086 | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                <p style="margin: 0;">Moto Import B.V. | KVK: 94622086 | www.motoimportbv.nl</p>
             </div>
         </div>
         
