@@ -2829,10 +2829,9 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                         <td style="width: 50%; vertical-align: top;">
                             <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>AFZENDER</strong></p>
                             <p style="margin: 0; font-weight: bold; font-size: 16px;">Moto Import B.V.</p>
-                            <p style="margin: 5px 0; color: #52525b;">Horsterhoekweg 11</p>
-                            <p style="margin: 5px 0; color: #52525b;">7433 SV Schalkhaar</p>
                             <p style="margin: 10px 0 0 0; color: #52525b;">Tel: +31 6 81792660</p>
                             <p style="margin: 5px 0; color: #52525b;">Motoimportbv@gmail.com</p>
+                            <p style="margin: 5px 0; color: #52525b;">www.motoimportbv.nl</p>
                         </td>
                         <td style="width: 50%; vertical-align: top;">
                             <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>ONTVANGER</strong></p>
