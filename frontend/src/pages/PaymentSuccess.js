@@ -157,8 +157,8 @@ const PaymentSuccess = () => {
 
           <div className="mt-8 pt-6 border-t border-zinc-200 text-sm text-zinc-500">
             <p className="font-semibold">Moto Import B.V.</p>
-            <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
             <p>+31 6 81792660 • Motoimportbv@gmail.com</p>
+            <p>www.motoimportbv.nl</p>
           </div>
         </CardContent>
       </Card>
