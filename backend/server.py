@@ -1476,7 +1476,11 @@ async def create_dealer_listing(data: MotorcycleCreate, user: dict = Depends(req
         <p style="color: #71717a;">Bij verkoop: €250 plaatsingskosten factureren aan {user.get('company_name', 'dealer')}.</p>
     </div>
     """
-    await send_admin_notification(f"🏍️ Nieuwe Dealer Motor: {motorcycle.brand} {motorcycle.model}", admin_html)
+    await send_admin_notification(
+        f"🏍️ Nieuwe Dealer Motor: {motorcycle.brand} {motorcycle.model}", 
+        admin_html,
+        include_limited_admin=True  # Also notify daniel2002jay@hotmail.com
+    )
     
     return motorcycle
 
