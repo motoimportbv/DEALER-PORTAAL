@@ -58,6 +58,26 @@ ADMIN_EMAILS_DEALER_MOTO = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2, ADMI
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
+# Email footer templates
+# For DEALERS - NO address shown
+EMAIL_FOOTER_DEALER = """
+    <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+        <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
+    </div>
+"""
+
+# For SUPPLIERS/FOREIGN DEALERS - WITH address
+EMAIL_FOOTER_SUPPLIER = """
+    <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+        <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+        <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
+    </div>
+"""
+
 # Stripe Config
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
 DELIVERY_COST = 50.0  # €50 bezorgkosten
