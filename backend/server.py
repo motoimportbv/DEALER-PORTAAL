@@ -3437,7 +3437,7 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
             </div>
             """
             # Send to all admin emails
-            for admin_email in ADMIN_EMAILS:
+            for admin_email in ADMIN_EMAILS_FULL:
                 await send_email(
                     to_email=admin_email,
                     subject=f"💰 Nieuw bod: €{data.amount:,.0f} op {motorcycle['brand']} {motorcycle['model']}",
@@ -5324,7 +5324,7 @@ TOTAAL: €{total:.2f}
 {"Verzending gewenst" if data.needs_shipping else "Wordt opgehaald"}
             """
             
-            for admin_email in ADMIN_EMAILS:
+            for admin_email in ADMIN_EMAILS_FULL:
                 try:
                     admin_msg = MIMEMultipart()
                     admin_msg['Subject'] = f'Nieuwe onderdelen bestelling: {order_number}'
@@ -5986,7 +5986,7 @@ async def auto_delete_expired_motorcycles():
                     </div>
                     """
                     # Send to all admin emails
-                    for admin_email in ADMIN_EMAILS:
+                    for admin_email in ADMIN_EMAILS_FULL:
                         await send_email(admin_email, f"⏰ {len(expired_motorcycles)} motor(en) automatisch verwijderd", html_content)
                 except Exception as e:
                     logger.error(f"Failed to send auto-delete notification: {e}")
