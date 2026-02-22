@@ -72,7 +72,7 @@ EMAIL_FOOTER_DEALER = """
 EMAIL_FOOTER_SUPPLIER = """
     <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
         <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-        <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
         <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
     </div>
@@ -1886,7 +1886,7 @@ async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
                 </div>
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-                    <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                    <p style="margin: 5px 0;">www.motoimportbv.nl</p>
                     <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
                 </div>
             </div>
@@ -2649,7 +2649,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                 </div>
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-                    <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                    <p style="margin: 5px 0;">www.motoimportbv.nl</p>
                 </div>
             </div>
             """
@@ -2760,7 +2760,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         </div>
         <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
             <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-            <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            <p style="margin: 5px 0;">www.motoimportbv.nl</p>
             <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
         </div>
     </div>
@@ -3186,7 +3186,7 @@ async def get_payment_status(session_id: str, user: dict = Depends(require_appro
                             </div>
                             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-                                <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                                <p style="margin: 5px 0;">www.motoimportbv.nl</p>
                                 <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
                             </div>
                         </div>
@@ -4107,7 +4107,7 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             
             <div style="text-align: center; padding: 20px; background: #f4f4f5; border-radius: 8px;">
                 <p style="margin: 0 0 10px 0; font-weight: bold;">Moto Import B.V.</p>
-                <p style="margin: 0; color: #666;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                
                 <p style="margin: 5px 0; color: #666;">📞 +31 6 81792660 | ✉️ motoimportbv@gmail.com</p>
                 <p style="margin: 5px 0; color: #666;">🌐 www.motoimportbv.nl</p>
             </div>
@@ -4270,7 +4270,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
                 
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-                    <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                    <p style="margin: 5px 0;">www.motoimportbv.nl</p>
                     <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
                 </div>
             </div>
@@ -4341,7 +4341,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
             
             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-                <p style="margin: 5px 0;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                <p style="margin: 5px 0;">www.motoimportbv.nl</p>
                 <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
             </div>
         </div>
