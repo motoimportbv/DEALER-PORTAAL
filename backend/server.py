@@ -3451,7 +3451,7 @@ async def place_bid(data: BidCreate, request: Request, user: dict = Depends(get_
                     <a href="{base_url}/admin/motorcycles" style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Bekijk in Dashboard</a>
                 </div>
                 <div style="padding: 20px; text-align: center; color: #71717a; font-size: 12px;">
-                    <p>Moto Import B.V. | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                    <p>Moto Import B.V. | www.motoimportbv.nl</p>
                 </div>
             </div>
             """
