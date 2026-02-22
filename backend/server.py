@@ -667,9 +667,22 @@ async def send_email(to_email: str, subject: str, html_content: str):
         logger.error(f"Failed to send email: {str(e)}")
         return False
 
-async def send_admin_notification(subject: str, html_content: str):
-    """Send email notification to ALL admin email addresses"""
-    for admin_email in ADMIN_EMAILS:
+async def send_admin_notification(subject: str, html_content: str, include_limited_admin: bool = False):
+    """Send email notification to admin email addresses
+    
+    Args:
+        subject: Email subject
+        html_content: HTML email body
+        include_limited_admin: If True, also sends to limited admin (daniel2002jay@hotmail.com)
+                              Only use for: new dealer registrations and new motorcycles
+    """
+    # Determine which admins to notify
+    if include_limited_admin:
+        admin_list = ADMIN_EMAILS_DEALER_MOTO  # All 3 admins
+    else:
+        admin_list = ADMIN_EMAILS_FULL  # Only main admins (excludes daniel2002jay)
+    
+    for admin_email in admin_list:
         try:
             await send_email(admin_email, subject, html_content)
             logger.info(f"Admin notification sent to {admin_email}")
