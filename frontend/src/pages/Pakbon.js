@@ -129,10 +129,9 @@ const Pakbon = () => {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{t('pakbon.sender')}</h3>
                 <div className="text-sm">
                   <p className="font-bold text-lg">Moto Import B.V.</p>
-                  <p className="text-zinc-600">Horsterhoekweg 11</p>
-                  <p className="text-zinc-600">7433 SV Schalkhaar</p>
-                  <p className="text-zinc-600 mt-2">Tel: +31 6 81792660</p>
+                  <p className="text-zinc-600">Tel: +31 6 81792660</p>
                   <p className="text-zinc-600">Email: Motoimportbv@gmail.com</p>
+                  <p className="text-zinc-600">www.motoimportbv.nl</p>
                 </div>
               </div>
 
