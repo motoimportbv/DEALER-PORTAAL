@@ -107,10 +107,9 @@ const TermsModal = ({ isOpen, onAccept, token }) => {
             <div className="mt-6 p-4 bg-zinc-100 rounded-lg">
               <p className="text-zinc-600 text-sm">
                 <strong>Moto Import B.V.</strong><br/>
-                Horsterhoekweg 11<br/>
-                7433 SV Schalkhaar<br/>
-                KvK: [KvK nummer]<br/>
-                BTW: [BTW nummer]
+                KvK: 94622086<br/>
+                Tel: +31 6 81792660<br/>
+                www.motoimportbv.nl
               </p>
             </div>
           </div>
