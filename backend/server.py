@@ -837,7 +837,8 @@ async def register(user_data: UserCreate):
         """
         await send_admin_notification(
             f"Nieuwe Dealer Registratie: {user_data.company_name}",
-            html_content
+            html_content,
+            include_limited_admin=True  # Also notify daniel2002jay@hotmail.com
         )
     
     token = create_token(user_id, user_data.email, user_data.role)
