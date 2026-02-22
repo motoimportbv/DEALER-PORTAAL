@@ -3890,7 +3890,7 @@ async def create_price_proposal(data: PriceProposalCreate, user: dict = Depends(
             </div>
             
             <div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
-                <p>Moto Import B.V. | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+                <p>Moto Import B.V. | www.motoimportbv.nl</p>
             </div>
         </div>
         """
