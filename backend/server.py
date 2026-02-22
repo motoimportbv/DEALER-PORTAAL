@@ -43,9 +43,18 @@ JWT_ALGORITHM = "HS256"
 
 # Gmail Config
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
-ADMIN_EMAIL_2 = os.environ.get('ADMIN_EMAIL_2', '')  # Second admin email
+ADMIN_EMAIL_2 = os.environ.get('ADMIN_EMAIL_2', '')  # Second admin - only dealer/motorcycle notifications
 ADMIN_EMAIL_3 = os.environ.get('ADMIN_EMAIL_3', '')  # Third admin email
-ADMIN_EMAILS = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3] if e.strip()]  # List of all admin emails
+
+# Full admin list (receives ALL notifications)
+ADMIN_EMAILS_FULL = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_3] if e.strip()]
+
+# Limited admin (only new dealers and new motorcycles)
+ADMIN_EMAIL_LIMITED = ADMIN_EMAIL_2.strip() if ADMIN_EMAIL_2 else None
+
+# Combined list for dealer/motorcycle notifications
+ADMIN_EMAILS_DEALER_MOTO = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3] if e.strip()]
+
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
