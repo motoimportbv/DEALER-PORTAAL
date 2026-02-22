@@ -3565,8 +3565,8 @@ async def create_wanted_request(data: WantedRequestCreate, user: dict = Depends(
             </div>
         </div>
         """
-        # Send to all admin emails
-        for admin_email in ADMIN_EMAILS:
+        # Send to main admins only (not limited admin)
+        for admin_email in ADMIN_EMAILS_FULL:
             await send_email(admin_email, f"🔍 Nieuw Zoekertje: {data.brand} {data.model}", html_content)
     except Exception as e:
         logger.error(f"Failed to send wanted request notification: {e}")
