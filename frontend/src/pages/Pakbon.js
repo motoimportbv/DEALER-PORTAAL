@@ -230,7 +230,7 @@ const Pakbon = () => {
             {/* Footer */}
             <div className="mt-12 pt-6 border-t border-zinc-200 text-center text-xs text-zinc-400">
               <p>Moto Import B.V. | KVK: 94622086 | BTW: NL123456789B01</p>
-              <p>Horsterhoekweg 11, 7433 SV Schalkhaar | +31 6 81792660 | Motoimportbv@gmail.com</p>
+              <p>+31 6 81792660 | Motoimportbv@gmail.com | www.motoimportbv.nl</p>
             </div>
           </div>
         </div>
