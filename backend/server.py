@@ -1273,7 +1273,7 @@ async def forgot_password(request: Request, data: PasswordResetRequest):
         </div>
         
         <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
-            <p style="margin: 5px 0;">Moto Import B.V. | Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+            <p style="margin: 5px 0;">Moto Import B.V. | www.motoimportbv.nl</p>
         </div>
     </div>
     """
