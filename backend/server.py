@@ -1566,7 +1566,11 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
         </div>
     </div>
     """
-    await send_admin_notification(f"🌍 Nieuwe Motor van {user.get('company_name', 'Buitenlandse Dealer')}", admin_html)
+    await send_admin_notification(
+        f"🌍 Nieuwe Motor van {user.get('company_name', 'Buitenlandse Dealer')}", 
+        admin_html,
+        include_limited_admin=True  # Also notify daniel2002jay@hotmail.com
+    )
     
     return {"message": "Motor ingediend voor beoordeling", "motorcycle_id": motorcycle.id}
 
