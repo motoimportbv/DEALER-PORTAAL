@@ -2184,6 +2184,14 @@ async def get_motorcycle_public(motorcycle_id: str):
     # Add default starting_price if missing
     if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
+    
+    # Hide supplier price info from public view
+    motorcycle.pop("original_price", None)
+    motorcycle.pop("original_currency", None)
+    motorcycle.pop("price_override", None)
+    motorcycle.pop("price_override_amount", None)
+    motorcycle.pop("price_override_active", None)
+    
     return motorcycle
 
 @api_router.get("/motorcycles/{motorcycle_id}")
@@ -2214,6 +2222,14 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
             motorcycle["exchange_rate"] = chf_eur_rate
             motorcycle["margin_percent"] = margin * 100
             motorcycle["price_updated_live"] = True
+    
+    # Hide supplier price info from non-admin users
+    if user.get("role") != "admin":
+        motorcycle.pop("original_price", None)
+        motorcycle.pop("original_currency", None)
+        motorcycle.pop("price_override", None)
+        motorcycle.pop("price_override_amount", None)
+        motorcycle.pop("price_override_active", None)
     
     return motorcycle
 
