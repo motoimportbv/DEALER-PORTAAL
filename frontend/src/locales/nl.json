@@ -185,8 +185,12 @@
     "pickupFree": "Ophalen bij Moto Import is gratis!",
     "inspectionWanted": "Keuring gewenst",
     "inspectionInfo": "Wij keuren de motor voor u. Kosten:",
+    "inspection": "Keuring",
+    "inspectionDescription": "Motorkeuring door Moto Import",
     "valuationWanted": "Taxatie gewenst",
     "valuationInfo": "Wij taxeren de motor voor u. Kosten:",
+    "valuation": "Taxatie",
+    "valuationDescription": "Motortaxatie (excl. BTW)",
     "exclVat": "(excl. BTW)",
     "orderConfirmation": "Na uw bestelling ontvangt u een bevestigingsmail met verdere instructies.",
     "orderButton": "Bestellen"
