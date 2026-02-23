@@ -178,9 +178,33 @@ const Pakbon = () => {
                     </td>
                     <td className="py-4 text-right align-top">1</td>
                     <td className="py-4 text-right align-top font-medium">
-                      € {(order.total_price - order.delivery_cost).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                      € {(order.total_price - (order.delivery_cost || 0) - (order.inspection_cost || 0) - (order.valuation_cost || 0)).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
+                  {order.needs_inspection && order.inspection_cost > 0 && (
+                    <tr className="border-b border-zinc-100">
+                      <td className="py-4">
+                        <p className="font-medium">{t('order.inspection')}</p>
+                        <p className="text-sm text-zinc-500">{t('order.inspectionDescription')}</p>
+                      </td>
+                      <td className="py-4 text-right align-top">1</td>
+                      <td className="py-4 text-right align-top font-medium">
+                        € {order.inspection_cost.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  )}
+                  {order.needs_valuation && order.valuation_cost > 0 && (
+                    <tr className="border-b border-zinc-100">
+                      <td className="py-4">
+                        <p className="font-medium">{t('order.valuation')}</p>
+                        <p className="text-sm text-zinc-500">{t('order.valuationDescription')}</p>
+                      </td>
+                      <td className="py-4 text-right align-top">1</td>
+                      <td className="py-4 text-right align-top font-medium">
+                        € {order.valuation_cost.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  )}
                   {order.needs_delivery && order.delivery_cost > 0 && (
                     <tr className="border-b border-zinc-100">
                       <td className="py-4">
