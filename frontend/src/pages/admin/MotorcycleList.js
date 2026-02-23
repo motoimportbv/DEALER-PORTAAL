@@ -262,10 +262,10 @@ const MotorcycleList = () => {
                     {formatPrice(motorcycle.price)}
                   </p>
                   
-                  {/* Show original supplier price if price was adjusted */}
-                  {motorcycle.original_price && motorcycle.original_price !== motorcycle.price && (
-                    <p className="text-xs text-zinc-500 mb-3">
-                      <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                  {/* Always show original supplier price if available */}
+                  {motorcycle.original_price && (
+                    <p className="text-xs text-zinc-500 mb-1">
+                      <span className={`px-2 py-0.5 rounded ${motorcycle.original_price !== motorcycle.price ? 'bg-amber-100 text-amber-700' : 'bg-zinc-100 text-zinc-600'}`}>
                         Leverancier: {motorcycle.original_currency === 'CHF' 
                           ? `CHF ${motorcycle.original_price.toLocaleString('nl-NL')}` 
                           : formatPrice(motorcycle.original_price)}
