@@ -336,6 +336,54 @@ const ForeignDealerAddMotorcycle = () => {
                     <option value="fair">{t('motorcycle.fair')}</option>
                   </select>
                 </div>
+                
+                {/* Maintenance History - Required */}
+                <div className="space-y-2 col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <Label className="text-blue-900 font-semibold">
+                    {t('foreignDealer.maintenanceHistory', 'Onderhoudshistorie')} *
+                  </Label>
+                  <p className="text-sm text-blue-700 mb-3">
+                    {t('foreignDealer.maintenanceHistoryDescription', 'Is er onderhoudshistorie/serviceboekje aanwezig bij deze motor?')}
+                  </p>
+                  <div className="flex gap-4">
+                    <label className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${formData.has_maintenance_history === true ? 'border-green-500 bg-green-50' : 'border-zinc-200 hover:border-green-300'}`}>
+                      <input
+                        type="radio"
+                        name="has_maintenance_history"
+                        checked={formData.has_maintenance_history === true}
+                        onChange={() => setFormData(prev => ({ ...prev, has_maintenance_history: true }))}
+                        className="w-4 h-4 text-green-600"
+                      />
+                      <span className="font-medium text-green-700">✓ {t('foreignDealer.hasHistory', 'Ja, aanwezig')}</span>
+                    </label>
+                    <label className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${formData.has_maintenance_history === false ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-red-300'}`}>
+                      <input
+                        type="radio"
+                        name="has_maintenance_history"
+                        checked={formData.has_maintenance_history === false}
+                        onChange={() => setFormData(prev => ({ ...prev, has_maintenance_history: false }))}
+                        className="w-4 h-4 text-red-600"
+                      />
+                      <span className="font-medium text-red-700">✗ {t('foreignDealer.noHistory', 'Nee, niet aanwezig')}</span>
+                    </label>
+                  </div>
+                  {formData.has_maintenance_history === true && (
+                    <div className="mt-3">
+                      <Label htmlFor="maintenance_details" className="text-blue-800">
+                        {t('foreignDealer.maintenanceDetails', 'Details (optioneel)')}
+                      </Label>
+                      <Input
+                        id="maintenance_details"
+                        name="maintenance_history_details"
+                        value={formData.maintenance_history_details}
+                        onChange={handleChange}
+                        placeholder={t('foreignDealer.maintenanceDetailsPlaceholder', 'Bijv. Volledig dealeronderhouden, laatste beurt 5000 km geleden')}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="price">{t('foreignDealer.purchasePrice')} *</Label>
                   <div className="flex gap-2">
