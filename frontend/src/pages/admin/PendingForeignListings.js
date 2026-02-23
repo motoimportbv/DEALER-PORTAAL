@@ -16,7 +16,8 @@ import {
   Clock,
   DollarSign,
   MapPin,
-  MessageCircle
+  MessageCircle,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
