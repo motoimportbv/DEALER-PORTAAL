@@ -212,7 +212,14 @@
     "infoMessage": "Uw motor wordt beoordeeld door Moto Import. Na goedkeuring en prijsbepaling wordt deze zichtbaar.",
     "myListings": "Mijn Ingezonden Motors",
     "priceWarning": "Let op: Dit is de inkoopprijs voor Moto Import, niet de verkoopprijs aan eindklanten.",
-    "purchasePrice": "Inkoopprijs"
+    "purchasePrice": "Inkoopprijs",
+    "maintenanceHistory": "Onderhoudshistorie",
+    "maintenanceHistoryDescription": "Is er onderhoudshistorie/serviceboekje aanwezig bij deze motor?",
+    "hasHistory": "Ja, aanwezig",
+    "noHistory": "Nee, niet aanwezig",
+    "maintenanceDetails": "Details (optioneel)",
+    "maintenanceDetailsPlaceholder": "Bijv. Volledig dealeronderhouden, laatste beurt 5000 km geleden",
+    "maintenanceRequired": "Geef aan of er onderhoudshistorie aanwezig is"
   },
   "admin": {
     "pendingListings": "Wachtende Motors",
