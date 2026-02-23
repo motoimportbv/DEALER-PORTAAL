@@ -207,6 +207,13 @@ const OrderList = () => {
                           <p className="font-barlow font-bold text-red-600 text-lg mt-1">
                             {formatPrice(order.motorcycle.price)}
                           </p>
+                          {order.motorcycle.original_price && (
+                            <p className="text-xs text-zinc-500 mt-0.5">
+                              Lev: {order.motorcycle.original_currency === 'CHF' 
+                                ? `CHF ${order.motorcycle.original_price.toLocaleString('nl-NL')}` 
+                                : formatPrice(order.motorcycle.original_price)}
+                            </p>
+                          )}
                         </>
                       ) : (
                         <span className="text-zinc-400">{t('motorcycle.deleted')}</span>
