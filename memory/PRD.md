@@ -52,6 +52,29 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - Grijs label als prijs niet is gewijzigd
 - **Status**: ✅ Voltooid
 
+#### ✅ Backend Beveiliging Leveranciersprijs
+- **Verzoek**: Dealers mogen leveranciersprijs niet zien, ook niet via API
+- **Aangepaste endpoints**:
+  - `/api/motorcycles` - verwijdert original_price voor niet-admin
+  - `/api/motorcycles/{id}` - verwijdert original_price voor niet-admin
+  - `/api/motorcycles/{id}/public` - verwijdert original_price
+  - `/api/motorcycles/available` - verwijdert original_price voor niet-admin
+  - `/api/motorcycles/with-exchange-rate` - verwijdert original_price voor niet-admin
+- **Status**: ✅ Voltooid en getest
+
+#### ✅ AI Welkomstbericht voor Dealers
+- **Verzoek**: Bij inloggen dealer een AI-bericht tonen met nieuwe motoren sinds laatste bezoek
+- **Implementatie**:
+  - Backend: `/api/dealer/welcome-message` endpoint met GPT-5.2 integratie
+  - Frontend: `WelcomePopup.js` component met popup dialog
+  - Tracking: `last_visit` veld wordt bijgehouden per dealer
+- **Features**:
+  - Toont nieuwe motoren sinds laatste bezoek
+  - AI genereert persoonlijk welkomstbericht
+  - Fallback bericht als AI niet beschikbaar is
+  - Preview van max 5 nieuwe motoren met afbeeldingen
+- **Status**: ✅ Voltooid (AI budget was overschreden tijdens test, fallback werkt)
+
 ---
 
 ### Session - 20 February 2025 (Part 8 - Test Email & Cleanup)
