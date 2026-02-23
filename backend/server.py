@@ -2067,6 +2067,9 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
     chf_eur_rate = await get_chf_to_eur_rate()
     margin = await get_chf_eur_margin()
     
+    # Check if user is admin
+    is_admin = user.get("role") == "admin"
+    
     # Process motorcycles - recalculate EUR prices for CHF motorcycles
     for m in motorcycles:
         # Add default starting_price if missing
@@ -2089,6 +2092,14 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
                 m["exchange_rate"] = chf_eur_rate
                 m["margin_percent"] = margin * 100
                 m["price_updated_live"] = True
+        
+        # Hide supplier price info from non-admin users
+        if not is_admin:
+            m.pop("original_price", None)
+            m.pop("original_currency", None)
+            m.pop("price_override", None)
+            m.pop("price_override_amount", None)
+            m.pop("price_override_active", None)
     
     return motorcycles
 
