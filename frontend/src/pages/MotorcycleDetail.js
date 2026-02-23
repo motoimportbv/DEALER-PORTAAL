@@ -431,10 +431,10 @@ const MotorcycleDetail = () => {
                     {formatPrice(motorcycle.price)}
                   </p>
                   
-                  {/* Show original supplier price for admin */}
-                  {user?.role === 'admin' && motorcycle.original_price && motorcycle.original_price !== motorcycle.price && (
+                  {/* Always show original supplier price for admin */}
+                  {user?.role === 'admin' && motorcycle.original_price && (
                     <div className="mt-2 pt-2 border-t border-zinc-700">
-                      <p className="text-xs text-amber-400">
+                      <p className={`text-xs ${motorcycle.original_price !== motorcycle.price ? 'text-amber-400' : 'text-zinc-400'}`}>
                         💰 Leveranciersprijs: {motorcycle.original_currency === 'CHF' 
                           ? `CHF ${motorcycle.original_price.toLocaleString('nl-NL')}` 
                           : `€${motorcycle.original_price.toLocaleString('nl-NL')}`}
