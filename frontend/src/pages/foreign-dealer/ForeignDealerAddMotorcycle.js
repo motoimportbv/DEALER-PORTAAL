@@ -116,7 +116,9 @@ const ForeignDealerAddMotorcycle = () => {
     description: '',
     condition: 'good',
     images: [],
-    chassis_number: ''
+    chassis_number: '',
+    has_maintenance_history: null,  // Required field
+    maintenance_history_details: ''
   });
 
   // Fetch exchange rate on mount
