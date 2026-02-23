@@ -184,8 +184,12 @@
     "pickupFree": "Il ritiro presso Moto Import è gratuito!",
     "inspectionWanted": "Ispezione desiderata",
     "inspectionInfo": "Controlliamo la moto per te. Costo:",
+    "inspection": "Ispezione",
+    "inspectionDescription": "Ispezione moto da Moto Import",
     "valuationWanted": "Valutazione desiderata",
     "valuationInfo": "Valutiamo la moto per te. Costo:",
+    "valuation": "Valutazione",
+    "valuationDescription": "Valutazione moto (IVA esclusa)",
     "exclVat": "(IVA esclusa)",
     "orderConfirmation": "Dopo l'ordine riceverai un'e-mail di conferma con istruzioni.",
     "orderButton": "Ordina"

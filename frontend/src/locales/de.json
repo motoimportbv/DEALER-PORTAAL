@@ -184,8 +184,12 @@
     "pickupFree": "Abholung bei Moto Import ist kostenlos!",
     "inspectionWanted": "Inspektion gewünscht",
     "inspectionInfo": "Wir prüfen das Motorrad für Sie. Kosten:",
+    "inspection": "Inspektion",
+    "inspectionDescription": "Motorradinspektion durch Moto Import",
     "valuationWanted": "Bewertung gewünscht",
     "valuationInfo": "Wir bewerten das Motorrad für Sie. Kosten:",
+    "valuation": "Bewertung",
+    "valuationDescription": "Motorradbewertung (zzgl. MwSt.)",
     "exclVat": "(zzgl. MwSt.)",
     "orderConfirmation": "Nach Ihrer Bestellung erhalten Sie eine Bestätigungs-E-Mail mit weiteren Anweisungen.",
     "orderButton": "Bestellen"

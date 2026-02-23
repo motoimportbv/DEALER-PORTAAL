@@ -184,8 +184,12 @@
     "pickupFree": "Le retrait chez Moto Import est gratuit !",
     "inspectionWanted": "Contrôle souhaité",
     "inspectionInfo": "Nous contrôlons la moto pour vous. Coût :",
+    "inspection": "Contrôle",
+    "inspectionDescription": "Contrôle moto par Moto Import",
     "valuationWanted": "Expertise souhaitée",
     "valuationInfo": "Nous expertisons la moto pour vous. Coût :",
+    "valuation": "Expertise",
+    "valuationDescription": "Expertise moto (HT)",
     "exclVat": "(HT)",
     "orderConfirmation": "Après votre commande, vous recevrez un e-mail de confirmation avec les instructions.",
     "orderButton": "Commander"
