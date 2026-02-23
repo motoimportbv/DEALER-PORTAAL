@@ -317,9 +317,18 @@ const OrderList = () => {
                         </td>
                         <td>
                           {order.motorcycle ? (
-                            <span className="font-barlow font-bold text-red-600">
-                              {formatPrice(order.motorcycle.price)}
-                            </span>
+                            <div>
+                              <span className="font-barlow font-bold text-red-600">
+                                {formatPrice(order.motorcycle.price)}
+                              </span>
+                              {order.motorcycle.original_price && (
+                                <p className="text-xs text-zinc-500 mt-0.5">
+                                  Lev: {order.motorcycle.original_currency === 'CHF' 
+                                    ? `CHF ${order.motorcycle.original_price.toLocaleString('nl-NL')}` 
+                                    : formatPrice(order.motorcycle.original_price)}
+                                </p>
+                              )}
+                            </div>
                           ) : '-'}
                         </td>
                         <td className="max-w-xs">
