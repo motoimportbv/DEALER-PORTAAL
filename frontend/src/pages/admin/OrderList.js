@@ -146,6 +146,25 @@ const OrderList = () => {
           </h1>
           <p className="text-zinc-500 mt-1">{orders.length} {t('orders.totalOrders')}</p>
         </div>
+        
+        {/* Auto-print toggle */}
+        <div className="flex items-center gap-3">
+          <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${autoOpenPakbon ? 'border-green-500 bg-green-50' : 'border-zinc-200'}`}>
+            <input
+              type="checkbox"
+              checked={autoOpenPakbon}
+              onChange={(e) => {
+                setAutoOpenPakbon(e.target.checked);
+                toast.success(e.target.checked ? '🖨️ Auto-print AAN' : '🖨️ Auto-print UIT');
+              }}
+              className="w-4 h-4 rounded"
+            />
+            <Printer className={`w-4 h-4 ${autoOpenPakbon ? 'text-green-600' : 'text-zinc-400'}`} />
+            <span className={`text-sm font-medium ${autoOpenPakbon ? 'text-green-700' : 'text-zinc-500'}`}>
+              Auto-print pakbon
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="content-body" data-testid="order-list">
