@@ -210,7 +210,14 @@
     "pendingReview": "Wartet auf Überprüfung",
     "infoMessage": "Ihr Motorrad wird von Moto Import geprüft. Nach Genehmigung und Preisfestlegung wird es sichtbar.",
     "myListings": "Meine eingereichten Motorräder",
-    "priceWarning": "Achtung: Dies ist der Einkaufspreis für Moto Import, nicht der Verkaufspreis an Endkunden."
+    "priceWarning": "Achtung: Dies ist der Einkaufspreis für Moto Import, nicht der Verkaufspreis an Endkunden.",
+    "maintenanceHistory": "Wartungshistorie",
+    "maintenanceHistoryDescription": "Ist ein Wartungsnachweis/Serviceheft für dieses Motorrad vorhanden?",
+    "hasHistory": "Ja, vorhanden",
+    "noHistory": "Nein, nicht vorhanden",
+    "maintenanceDetails": "Details (optional)",
+    "maintenanceDetailsPlaceholder": "Z.B. Vollständig beim Händler gewartet, letzte Inspektion vor 5000 km",
+    "maintenanceRequired": "Bitte geben Sie an, ob eine Wartungshistorie vorhanden ist"
   },
   "admin": {
     "pendingListings": "Ausstehende Motorräder",
