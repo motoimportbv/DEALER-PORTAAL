@@ -289,6 +289,8 @@ class Motorcycle(BaseModel):
     foreign_dealer_company: Optional[str] = None  # Company name of foreign dealer
     original_price: Optional[float] = None  # Price suggested by foreign dealer
     original_currency: str = "EUR"  # Currency of original price (EUR or CHF)
+    has_maintenance_history: Optional[bool] = None  # Required for foreign dealers: does it have maintenance history?
+    maintenance_history_details: Optional[str] = None  # Optional details about maintenance
 
 class BidCreate(BaseModel):
     motorcycle_id: str
