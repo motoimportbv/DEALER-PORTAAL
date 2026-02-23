@@ -194,6 +194,12 @@ const ForeignDealerAddMotorcycle = () => {
       toast.error('Please fill in all required fields');
       return;
     }
+    
+    // Validate maintenance history is selected
+    if (formData.has_maintenance_history === null) {
+      toast.error(t('foreignDealer.maintenanceRequired', 'Geef aan of er onderhoudshistorie aanwezig is'));
+      return;
+    }
 
     setLoading(true);
     try {
@@ -203,7 +209,9 @@ const ForeignDealerAddMotorcycle = () => {
         price: parseFloat(formData.price),
         starting_price: formData.starting_price ? parseFloat(formData.starting_price) : parseFloat(formData.price) * 0.8,
         mileage: parseInt(formData.mileage) || 0,
-        auction_duration_hours: 0
+        auction_duration_hours: 0,
+        has_maintenance_history: formData.has_maintenance_history,
+        maintenance_history_details: formData.maintenance_history_details || null
       };
 
       await axios.post(`${API}/motorcycles/foreign-listing`, payload, {
