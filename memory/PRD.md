@@ -20,6 +20,28 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 23 February 2025 (Pakbon Bug Fix)
+
+#### ✅ Keuring en Taxatie Weergave op Pakbon
+- **Probleem**: Bij aankoop van motorfiets werden keuring en taxatie niet weergegeven op de pakbon, alleen bezorging
+- **Oorzaak 1**: Backend `OrderWithMotorcycle` model miste de velden `needs_inspection`, `inspection_cost`, `needs_valuation`, `valuation_cost`
+- **Oorzaak 2**: Frontend `Pakbon.js` toonde alleen bezorgkosten, niet keuring/taxatie
+- **Backend Fix** (`server.py`):
+  - Toegevoegd aan `OrderWithMotorcycle` model:
+    - `needs_inspection: bool = False`
+    - `inspection_cost: float = 0.0`
+    - `needs_valuation: bool = False`
+    - `valuation_cost: float = 0.0`
+- **Frontend Fix** (`Pakbon.js`):
+  - Motorprijs berekening aangepast: `total_price - delivery_cost - inspection_cost - valuation_cost`
+  - Keuring rij toegevoegd (€125) indien geselecteerd
+  - Taxatie rij toegevoegd (€160) indien geselecteerd
+- **Vertalingen** (nl.json, de.json, fr.json, it.json):
+  - Toegevoegd: `order.inspection`, `order.inspectionDescription`, `order.valuation`, `order.valuationDescription`
+- **Status**: ✅ Voltooid en getest via API
+
+---
+
 ### Session - 20 February 2025 (Part 8 - Test Email & Cleanup)
 
 #### ✅ Test E-mail Verzonden voor Link Verificatie
