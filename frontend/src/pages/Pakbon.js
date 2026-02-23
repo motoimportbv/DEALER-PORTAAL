@@ -175,6 +175,14 @@ const Pakbon = () => {
                         {t('motorcycle.year')}: {motorcycle.year} | {t('motorcycle.color')}: {motorcycle.color} | KM: {motorcycle.mileage?.toLocaleString('nl-NL')}
                       </p>
                       <p className="text-sm text-zinc-500">{t('motorcycle.condition')}: {motorcycle.condition}</p>
+                      {/* Show supplier price for admin */}
+                      {user?.role === 'admin' && motorcycle.original_price && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          💰 Lev: {motorcycle.original_currency === 'CHF' 
+                            ? `CHF ${motorcycle.original_price.toLocaleString('nl-NL')}` 
+                            : `€ ${motorcycle.original_price.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}`}
+                        </p>
+                      )}
                     </td>
                     <td className="py-4 text-right align-top">1</td>
                     <td className="py-4 text-right align-top font-medium">
