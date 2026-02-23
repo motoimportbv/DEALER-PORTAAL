@@ -28,16 +28,56 @@ const OrderList = () => {
   const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastOrderCount, setLastOrderCount] = useState(0);
+  const [autoOpenPakbon, setAutoOpenPakbon] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchOrders();
+    
+    // Poll for new orders every 30 seconds
+    const interval = setInterval(() => {
+      checkForNewOrders();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
+  
+  const checkForNewOrders = async () => {
+    try {
+      const response = await axios.get(`${API}/orders`);
+      const newOrders = response.data;
+      
+      // Check if there are new orders
+      if (lastOrderCount > 0 && newOrders.length > lastOrderCount && autoOpenPakbon) {
+        // Find the newest order
+        const newestOrder = newOrders[0]; // Orders are sorted by date desc
+        
+        // Show notification
+        toast.success(`🆕 Nieuwe order: ${newestOrder.motorcycle_brand} ${newestOrder.motorcycle_model}`, {
+          duration: 10000,
+          action: {
+            label: 'Print Pakbon',
+            onClick: () => window.open(`/pakbon/${newestOrder.id}?print=true`, '_blank')
+          }
+        });
+        
+        // Auto-open pakbon in new tab
+        window.open(`/pakbon/${newestOrder.id}?print=true`, '_blank');
+      }
+      
+      setLastOrderCount(newOrders.length);
+      setOrders(newOrders);
+    } catch (error) {
+      console.error('Error checking for new orders:', error);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
       const response = await axios.get(`${API}/orders`);
       setOrders(response.data);
+      setLastOrderCount(response.data.length);
     } catch (error) {
       // Only show error if it's not a cancelled request
       if (!axios.isCancel(error)) {
