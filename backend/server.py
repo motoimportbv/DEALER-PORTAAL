@@ -1517,6 +1517,10 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
     if not user.get("is_foreign_dealer", False):
         raise HTTPException(status_code=403, detail="Alleen buitenlandse dealers kunnen deze functie gebruiken")
     
+    # Validate maintenance history is provided (required for foreign dealers)
+    if data.has_maintenance_history is None:
+        raise HTTPException(status_code=400, detail="Onderhoudshistorie is verplicht. Geef aan of er onderhoudshistorie bij de motor zit.")
+    
     # Get currency - default to CHF for Swiss dealers
     currency = data.currency.upper() if data.currency else "CHF"
     if currency not in ["EUR", "CHF"]:
@@ -1551,7 +1555,9 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
         foreign_dealer_id=user["id"],
         foreign_dealer_company=user.get("company_name", ""),
         original_price=original_price,
-        original_currency=currency
+        original_currency=currency,
+        has_maintenance_history=data.has_maintenance_history,
+        maintenance_history_details=data.maintenance_history_details
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
