@@ -238,6 +238,8 @@ class MotorcycleCreate(BaseModel):
     chassis_number: str = ""  # VIN/Chassisnummer
     currency: str = "EUR"  # Currency for price (EUR or CHF)
     auto_delete_hours: int = 24  # Auto-delete after X hours if not sold (0 = no auto-delete)
+    has_maintenance_history: Optional[bool] = None  # Required for foreign dealers
+    maintenance_history_details: Optional[str] = None  # Optional details
 
 class MotorcycleUpdate(BaseModel):
     brand: Optional[str] = None
