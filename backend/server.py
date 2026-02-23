@@ -365,6 +365,10 @@ class OrderWithMotorcycle(BaseModel):
     notes: str = ""
     needs_delivery: bool = False
     delivery_cost: float = 0.0
+    needs_inspection: bool = False  # Keuring
+    inspection_cost: float = 0.0
+    needs_valuation: bool = False   # Taxatie
+    valuation_cost: float = 0.0
     deposit_amount: float = 0.0
     total_price: float = 0.0
     payment_status: str = "unpaid"
