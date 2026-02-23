@@ -204,6 +204,37 @@ const PendingForeignListings = () => {
                         {motorcycle.foreign_dealer_company}
                       </span>
                     </div>
+                    
+                    {/* Maintenance History Badge */}
+                    <div className={`flex items-center gap-2 mb-3 p-2 rounded-lg ${motorcycle.has_maintenance_history ? 'bg-green-50' : 'bg-red-50'}`}>
+                      {motorcycle.has_maintenance_history ? (
+                        <>
+                          <Check className="w-4 h-4 text-green-600" />
+                          <span className="text-green-800 text-sm font-medium">
+                            ✓ Onderhoudshistorie aanwezig
+                          </span>
+                        </>
+                      ) : motorcycle.has_maintenance_history === false ? (
+                        <>
+                          <X className="w-4 h-4 text-red-600" />
+                          <span className="text-red-800 text-sm font-medium">
+                            ✗ Geen onderhoudshistorie
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-4 h-4 text-zinc-400" />
+                          <span className="text-zinc-500 text-sm">
+                            Onderhoudshistorie onbekend
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {motorcycle.maintenance_history_details && (
+                      <p className="text-xs text-zinc-500 mb-3 italic">
+                        "{motorcycle.maintenance_history_details}"
+                      </p>
+                    )}
 
                     {/* Suggested Price */}
                     <div className="flex items-center justify-between mb-4">
