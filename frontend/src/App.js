@@ -236,6 +236,7 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
           <InstallPrompt />
+          <WelcomePopup />
         </BrowserRouter>
       </div>
     </AuthProvider>
