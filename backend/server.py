@@ -4704,6 +4704,116 @@ async def delete_notification(notification_id: str, user: dict = Depends(get_cur
     return {"message": "Notification deleted"}
 
 
+# ============ AI WELCOME MESSAGE ENDPOINTS ============
+
+async def generate_welcome_message(dealer_name: str, new_motorcycles: list) -> str:
+    """Generate a personalized welcome message using GPT-5.2"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
+        if not EMERGENT_LLM_KEY:
+            logger.warning("EMERGENT_LLM_KEY not configured")
+            return None
+        
+        # Build motorcycle list for the prompt
+        if not new_motorcycles:
+            return None
+            
+        motorcycle_list = "\n".join([
+            f"- {m.get('brand', '')} {m.get('model', '')} ({m.get('year', '')}) - €{m.get('price', 0):,.0f}"
+            for m in new_motorcycles[:5]  # Max 5 motorcycles
+        ])
+        
+        more_text = f"\n...en nog {len(new_motorcycles) - 5} andere nieuwe motoren!" if len(new_motorcycles) > 5 else ""
+        
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"welcome-{uuid.uuid4()}",
+            system_message="""Je bent een vriendelijke assistent voor Moto Import B.V., een motorfiets groothandel in Nederland. 
+Schrijf korte, enthousiaste welkomstberichten in het Nederlands. Gebruik een professionele maar warme toon.
+Houd het bericht kort (max 3 zinnen) en eindig met een uitnodiging om de nieuwe motoren te bekijken.
+Gebruik GEEN emoji's. Schrijf in gewone tekst."""
+        ).with_model("openai", "gpt-5.2")
+        
+        user_message = UserMessage(
+            text=f"""Schrijf een kort welkomstbericht voor dealer "{dealer_name}".
+Er zijn {len(new_motorcycles)} nieuwe motoren toegevoegd sinds hun laatste bezoek:
+
+{motorcycle_list}{more_text}
+
+Maak het persoonlijk en nodig ze uit om te kijken."""
+        )
+        
+        response = await chat.send_message(user_message)
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error generating welcome message: {e}")
+        return None
+
+@api_router.get("/dealer/welcome-message")
+async def get_dealer_welcome_message(user: dict = Depends(require_approved_dealer)):
+    """Get personalized AI welcome message with new motorcycles since last visit"""
+    
+    # Only for dealers, not admin
+    if user.get("role") == "admin":
+        return {"show_message": False}
+    
+    dealer_id = user["id"]
+    dealer_name = user.get("company_name", "dealer")
+    
+    # Get last visit timestamp
+    dealer_data = await db.users.find_one({"id": dealer_id}, {"_id": 0, "last_visit": 1})
+    last_visit = dealer_data.get("last_visit") if dealer_data else None
+    
+    # Update last visit to now
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"last_visit": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # If first visit or no last_visit recorded, show welcome but no new motorcycles
+    if not last_visit:
+        return {
+            "show_message": True,
+            "message": f"Welkom bij Moto Import, {dealer_name}! Bekijk ons actuele aanbod van kwaliteitsmotoren.",
+            "new_motorcycles_count": 0,
+            "new_motorcycles": []
+        }
+    
+    # Find motorcycles added since last visit
+    try:
+        new_motorcycles = await db.motorcycles.find(
+            {
+                "created_at": {"$gt": last_visit},
+                "is_available": True,
+                "is_active": {"$ne": False}
+            },
+            {"_id": 0, "id": 1, "brand": 1, "model": 1, "year": 1, "price": 1, "images": 1}
+        ).sort("created_at", -1).to_list(20)
+    except Exception as e:
+        logger.error(f"Error fetching new motorcycles: {e}")
+        new_motorcycles = []
+    
+    if not new_motorcycles:
+        return {"show_message": False}
+    
+    # Generate AI message
+    ai_message = await generate_welcome_message(dealer_name, new_motorcycles)
+    
+    # Fallback message if AI fails
+    if not ai_message:
+        ai_message = f"Welkom terug, {dealer_name}! Er zijn {len(new_motorcycles)} nieuwe motoren toegevoegd sinds uw laatste bezoek. Bekijk ze nu!"
+    
+    return {
+        "show_message": True,
+        "message": ai_message,
+        "new_motorcycles_count": len(new_motorcycles),
+        "new_motorcycles": new_motorcycles[:5]  # Return max 5 for preview
+    }
+
+
 # ============ SMS NOTIFICATION ENDPOINTS ============
 
 async def send_sms_to_dealer(phone_number: str, message: str) -> dict:
