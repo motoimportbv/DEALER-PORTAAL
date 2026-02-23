@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { initializeNativeFeatures, isNative } from "./services/nativeService";
 import InstallPrompt from "./components/InstallPrompt";
+import WelcomePopup from "./components/WelcomePopup";
 import { useGeoLanguage } from "./hooks/useGeoLanguage";
 
 // Global navigation ref for service worker notifications
