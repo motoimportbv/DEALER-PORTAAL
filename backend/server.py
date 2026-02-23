@@ -2027,6 +2027,9 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
     chf_eur_rate = await get_chf_to_eur_rate()
     margin = await get_chf_eur_margin()
     
+    # Check if user is admin
+    is_admin = user.get("role") == "admin"
+    
     result = []
     for m in motorcycles:
         # Add default starting_price if missing
@@ -2048,6 +2051,14 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
                 m["starting_price"] = round(live_eur_price * 0.8, 2)
                 m["exchange_rate"] = chf_eur_rate
                 m["margin_percent"] = margin * 100
+        
+        # Hide supplier price info from non-admin users
+        if not is_admin:
+            m.pop("original_price", None)
+            m.pop("original_currency", None)
+            m.pop("price_override", None)
+            m.pop("price_override_amount", None)
+            m.pop("price_override_active", None)
         
         result.append(m)
     
