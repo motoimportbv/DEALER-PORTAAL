@@ -210,7 +210,14 @@
     "pendingReview": "In attesa di revisione",
     "infoMessage": "La tua moto sarà valutata da Moto Import. Dopo l'approvazione e la determinazione del prezzo, sarà visibile.",
     "myListings": "Le mie moto inviate",
-    "priceWarning": "Attenzione: Questo è il prezzo di acquisto per Moto Import, non il prezzo di vendita ai clienti finali."
+    "priceWarning": "Attenzione: Questo è il prezzo di acquisto per Moto Import, non il prezzo di vendita ai clienti finali.",
+    "maintenanceHistory": "Storico manutenzione",
+    "maintenanceHistoryDescription": "È presente uno storico manutenzione/libretto tagliandi per questa moto?",
+    "hasHistory": "Sì, disponibile",
+    "noHistory": "No, non disponibile",
+    "maintenanceDetails": "Dettagli (opzionale)",
+    "maintenanceDetailsPlaceholder": "Es. Manutenzione completa presso concessionario, ultimo tagliando a 5000 km",
+    "maintenanceRequired": "Indicare se è disponibile uno storico manutenzione"
   },
   "admin": {
     "pendingListings": "Moto in attesa",
