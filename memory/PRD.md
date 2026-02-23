@@ -40,6 +40,18 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
   - Toegevoegd: `order.inspection`, `order.inspectionDescription`, `order.valuation`, `order.valuationDescription`
 - **Status**: ✅ Voltooid en getest via API
 
+#### ✅ Leveranciersprijs Altijd Zichtbaar voor Admin
+- **Verzoek**: Admin wil de originele leveranciersprijs altijd kunnen zien
+- **Aanpassingen**:
+  - `MotorcycleList.js`: Leveranciersprijs nu altijd zichtbaar (niet meer alleen bij prijsverschil)
+  - `MotorcycleDetail.js`: Leveranciersprijs altijd zichtbaar onder de verkoopprijs
+  - `OrderList.js`: Leveranciersprijs toegevoegd in bestellingenoverzicht (mobiel + desktop)
+  - `Pakbon.js`: Leveranciersprijs zichtbaar op pakbon (alleen voor admin)
+- **Visuele indicatie**: 
+  - Oranje label als prijs is aangepast
+  - Grijs label als prijs niet is gewijzigd
+- **Status**: ✅ Voltooid
+
 ---
 
 ### Session - 20 February 2025 (Part 8 - Test Email & Cleanup)
