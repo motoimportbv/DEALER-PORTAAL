@@ -429,6 +429,88 @@ const BulkMotorcycleForm = () => {
             </CardContent>
           </Card>
 
+          {/* Visibility Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Zichtbaarheid
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Wie kan deze motoren zien?</Label>
+                <Select value={baseData.visibility} onValueChange={(v) => handleBaseChange('visibility', v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Alle dealers
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="selected">
+                      <div className="flex items-center gap-2">
+                        <EyeOff className="h-4 w-4" />
+                        Alleen geselecteerde dealers
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {baseData.visibility === 'selected' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Selecteer dealers ({baseData.visible_to_dealers.length} geselecteerd)</Label>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={selectAllDealers}>
+                        Alles selecteren
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={deselectAllDealers}>
+                        Alles deselecteren
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {loadingDealers ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+                    </div>
+                  ) : dealers.length === 0 ? (
+                    <p className="text-sm text-zinc-500 py-4">Geen dealers gevonden</p>
+                  ) : (
+                    <div className="max-h-64 overflow-y-auto border rounded-lg divide-y">
+                      {dealers.map((dealer) => (
+                        <label
+                          key={dealer.id}
+                          className="flex items-center gap-3 p-3 hover:bg-zinc-50 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={baseData.visible_to_dealers.includes(dealer.id)}
+                            onCheckedChange={() => toggleDealerSelection(dealer.id)}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-zinc-900">{dealer.company_name}</p>
+                            <p className="text-sm text-zinc-500">{dealer.email}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {baseData.visibility === 'selected' && baseData.visible_to_dealers.length === 0 && (
+                    <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                      ⚠️ Geen dealers geselecteerd - deze motoren zijn voor niemand zichtbaar!
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Individual Motorcycles */}
           <Card>
             <CardHeader>
