@@ -124,7 +124,7 @@ const BulkMotorcycleForm = () => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await axios.post(`${API}/upload-image`, formData, {
+        const response = await axios.post(`${API}/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`
@@ -136,8 +136,10 @@ const BulkMotorcycleForm = () => {
             ...prev,
             images: [...prev.images, response.data.url]
           }));
+          toast.success(`${file.name} geüpload`);
         }
       } catch (error) {
+        console.error('Upload error:', error);
         toast.error(`Fout bij uploaden: ${file.name}`);
       }
     }
