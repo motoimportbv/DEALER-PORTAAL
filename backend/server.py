@@ -369,6 +369,8 @@ class OrderWithMotorcycle(BaseModel):
     inspection_cost: float = 0.0
     needs_valuation: bool = False   # Taxatie
     valuation_cost: float = 0.0
+    voucher_code: Optional[str] = None  # Voucher code used
+    voucher_discount: float = 0.0  # Voucher discount amount
     deposit_amount: float = 0.0
     total_price: float = 0.0
     payment_status: str = "unpaid"
