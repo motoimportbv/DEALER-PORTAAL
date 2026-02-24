@@ -1409,20 +1409,32 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
         created_by=user["id"],
         auto_delete_at=auto_delete_at,
         original_price=original_price,  # Original price in original currency
-        original_currency=original_currency  # EUR or CHF
+        original_currency=original_currency,  # EUR or CHF
+        visibility=data.visibility,
+        visible_to_dealers=data.visible_to_dealers
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
     
-    # Get Dutch dealers only (not foreign dealers) for notifications
-    dutch_dealers = await db.users.find({
-        "role": "dealer", 
-        "is_approved": True,
-        "is_foreign_dealer": {"$ne": True}
-    }, {"_id": 0}).to_list(1000)
+    # Get dealers for notifications based on visibility
+    if data.visibility == "selected" and data.visible_to_dealers:
+        # Only notify selected dealers
+        dutch_dealers = await db.users.find({
+            "role": "dealer", 
+            "is_approved": True,
+            "is_foreign_dealer": {"$ne": True},
+            "id": {"$in": data.visible_to_dealers}
+        }, {"_id": 0}).to_list(1000)
+    else:
+        # Notify all Dutch dealers
+        dutch_dealers = await db.users.find({
+            "role": "dealer", 
+            "is_approved": True,
+            "is_foreign_dealer": {"$ne": True}
+        }, {"_id": 0}).to_list(1000)
     
     if dutch_dealers:
-        # Create in-app notifications only for Dutch dealers
+        # Create in-app notifications only for selected/all Dutch dealers
         notifications = [
             Notification(
                 user_id=dealer["id"],
@@ -1435,7 +1447,7 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
         ]
         await db.notifications.insert_many(notifications)
         
-        # Send email notifications only to Dutch dealers (not foreign)
+        # Send email notifications only to selected/all Dutch dealers
         asyncio.create_task(notify_dealers_new_motorcycle_email(motorcycle, dutch_dealers))
         
         # NOTE: Automatic SMS is disabled - use SMS Broadcast page to manually select recipients
