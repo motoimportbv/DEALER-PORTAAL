@@ -164,6 +164,8 @@
     "pickup": "Ophalen",
     "delivery": "Bezorging",
     "deliveryCost": "Bezorgkosten",
+    "voucherDiscount": "Voucher Korting",
+    "voucherCode": "Vouchercode",
     "orderPlaced": "Bestelling geplaatst",
     "orderConfirmed": "Bestelling bevestigd",
     "viewPakbon": "Bekijk Pakbon",
