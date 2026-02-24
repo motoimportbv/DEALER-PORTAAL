@@ -25,6 +25,7 @@ import ShortCodeLoginPage from "./pages/ShortCodeLoginPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import MotorcycleList from "./pages/admin/MotorcycleList";
 import MotorcycleForm from "./pages/admin/MotorcycleForm";
+import BulkMotorcycleForm from "./pages/admin/BulkMotorcycleForm";
 import OrderList from "./pages/admin/OrderList";
 import DealerManagement from "./pages/admin/DealerManagement";
 import PendingForeignListings from "./pages/admin/PendingForeignListings";
