@@ -258,6 +258,9 @@ class MotorcycleUpdate(BaseModel):
     is_available: Optional[bool] = None
     chassis_number: Optional[str] = None  # VIN/Chassisnummer
     license_plate: Optional[str] = None  # Kenteken (set by admin later)
+    # Visibility settings
+    visibility: Optional[str] = None  # "all" or "selected"
+    visible_to_dealers: Optional[List[str]] = None  # List of dealer IDs
 
 class Motorcycle(BaseModel):
     model_config = ConfigDict(extra="ignore")
