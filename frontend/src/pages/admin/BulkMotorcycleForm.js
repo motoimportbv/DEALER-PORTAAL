@@ -25,7 +25,7 @@ const MOTORCYCLE_DATABASE = {
   'KTM': ['125 Duke', '200 Duke', '390 Duke', '690 Duke', '790 Duke', '890 Duke', '1290 Super Duke', '390 Adventure', '790 Adventure', '890 Adventure', '1290 Super Adventure', 'RC 390'],
   'Suzuki': ['GSX-R600', 'GSX-R750', 'GSX-R1000', 'GSX-S750', 'GSX-S1000', 'Hayabusa', 'SV650', 'V-Strom 650', 'V-Strom 1050'],
   'Triumph': ['Bonneville', 'Rocket 3', 'Speed Triple', 'Street Triple', 'Thruxton', 'Tiger 900', 'Tiger 1200', 'Trident 660'],
-  'Yamaha': ['FZ6', 'FZ8', 'MT-03', 'MT-07', 'MT-09', 'MT-10', 'R1', 'R6', 'R7', 'Ténéré 700', 'Tracer 700', 'Tracer 900', 'XSR700', 'XSR900'],
+  'Yamaha': ['FZ6', 'FZ8', 'FZS 600 Fazer', 'FZS 1000 Fazer', 'MT-01', 'MT-03', 'MT-07', 'MT-09', 'MT-09 SP', 'MT-10', 'MT-10 SP', 'MT-125', 'Niken', 'R1', 'R1M', 'R3', 'R6', 'R7', 'R125', 'TMAX', 'TMAX 560', 'Ténéré 700', 'Ténéré 700 World Raid', 'Tracer 700', 'Tracer 900', 'Tracer 900 GT', 'Tracer 9', 'Tracer 9 GT', 'Tracer 9 GT+', 'V-Max', 'XJ6', 'XJR 1300', 'XSR125', 'XSR700', 'XSR900', 'YZF-R1', 'YZF-R6', 'YZF-R125'],
 };
 
 const BulkMotorcycleForm = () => {
