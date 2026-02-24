@@ -196,6 +196,7 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/motorcycles" element={<MotorcycleList />} />
             <Route path="/admin/motorcycles/new" element={<MotorcycleForm />} />
+            <Route path="/admin/motorcycles/bulk" element={<BulkMotorcycleForm />} />
             <Route path="/admin/motorcycles/:id/edit" element={<MotorcycleForm />} />
             <Route path="/admin/orders" element={<OrderList />} />
             <Route path="/admin/dealers" element={<DealerManagement />} />
