@@ -1438,6 +1438,113 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     
     return motorcycle
 
+
+class BulkMotorcycleItem(BaseModel):
+    """Individual motorcycle in bulk add - only mileage differs"""
+    mileage: int
+    chassis_number: Optional[str] = None
+    license_plate: Optional[str] = None
+
+class BulkMotorcycleCreate(BaseModel):
+    """Bulk create motorcycles - same model, different mileages"""
+    brand: str
+    model: str
+    year: int
+    price: float
+    color: str
+    description: str = ""
+    condition: str = "good"
+    images: List[str] = []
+    currency: str = "EUR"
+    auction_duration_hours: int = 3
+    auto_delete_hours: int = 24
+    # List of motorcycles with different mileages
+    motorcycles: List[BulkMotorcycleItem]
+
+@api_router.post("/motorcycles/bulk")
+async def create_motorcycles_bulk(data: BulkMotorcycleCreate, user: dict = Depends(require_admin)):
+    """Create multiple motorcycles at once - same model, different mileages"""
+    
+    if len(data.motorcycles) == 0:
+        raise HTTPException(status_code=400, detail="Geen motoren opgegeven")
+    
+    if len(data.motorcycles) > 20:
+        raise HTTPException(status_code=400, detail="Maximaal 20 motoren per keer")
+    
+    # Handle currency conversion for CHF
+    original_price = data.price
+    original_currency = data.currency
+    final_price = data.price
+    
+    if data.currency == "CHF":
+        try:
+            rate = await get_chf_to_eur_rate()
+            if rate:
+                final_price = round(data.price * rate, 0)
+                logger.info(f"Bulk: Converted CHF {data.price} to EUR {final_price}")
+        except Exception as e:
+            logger.error(f"Failed to convert CHF to EUR: {e}")
+            original_currency = "EUR"
+    
+    created_motorcycles = []
+    
+    for item in data.motorcycles:
+        auction_end = datetime.now(timezone.utc) + timedelta(hours=data.auction_duration_hours)
+        auto_delete_at = None
+        if data.auto_delete_hours > 0:
+            auto_delete_at = (datetime.now(timezone.utc) + timedelta(hours=data.auto_delete_hours)).isoformat()
+        
+        motorcycle = Motorcycle(
+            brand=data.brand,
+            model=data.model,
+            year=data.year,
+            price=final_price,
+            starting_price=final_price,
+            mileage=item.mileage,
+            color=data.color,
+            description=data.description,
+            condition=data.condition,
+            images=data.images,
+            auction_end_time=auction_end.isoformat(),
+            created_by=user["id"],
+            auto_delete_at=auto_delete_at,
+            original_price=original_price,
+            original_currency=original_currency,
+            chassis_number=item.chassis_number or "",
+            license_plate=item.license_plate or ""
+        )
+        doc = motorcycle.model_dump()
+        await db.motorcycles.insert_one(doc)
+        created_motorcycles.append(motorcycle)
+    
+    # Send ONE notification for all motorcycles
+    dutch_dealers = await db.users.find({
+        "role": "dealer", 
+        "is_approved": True,
+        "is_foreign_dealer": {"$ne": True}
+    }, {"_id": 0}).to_list(1000)
+    
+    if dutch_dealers and created_motorcycles:
+        # Create ONE notification per dealer for all new motorcycles
+        notifications = [
+            Notification(
+                user_id=dealer["id"],
+                type="new_motorcycle",
+                title=f"{len(created_motorcycles)} nieuwe motoren toegevoegd",
+                message=f"{data.brand} {data.model} ({data.year}) - {len(created_motorcycles)}x beschikbaar vanaf €{final_price:,.0f}",
+                motorcycle_id=created_motorcycles[0].id
+            ).model_dump()
+            for dealer in dutch_dealers
+        ]
+        await db.notifications.insert_many(notifications)
+        logger.info(f"Bulk: Notified {len(dutch_dealers)} dealers about {len(created_motorcycles)} new motorcycles")
+    
+    return {
+        "message": f"{len(created_motorcycles)} motoren succesvol toegevoegd",
+        "count": len(created_motorcycles),
+        "motorcycles": [{"id": m.id, "mileage": m.mileage} for m in created_motorcycles]
+    }
+
 # Dealer marketplace - dealers can list their own motorcycles
 @api_router.post("/motorcycles/dealer-listing", response_model=Motorcycle)
 async def create_dealer_listing(data: MotorcycleCreate, user: dict = Depends(require_approved_dealer)):
