@@ -1,158 +1,171 @@
 <analysis>**original_problem_statement:**
 The user is building a comprehensive application for their motorcycle dealership network, Moto Import. The platform supports an Admin, who manages inventory and users, and two types of dealers: local Dealers who can buy and sell, and Foreign Dealers who act as suppliers.
 
-In this session, the user's primary focus was on resolving persistent production bugs, mainly incorrect URLs in notifications, and adding several quality-of-life features and new functionalities.
+In this session, the user's primary focus was on resolving bugs and adding a significant number of new features, including:
+- Fixing an issue where inspection and valuation were not displayed on the packing slip.
+- Ensuring the original supplier price is always visible to the Admin, but hidden from all other user roles.
+- Implementing an AI-powered in-app welcome message for dealers upon login.
+- Creating marketing materials (video script, email campaigns, etc.) and scraping dealer contact info to create lead lists.
+- Adding a bulk-upload feature for creating multiple motorcycles at once.
+- Implementing a visibility control system for admins to specify which dealers can see certain motorcycles.
+- Ensuring that when an admin adjusts a motorcycle's price, it is saved correctly and the motorcycle is immediately published online.
 
-**PRODUCT REQUIREMENTS:**
--   **URL & Link Integrity:**
-    -   All links in emails, WhatsApp, and SMS messages must point to the production URL (), not any preview URL.
-    -   Old preview links clicked by users should automatically redirect to the production site.
-    -   The word Emergent must not be visible to any customers.
--   **Data & Pricing:**
-    -   Motorcycles on the production website must be synchronized with the preview environment's database.
-    -   When an admin adds a motorcycle, they must have the option to enter the price in EUR or CHF.
-    -   When an admin adjusts the price of a motorcycle submitted by a foreign dealer, the new price must be permanently saved and not be reset by currency fluctuations.
-    -   The original price requested by the supplier must remain visible to the admin after they have adjusted it.
--   **User Experience & Workflow:**
-    -   The motorcycle list on the dealer dashboard must show the newest motorcycles first.
-    -   A CSV file containing a list of Dutch motorcycle dealers needs to be created and made available for bulk emailing.
-    -   The system must support multiple admin users with specific notification rules (e.g., one admin only receives emails for new dealers and new motorcycles).
-    -   The admin's business address must be hidden on all dealer-facing pages and communications, but remain visible to foreign suppliers.
-    -   Foreign dealers must be required to provide information about the motorcycle's maintenance history when adding a new listing.
-    -   Packing slips (pakbonnen) for new orders should be automatically opened for printing on the admin's side.
--   **Clarifications & Verifications:**
-    -   Confirm what email a foreign supplier receives when their motorcycle is sold.
-    -   Provide a downloadable list of Dutch dealer email addresses.
-    -   Investigate why an email to a specific dealer () bounced.
+**PRODUCT REQUIREMENTS:** (New from this session)
+- **Data Display:**
+    - The packing slip must display all applied costs, including inspection, valuation, and any voucher discounts.
+    - The original supplier price must be visible to admins on all relevant pages (motorcycle list, detail, order list, packing slip). This price must be hidden from dealers and the public, both on the frontend and in API responses.
+- **Voucher Logic:**
+    - Voucher discounts must be reflected on the packing slip.
+    - Vouchers are only for (non-foreign) dealers and are for one-time use. This was verified to be working as expected.
+- **AI & User Engagement:**
+    - When a dealer logs in, an in-app AI-generated message should welcome them and highlight new motorcycles added since their last visit.
+- **Admin Workflow:**
+    - Admins must be able to add multiple similar motorcycles in one go, only changing details like mileage and chassis number (bulk add).
+    - Admins must be able to control motorcycle visibility, choosing between all dealers or a select group of specific dealers. This should be available for both single and bulk-added motorcycles.
+    - When an admin approves or modifies a pending motorcycle (e.g., from a foreign dealer) by setting its price, the motorcycle must be automatically activated and made available for sale online.
+- **Data & Marketing:**
+    - The user requested lists of motorcycle dealers from Switzerland, Germany, and Austria.
+    - The user requested marketing materials, including a video script, email campaign templates, social media posts, and a storyboard.
 
 **User's preferred language**: Dutch. The next agent MUST respond in Dutch.
 
 **what currently exists?**
-The platform is a full-stack motorcycle wholesale application. This session focused heavily on hardening the application for production use by fixing critical bugs and adding numerous admin-requested features.
-
-Key changes:
--   **URL Issues Resolved:** A hardcoded  was implemented in the backend to ensure all generated links are correct. A robust frontend redirect was also added to forward users from any old preview URLs to the production site.
--   **Data and Pricing Logic:**
-    -   The preview database was synchronized with production data.
-    -   A currency (EUR/CHF) selector was added to the admin's Add Motorcycle form.
-    -   A critical bug that reset admin-adjusted prices was fixed. The system now correctly preserves the overridden price.
-    -   The UI now displays the original supplier price alongside the admin's current price.
--   **Feature Additions:**
-    -   Motorcycle lists are now sorted by creation date (newest first).
-    -   A new CSV file with 127 Dutch dealers () was created and is available for bulk email campaigns post-deployment.
-    -   Complex multi-admin email logic was implemented, allowing different admins to receive different sets of notifications.
-    -   The admin's address has been removed from all dealer-facing UIs and email templates.
-    -   A mandatory Maintenance History field was added for foreign dealers, with corresponding UI updates for the admin and full multi-language translation support.
-    -   An auto-print feature for new packing slips was added to the admin's order list page.
+The platform is a full-stack motorcycle wholesale application (React, FastAPI, MongoDB). This session saw the implementation of several major features and bug fixes. The application now includes an AI-powered welcome message for dealers, extensive new admin controls for bulk-adding and managing motorcycle visibility, and several generated marketing assets. The backend has been hardened to prevent sensitive data (supplier prices) from being exposed to non-admin users.
 
 **Last working item**:
--   **Last item agent was working:** The user requested that packing slips (pakbonnen) be printed automatically when a new order is placed. The agent implemented a feature on the admin's order list page that checks for new orders every 10 seconds. When a new order is detected, it opens the packing slip in a new tab with a print dialog. A toggle switch was added for the admin to enable or disable this functionality.
--   **Status:** USER VERIFICATION PENDING
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The agent should log in as admin, navigate to the orders page, verify the Auto-print nieuwe pakbonnen toggle is visible, and then simulate a new order to confirm that a new tab opens with the print dialog.
--   **User Testing Done:** N
+- **Last item agent was working:** The user requested that when an admin adjusts a motorcycle's price, the change is saved correctly and the motorcycle is immediately set to active or online. The agent was working on modifying the backend update endpoint () to automatically activate a motorcycle if it's in a  state when an admin edits it.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Backend testing agent. The agent should find or create a motorcycle with , then call the  endpoint with an updated price. The test should verify that the motorcycle's status changes to  and . After backend verification, the frontend flow on the  page should be checked.
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   None.
+-   **Issue 1: Frontend Testing is Blocked by Production Redirect (P0)**
+    -   **Description:** A redirect script in  automatically forwards any visitor on a  URL to the production domain. This makes it impossible to test or verify any frontend changes in the preview environment using screenshots or manual inspection.
+    -   **Attempted fixes:** None. The agent identified the issue but worked around it by relying solely on API/backend tests.
+    -   **Next debug checklist:**
+        1.  Edit .
+        2.  Locate the  component or the  hook that performs the redirection.
+        3.  Wrap the redirection logic in a condition to prevent it from running if  or if the hostname is a preview URL. Example: .
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker for all frontend development and verification. Fixing it will allow the agent and the user to test new UI features in the preview environment before deployment.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend.
 
 **In progress Task List**:
--   **Task 1: Verify Auto-Printing of Packing Slips (P0)**
-    -   **Where to resume:** The feature is implemented in . The next step is for the user to test and verify its functionality after deployment.
-    -   **What will be achieved with this?** A streamlined workflow for the admin, where packing slips for new orders are automatically prepared for printing.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on something:** Deployment.
+-   **Task 1: Finalize and Test Price Adjustment/Auto-Activation Feature (P0)**
+    -   **Where to resume:** The backend logic was added to  in the  endpoint to auto-activate pending bikes. This needs to be tested. Then, review  to ensure the frontend UI correctly uses this backend logic when an admin approves a motorcycle.
+    -   **What will be achieved with this?** A streamlined workflow for admins to approve motorcycles from foreign dealers, making them available for sale immediately upon price confirmation.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on something:** Potentially blocked by Frontend Testing is Blocked issue for UI verification.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Deploy All Recent Changes to Production (P0 - CRITICAL):** This is the most important next step. A large number of critical bug fixes (URL overrides, price persistence) and new features (multi-admin, CSV lists, UI changes) are complete in the preview environment but are not live. The user is still experiencing issues in production that have already been solved. **The next agent must guide the user to deploy immediately.**
+    -   **Deploy All Recent Changes to Production (P0 - CRITICAL):** A large number of features (AI welcome, bulk add, visibility controls, supplier price logic) and bug fixes are complete in preview but are not live. The user cannot use or see any of the work from this session. **The next agent must guide the user to deploy immediately after fixing the redirect blocker and verifying the latest features.**
+    -   **Verify UI for Visibility and Bulk Add Features (P1):** Once the redirect issue is fixed, the new UI for selecting dealer visibility on the  and  pages needs to be visually verified.
+    -   **Address Emergent LLM Key Budget (P2):** The AI welcome message feature failed due to an exceeded budget on the . Inform the user how to add balance to their key to re-enable the AI functionality.
 
 -   **Future Tasks:**
     -   **Implement fully automated WhatsApp notifications (P1):** A previously deferred high-value task. Use .
-    -   **Refactor Backend (P1):**  remains a large monolithic file and should be broken into a proper structure (, , ).
-    -   **Migrate File-Based Storage to DB/S3 (P2):** Marketing files () are stored in a temporary directory and will be lost on redeployment unless this is addressed.
-    -   **Create a Flyers Download Page (P2):** A dedicated page for admins to view and download marketing flyers.
+    -   **Refactor Backend (P1):**  is a monolithic file and should be broken into a proper structure (, , ).
+    -   **Migrate File-Based Storage to DB/S3 (P2):** Marketing files (, ) are stored in a temporary directory and will be lost on redeployment unless this is addressed.
+    -   **Create a Flyers Download Page (P2):** A dedicated page for admins to view and download all the created marketing flyers and dealer lists.
 
 **Completed work in this session**
--   **Production URL & Redirect Fix:** Implemented a backend hardcoded URL and a robust frontend redirect to solve all link-related issues.
--   **Production Database Sync:** Scraped and synced motorcycle data from production to the preview environment.
--   **EUR/CHF Currency Choice for Admin:** Added a currency selector on the Add Motorcycle form.
--   **Motorcycle Sorting:** Implemented sorting to show the newest motorcycles first.
--   **Price Persistence Fix:** Fixed the critical bug where admin-adjusted prices were being reset, and ensured the original supplier price remains visible.
--   **Dutch Dealer CSV Creation:** Generated a CSV file with 127 Dutch dealer emails as requested by the user.
--   **Multi-Admin Notification System:** Configured the system to support three admins with specific notification rules.
--   **Address Concealment:** Hid the admin's business address from all dealer-facing communications.
--   **Maintenance History Field:** Added a mandatory, multilingual Maintenance History field for foreign dealer listings.
--   **Automatic Packing Slip Printing:** Implemented an auto-print feature for admins for new orders.
--   **Test Email Verifications:** Sent multiple test emails to verify multi-admin setup and URL correctness.
+-   **Bug Fix: Packing Slip Details:** Fixed a bug where inspection and valuation costs were missing from the packing slip (). Also added logic to show voucher discounts.
+-   **Feature: Supplier Price Visibility Control:** Implemented logic to always show the original supplier price to admins across all relevant pages, while adding robust backend API protection to hide this data from all non-admin roles.
+-   **Feature: AI-Powered Welcome Message:** Implemented an in-app popup for dealers that uses GPT-5.2 (via Emergent LLM Key) to generate a welcome message highlighting new motorcycles since their last visit. A fallback message is in place for when the API call fails (e.g., budget exceeded).
+-   **Feature: Bulk Motorcycle Creation:** Created a new page () and backend endpoint allowing admins to add multiple similar motorcycles at once.
+-   **Feature: Motorcycle Visibility Control:** Added functionality for admins to set visibility for each motorcycle to all dealers or a selected group of dealers. This is integrated into both the single and bulk-add forms.
+-   **Data: Dealer Lead Generation:** Scraped and created CSV files with contact information for motorcycle dealers in Switzerland (60), Germany (37), and Austria (35).
+-   **Content: Marketing Materials:** Created four markdown files containing a video script, an email campaign strategy, social media post ideas, and a visual storyboard for a promotional video.
+-   **Bug Fixes:** Resolved issues in the new bulk-add form related to dropdowns not opening ( fix) and incorrect image upload URLs.
+-   **Data Update:** Added missing Yamaha Tracer models to the dropdown lists in both the single and bulk motorcycle forms.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Monolithic Backend ()**
-    -   **Debug checklist:** The file is extremely large, containing routes, models, background tasks, and business logic, making it difficult to maintain.
-    -   **Why to solve this issue and what will be achieved with this?** Refactoring into a structured directory (e.g., , , ) is critical for future maintenance and scalability.
+    -   **Debug checklist:** The file  contains almost all backend logic, including API routes, Pydantic models, and business logic, making it difficult to maintain and scale.
+    -   **Why to solve this issue and what will be achieved with this?** Refactoring into a structured directory (e.g., , , ) is critical for long-term maintainability, readability, and scalability of the application.
     -   **Should Test frontend/backend/both after fix:** Backend (extensive regression testing required).
     -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
--   **Incorrect notification links:** This issue was the central theme of the session. The user repeatedly reported that links in emails and WhatsApp messages pointed to preview URLs. The agent implemented a definitive, two-part solution: a hardcoded  in the backend and a comprehensive redirect script in the frontend. This should be considered resolved pending deployment.
+-   **Frontend Testing Blocked by Redirect:** In previous forks, the issue was incorrect notification links. In this fork, the major recurring blocker has been the  script in  which prevents any form of UI testing in the preview environment. This has been a consistent obstacle.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Configuration Hardcoding:** Using a  constant in  as a fail-safe to override incorrect production environment variables, ensuring link integrity.
--   **Client-Side Polling:** Implementing a  loop in a React component () to periodically check for new data (orders) and trigger a client-side action (opening a print window).
--   **Conditional Business Logic:**
-    -   Modifying backend price calculation to check if an admin-set price deviates significantly from a live currency conversion, thereby preserving manual overrides.
-    -   Implementing dynamic email recipient lists (, ) to control which admins receive specific notifications.
+-   **API Data Shaping:** Modifying Pydantic response models and API endpoint logic in FastAPI to conditionally exclude sensitive fields () based on user role.
+-   **LLM Integration:** Using  and  library with the  to integrate GPT-5.2 for generating dynamic, personalized content. Implemented a robust fallback.
+-   **Complex React State Management:** Handling complex form state with nested arrays and objects for the bulk motorcycle creation form.
+-   **Web Scraping:** Using  to find and extract contact information from public websites to generate lead-list CSVs.
+-   **Conditional Rendering (React):** Extensive use of  to conditionally render UI elements and data visible only to administrators.
 
 **key DB schema**
--   **motorcycles** (updated collection):
-    -   Added 
-    -   Added 
-    -   The logic around , , and  was significantly changed in the application layer to fix price persistence bugs.
+-   **motorcycles:**
+    -    (e.g., 'all', 'selected') - NEW
+    -    (List of dealer IDs) - NEW
+-   **orders:**
+    -    - NEW
+    -    - NEW
+-   **users:**
+    -    - NEW
 
 **All files of reference**
--   /app/backend/server.py
--   /app/backend/.env
--   /app/frontend/src/pages/admin/OrderList.js
--   /app/frontend/src/App.js
--   /app/frontend/src/pages/admin/MotorcycleForm.js
--   /app/frontend/src/pages/foreign-dealer/ForeignDealerAddMotorcycle.js
--   /app/backend/uploads/Motorzaken_Nederland.csv
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+-   All new files in 
 
 **Areas that need refactoring**:
--    is critically oversized and requires a full refactor into a proper directory structure. This is the highest priority technical debt.
+-    remains the highest priority for refactoring due to its monolithic nature.
+-   The new marketing assets and dealer lists in  are not persistent and will be lost on the next deploy. This reinforces the need for the Migrate File-Based Storage task.
 
 **key api endpoints**
--    (GET): Logic updated to sort by  and correctly calculate prices based on override rules.
--    (POST): Logic updated to handle EUR/CHF currency selection from admin.
--    (POST): Logic updated to correctly preserve  when an admin overrides the price.
--    (GET): New endpoint to serve uploaded CSV files, allowing users to download them.
+-   : (NEW) For creating multiple motorcycles at once.
+-   : (NEW) For generating a personalized welcome message for a logged-in dealer.
+-   : (MODIFIED) Logic added to auto-activate a pending motorcycle when an admin sets the price.
+-   , : (MODIFIED) Logic added to filter motorcycles based on  settings and to strip  for non-admin users.
+-   : (MODIFIED) The  response model was updated to include inspection, valuation, and voucher details.
 
 **Critical Info for New Agent**
--   **DEPLOYMENT IS THE #1 PRIORITY.** The user is blocked and confused by production issues that are already fixed in the current preview environment. Your first and most important task is to confirm the plan with the user and guide them to deploy the latest changes.
--   **Explain the URL Fix:** Clearly communicate that the persistent URL problem has been definitively solved with a multi-layered fix (backend constant + frontend redirect) and will be active *after* deployment.
--   **CSV files are not deployed automatically:** The newly created  files are in the workspace but are not part of a persistent volume. After deployment, they will exist in the new production container. However, if the app is deployed again from a clean slate, these files might be lost. This is why the Migrate File-Based Storage task is important for the future.
+-   **DEPLOYMENT IS THE #1 PRIORITY.** However, you must first fix the **frontend redirect blocker**. Without this fix, you cannot verify the UI of the many new features, and deployment would be risky.
+-   **Fix the Redirect First:** Your first coding task should be to modify  to disable the automatic redirect from the preview environment to production.
+-   **LLM Budget:** The  has exceeded its budget. The AI welcome message is currently non-functional and using its fallback. You need to inform the user about this and guide them on how to add funds so the feature can be properly tested and used.
 
 **documents and test reports created in this job**
--   /app/backend/uploads/Motorzaken_Nederland.csv
--   /app/memory/PRD.md (updated multiple times)
+-   /app/backend/uploads/Duitse_Motorhaendler.csv
+-   /app/backend/uploads/Oostenrijkse_Motorhaendler.csv
+-   /app/backend/uploads/Zwitserse_Motorhaendler.csv
+-   /app/backend/uploads/MotoImport_EmailCampagne.md
+-   /app/backend/uploads/MotoImport_SocialMedia.md
+-   /app/backend/uploads/MotoImport_Storyboard.md
+-   /app/backend/uploads/MotoImport_VideoScript.md
+-   /app/memory/PRD.md (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks if the maintenance history field is available in all languages. **Status:** COMPLETED. Agent added translations to all locale files.
-2.  **User:** Reports receiving a bounce-back email for . **Status:** COMPLETED. Agent correctly identified the issue as the recipient's server running out of disk space, not a problem with the Moto Import app.
-3.  **User:** Asks if packing slips can be printed automatically. **Status:** COMPLETED. Agent implemented an auto-print feature on the admin order page.
-4.  **User:** Provides confirmation (1) to proceed with the auto-print feature. **Status:** COMPLETED.
-5.  **User:** Reports that prices they adjusted are being reset to what the foreign supplier originally asked. **Status:** COMPLETED. Agent identified a critical bug in the price calculation logic and implemented a robust fix.
-6.  **User:** Asks to deploy the CSV files to production. **Status:** PENDING. Agent confirmed the files are ready for deployment.
-7.  **User:** Asks what email a supplier receives when their motorcycle is sold. **Status:** COMPLETED. Agent provided a detailed, translated template of the Motorcycle Sold email.
-8.  **User:** Asks for a download link for the Dutch dealers CSV file. **Status:** COMPLETED. Agent provided the direct link (which will work post-deployment) and the full list of emails.
-9.  **User:** Requests that a second admin () also receives emails. **Status:** COMPLETED.
-10. **User:** Requests a test email be sent to the new admin. **Status:** COMPLETED.
+1.  **User:** When bulk adding, some Yamaha Tracer models are missing. **Status:** COMPLETED. Agent added the missing models.
+2.  **User:** The dealer selection/visibility option is missing from the regular Add Motorcycle form. **Status:** COMPLETED. Agent added the feature to the single motorcycle form.
+3.  **User:** When we adjust a price, it must be saved and put online immediately. **Status:** IN PROGRESS. This is the current active task.
+4.  **User:** Error when uploading a photo in the bulk add form. **Status:** COMPLETED. Agent fixed the incorrect API endpoint URL.
+5.  **User:** In the bulk add form, the brand and type dropdowns don't open. **Status:** COMPLETED. Agent fixed the event handler from  to .
+6.  **User:** Can I add 5 similar motorcycles at once, just changing the mileage? **Status:** COMPLETED. Agent built the bulk-add feature.
+7.  **User:** Make advertisements for MotoImport BV. **Status:** COMPLETED. Agent created a video script and then email, social media, and storyboard documents.
+8.  **User:** Vouchers should be one-time use only for dealers. **Status:** COMPLETED. Agent verified this was already implemented correctly.
+9.  **User:** Vouchers should only be for dealers, not suppliers. **Status:** COMPLETED. Agent verified this was already implemented correctly.
+10. **User:** If a voucher is used, it should show on the packing slip. **Status:** COMPLETED. Agent implemented this.
 
 **Project Health Check:**
--   **Broken**: The live production environment is running old code with known critical bugs (incorrect URLs, price resets) that have been fixed in the preview environment.
+-   **Broken**:
+    -   The live production environment is severely outdated and missing numerous critical features and bug fixes.
+    -   Frontend testing in the preview environment is broken due to an aggressive redirect to production.
+    -   The AI Welcome Message feature is non-functional due to an exceeded API key budget.
 -   **Mocked**: N/A
 
 **3rd Party Integrations**
@@ -160,19 +173,19 @@ Key changes:
 -   **exchangerate-api.com (Currency Conversion)** — Functional.
 -   **Twilio (SMS)** — Functional.
 -   **ip-api.com (GeoIP)** — Functional.
+-   **OpenAI GPT-5.2** — Integrated via  for the AI welcome message. Uses Emergent LLM Key. **Currently non-functional due to budget exceeded.**
 
 **Testing status**
 -   **Testing agent used after significant changes**: NO
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: None discovered in the preview environment. The production environment is experiencing issues that are fixed in preview.
+-   **Known regressions**: The inability to test the frontend in preview is a major regression in development workflow.
 
 **Credentials to test flow:**
 -   **Admin**:  / 
 -   **🇳🇱 Test Dutch Dealer**:  / 
--   **Limited Admin**:  (password not provided, but email logic can be tested)
--   **Full Admin**:  (password not provided)
 
 **What agent forgot to execute**
--   The agent did not use the testing agent for regression testing after implementing a large number of disparate features and fixes, which would have been prudent.
--   The agent did not consistently emphasize to the user that fixes require deployment, leading to repeated user reports of bugs that were already solved in the preview environment. The next agent must prioritize clarifying this.</analysis>
+-   The agent did not address the frontend redirect issue, which repeatedly hampered testing and verification efforts, forcing reliance on backend-only tests.
+-   The agent did not use the testing agent after making a very large number of changes across the entire stack, which would have been a good practice for regression testing.
+-   The agent did not inform the user about the LLM key budget being exceeded, leaving a key feature non-functional without explanation.</analysis>
