@@ -1467,6 +1467,9 @@ class BulkMotorcycleCreate(BaseModel):
     currency: str = "EUR"
     auction_duration_hours: int = 3
     auto_delete_hours: int = 24
+    # Visibility settings
+    visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
+    visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
     # List of motorcycles with different mileages
     motorcycles: List[BulkMotorcycleItem]
 
