@@ -163,6 +163,8 @@
     "pickup": "Abholung",
     "delivery": "Lieferung",
     "deliveryCost": "Lieferkosten",
+    "voucherDiscount": "Gutschein-Rabatt",
+    "voucherCode": "Gutscheincode",
     "orderPlaced": "Bestellung aufgegeben",
     "orderConfirmed": "Bestellung bestätigt",
     "viewPakbon": "Lieferschein anzeigen",
