@@ -1,0 +1,116 @@
+{
+  "summary": "Comprehensive testing of preview redirect blocker fix and auto-activation feature. All features working correctly. Preview environment no longer redirects to production. Auto-activation successfully activates pending motorcycles when admin updates price.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: API health check returns healthy status",
+    "Backend: Admin login successful with provided credentials",
+    "Backend: GET /api/motorcycles/pending-foreign requires authentication (returns 403)",
+    "Backend: GET /api/motorcycles/pending-foreign returns pending foreign listings for admin",
+    "Backend: POST /api/motorcycles creates motorcycle successfully",
+    "Backend: PUT /api/motorcycles/{id} with price update auto-activates pending motorcycle",
+    "Backend: Auto-activation sets is_pending_approval=false and is_available=true",
+    "Backend: POST /api/motorcycles/bulk requires authentication",
+    "Backend: POST /api/motorcycles/bulk creates multiple motorcycles",
+    "Backend: POST /api/motorcycles/bulk validates max 20 motorcycles",
+    "Backend: POST /api/motorcycles/bulk validates non-empty list",
+    "Backend: Motorcycle visibility 'all' setting works correctly",
+    "Backend: Motorcycle visibility update to 'selected' works correctly",
+    "Backend: POST /api/motorcycles/{id}/activate requires authentication",
+    "Backend: POST /api/motorcycles/{id}/activate returns 404 for non-existent motorcycle",
+    "Frontend: Preview redirect blocker working - stays on preview.emergentagent.com",
+    "Frontend: Login page loads correctly with email/password fields",
+    "Frontend: Admin login successful, redirects to /admin dashboard",
+    "Frontend: Admin dashboard shows statistics (motorcycles, orders, dealers)",
+    "Frontend: Pending Foreign Listings page loads at /admin/pending-foreign",
+    "Frontend: Pending motorcycle card displays correctly with all info",
+    "Frontend: 'Prijs Instellen & Activeren' button opens activation dialog",
+    "Frontend: Activation dialog shows dealer's suggested price",
+    "Frontend: Price input field accepts new price",
+    "Frontend: Activation button successfully activates motorcycle",
+    "Frontend: Success toast 'Yamaha MT-07 Test is geactiveerd!' displayed",
+    "Frontend: WhatsApp share modal appears after activation",
+    "Frontend: Page updates to show 'GEEN WACHTENDE MOTORS' after activation"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_auto_activation.py",
+    "/app/test_reports/pytest/pytest_auto_activation.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PreviewRedirect component correctly checks for preview.emergentagent.com hostname and skips redirect",
+    "PUT /api/motorcycles/{id} endpoint correctly implements auto-activation logic when price is updated on pending motorcycle",
+    "Auto-activation sets both is_pending_approval=false AND is_available=true",
+    "Frontend PendingForeignListings.js correctly calls /api/motorcycles/{id}/activate endpoint",
+    "WhatsApp share modal provides good UX for notifying dealers after activation"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_auto_activation.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin": "motoimportbv@gmail.com / Enolim12",
+    "dutch_dealer": "testdealer@motoimport.nl / MotoTest123!"
+  },
+  "seed_data_creation": "Created and cleaned up test pending motorcycle (Yamaha MT-07 Test) for activation testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Preview redirect blocker and auto-activation features fully tested and working. The auto-activation is triggered in two ways: 1) PUT /api/motorcycles/{id} with price update on pending motorcycle, 2) POST /api/motorcycles/{id}/activate endpoint. Both methods correctly set is_pending_approval=false and is_available=true.",
+  "verified_features": {
+    "preview_redirect_blocker": {
+      "status": "WORKING",
+      "location": "/app/frontend/src/App.js lines 88-112",
+      "behavior": "Checks if hostname includes 'preview.emergentagent.com' and skips redirect to production",
+      "tested_url": "https://moto-import-dealer-2.preview.emergentagent.com"
+    },
+    "auto_activation_via_put": {
+      "status": "WORKING",
+      "endpoint": "PUT /api/motorcycles/{id}",
+      "trigger": "When price is updated on motorcycle with is_pending_approval=true",
+      "result": "Sets is_pending_approval=false and is_available=true",
+      "code_location": "/app/backend/server.py lines 2430-2434"
+    },
+    "auto_activation_via_activate_endpoint": {
+      "status": "WORKING",
+      "endpoint": "POST /api/motorcycles/{id}/activate?price={price}",
+      "trigger": "Admin explicitly activates foreign dealer listing with new price",
+      "result": "Sets is_pending_approval=false and is_available=true",
+      "code_location": "/app/backend/server.py lines 1936-2000"
+    },
+    "pending_foreign_listings_page": {
+      "status": "WORKING",
+      "route": "/admin/pending-foreign",
+      "features": [
+        "Shows pending motorcycles from foreign dealers",
+        "Displays dealer info, maintenance history, suggested price",
+        "Activation dialog with price input",
+        "WhatsApp share modal after activation"
+      ]
+    },
+    "bulk_motorcycle_creation": {
+      "status": "WORKING",
+      "endpoint": "POST /api/motorcycles/bulk",
+      "validation": "Max 20 motorcycles, non-empty list required",
+      "features": ["Same model with different mileages", "Visibility controls"]
+    },
+    "motorcycle_visibility_controls": {
+      "status": "WORKING",
+      "options": ["all (visible to all dealers)", "selected (visible to specific dealers)"],
+      "fields": ["visibility", "visible_to_dealers"]
+    }
+  },
+  "ai_welcome_message": {
+    "status": "NON-FUNCTIONAL",
+    "reason": "Emergent LLM key budget exceeded (as noted in request)"
+  }
+}
