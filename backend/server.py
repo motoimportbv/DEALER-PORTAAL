@@ -299,6 +299,9 @@ class Motorcycle(BaseModel):
     original_currency: str = "EUR"  # Currency of original price (EUR or CHF)
     has_maintenance_history: Optional[bool] = None  # Required for foreign dealers: does it have maintenance history?
     maintenance_history_details: Optional[str] = None  # Optional details about maintenance
+    # Visibility settings
+    visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
+    visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
 
 class BidCreate(BaseModel):
     motorcycle_id: str
