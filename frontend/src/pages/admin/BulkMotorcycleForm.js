@@ -230,7 +230,7 @@ const BulkMotorcycleForm = () => {
                   <SearchableSelect
                     options={brands.map(b => ({ value: b, label: b }))}
                     value={baseData.brand}
-                    onChange={(value) => handleBaseChange('brand', value)}
+                    onValueChange={(value) => handleBaseChange('brand', value)}
                     placeholder="Selecteer merk"
                   />
                 </div>
@@ -239,7 +239,7 @@ const BulkMotorcycleForm = () => {
                   <SearchableSelect
                     options={models.map(m => ({ value: m, label: m }))}
                     value={baseData.model}
-                    onChange={(value) => handleBaseChange('model', value)}
+                    onValueChange={(value) => handleBaseChange('model', value)}
                     placeholder="Selecteer model"
                     disabled={!baseData.brand}
                   />
