@@ -163,6 +163,8 @@
     "pickup": "Retrait",
     "delivery": "Livraison",
     "deliveryCost": "Frais de livraison",
+    "voucherDiscount": "Réduction bon d'achat",
+    "voucherCode": "Code bon d'achat",
     "orderPlaced": "Commande passée",
     "orderConfirmed": "Commande confirmée",
     "viewPakbon": "Voir le bon de livraison",

@@ -163,6 +163,8 @@
     "pickup": "Ritiro",
     "delivery": "Consegna",
     "deliveryCost": "Costi di consegna",
+    "voucherDiscount": "Sconto buono",
+    "voucherCode": "Codice buono",
     "orderPlaced": "Ordine effettuato",
     "orderConfirmed": "Ordine confermato",
     "viewPakbon": "Vedi bolla",
