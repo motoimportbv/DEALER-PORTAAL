@@ -45,7 +45,9 @@ const BulkMotorcycleForm = () => {
     images: [],
     currency: 'EUR',
     auction_duration_hours: 3,
-    auto_delete_hours: 24
+    auto_delete_hours: 24,
+    visibility: 'all',  // 'all' or 'selected'
+    visible_to_dealers: []
   });
   
   // Individual motorcycles (different mileages)
@@ -53,7 +55,62 @@ const BulkMotorcycleForm = () => {
     { mileage: '', chassis_number: '', license_plate: '' }
   ]);
   
+  // Available dealers for selection
+  const [dealers, setDealers] = useState([]);
+  const [loadingDealers, setLoadingDealers] = useState(false);
+  
   const [newImageUrl, setNewImageUrl] = useState('');
+
+  // Fetch dealers when visibility changes to 'selected'
+  useEffect(() => {
+    if (baseData.visibility === 'selected' && dealers.length === 0) {
+      fetchDealers();
+    }
+  }, [baseData.visibility]);
+
+  const fetchDealers = async () => {
+    setLoadingDealers(true);
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.get(`${API}/dealers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Filter only approved Dutch dealers
+      const dutchDealers = response.data.filter(d => 
+        d.is_approved && !d.is_foreign_dealer
+      );
+      setDealers(dutchDealers);
+    } catch (error) {
+      toast.error('Kon dealers niet laden');
+    } finally {
+      setLoadingDealers(false);
+    }
+  };
+
+  const toggleDealerSelection = (dealerId) => {
+    setBaseData(prev => {
+      const currentSelected = prev.visible_to_dealers || [];
+      if (currentSelected.includes(dealerId)) {
+        return { ...prev, visible_to_dealers: currentSelected.filter(id => id !== dealerId) };
+      } else {
+        return { ...prev, visible_to_dealers: [...currentSelected, dealerId] };
+      }
+    });
+  };
+
+  const selectAllDealers = () => {
+    setBaseData(prev => ({
+      ...prev,
+      visible_to_dealers: dealers.map(d => d.id)
+    }));
+  };
+
+  const deselectAllDealers = () => {
+    setBaseData(prev => ({
+      ...prev,
+      visible_to_dealers: []
+    }));
+  };
 
   const handleBaseChange = (field, value) => {
     if (field === 'brand' && value !== baseData.brand) {
