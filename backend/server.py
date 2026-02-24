@@ -1523,18 +1523,30 @@ async def create_motorcycles_bulk(data: BulkMotorcycleCreate, user: dict = Depen
             original_price=original_price,
             original_currency=original_currency,
             chassis_number=item.chassis_number or "",
-            license_plate=item.license_plate or ""
+            license_plate=item.license_plate or "",
+            visibility=data.visibility,
+            visible_to_dealers=data.visible_to_dealers
         )
         doc = motorcycle.model_dump()
         await db.motorcycles.insert_one(doc)
         created_motorcycles.append(motorcycle)
     
-    # Send ONE notification for all motorcycles
-    dutch_dealers = await db.users.find({
-        "role": "dealer", 
-        "is_approved": True,
-        "is_foreign_dealer": {"$ne": True}
-    }, {"_id": 0}).to_list(1000)
+    # Send ONE notification for all motorcycles (only to visible dealers)
+    if data.visibility == "selected" and data.visible_to_dealers:
+        # Only notify selected dealers
+        dutch_dealers = await db.users.find({
+            "role": "dealer", 
+            "is_approved": True,
+            "is_foreign_dealer": {"$ne": True},
+            "id": {"$in": data.visible_to_dealers}
+        }, {"_id": 0}).to_list(1000)
+    else:
+        # Notify all Dutch dealers
+        dutch_dealers = await db.users.find({
+            "role": "dealer", 
+            "is_approved": True,
+            "is_foreign_dealer": {"$ne": True}
+        }, {"_id": 0}).to_list(1000)
     
     if dutch_dealers and created_motorcycles:
         # Create ONE notification per dealer for all new motorcycles
