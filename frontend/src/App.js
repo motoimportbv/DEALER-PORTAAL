@@ -85,17 +85,26 @@ function NotificationHandler() {
 }
 
 // Redirect old preview URLs to production
+// NOTE: Disabled in preview environment to allow testing
 function PreviewRedirect() {
   useEffect(() => {
     const hostname = window.location.hostname;
     const PRODUCTION_URL = 'https://www.motoimportbv.nl';
     
-    // ALWAYS redirect preview URLs to production (except localhost)
-    if (hostname.includes('preview.emergentagent.com') && !hostname.includes('localhost')) {
-      // Redirect to production URL with same path
+    // Skip redirect in preview environments to allow development/testing
+    if (hostname.includes('preview.emergentagent.com')) {
+      console.log('Preview environment detected - skipping redirect to production');
+      return; // Don't redirect in preview
+    }
+    
+    // Only redirect non-localhost, non-preview URLs that aren't production
+    // This handles legacy URLs or other deployment environments
+    if (!hostname.includes('localhost') && 
+        !hostname.includes('motoimportbv.nl') &&
+        !hostname.includes('preview.emergentagent.com')) {
       const productionUrl = `${PRODUCTION_URL}${window.location.pathname}${window.location.search}`;
-      console.log('Redirecting from preview to production:', productionUrl);
-      window.location.replace(productionUrl);  // Use replace to not add to history
+      console.log('Redirecting to production:', productionUrl);
+      window.location.replace(productionUrl);
     }
   }, []);
   
