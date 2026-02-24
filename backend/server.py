@@ -2092,9 +2092,22 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     
     # Check if user is admin
     is_admin = user.get("role") == "admin"
+    user_id = user.get("id")
     
-    # Process motorcycles
+    # Filter motorcycles based on visibility (admin sees all)
+    filtered_motorcycles = []
     for m in motorcycles:
+        # Admin sees all motorcycles
+        if is_admin:
+            pass  # Include all
+        else:
+            # Check visibility
+            visibility = m.get("visibility", "all")
+            if visibility == "selected":
+                visible_to = m.get("visible_to_dealers", [])
+                if user_id not in visible_to:
+                    continue  # Skip this motorcycle - dealer not in visible list
+        
         # Add default starting_price if missing
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
@@ -2132,8 +2145,12 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
             m.pop("price_override", None)
             m.pop("price_override_amount", None)
             m.pop("price_override_active", None)
+            # Also hide visibility settings from dealers
+            m.pop("visible_to_dealers", None)
+        
+        filtered_motorcycles.append(m)
     
-    return motorcycles
+    return filtered_motorcycles
 
 @api_router.get("/motorcycles/with-exchange-rate")
 async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approved_dealer)):
