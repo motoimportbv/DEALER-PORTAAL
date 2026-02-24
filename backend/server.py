@@ -2426,6 +2426,16 @@ async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: di
             update_data["price_override"] = True
             update_data["price_override_amount"] = update_data["price"]
             logger.info(f"Admin override price for motorcycle {motorcycle_id}: €{update_data['price']} (original: €{original})")
+        
+        # Auto-activate if motor was pending approval
+        if motorcycle.get("is_pending_approval"):
+            update_data["is_pending_approval"] = False
+            update_data["is_available"] = True
+            logger.info(f"Auto-activated motorcycle {motorcycle_id} after price update")
+    
+    # Also auto-activate if explicitly setting is_available to True
+    if update_data.get("is_available") == True and motorcycle.get("is_pending_approval"):
+        update_data["is_pending_approval"] = False
     
     if update_data:
         await db.motorcycles.update_one({"id": motorcycle_id}, {"$set": update_data})
