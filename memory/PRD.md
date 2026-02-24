@@ -20,6 +20,28 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
+### Session - 24 February 2025 (Preview Fix & Auto-Activation)
+
+#### ✅ Preview Redirect Blocker Gefixed
+- **Probleem**: De `PreviewRedirect` component in `App.js` redirectte alle preview.emergentagent.com URLs automatisch naar productie, waardoor frontend testing onmogelijk was
+- **Oplossing**: Component aangepast om redirect over te slaan als hostname `preview.emergentagent.com` bevat
+- **Locatie**: `/app/frontend/src/App.js` regels 88-112
+- **Status**: ✅ Voltooid en getest
+
+#### ✅ Auto-Activering bij Prijswijziging (Foreign Dealer Motors)
+- **Verzoek**: Wanneer admin de prijs aanpast van een pending motor (van buitenlandse dealer), moet deze automatisch actief/online worden
+- **Backend Implementatie** (`server.py` regels 2430-2434):
+  - Bij `PUT /api/motorcycles/{id}` met prijswijziging:
+    - Als `is_pending_approval: true` → automatisch `is_pending_approval: false`
+    - En `is_available: true` (motor komt online)
+- **Twee activeringsmethoden**:
+  1. `PUT /api/motorcycles/{id}` met prijsupdate (auto-activering)
+  2. `POST /api/motorcycles/{id}/activate?price={price}` (expliciete activering)
+- **Frontend Flow**: Admin → Wachtende Motors → Prijs instellen → Motor is direct online
+- **Status**: ✅ Voltooid en getest (backend + frontend)
+
+---
+
 ### Session - 23 February 2025 (Pakbon Bug Fix)
 
 #### ✅ Keuring en Taxatie Weergave op Pakbon
