@@ -124,7 +124,9 @@ const MotorcycleForm = () => {
     chassis_number: '',
     license_plate: '',
     auto_delete_hours: 24,  // Default 24 hours
-    currency: 'EUR'  // EUR or CHF
+    currency: 'EUR',  // EUR or CHF
+    visibility: 'all',  // 'all' or 'selected'
+    visible_to_dealers: []
   });
   const [newImageUrl, setNewImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -132,9 +134,62 @@ const MotorcycleForm = () => {
   const [fetching, setFetching] = useState(isEditing);
   const fileInputRef = useRef(null);
   
+  // Dealers for visibility selection
+  const [dealers, setDealers] = useState([]);
+  const [loadingDealers, setLoadingDealers] = useState(false);
+  
   // CHF/EUR exchange rate
   const [exchangeRate, setExchangeRate] = useState(null);
   const [eurPreview, setEurPreview] = useState(null);
+  
+  // Fetch dealers when visibility changes to 'selected'
+  useEffect(() => {
+    if (formData.visibility === 'selected' && dealers.length === 0) {
+      fetchDealers();
+    }
+  }, [formData.visibility]);
+
+  const fetchDealers = async () => {
+    setLoadingDealers(true);
+    try {
+      const response = await axios.get(`${API}/dealers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const dutchDealers = response.data.filter(d => 
+        d.is_approved && !d.is_foreign_dealer
+      );
+      setDealers(dutchDealers);
+    } catch (error) {
+      toast.error('Kon dealers niet laden');
+    } finally {
+      setLoadingDealers(false);
+    }
+  };
+
+  const toggleDealerSelection = (dealerId) => {
+    setFormData(prev => {
+      const currentSelected = prev.visible_to_dealers || [];
+      if (currentSelected.includes(dealerId)) {
+        return { ...prev, visible_to_dealers: currentSelected.filter(id => id !== dealerId) };
+      } else {
+        return { ...prev, visible_to_dealers: [...currentSelected, dealerId] };
+      }
+    });
+  };
+
+  const selectAllDealers = () => {
+    setFormData(prev => ({
+      ...prev,
+      visible_to_dealers: dealers.map(d => d.id)
+    }));
+  };
+
+  const deselectAllDealers = () => {
+    setFormData(prev => ({
+      ...prev,
+      visible_to_dealers: []
+    }));
+  };
   
   // Fetch exchange rate on mount
   useEffect(() => {
