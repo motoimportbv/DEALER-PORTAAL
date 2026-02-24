@@ -240,6 +240,9 @@ class MotorcycleCreate(BaseModel):
     auto_delete_hours: int = 24  # Auto-delete after X hours if not sold (0 = no auto-delete)
     has_maintenance_history: Optional[bool] = None  # Required for foreign dealers
     maintenance_history_details: Optional[str] = None  # Optional details
+    # Visibility settings
+    visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
+    visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
 
 class MotorcycleUpdate(BaseModel):
     brand: Optional[str] = None
