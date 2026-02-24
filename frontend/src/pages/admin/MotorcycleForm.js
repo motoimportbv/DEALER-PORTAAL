@@ -722,6 +722,93 @@ const MotorcycleForm = () => {
                 </CardContent>
               </Card>
 
+              {/* Visibility Settings */}
+              {!isEditing && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-barlow text-lg font-bold uppercase tracking-tight flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Zichtbaarheid
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Wie kan deze motor zien?</Label>
+                      <Select 
+                        value={formData.visibility} 
+                        onValueChange={(v) => setFormData(prev => ({ ...prev, visibility: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              Alle dealers
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="selected">
+                            <div className="flex items-center gap-2">
+                              <EyeOff className="h-4 w-4" />
+                              Alleen geselecteerde dealers
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.visibility === 'selected' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Selecteer dealers ({formData.visible_to_dealers.length})</Label>
+                          <div className="flex gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={selectAllDealers}>
+                              Alles
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={deselectAllDealers}>
+                              Geen
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {loadingDealers ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+                          </div>
+                        ) : dealers.length === 0 ? (
+                          <p className="text-sm text-zinc-500 py-2">Geen dealers gevonden</p>
+                        ) : (
+                          <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                            {dealers.map((dealer) => (
+                              <label
+                                key={dealer.id}
+                                className="flex items-center gap-3 p-2 hover:bg-zinc-50 cursor-pointer"
+                              >
+                                <Checkbox
+                                  checked={formData.visible_to_dealers.includes(dealer.id)}
+                                  onCheckedChange={() => toggleDealerSelection(dealer.id)}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm text-zinc-900 truncate">{dealer.company_name}</p>
+                                  <p className="text-xs text-zinc-500 truncate">{dealer.email}</p>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {formData.visible_to_dealers.length === 0 && (
+                          <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                            ⚠️ Geen dealers geselecteerd!
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Actions */}
               <div className="flex gap-3">
                 <Button
