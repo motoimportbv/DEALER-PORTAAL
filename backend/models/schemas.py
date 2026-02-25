@@ -19,7 +19,7 @@ class UserCreate(BaseModel):
     city: str = ""
     phone: str = ""
     contact_person: str = ""
-    role: str = "dealer"
+    role: str = "dealer"  # "admin" or "dealer"
 
 
 class SupplierCreate(BaseModel):
@@ -47,9 +47,10 @@ class User(BaseModel):
     city: str = ""
     phone: str = ""
     contact_person: str = ""
-    role: str
+    role: str  # "admin", "dealer", or "foreign_dealer"
     is_approved: bool = False
     is_foreign_dealer: bool = False
+    is_offline: bool = False
     country: str = ""
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -68,6 +69,13 @@ class MotorcycleCreate(BaseModel):
     condition: str = "good"
     images: List[str] = []
     auction_duration_hours: int = 3
+    chassis_number: str = ""
+    currency: str = "EUR"
+    auto_delete_hours: int = 24
+    has_maintenance_history: Optional[bool] = None
+    maintenance_history_details: Optional[str] = None
+    visibility: str = "all"
+    visible_to_dealers: List[str] = []
 
 
 class MotorcycleUpdate(BaseModel):
@@ -82,6 +90,10 @@ class MotorcycleUpdate(BaseModel):
     condition: Optional[str] = None
     images: Optional[List[str]] = None
     is_available: Optional[bool] = None
+    chassis_number: Optional[str] = None
+    license_plate: Optional[str] = None
+    visibility: Optional[str] = None
+    visible_to_dealers: Optional[List[str]] = None
 
 
 class Motorcycle(BaseModel):
@@ -102,8 +114,11 @@ class Motorcycle(BaseModel):
     auction_end_time: Optional[str] = None
     highest_bid: Optional[float] = None
     highest_bidder_id: Optional[str] = None
+    chassis_number: str = ""
+    license_plate: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: str = ""
+    auto_delete_at: Optional[str] = None
     is_dealer_listing: bool = False
     seller_company: Optional[str] = None
     seller_id: Optional[str] = None
@@ -113,6 +128,31 @@ class Motorcycle(BaseModel):
     foreign_dealer_id: Optional[str] = None
     foreign_dealer_company: Optional[str] = None
     original_price: Optional[float] = None
+    original_currency: str = "EUR"
+    has_maintenance_history: Optional[bool] = None
+    maintenance_history_details: Optional[str] = None
+    visibility: str = "all"
+    visible_to_dealers: List[str] = []
+
+
+class BulkMotorcycleItem(BaseModel):
+    """Individual motorcycle in bulk add - only mileage differs"""
+    mileage: int
+    chassis_number: Optional[str] = None
+    license_plate: Optional[str] = None
+
+
+class BulkMotorcycleCreate(BaseModel):
+    """Bulk add motorcycles - same brand/model/year/color, different mileage"""
+    brand: str
+    model: str
+    year: int
+    price: float
+    color: str = ""
+    condition: str = "good"
+    description: str = ""
+    images: List[str] = []
+    motorcycles: List[BulkMotorcycleItem]
 
 
 # ============ BID MODELS ============
@@ -129,6 +169,33 @@ class Bid(BaseModel):
     dealer_id: str
     dealer_company: str
     amount: float
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# ============ LICENSE PLATE MODELS ============
+
+class LicensePlateCreate(BaseModel):
+    dealer_id: str
+    license_plate: str
+    chassis_number: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    notes: Optional[str] = ""
+
+
+class LicensePlate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    license_plate: str
+    chassis_number: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    notes: str = ""
+    document_url: Optional[str] = None
+    document_filename: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -155,6 +222,7 @@ class Order(BaseModel):
     total_price: float = 0.0
     payment_status: str = "unpaid"
     stripe_session_id: Optional[str] = None
+    motorcycle_snapshot: Optional[dict] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -163,17 +231,37 @@ class OrderWithMotorcycle(BaseModel):
     id: str
     motorcycle_id: str
     dealer_id: str
-    dealer_email: str
-    dealer_company: str
-    status: str
+    dealer_email: str = ""
+    dealer_company: str = ""
+    status: str = "pending"
     notes: str = ""
     needs_delivery: bool = False
     delivery_cost: float = 0.0
+    needs_inspection: bool = False
+    inspection_cost: float = 0.0
+    needs_valuation: bool = False
+    valuation_cost: float = 0.0
+    voucher_code: Optional[str] = None
+    voucher_discount: float = 0.0
     deposit_amount: float = 0.0
     total_price: float = 0.0
     payment_status: str = "unpaid"
-    created_at: str
+    created_at: Optional[str] = None
     motorcycle: Optional[dict] = None
+    motorcycle_snapshot: Optional[dict] = None
+    order_type: Optional[str] = None
+    discount_amount: float = 0.0
+    original_price: Optional[float] = None
+
+
+class BuyNowRequest(BaseModel):
+    """Request model for buy now orders with optional services"""
+    motorcycle_id: str
+    needs_delivery: bool = False
+    needs_inspection: bool = False
+    needs_valuation: bool = False
+    voucher_code: Optional[str] = None
+    notes: str = ""
 
 
 # ============ NOTIFICATION MODELS ============
@@ -230,10 +318,72 @@ class Voucher(BaseModel):
     used_at: Optional[str] = None
 
 
+# ============ PRICE PROPOSAL MODELS ============
+
+class PriceProposalCreate(BaseModel):
+    motorcycle_id: str
+    proposed_price: float
+    reason: str = ""
+
+
+class PriceProposal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    motorcycle_id: str
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    original_price: float
+    proposed_price: float
+    reason: str = ""
+    status: str = "pending"
+    admin_response: str = ""
+    counter_price: Optional[float] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
+
+
+# ============ WANTED REQUEST MODELS ============
+
+class WantedRequestCreate(BaseModel):
+    brand: str
+    model: str = ""
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    max_mileage: Optional[int] = None
+    max_budget: float
+    notes: str = ""
+
+
+class WantedRequestApprove(BaseModel):
+    supplier_price: float
+    admin_notes: str = ""
+
+
+class WantedRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    dealer_phone: str = ""
+    brand: str
+    model: str = ""
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    max_mileage: Optional[int] = None
+    max_budget: float
+    supplier_price: Optional[float] = None
+    notes: str = ""
+    status: str = "pending"
+    admin_notes: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    approved_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    fulfilled_by: Optional[str] = None
+
+
 # ============ PARTS SHOP MODELS ============
-
-MOTORCYCLE_BRANDS = ["Yamaha", "Honda", "Kawasaki", "Ducati", "Triumph", "KTM", "Suzuki", "BMW"]
-
 
 class PartCategory(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -319,3 +469,86 @@ class PartOrder(BaseModel):
     notes: str = ""
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     paid_at: Optional[str] = None
+
+
+# ============ AUTH REQUEST MODELS ============
+
+class NotificationAutoLogin(BaseModel):
+    token: str
+
+
+class PermanentLoginRequest(BaseModel):
+    token: str
+
+
+class ShortCodeLoginRequest(BaseModel):
+    code: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+# ============ ADMIN REQUEST MODELS ============
+
+class CreateAdminRequest(BaseModel):
+    email: str
+    password: str
+    company_name: str = "Moto Import Admin"
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+
+
+class DealerPhoneUpdate(BaseModel):
+    phone: str
+
+
+# ============ SMS REQUEST MODELS ============
+
+class SMSRequest(BaseModel):
+    phone_number: str
+    message: str
+
+
+class BulkSMSRequest(BaseModel):
+    message: str
+
+
+class SelectedSMSRequest(BaseModel):
+    dealer_ids: List[str]
+    message: str
+
+
+# ============ EMAIL REQUEST MODELS ============
+
+class BulkEmailRequest(BaseModel):
+    subject: str
+    html_content: str
+    recipient_type: str = "dealers"
+    selected_dealer_ids: Optional[List[str]] = None
+    marketing_list_file: Optional[str] = None
+
+
+class BulkEmailResponse(BaseModel):
+    sent_count: int
+    failed_count: int
+    total_recipients: int
+
+
+# ============ PAYMENT MODELS ============
+
+class PaymentRequest(BaseModel):
+    order_id: str
