@@ -3677,8 +3677,7 @@ async def calculate_payment(motorcycle_id: str, needs_delivery: bool = False, us
 
 @api_router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Upload image and store in MongoDB for persistence - with compression"""
-    import base64
+    """Upload image to cloud storage for fast delivery"""
     from PIL import Image
     import io
     
@@ -3733,21 +3732,46 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
     # Generate unique ID
     image_id = str(uuid.uuid4())
     
-    # Store in MongoDB with both full and thumbnail versions
+    # Try cloud storage first, fallback to MongoDB
+    cloud_stored = False
+    try:
+        if init_storage():
+            # Upload full image to cloud
+            full_path = f"{APP_NAME}/images/{image_id}.jpg"
+            put_object(full_path, compressed_content, "image/jpeg")
+            
+            # Upload thumbnail to cloud
+            thumb_path = f"{APP_NAME}/thumbs/{image_id}.jpg"
+            put_object(thumb_path, thumbnail_content, "image/jpeg")
+            
+            cloud_stored = True
+            logger.info(f"Image {image_id} stored in cloud")
+    except Exception as e:
+        logger.error(f"Cloud storage failed, falling back to MongoDB: {e}")
+    
+    # Store metadata in MongoDB (and fallback data if cloud failed)
+    import base64
     image_doc = {
         "id": image_id,
         "filename": f"{image_id}.jpg",
         "content_type": "image/jpeg",
-        "data": base64.b64encode(compressed_content).decode('utf-8'),
-        "thumbnail": base64.b64encode(thumbnail_content).decode('utf-8'),
+        "cloud_stored": cloud_stored,
+        "storage_path": f"{APP_NAME}/images/{image_id}.jpg" if cloud_stored else None,
+        "thumb_path": f"{APP_NAME}/thumbs/{image_id}.jpg" if cloud_stored else None,
         "original_size": len(content),
         "compressed_size": len(compressed_content),
         "uploaded_by": user["id"],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Only store base64 data if cloud storage failed
+    if not cloud_stored:
+        image_doc["data"] = base64.b64encode(compressed_content).decode('utf-8')
+        image_doc["thumbnail"] = base64.b64encode(thumbnail_content).decode('utf-8')
+    
     await db.images.insert_one(image_doc)
     
-    # Return URL that serves from MongoDB
+    # Return URL
     origin = request.headers.get("origin") or request.headers.get("referer", "").rstrip("/")
     if origin:
         from urllib.parse import urlparse
@@ -3762,7 +3786,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
 
 @api_router.get("/images/{image_id}")
 async def get_image(image_id: str, thumb: bool = False):
-    """Serve image from MongoDB - optionally serve thumbnail for faster loading"""
+    """Serve image - from cloud storage (fast) or MongoDB (fallback)"""
     import base64
     from fastapi.responses import Response
     
@@ -3770,7 +3794,28 @@ async def get_image(image_id: str, thumb: bool = False):
     if not image:
         raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
     
-    # Serve thumbnail if requested and available
+    # Try cloud storage first (much faster)
+    if image.get("cloud_stored") and init_storage():
+        try:
+            if thumb and image.get("thumb_path"):
+                image_data, content_type = get_object(image["thumb_path"])
+            elif image.get("storage_path"):
+                image_data, content_type = get_object(image["storage_path"])
+            else:
+                raise Exception("No cloud path found")
+            
+            return Response(
+                content=image_data,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "public, max-age=31536000"}
+            )
+        except Exception as e:
+            logger.error(f"Cloud retrieval failed for {image_id}: {e}")
+    
+    # Fallback to MongoDB
+    if not image.get("data"):
+        raise HTTPException(status_code=404, detail="Afbeelding data niet gevonden")
+    
     if thumb and image.get("thumbnail"):
         image_data = base64.b64decode(image["thumbnail"])
     else:
