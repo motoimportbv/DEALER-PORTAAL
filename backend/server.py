@@ -3785,7 +3785,8 @@ async def delete_notification(notification_id: str, user: dict = Depends(get_cur
 
 
 # ============ ADMIN ACTIVITY TRACKING ENDPOINTS ============
-        # Email voor buitenlandse dealer (zonder voucher)
+
+@api_router.get("/admin/activity-notifications")
         try:
             html_content = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
