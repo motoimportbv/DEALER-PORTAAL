@@ -3595,6 +3595,59 @@ async def get_image(image_id: str, thumb: bool = False):
         headers={"Cache-Control": "public, max-age=31536000"}  # Cache for 1 year
     )
 
+@api_router.post("/images/optimize-all")
+async def optimize_all_images(user: dict = Depends(require_admin)):
+    """Admin endpoint to generate thumbnails for all existing images"""
+    import base64
+    from PIL import Image
+    import io
+    
+    # Get images without thumbnails
+    images = await db.images.find(
+        {"thumbnail": {"$exists": False}}, 
+        {"id": 1, "data": 1, "_id": 0}
+    ).to_list(500)
+    
+    optimized = 0
+    errors = 0
+    
+    for img_doc in images:
+        try:
+            # Decode existing image
+            img_data = base64.b64decode(img_doc["data"])
+            img = Image.open(io.BytesIO(img_data))
+            
+            # Convert to RGB if necessary
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            
+            # Create thumbnail (400px)
+            thumb_size = 400
+            thumb_ratio = thumb_size / max(img.size)
+            thumb_dimensions = (int(img.size[0] * thumb_ratio), int(img.size[1] * thumb_ratio))
+            thumb = img.resize(thumb_dimensions, Image.Resampling.LANCZOS)
+            thumb_output = io.BytesIO()
+            thumb.save(thumb_output, format='JPEG', quality=70, optimize=True)
+            thumbnail_content = thumb_output.getvalue()
+            
+            # Update document with thumbnail
+            await db.images.update_one(
+                {"id": img_doc["id"]},
+                {"$set": {"thumbnail": base64.b64encode(thumbnail_content).decode('utf-8')}}
+            )
+            optimized += 1
+            
+        except Exception as e:
+            logger.error(f"Error optimizing {img_doc['id']}: {e}")
+            errors += 1
+    
+    return {
+        "message": f"Optimalisatie voltooid",
+        "optimized": optimized,
+        "errors": errors,
+        "total_processed": len(images)
+    }
+
 @api_router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
     """Upload multiple images and store in MongoDB - with compression"""
