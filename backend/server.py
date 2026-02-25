@@ -2685,17 +2685,19 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_approved_
 
 @api_router.get("/orders", response_model=List[OrderWithMotorcycle])
 async def get_orders(user: dict = Depends(require_approved_dealer)):
+    # Orders blijven 1 week zichtbaar
+    one_week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    
     if user["role"] == "admin":
-        # Admin ziet alleen orders van de laatste 24 uur (niet gearchiveerd)
-        twenty_four_hours_ago = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        # Admin ziet alle orders van de laatste week (niet gearchiveerd)
         orders = await db.orders.find(
-            {"created_at": {"$gte": twenty_four_hours_ago}, "archived": {"$ne": True}}, 
+            {"created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
             {"_id": 0}
         ).to_list(1000)
     else:
-        # Dealers zien al hun orders (geen tijdslimiet, niet gearchiveerd)
+        # Dealers zien hun orders van de laatste week (niet gearchiveerd)
         orders = await db.orders.find(
-            {"dealer_id": user["id"], "archived": {"$ne": True}}, 
+            {"dealer_id": user["id"], "created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
             {"_id": 0}
         ).to_list(1000)
     
