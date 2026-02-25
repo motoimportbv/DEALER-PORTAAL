@@ -388,7 +388,7 @@ const MotorcycleDetail = () => {
                       }`}
                       data-testid={`thumbnail-${index}`}
                     >
-                      <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={`${img}?thumb=true`} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" loading="lazy" />
                     </button>
                   ))}
                 </div>
