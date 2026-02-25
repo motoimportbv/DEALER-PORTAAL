@@ -715,16 +715,65 @@ const MotorcycleForm = () => {
                   {formData.images.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2">
                       {formData.images.map((url, index) => (
-                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-zinc-100">
-                          <img src={url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700"
-                            data-testid={`remove-image-${index}`}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-zinc-100 group">
+                          <img src={`${url}?thumb=true`} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                          
+                          {/* Main image badge */}
+                          {index === 0 && (
+                            <div className="absolute top-1 left-1 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Star className="w-3 h-3" /> Hoofd
+                            </div>
+                          )}
+                          
+                          {/* Controls overlay */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                            {/* Move up */}
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, index - 1)}
+                                className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-zinc-700 hover:bg-zinc-100"
+                                title="Naar boven"
+                              >
+                                <ChevronUp className="w-5 h-5" />
+                              </button>
+                            )}
+                            
+                            {/* Set as main */}
+                            {index !== 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setAsMainImage(index)}
+                                className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white hover:bg-green-700"
+                                title="Als hoofdfoto"
+                              >
+                                <Star className="w-4 h-4" />
+                              </button>
+                            )}
+                            
+                            {/* Move down */}
+                            {index < formData.images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, index + 1)}
+                                className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-zinc-700 hover:bg-zinc-100"
+                                title="Naar beneden"
+                              >
+                                <ChevronDown className="w-5 h-5" />
+                              </button>
+                            )}
+                            
+                            {/* Delete */}
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700"
+                              title="Verwijderen"
+                              data-testid={`remove-image-${index}`}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
