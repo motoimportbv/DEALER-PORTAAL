@@ -6207,6 +6207,9 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
 # Include the router
 app.include_router(api_router)
 
+# Include modular routers
+app.include_router(auth_router, prefix="/api")
+
 # Mount static files for uploads AFTER router (via /api/uploads)
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
