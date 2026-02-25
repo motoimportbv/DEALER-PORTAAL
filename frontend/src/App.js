@@ -220,6 +220,7 @@ function App() {
             <Route path="/admin/bulk-email" element={<AdminBulkEmail />} />
             <Route path="/admin/whatsapp" element={<AdminWhatsAppBroadcast />} />
             <Route path="/admin/sms" element={<AdminSMSBroadcast />} />
+            <Route path="/admin/activity" element={<AdminActivity />} />
             <Route path="/admin/price-proposals" element={<AdminPriceProposals />} />
             <Route path="/admin/wanted-requests" element={<AdminWantedRequests />} />
             
