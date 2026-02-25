@@ -1,97 +1,93 @@
+# =============================================================================
+# MOTO IMPORT BACKEND SERVER
+# =============================================================================
+# Gerefactorde versie met modulaire structuur
+# Config, Database, Services en Models zijn nu in aparte bestanden
+# =============================================================================
+
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from starlette.responses import RedirectResponse
 import os
 import logging
 import asyncio
-import smtplib
 import shutil
 import urllib.parse
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-import bcrypt
-import jwt
 import json
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
-from twilio.rest import Client as TwilioClient
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# =============================================================================
+# IMPORTS FROM REFACTORED MODULES
+# =============================================================================
 
-# PRODUCTION URL - ALWAYS use this for customer-facing links
-# This ensures links work correctly regardless of environment variables
-PRODUCTION_BASE_URL = "https://www.motoimportbv.nl"
+# Config - alle environment variables en constanten
+from config import (
+    PRODUCTION_BASE_URL, STORAGE_URL, EMERGENT_KEY, APP_NAME,
+    JWT_SECRET, JWT_ALGORITHM,
+    ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3,
+    ADMIN_EMAILS_FULL, ADMIN_EMAIL_LIMITED, ADMIN_EMAILS_DEALER_MOTO,
+    GMAIL_EMAIL, GMAIL_APP_PASSWORD,
+    EMAIL_FOOTER_DEALER, EMAIL_FOOTER_SUPPLIER,
+    STRIPE_API_KEY, DELIVERY_COST, DEPOSIT_PERCENTAGE,
+    TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER,
+    EXCHANGE_RATE_CACHE_DURATION, MOTORCYCLE_BRANDS,
+    logger, ROOT_DIR
+)
 
-# Emergent Object Storage Configuration
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
-APP_NAME = "moto-import"
-storage_key = None  # Module-level, set once and reused globally
+# Database - MongoDB connectie
+from database import db, client
 
-def init_storage():
-    """Initialize Emergent Object Storage - call once at startup"""
-    global storage_key
-    if storage_key:
-        return storage_key
-    if not EMERGENT_KEY:
-        logger.warning("EMERGENT_LLM_KEY not set - cloud storage disabled")
-        return None
-    try:
-        import requests
-        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
-        resp.raise_for_status()
-        storage_key = resp.json()["storage_key"]
-        logger.info("Emergent Object Storage initialized successfully")
-        return storage_key
-    except Exception as e:
-        logger.error(f"Failed to initialize storage: {e}")
-        return None
+# Services - Auth, Email, SMS, Storage, Currency
+from services import (
+    # Auth
+    hash_password, verify_password,
+    create_token, create_notification_token, create_permanent_login_token,
+    decode_token, get_current_user, require_admin, require_approved_dealer,
+    generate_short_code, security,
+    # Email
+    send_email, send_email_with_attachment, send_admin_notification,
+    # SMS
+    send_sms, is_twilio_configured, twilio_client,
+    # Storage
+    init_storage, put_object, get_object,
+    # Currency
+    get_chf_eur_margin, set_chf_eur_margin, get_chf_to_eur_rate,
+    convert_chf_to_eur_with_margin, convert_chf_to_eur, DEFAULT_CHF_EUR_MARGIN
+)
 
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    """Upload file to Emergent Object Storage"""
-    import requests
-    key = init_storage()
-    if not key:
-        raise Exception("Storage not initialized")
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data, timeout=120
-    )
-    resp.raise_for_status()
-    return resp.json()
+# Models - Pydantic schemas
+from models import (
+    UserCreate, SupplierCreate, UserLogin, User,
+    MotorcycleCreate, MotorcycleUpdate, Motorcycle, BulkMotorcycleItem, BulkMotorcycleCreate,
+    BidCreate, Bid,
+    LicensePlateCreate, LicensePlate,
+    OrderCreate, Order, OrderWithMotorcycle, BuyNowRequest,
+    Notification, ChatMessage, ChatMessageCreate, PushSubscription, Voucher,
+    PriceProposalCreate, PriceProposal,
+    WantedRequestCreate, WantedRequestApprove, WantedRequest,
+    PartCategory, PartCategoryCreate, Part, PartCreate, PartUpdate,
+    PartOrderItem, PartOrderCreate, PartOrder,
+    NotificationAutoLogin, PermanentLoginRequest, ShortCodeLoginRequest,
+    PasswordResetRequest, PasswordResetConfirm, ChangePasswordRequest,
+    CreateAdminRequest, ResetPasswordRequest, DealerPhoneUpdate,
+    SMSRequest, BulkSMSRequest, SelectedSMSRequest,
+    BulkEmailRequest, BulkEmailResponse, PaymentRequest
+)
 
-def get_object(path: str) -> tuple:
-    """Download file from Emergent Object Storage"""
-    import requests
-    key = init_storage()
-    if not key:
-        raise Exception("Storage not initialized")
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key}, timeout=60
-    )
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-
-# JWT Config
-JWT_SECRET = os.environ.get('JWT_SECRET')
-if not JWT_SECRET:
-    raise ValueError("JWT_SECRET environment variable is required")
-JWT_ALGORITHM = "HS256"
+# Legacy imports for backwards compatibility (still needed in some routes)
+import bcrypt
+import jwt
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import httpx
 
 # Gmail Config
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
