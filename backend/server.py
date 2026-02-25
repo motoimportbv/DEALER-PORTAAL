@@ -5609,7 +5609,7 @@ Moto Import
                 logger.error(f"Failed to send invoice email: {e}")
         
         # Also notify all admins
-        if ADMIN_EMAILS and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
+        if ADMIN_EMAILS_FULL and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
             items_list = "\n".join([f"- {item['part_name']} x{item['quantity']} (€{item['price'] * item['quantity']:.2f})" for item in order_items])
             admin_body = f"""
 Nieuwe onderdelen bestelling ontvangen!
