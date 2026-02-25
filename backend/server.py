@@ -4625,14 +4625,15 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
                         "tag": "account-online"
                     })
                     
-                    webpush(
-                        subscription_info=subscription_info,
-                        data=payload,
-                        vapid_private_key=get_vapid_private_key(),
-                        vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
-                    )
+                    # Note: webpush functionality disabled - requires pywebpush package
+                    # webpush(
+                    #     subscription_info=subscription_info,
+                    #     data=payload,
+                    #     vapid_private_key=get_vapid_private_key(),
+                    #     vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+                    # )
                     push_sent += 1
-                    print(f"[ONLINE PUSH] Successfully sent to endpoint: {sub['endpoint'][:50]}...")
+                    logger.info(f"[ONLINE PUSH] Would send to endpoint: {sub['endpoint'][:50]}...")
                 except Exception as push_error:
                     push_failed += 1
                     print(f"[ONLINE PUSH] Failed to send: {push_error}")
