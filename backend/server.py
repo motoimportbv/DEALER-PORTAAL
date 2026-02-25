@@ -3763,7 +3763,12 @@ async def mark_notification_read(notification_id: str, user: dict = Depends(get_
     return {"message": "Notification marked as read"}
 
 @api_router.put("/notifications/read-all")
-    is_foreign = dealer.get("is_foreign_dealer", False)
+async def mark_all_read(user: dict = Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": user["id"], "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "All notifications marked as read"}
     
     # Always use production URL for email links
     base_url = PRODUCTION_BASE_URL
