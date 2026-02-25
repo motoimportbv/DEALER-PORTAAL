@@ -3597,8 +3597,10 @@ async def get_image(image_id: str, thumb: bool = False):
 
 @api_router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
-    """Upload multiple images and store in MongoDB"""
+    """Upload multiple images and store in MongoDB - with compression"""
     import base64
+    from PIL import Image
+    import io
     
     urls = []
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
@@ -3618,19 +3620,55 @@ async def upload_multiple_images(request: Request, files: List[UploadFile] = Fil
         
         content = await file.read()
         
-        # Skip if too large
-        if len(content) > 5 * 1024 * 1024:
+        # Skip if too large (10MB before compression)
+        if len(content) > 10 * 1024 * 1024:
             continue
         
-        image_id = str(uuid.uuid4())
-        ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+        # Compress image
+        try:
+            img = Image.open(io.BytesIO(content))
+            
+            # Convert to RGB if necessary
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            
+            # Resize if too large
+            max_size = 1920
+            if max(img.size) > max_size:
+                ratio = max_size / max(img.size)
+                new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+            
+            # Compress to JPEG
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=80, optimize=True)
+            compressed_content = output.getvalue()
+            
+            # Create thumbnail
+            thumb_size = 400
+            thumb_ratio = thumb_size / max(img.size)
+            thumb_dimensions = (int(img.size[0] * thumb_ratio), int(img.size[1] * thumb_ratio))
+            thumb = img.resize(thumb_dimensions, Image.Resampling.LANCZOS)
+            thumb_output = io.BytesIO()
+            thumb.save(thumb_output, format='JPEG', quality=70, optimize=True)
+            thumbnail_content = thumb_output.getvalue()
+            
+        except Exception as e:
+            logger.error(f"Bulk image compression failed: {e}")
+            compressed_content = content
+            thumbnail_content = content
         
-        # Store in MongoDB
+        image_id = str(uuid.uuid4())
+        
+        # Store in MongoDB with compression
         image_doc = {
             "id": image_id,
-            "filename": f"{image_id}.{ext}",
-            "content_type": file.content_type,
-            "data": base64.b64encode(content).decode('utf-8'),
+            "filename": f"{image_id}.jpg",
+            "content_type": "image/jpeg",
+            "data": base64.b64encode(compressed_content).decode('utf-8'),
+            "thumbnail": base64.b64encode(thumbnail_content).decode('utf-8'),
+            "original_size": len(content),
+            "compressed_size": len(compressed_content),
             "uploaded_by": user["id"],
             "created_at": datetime.now(timezone.utc).isoformat()
         }
