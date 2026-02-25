@@ -6755,6 +6755,15 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_db_client():
     """Initialize database with default data"""
+    # Initialize cloud storage
+    try:
+        if init_storage():
+            logger.info("Cloud storage initialized successfully")
+        else:
+            logger.warning("Cloud storage not available - using MongoDB fallback")
+    except Exception as e:
+        logger.error(f"Failed to initialize cloud storage: {e}")
+    
     # Create default part categories if they don't exist
     default_categories = [
         {"name": "Uitlaten", "description": "Uitlaatsystemen en onderdelen"},
