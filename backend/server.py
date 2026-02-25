@@ -3811,8 +3811,10 @@ async def mark_admin_notifications_read(user: dict = Depends(require_admin)):
     return {"message": "All notifications marked as read"}
 
 @api_router.delete("/admin/activity-notifications/all")
-                
-                <div style="padding: 30px; background: #f9fafb;">
+async def delete_admin_notifications(user: dict = Depends(require_admin)):
+    """Delete all admin notifications"""
+    await db.admin_notifications.delete_many({})
+    return {"message": "All admin notifications deleted"}
                     <h2 style="color: #16a34a; margin-top: 0;">✅ Account Approved!</h2>
                     <p>Dear {dealer.get('contact_person', dealer['company_name'])},</p>
                     <p>Your supplier account at <strong>Moto Import</strong> has been approved!</p>
