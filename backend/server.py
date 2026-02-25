@@ -3596,17 +3596,19 @@ async def get_image(image_id: str, thumb: bool = False):
     )
 
 @api_router.post("/images/optimize-all")
-async def optimize_all_images(user: dict = Depends(require_admin)):
-    """Admin endpoint to generate thumbnails for all existing images"""
+async def optimize_all_images(user: dict = Depends(require_admin), batch_size: int = 10):
+    """Admin endpoint to generate thumbnails for existing images - processes in batches"""
     import base64
     from PIL import Image
     import io
     
-    # Get images without thumbnails
+    # Get images without thumbnails - limit to batch_size
     images = await db.images.find(
         {"thumbnail": {"$exists": False}}, 
         {"id": 1, "data": 1, "_id": 0}
-    ).to_list(500)
+    ).to_list(batch_size)
+    
+    total_remaining = await db.images.count_documents({"thumbnail": {"$exists": False}})
     
     optimized = 0
     errors = 0
@@ -3642,10 +3644,11 @@ async def optimize_all_images(user: dict = Depends(require_admin)):
             errors += 1
     
     return {
-        "message": f"Optimalisatie voltooid",
+        "message": f"Batch optimalisatie voltooid",
         "optimized": optimized,
         "errors": errors,
-        "total_processed": len(images)
+        "remaining": total_remaining - optimized,
+        "batch_size": batch_size
     }
 
 @api_router.post("/upload/multiple")
