@@ -4636,11 +4636,11 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
                     logger.info(f"[ONLINE PUSH] Would send to endpoint: {sub['endpoint'][:50]}...")
                 except Exception as push_error:
                     push_failed += 1
-                    print(f"[ONLINE PUSH] Failed to send: {push_error}")
+                    logger.error(f"[ONLINE PUSH] Failed to send: {push_error}")
             
-            print(f"[ONLINE PUSH] Result: {push_sent} sent, {push_failed} failed")
+            logger.info(f"[ONLINE PUSH] Result: {push_sent} sent, {push_failed} failed")
         except Exception as e:
-            print(f"[ONLINE PUSH] Error: {e}")
+            logger.error(f"[ONLINE PUSH] Error: {e}")
     
         return {
             "message": f"Dealer {dealer['company_name']} is nu {status_text}",
