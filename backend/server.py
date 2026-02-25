@@ -3739,7 +3739,7 @@ async def get_pending_proposals_count(user: dict = Depends(require_admin)):
 
 # ============ DEALER MANAGEMENT (verplaatst naar routers/dealers.py) ============
 
-@api_router.put("/dealers/{dealer_id}/approve")
+# ============ NOTIFICATION ENDPOINTS ============
 async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(require_admin)):
     dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
     if not dealer:
