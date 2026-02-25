@@ -3748,8 +3748,8 @@ async def get_notifications(user: dict = Depends(get_current_user)):
         {"_id": 0}
     ).sort("created_at", -1).to_list(50)
     return notifications
-    
-    await db.users.update_one(
+
+@api_router.get("/notifications/unread-count")
         {"id": dealer_id},
         {"$set": {"is_approved": True}}
     )
