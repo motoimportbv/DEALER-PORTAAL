@@ -3796,7 +3796,10 @@ async def get_admin_notifications(user: dict = Depends(require_admin)):
     return notifications
 
 @api_router.get("/admin/activity-notifications/unread-count")
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+async def get_admin_unread_count(user: dict = Depends(require_admin)):
+    """Get unread admin notification count"""
+    count = await db.admin_notifications.count_documents({"is_read": False})
+    return {"count": count}
                 <div style="background: #18181b; padding: 25px; text-align: center;">
                     <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
                 </div>
