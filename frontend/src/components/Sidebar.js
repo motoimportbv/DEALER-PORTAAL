@@ -133,6 +133,7 @@ const Sidebar = () => {
               Moto Import
             </span>
           </Link>
+          {user?.role === 'admin' && <AdminActivityBell />}
           {user?.role === 'dealer' && <NotificationBell />}
         </div>
       </div>
