@@ -3742,7 +3742,7 @@ async def get_pending_proposals_count(user: dict = Depends(require_admin)):
 # ============ NOTIFICATION ENDPOINTS ============
 
 @api_router.get("/notifications", response_model=List[Notification])
-    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+async def get_notifications(user: dict = Depends(get_current_user)):
     if not dealer:
         raise HTTPException(status_code=404, detail="Dealer niet gevonden")
     
