@@ -26,12 +26,19 @@ def verify_password(password: str, hashed: str) -> bool:
 
 
 def create_token(user_id: str, email: str, role: str) -> str:
-    """Create a JWT token for a user (7 day expiry)"""
+    """Create a JWT token for a user
+    Dealers krijgen 1 jaar, admins 30 dagen
+    """
+    if role == 'dealer':
+        expiry_days = 365  # 1 jaar voor dealers
+    else:
+        expiry_days = 30   # 30 dagen voor admins
+    
     payload = {
         "user_id": user_id,
         "email": email,
         "role": role,
-        "exp": (datetime.now(timezone.utc) + timedelta(days=7)).timestamp()
+        "exp": (datetime.now(timezone.utc) + timedelta(days=expiry_days)).timestamp()
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
