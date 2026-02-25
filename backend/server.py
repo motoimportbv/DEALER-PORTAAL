@@ -3769,8 +3769,9 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
         {"$set": {"is_read": True}}
     )
     return {"message": "All notifications marked as read"}
-    
-    # Always use production URL for email links
+
+
+@api_router.delete("/notifications/all")
     base_url = PRODUCTION_BASE_URL
     login_url = f"{base_url}/login"
     
