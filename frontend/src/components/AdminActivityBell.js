@@ -102,6 +102,9 @@ const AdminActivityBell = () => {
     return date.toLocaleDateString('nl-NL');
   };
 
+  // Only render for admin users
+  if (user?.role !== 'admin') return null;
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
