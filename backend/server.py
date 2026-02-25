@@ -87,90 +87,19 @@ import jwt
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 import httpx
 
-# Gmail Config
-ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
-ADMIN_EMAIL_2 = os.environ.get('ADMIN_EMAIL_2', '')  # Second admin - only dealer/motorcycle notifications
-ADMIN_EMAIL_3 = os.environ.get('ADMIN_EMAIL_3', '')  # Third admin email
-
-# Full admin list (receives ALL notifications)
-ADMIN_EMAILS_FULL = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_3] if e.strip()]
-
-# Limited admin (only new dealers and new motorcycles)
-ADMIN_EMAIL_LIMITED = ADMIN_EMAIL_2.strip() if ADMIN_EMAIL_2 else None
-
-# Combined list for dealer/motorcycle notifications
-ADMIN_EMAILS_DEALER_MOTO = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3] if e.strip()]
-
-GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
-GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
-
-# Email footer templates
-# For DEALERS - NO address shown
-EMAIL_FOOTER_DEALER = """
-    <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
-        <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
-        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-    </div>
-"""
-
-# For SUPPLIERS/FOREIGN DEALERS - WITH address
-EMAIL_FOOTER_SUPPLIER = """
-    <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
-        <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
-        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-    </div>
-"""
-
-# Stripe Config
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
-DELIVERY_COST = 50.0  # €50 bezorgkosten
-DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
-
-# Twilio SMS Config
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
-
-# Initialize Twilio client if credentials are available
-twilio_client = None
-if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
-    try:
-        twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        logging.info("Twilio client initialized successfully")
-    except Exception as e:
-        logging.warning(f"Failed to initialize Twilio client: {e}")
-
-# ============ EXCHANGE RATE CONFIG ============
-import httpx
-
-# Cache for exchange rates (to avoid too many API calls)
+# =============================================================================
+# EXCHANGE RATE CACHE (local to server.py, used by currency_service)
+# =============================================================================
 exchange_rate_cache = {
     "CHF_EUR": None,
     "last_updated": None
 }
-EXCHANGE_RATE_CACHE_DURATION = 300  # 5 minutes cache
-DEFAULT_CHF_EUR_MARGIN = 0.0  # No default margin - admin sets prices manually
 
-async def get_chf_eur_margin():
-    """Get the current CHF to EUR margin from database, or use default"""
-    settings = await db.settings.find_one({"key": "chf_eur_margin"}, {"_id": 0})
-    if settings and "value" in settings:
-        return settings["value"]
-    return DEFAULT_CHF_EUR_MARGIN
-
-async def set_chf_eur_margin(margin: float):
-    """Set the CHF to EUR margin in database"""
-    await db.settings.update_one(
-        {"key": "chf_eur_margin"},
-        {"$set": {"key": "chf_eur_margin", "value": margin, "updated_at": datetime.now(timezone.utc).isoformat()}},
-        upsert=True
-    )
-
+# Override currency service functions to use local cache
 async def get_chf_to_eur_rate():
     """Get real-time CHF to EUR exchange rate with caching"""
     global exchange_rate_cache
