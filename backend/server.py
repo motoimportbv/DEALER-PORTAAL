@@ -3761,8 +3761,8 @@ async def mark_notification_read(notification_id: str, user: dict = Depends(get_
         {"$set": {"is_read": True}}
     )
     return {"message": "Notification marked as read"}
-    
-    # Check of het een buitenlandse dealer is
+
+@api_router.put("/notifications/read-all")
     is_foreign = dealer.get("is_foreign_dealer", False)
     
     # Always use production URL for email links
