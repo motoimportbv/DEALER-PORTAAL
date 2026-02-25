@@ -2004,42 +2004,122 @@ async def activate_foreign_listing(motorcycle_id: str, price: float, starting_pr
     return {"message": "Motor geactiveerd", "price": price}
 
 async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
-    """Send email notifications to DUTCH dealers only (not foreign dealers) about a new motorcycle"""
-    # Always use production URL for email links
-    base_url = PRODUCTION_BASE_URL
+    """Queue motorcycle for bundled email notification - max 3 emails per day per dealer"""
+    # Instead of sending immediately, add to pending queue
+    # Emails are sent in batches by the scheduled task
     
     for dealer in dealers:
         # Skip dealers without email, who are offline, or who are foreign dealers
-        # Foreign dealers should NOT receive notifications about new motorcycles
         if not dealer.get("email") or dealer.get("is_offline", False) or dealer.get("is_foreign_dealer", False):
             continue
-            
+        
         try:
+            # Add to pending email queue
+            await db.pending_motorcycle_emails.update_one(
+                {"dealer_id": dealer["id"]},
+                {
+                    "$push": {
+                        "motorcycles": {
+                            "id": motorcycle.id,
+                            "brand": motorcycle.brand,
+                            "model": motorcycle.model,
+                            "year": motorcycle.year,
+                            "color": motorcycle.color,
+                            "mileage": motorcycle.mileage,
+                            "price": motorcycle.price,
+                            "added_at": datetime.now(timezone.utc).isoformat()
+                        }
+                    },
+                    "$setOnInsert": {
+                        "dealer_id": dealer["id"],
+                        "dealer_email": dealer["email"],
+                        "dealer_company": dealer.get("company_name", "Dealer"),
+                        "emails_sent_today": 0,
+                        "last_email_date": None
+                    }
+                },
+                upsert=True
+            )
+        except Exception as e:
+            logger.error(f"Failed to queue motorcycle email for {dealer.get('email')}: {e}")
+    
+    # Trigger batch send (will respect daily limit)
+    asyncio.create_task(send_pending_motorcycle_emails())
+
+
+async def send_pending_motorcycle_emails():
+    """Send bundled motorcycle emails - max 3 per dealer per day"""
+    base_url = PRODUCTION_BASE_URL
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Get all dealers with pending motorcycles
+    pending_list = await db.pending_motorcycle_emails.find({
+        "motorcycles": {"$exists": True, "$ne": []},
+        "$or": [
+            {"last_email_date": {"$ne": today}},  # Haven't emailed today
+            {"emails_sent_today": {"$lt": 3}}     # Or sent less than 3 today
+        ]
+    }).to_list(100)
+    
+    for pending in pending_list:
+        dealer_email = pending.get("dealer_email")
+        dealer_company = pending.get("dealer_company", "Dealer")
+        motorcycles = pending.get("motorcycles", [])
+        
+        if not motorcycles or not dealer_email:
+            continue
+        
+        # Reset counter if new day
+        if pending.get("last_email_date") != today:
+            await db.pending_motorcycle_emails.update_one(
+                {"dealer_id": pending["dealer_id"]},
+                {"$set": {"emails_sent_today": 0, "last_email_date": today}}
+            )
+            pending["emails_sent_today"] = 0
+        
+        # Check daily limit
+        if pending.get("emails_sent_today", 0) >= 3:
+            logger.info(f"Skipping {dealer_email} - already sent 3 emails today")
+            continue
+        
+        try:
+            # Build email with all pending motorcycles
+            motorcycle_html = ""
+            for moto in motorcycles:
+                motorcycle_html += f"""
+                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                    <h3 style="margin: 0 0 8px 0; color: #DC2626;">
+                        {moto['brand']} {moto['model']}
+                    </h3>
+                    <p style="color: #6b7280; margin: 3px 0; font-size: 14px;">Bouwjaar: {moto['year']} | Kleur: {moto['color']} | {moto['mileage']:,} km</p>
+                    <p style="font-size: 20px; font-weight: bold; color: #18181b; margin: 8px 0;">
+                        €{moto['price']:,.0f}
+                    </p>
+                    <a href="{base_url}/motorcycle/{moto['id']}" 
+                       style="color: #DC2626; text-decoration: none; font-weight: bold; font-size: 14px;">
+                        Bekijk motor →
+                    </a>
+                </div>
+                """
+            
+            count = len(motorcycles)
+            subject = f"🏍️ {count} nieuwe motor{'en' if count > 1 else ''} toegevoegd!"
+            
             html_content = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #DC2626; padding: 20px; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 24px;">🏍️ NIEUWE MOTOR!</h1>
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🏍️ {count} NIEUWE MOTOR{'EN' if count > 1 else ''}!</h1>
                 </div>
                 <div style="padding: 30px; background: #f9fafb;">
-                    <p>Beste {dealer.get('company_name', 'Dealer')},</p>
-                    <p>Er is een nieuwe motorfiets toegevoegd aan ons aanbod:</p>
+                    <p>Beste {dealer_company},</p>
+                    <p>Er {'zijn' if count > 1 else 'is'} {count} nieuwe motor{'fietsen' if count > 1 else 'fiets'} toegevoegd aan ons aanbod:</p>
                     
-                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-                        <h2 style="margin: 0 0 10px 0; color: #DC2626;">
-                            {motorcycle.brand} {motorcycle.model}
-                        </h2>
-                        <p style="color: #6b7280; margin: 5px 0;">Bouwjaar: {motorcycle.year}</p>
-                        <p style="color: #6b7280; margin: 5px 0;">Kleur: {motorcycle.color}</p>
-                        <p style="color: #6b7280; margin: 5px 0;">Kilometerstand: {motorcycle.mileage:,} km</p>
-                        <p style="font-size: 28px; font-weight: bold; color: #18181b; margin: 15px 0;">
-                            €{motorcycle.price:,.0f}
-                        </p>
-                    </div>
+                    {motorcycle_html}
                     
                     <div style="text-align: center; margin: 25px 0;">
-                        <a href="{base_url}/motorcycle/{motorcycle.id}" 
+                        <a href="{base_url}/dealer" 
                            style="background: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                            BEKIJK MOTOR
+                            BEKIJK ALLE MOTOREN
                         </a>
                     </div>
                 </div>
@@ -2047,14 +2127,28 @@ async def notify_dealers_new_motorcycle_email(motorcycle, dealers):
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                     <p style="margin: 5px 0;">www.motoimportbv.nl</p>
                     <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+                    <p style="margin: 10px 0; font-size: 11px; color: #6b7280;">U ontvangt maximaal 3 emails per dag</p>
                 </div>
             </div>
             """
-            await send_email(dealer["email"], f"🏍️ Nieuwe motor: {motorcycle.brand} {motorcycle.model}", html_content)
-            # Small delay to avoid rate limiting
-            await asyncio.sleep(0.3)
+            
+            await send_email(dealer_email, subject, html_content)
+            
+            # Clear pending and update counter
+            await db.pending_motorcycle_emails.update_one(
+                {"dealer_id": pending["dealer_id"]},
+                {
+                    "$set": {"motorcycles": []},
+                    "$inc": {"emails_sent_today": 1}
+                }
+            )
+            
+            logger.info(f"Sent bundled email to {dealer_email} with {count} motorcycles")
+            await asyncio.sleep(0.5)  # Rate limiting
+            
         except Exception as e:
-            logger.error(f"Failed to send new motorcycle email to {dealer.get('email')}: {e}")
+            logger.error(f"Failed to send bundled email to {dealer_email}: {e}")
+
 
 async def notify_dealers_new_motorcycle_sms(motorcycle, dealers):
     """Send SMS notifications to Dutch dealers with phone numbers about a new motorcycle"""
