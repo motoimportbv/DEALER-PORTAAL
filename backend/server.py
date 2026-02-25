@@ -3490,8 +3490,10 @@ async def calculate_payment(motorcycle_id: str, needs_delivery: bool = False, us
 
 @api_router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Upload image and store in MongoDB for persistence"""
+    """Upload image and store in MongoDB for persistence - with compression"""
     import base64
+    from PIL import Image
+    import io
     
     # Check file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
@@ -3501,20 +3503,58 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
     # Read file content
     content = await file.read()
     
-    # Check file size (max 5MB)
-    if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Bestand te groot (max 5MB)")
+    # Check file size (max 10MB before compression)
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 10MB)")
+    
+    # Compress image using Pillow
+    try:
+        img = Image.open(io.BytesIO(content))
+        
+        # Convert to RGB if necessary (for PNG with transparency)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize if too large (max 1920px on longest side)
+        max_size = 1920
+        if max(img.size) > max_size:
+            ratio = max_size / max(img.size)
+            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        
+        # Compress to JPEG with quality 80
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=80, optimize=True)
+        compressed_content = output.getvalue()
+        
+        # Also create thumbnail (400px) for fast loading in lists
+        thumb_size = 400
+        thumb_ratio = thumb_size / max(img.size)
+        thumb_dimensions = (int(img.size[0] * thumb_ratio), int(img.size[1] * thumb_ratio))
+        thumb = img.resize(thumb_dimensions, Image.Resampling.LANCZOS)
+        thumb_output = io.BytesIO()
+        thumb.save(thumb_output, format='JPEG', quality=70, optimize=True)
+        thumbnail_content = thumb_output.getvalue()
+        
+        logger.info(f"Image compressed: {len(content)/1024:.0f}KB -> {len(compressed_content)/1024:.0f}KB (thumb: {len(thumbnail_content)/1024:.0f}KB)")
+        
+    except Exception as e:
+        logger.error(f"Image compression failed: {e}")
+        compressed_content = content
+        thumbnail_content = content
     
     # Generate unique ID
     image_id = str(uuid.uuid4())
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
     
-    # Store in MongoDB
+    # Store in MongoDB with both full and thumbnail versions
     image_doc = {
         "id": image_id,
-        "filename": f"{image_id}.{ext}",
-        "content_type": file.content_type,
-        "data": base64.b64encode(content).decode('utf-8'),
+        "filename": f"{image_id}.jpg",
+        "content_type": "image/jpeg",
+        "data": base64.b64encode(compressed_content).decode('utf-8'),
+        "thumbnail": base64.b64encode(thumbnail_content).decode('utf-8'),
+        "original_size": len(content),
+        "compressed_size": len(compressed_content),
         "uploaded_by": user["id"],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -3531,7 +3571,7 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
     
     image_url = f"{base_url}/api/images/{image_id}"
     
-    return {"url": image_url, "filename": f"{image_id}.{ext}"}
+    return {"url": image_url, "filename": f"{image_id}.jpg"}
 
 @api_router.get("/images/{image_id}")
 async def get_image(image_id: str):
