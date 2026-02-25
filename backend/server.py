@@ -3782,7 +3782,9 @@ async def delete_notification(notification_id: str, user: dict = Depends(get_cur
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Notification not found")
     return {"message": "Notification deleted"}
-    if is_foreign:
+
+
+# ============ ADMIN ACTIVITY TRACKING ENDPOINTS ============
         # Email voor buitenlandse dealer (zonder voucher)
         try:
             html_content = f"""
