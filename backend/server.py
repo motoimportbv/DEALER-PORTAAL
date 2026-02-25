@@ -3802,7 +3802,13 @@ async def get_admin_unread_count(user: dict = Depends(require_admin)):
     return {"count": count}
 
 @api_router.put("/admin/activity-notifications/read-all")
-                    <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+async def mark_admin_notifications_read(user: dict = Depends(require_admin)):
+    """Mark all admin notifications as read"""
+    await db.admin_notifications.update_many(
+        {"is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "All notifications marked as read"}
                 </div>
                 
                 <div style="padding: 30px; background: #f9fafb;">
