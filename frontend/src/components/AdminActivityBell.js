@@ -26,9 +26,6 @@ const AdminActivityBell = () => {
     headers: { Authorization: `Bearer ${token}` }
   });
 
-  // Only show for admin
-  if (user?.role !== 'admin') return null;
-
   useEffect(() => {
     if (token && user?.role === 'admin') {
       fetchUnreadCount();
@@ -38,10 +35,10 @@ const AdminActivityBell = () => {
   }, [token, user]);
 
   useEffect(() => {
-    if (open && token) {
+    if (open && token && user?.role === 'admin') {
       fetchNotifications();
     }
-  }, [open, token]);
+  }, [open, token, user]);
 
   const fetchUnreadCount = async () => {
     try {
