@@ -3574,8 +3574,8 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
     return {"url": image_url, "filename": f"{image_id}.jpg"}
 
 @api_router.get("/images/{image_id}")
-async def get_image(image_id: str):
-    """Serve image from MongoDB"""
+async def get_image(image_id: str, thumb: bool = False):
+    """Serve image from MongoDB - optionally serve thumbnail for faster loading"""
     import base64
     from fastapi.responses import Response
     
@@ -3583,12 +3583,15 @@ async def get_image(image_id: str):
     if not image:
         raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
     
-    # Decode base64 data
-    image_data = base64.b64decode(image["data"])
+    # Serve thumbnail if requested and available
+    if thumb and image.get("thumbnail"):
+        image_data = base64.b64decode(image["thumbnail"])
+    else:
+        image_data = base64.b64decode(image["data"])
     
     return Response(
         content=image_data,
-        media_type=image["content_type"],
+        media_type=image.get("content_type", "image/jpeg"),
         headers={"Cache-Control": "public, max-age=31536000"}  # Cache for 1 year
     )
 
