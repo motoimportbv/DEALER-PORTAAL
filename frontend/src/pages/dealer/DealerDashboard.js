@@ -428,9 +428,10 @@ const DealerDashboard = () => {
                 <div className="aspect-[4/3] relative bg-zinc-100">
                   {motorcycle.images?.[0] ? (
                     <img 
-                      src={motorcycle.images[0]} 
+                      src={`${motorcycle.images[0]}?thumb=true`} 
                       alt={`${motorcycle.brand} ${motorcycle.model}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
