@@ -137,6 +137,7 @@ const Layout = ({ children, requiredRole }) => {
               </span>
             </div>
             <div className="flex items-center gap-1">
+              {user?.role === 'admin' && <AdminActivityBell />}
               {user?.role === 'dealer' && <NotificationBell />}
               <button 
                 onClick={handleLogout}
