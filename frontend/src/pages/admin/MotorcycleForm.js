@@ -258,6 +258,22 @@ const MotorcycleForm = () => {
     }));
   };
 
+  const moveImage = (fromIndex, toIndex) => {
+    if (toIndex < 0 || toIndex >= formData.images.length) return;
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      const [movedImage] = newImages.splice(fromIndex, 1);
+      newImages.splice(toIndex, 0, movedImage);
+      return { ...prev, images: newImages };
+    });
+  };
+
+  const setAsMainImage = (index) => {
+    if (index === 0) return;
+    moveImage(index, 0);
+    toast.success('Hoofdfoto ingesteld');
+  };
+
   const handleFileUpload = async (event) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
