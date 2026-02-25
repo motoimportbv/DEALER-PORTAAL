@@ -3596,60 +3596,68 @@ async def get_image(image_id: str, thumb: bool = False):
     )
 
 @api_router.post("/images/optimize-all")
-async def optimize_all_images(user: dict = Depends(require_admin), batch_size: int = 10):
-    """Admin endpoint to generate thumbnails for existing images - processes in batches"""
+async def optimize_all_images(user: dict = Depends(require_admin), batch_size: int = 5):
+    """Admin endpoint to generate thumbnails for existing images - processes in small batches"""
     import base64
     from PIL import Image
     import io
     
-    # Get images without thumbnails - limit to batch_size
-    images = await db.images.find(
-        {"thumbnail": {"$exists": False}}, 
-        {"id": 1, "data": 1, "_id": 0}
-    ).to_list(batch_size)
-    
-    total_remaining = await db.images.count_documents({"thumbnail": {"$exists": False}})
-    
-    optimized = 0
-    errors = 0
-    
-    for img_doc in images:
-        try:
-            # Decode existing image
-            img_data = base64.b64decode(img_doc["data"])
-            img = Image.open(io.BytesIO(img_data))
-            
-            # Convert to RGB if necessary
-            if img.mode in ('RGBA', 'P'):
-                img = img.convert('RGB')
-            
-            # Create thumbnail (400px)
-            thumb_size = 400
-            thumb_ratio = thumb_size / max(img.size)
-            thumb_dimensions = (int(img.size[0] * thumb_ratio), int(img.size[1] * thumb_ratio))
-            thumb = img.resize(thumb_dimensions, Image.Resampling.LANCZOS)
-            thumb_output = io.BytesIO()
-            thumb.save(thumb_output, format='JPEG', quality=70, optimize=True)
-            thumbnail_content = thumb_output.getvalue()
-            
-            # Update document with thumbnail
-            await db.images.update_one(
-                {"id": img_doc["id"]},
-                {"$set": {"thumbnail": base64.b64encode(thumbnail_content).decode('utf-8')}}
-            )
-            optimized += 1
-            
-        except Exception as e:
-            logger.error(f"Error optimizing {img_doc['id']}: {e}")
-            errors += 1
-    
-    return {
-        "message": f"Batch optimalisatie voltooid",
-        "optimized": optimized,
-        "errors": errors,
-        "remaining": total_remaining - optimized,
-        "batch_size": batch_size
-    }
+    try:
+        # Get images without thumbnails - small batch to avoid timeout
+        images = await db.images.find(
+            {"thumbnail": {"$exists": False}}, 
+            {"id": 1, "data": 1, "_id": 0}
+        ).to_list(batch_size)
+        
+        total_remaining = await db.images.count_documents({"thumbnail": {"$exists": False}})
+        
+        optimized = 0
+        errors = 0
+        
+        for img_doc in images:
+            try:
+                # Decode existing image
+                img_data = base64.b64decode(img_doc["data"])
+                img = Image.open(io.BytesIO(img_data))
+                
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Create thumbnail (400px)
+                thumb_size = 400
+                if max(img.size) > thumb_size:
+                    thumb_ratio = thumb_size / max(img.size)
+                    thumb_dimensions = (int(img.size[0] * thumb_ratio), int(img.size[1] * thumb_ratio))
+                    thumb = img.resize(thumb_dimensions, Image.Resampling.LANCZOS)
+                else:
+                    thumb = img
+                    
+                thumb_output = io.BytesIO()
+                thumb.save(thumb_output, format='JPEG', quality=70, optimize=True)
+                thumbnail_content = thumb_output.getvalue()
+                
+                # Update document with thumbnail
+                await db.images.update_one(
+                    {"id": img_doc["id"]},
+                    {"$set": {"thumbnail": base64.b64encode(thumbnail_content).decode('utf-8')}}
+                )
+                optimized += 1
+                
+            except Exception as e:
+                logger.error(f"Error optimizing {img_doc.get('id', 'unknown')}: {e}")
+                errors += 1
+        
+        return {
+            "message": "Batch optimalisatie voltooid",
+            "optimized": optimized,
+            "errors": errors,
+            "remaining": max(0, total_remaining - optimized),
+            "batch_size": batch_size
+        }
+    except Exception as e:
+        logger.error(f"Optimize-all endpoint error: {e}")
+        return {"message": "Error", "error": str(e), "optimized": 0, "remaining": -1}
 
 @api_router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
