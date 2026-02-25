@@ -3737,23 +3737,7 @@ async def get_pending_proposals_count(user: dict = Depends(require_admin)):
     return {"count": count}
 
 
-# ============ DEALER MANAGEMENT ENDPOINTS ============
-
-@api_router.get("/dealers")
-async def get_dealers(user: dict = Depends(require_admin)):
-    dealers = await db.users.find(
-        {"role": "dealer"},
-        {"_id": 0, "password_hash": 0}
-    ).to_list(1000)
-    return dealers
-
-@api_router.get("/dealers/pending")
-async def get_pending_dealers(user: dict = Depends(require_admin)):
-    dealers = await db.users.find(
-        {"role": "dealer", "is_approved": False},
-        {"_id": 0, "password_hash": 0}
-    ).to_list(1000)
-    return dealers
+# ============ DEALER MANAGEMENT (verplaatst naar routers/dealers.py) ============
 
 @api_router.put("/dealers/{dealer_id}/approve")
 async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(require_admin)):
