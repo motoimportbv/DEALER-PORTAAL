@@ -109,10 +109,11 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
 
 async def require_approved_dealer(user: dict = Depends(get_current_user)) -> dict:
     """Require approved dealer - use as FastAPI dependency"""
-    if user.get("role") not in ["dealer", "admin"]:
-        raise HTTPException(status_code=403, detail="Dealer rechten vereist")
-    if user.get("role") == "dealer" and not user.get("is_approved"):
-        raise HTTPException(status_code=403, detail="Account wacht op goedkeuring")
+    if user.get("role") == "dealer":
+        if not user.get("is_approved", False):
+            raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+        if user.get("is_offline", False):
+            raise HTTPException(status_code=403, detail="Uw account is tijdelijk offline gezet door de beheerder. Neem contact op met Moto Import.")
     return user
 
 
