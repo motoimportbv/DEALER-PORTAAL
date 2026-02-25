@@ -3827,7 +3827,15 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
     
     # Views today
     views_today = await db.activity_logs.count_documents({
-                    <p>You can now log in and submit motorcycles for sale to our dealer network.</p>
+        "type": "motorcycle_view",
+        "timestamp": {"$gte": today_start}
+    })
+    
+    # Views this week
+    views_week = await db.activity_logs.count_documents({
+        "type": "motorcycle_view",
+        "timestamp": {"$gte": week_ago}
+    })
                     
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="{login_url}" 
