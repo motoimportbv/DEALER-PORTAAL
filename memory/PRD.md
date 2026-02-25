@@ -20,582 +20,140 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Completed Features (February 2025)
 
-### Session - 24 February 2025 (Preview Fix & Auto-Activation)
+### Session - 25 February 2025 (Backend Refactoring)
 
-#### ✅ Preview Redirect Blocker Gefixed
-- **Probleem**: De `PreviewRedirect` component in `App.js` redirectte alle preview.emergentagent.com URLs automatisch naar productie, waardoor frontend testing onmogelijk was
-- **Oplossing**: Component aangepast om redirect over te slaan als hostname `preview.emergentagent.com` bevat
-- **Locatie**: `/app/frontend/src/App.js` regels 88-112
-- **Status**: ✅ Voltooid en getest
+#### ✅ Backend Modulaire Structuur Geïmplementeerd
+- **Taak**: `server.py` was 6912+ regels - te groot voor onderhoud
+- **Nieuwe structuur**:
+  ```
+  /app/backend/
+  ├── server.py          # 6316 regels (was 6912)
+  ├── config.py          # 84 regels - alle environment variables
+  ├── database.py        # 37 regels - MongoDB connectie
+  ├── services/
+  │   ├── auth_service.py      # 136 regels - JWT, passwords, dependencies
+  │   ├── email_service.py     # 99 regels - Gmail SMTP
+  │   ├── sms_service.py       # 55 regels - Twilio SMS
+  │   ├── storage_service.py   # 65 regels - Emergent Object Storage
+  │   └── currency_service.py  # 86 regels - CHF/EUR conversie
+  └── models/
+      └── schemas.py           # 554 regels - alle Pydantic models
+  ```
+- **Voordelen**:
+  - Betere code organisatie en onderhoudbaarheid
+  - Herbruikbare services (import uit één plek)
+  - Makkelijker unit testen per module
+  - ~600 regels verplaatst naar aparte bestanden
+- **Status**: ✅ Voltooid en getest - alle API endpoints werken
 
-#### ✅ Auto-Activering bij Prijswijziging (Foreign Dealer Motors)
-- **Verzoek**: Wanneer admin de prijs aanpast van een pending motor (van buitenlandse dealer), moet deze automatisch actief/online worden
-- **Backend Implementatie** (`server.py` regels 2430-2434):
-  - Bij `PUT /api/motorcycles/{id}` met prijswijziging:
-    - Als `is_pending_approval: true` → automatisch `is_pending_approval: false`
-    - En `is_available: true` (motor komt online)
-- **Twee activeringsmethoden**:
-  1. `PUT /api/motorcycles/{id}` met prijsupdate (auto-activering)
-  2. `POST /api/motorcycles/{id}/activate?price={price}` (expliciete activering)
-- **Frontend Flow**: Admin → Wachtende Motors → Prijs instellen → Motor is direct online
-- **Status**: ✅ Voltooid en getest (backend + frontend)
+#### ✅ Gebundelde Email Notificaties Geverifieerd
+- **Functie**: Max 3 emails per dealer per dag
+- **Logica**:
+  - Nieuwe motors worden toegevoegd aan `pending_motorcycle_emails` queue
+  - Emails worden gebundeld verzonden (meerdere motors in één email)
+  - Dagelijkse limiet van 3 emails per dealer
+  - Reset automatisch bij nieuwe dag
+- **Status**: ✅ Getest en werkend
 
----
-
-### Session - 23 February 2025 (Pakbon Bug Fix)
-
-#### ✅ Keuring en Taxatie Weergave op Pakbon
-- **Probleem**: Bij aankoop van motorfiets werden keuring en taxatie niet weergegeven op de pakbon, alleen bezorging
-- **Oorzaak 1**: Backend `OrderWithMotorcycle` model miste de velden `needs_inspection`, `inspection_cost`, `needs_valuation`, `valuation_cost`
-- **Oorzaak 2**: Frontend `Pakbon.js` toonde alleen bezorgkosten, niet keuring/taxatie
-- **Backend Fix** (`server.py`):
-  - Toegevoegd aan `OrderWithMotorcycle` model:
-    - `needs_inspection: bool = False`
-    - `inspection_cost: float = 0.0`
-    - `needs_valuation: bool = False`
-    - `valuation_cost: float = 0.0`
-- **Frontend Fix** (`Pakbon.js`):
-  - Motorprijs berekening aangepast: `total_price - delivery_cost - inspection_cost - valuation_cost`
-  - Keuring rij toegevoegd (€125) indien geselecteerd
-  - Taxatie rij toegevoegd (€160) indien geselecteerd
-- **Vertalingen** (nl.json, de.json, fr.json, it.json):
-  - Toegevoegd: `order.inspection`, `order.inspectionDescription`, `order.valuation`, `order.valuationDescription`
-- **Status**: ✅ Voltooid en getest via API
-
-#### ✅ Leveranciersprijs Altijd Zichtbaar voor Admin
-- **Verzoek**: Admin wil de originele leveranciersprijs altijd kunnen zien
-- **Aanpassingen**:
-  - `MotorcycleList.js`: Leveranciersprijs nu altijd zichtbaar (niet meer alleen bij prijsverschil)
-  - `MotorcycleDetail.js`: Leveranciersprijs altijd zichtbaar onder de verkoopprijs
-  - `OrderList.js`: Leveranciersprijs toegevoegd in bestellingenoverzicht (mobiel + desktop)
-  - `Pakbon.js`: Leveranciersprijs zichtbaar op pakbon (alleen voor admin)
-- **Visuele indicatie**: 
-  - Oranje label als prijs is aangepast
-  - Grijs label als prijs niet is gewijzigd
-- **Status**: ✅ Voltooid
-
-#### ✅ Backend Beveiliging Leveranciersprijs
-- **Verzoek**: Dealers mogen leveranciersprijs niet zien, ook niet via API
-- **Aangepaste endpoints**:
-  - `/api/motorcycles` - verwijdert original_price voor niet-admin
-  - `/api/motorcycles/{id}` - verwijdert original_price voor niet-admin
-  - `/api/motorcycles/{id}/public` - verwijdert original_price
-  - `/api/motorcycles/available` - verwijdert original_price voor niet-admin
-  - `/api/motorcycles/with-exchange-rate` - verwijdert original_price voor niet-admin
-- **Status**: ✅ Voltooid en getest
-
-#### ✅ AI Welkomstbericht voor Dealers
-- **Verzoek**: Bij inloggen dealer een AI-bericht tonen met nieuwe motoren sinds laatste bezoek
-- **Implementatie**:
-  - Backend: `/api/dealer/welcome-message` endpoint met GPT-5.2 integratie
-  - Frontend: `WelcomePopup.js` component met popup dialog
-  - Tracking: `last_visit` veld wordt bijgehouden per dealer
-- **Features**:
-  - Toont nieuwe motoren sinds laatste bezoek
-  - AI genereert persoonlijk welkomstbericht
-  - Fallback bericht als AI niet beschikbaar is
-  - Preview van max 5 nieuwe motoren met afbeeldingen
-- **Status**: ✅ Voltooid (AI budget was overschreden tijdens test, fallback werkt)
+#### ✅ Emergent LLM Key Budget Gecommuniceerd
+- **Probleem**: AI welkomstboodschap werkt niet (budget op)
+- **Oplossing**: User geïnformeerd over Profile → Universal Key → Add Balance
 
 ---
 
-### Session - 20 February 2025 (Part 8 - Test Email & Cleanup)
-
-#### ✅ Test E-mail Verzonden voor Link Verificatie
-- **Taak**: Gebruiker wilde test e-mail ontvangen om te verifiëren dat links naar productie URL wijzen
-- **Probleem**: Ducati 1098 (origineel gevraagd) bestond niet meer in database
-- **Oplossing**: Test e-mail verzonden met beschikbare Ducati Monster 600
-- **E-mail verzonden naar**: motoimportbv@gmail.com
-- **Link in e-mail**: https://www.motoimportbv.nl/motorcycle/10fe6d5a-9aef-4e9c-8918-1a52d8ab5c0f
-- **Status**: ✅ Succesvol verzonden
-
-#### ✅ Niet-werkend Test Endpoint Verwijderd
-- **Probleem**: Tijdelijk endpoint `/api/test/send-motorcycle-email/{motorcycle_id}` werkte niet (404 errors)
-- **Actie**: Endpoint verwijderd uit `server.py` (~55 regels code verwijderd)
-- **Reden**: Endpoint was alleen voor one-off test, niet nodig voor productie
-
-#### ✅ E-mail URLs Consistent Gemaakt (Belangrijke Fix)
-- **Probleem**: Sommige e-mail functies gebruikten `FRONTEND_URL` met fallback naar `motoimportbv.nl` (zonder `www.`)
-- **Actie**: Alle 7 instanties vervangen door `BASE_URL` met fallback naar `https://www.motoimportbv.nl`
-- **Gefixte functies**:
-  - WhatsApp share link generatie
-  - Persoonlijke WhatsApp links met auto-login
-  - SMS notificaties
-  - Auto-login token generatie
-- **Resultaat**: Alle e-mails, SMS'en en WhatsApp berichten gebruiken nu consistent de correcte productie URL
-
-#### ✅ Valuta Keuze (EUR/CHF) bij Motor Toevoegen
-- **Feature**: Admin kan nu kiezen tussen EUR of CHF bij het toevoegen van een motor
-- **Frontend wijzigingen** (`MotorcycleForm.js`):
-  - Nieuwe "Valuta" dropdown met opties: 🇪🇺 EUR (Euro) en 🇨🇭 CHF (Zwitserse Frank)
-  - Live wisselkoers preview wanneer CHF is geselecteerd (groen pulsend balkje)
-  - Prijs label past zich automatisch aan ("Prijs (€)" of "Prijs (CHF)")
-- **Backend wijzigingen** (`server.py`):
-  - `create_motorcycle` endpoint converteert nu automatisch CHF naar EUR
-  - Slaat `original_price` en `original_currency` op in de database
-  - Gebruikt live wisselkoers van exchangerate-api.com
-- **Flow**:
-  1. Admin kiest "CHF" in valuta dropdown
-  2. Voert prijs in CHF in (bijv. 10.000)
-  3. Ziet live preview: "≈ €10.900 EUR (live koers: 1 CHF = 1.0900 EUR)"
-  4. Bij opslaan wordt de EUR prijs automatisch berekend en opgeslagen
-
----
-
-### Session - 20 February 2025 (Part 7 - Bug Fixes)
-
-#### ✅ Admin Bestellen Bug Fix
-- **Probleem**: Admin kon geen bestellingen plaatsen via de UI - "Nu Bestellen" knop was onzichtbaar
-- **Oorzaak**: Frontend conditie toonde knop alleen voor `role === 'dealer'`, niet voor `role === 'admin'`
-- **Oplossing**: Aangepast naar `(role === 'dealer' || role === 'admin')` in MotorcycleDetail.js
-- **Getest**: Admin kan nu succesvol motors bestellen via de UI
-
-#### ✅ Orders Endpoint 500 Error Fix
-- **Probleem**: GET /api/orders gaf 500 Internal Server Error in productie
-- **Oorzaak**: Orders met ontbrekende/lege velden (created_at, dealer_email, etc.) in de database
-- **Oplossing**: 
-  - OrderWithMotorcycle model robuuster gemaakt met optionele velden en default waarden
-  - get_orders() functie filtert nu orders zonder vereiste velden
-- **Status**: Gedeployed en werkend in productie
-
-#### ✅ Motor Zoekertje Systeem (Wanted Requests)
-- **Functie**: Dealers kunnen zoekverzoeken indienen voor specifieke motorfietsen
-- **Flow**:
-  1. Nederlandse dealer dient zoekertje in (merk, model, jaar, km, budget)
-  2. Admin ontvangt notificatie en keurt goed met aangepaste leveranciersprijs
-  3. E-mail wordt automatisch verstuurd naar alle buitenlandse leveranciers
-  4. Admin kan zoekertje markeren als "Gevonden" - dealer ontvangt melding
-  5. Zoekertjes verlopen automatisch na 7 dagen
-- **Nieuwe pagina's**:
-  - `/dealer/wanted-requests` - Dealer zoekertjes pagina
-  - `/admin/wanted-requests` - Admin beheer pagina met tabs
-- **Nieuwe sidebar items**: "Motor Zoekertje" (dealer) en "Zoekertjes" met badge (admin)
-
-### Session - 20 February 2025 (Part 6 - Nieuwe Features)
-
-#### ✅ Prijsvoorstel Systeem
-- Dealers kunnen prijsvoorstellen indienen bij elke motor
-- Admin ontvangt e-mail notificatie bij nieuw voorstel
-- Admin pagina `/admin/price-proposals` met filter tabs
-- Accepteren / Afwijzen / Tegenbod mogelijkheden
-- Dealer ontvangt e-mail bij reactie
-- Badge in sidebar toont aantal openstaande voorstellen
-
-#### ✅ Auto-Verwijdering van Motoren
-- Optie bij motor toevoegen: auto-delete na X uur als niet verkocht
-- Opties: 12u, 24u (standaard), 48u, 72u, 1 week, of uitgeschakeld
-- Background task controleert elke 5 minuten
-- Admin ontvangt e-mail met overzicht verwijderde motoren
-
-#### ✅ Extra E-mail Ontvanger
-- daniel2002jay@hotmail.com ontvangt nu alle admin notificaties
-- Verkochte motoren, nieuwe dealers, prijsvoorstellen, etc.
-
-#### ✅ E-mail Links Gefixed
-- Alle e-mail links verwijzen nu naar www.motoimportbv.nl
-- Niet meer naar preview URL
-
-### Session - 19 February 2025 (Part 5)
-
-#### ✅ Real-time Dealer Online Status
-- Admin ziet "Nu online" / "Recent actief" per dealer
-- `last_active` wordt bijgewerkt bij elke API call
-
-#### ✅ Voucher Beveiliging
-- Buitenlandse dealers kunnen geen vouchers gebruiken
-
-#### ✅ Notificaties Verwijderen
-- Dealers kunnen meldingen permanent verwijderen
-
-#### ✅ Admin Menu Scrollbaar
-- Sidebar scrollt nu correct bij kleinere schermen
-
-#### ✅ Push Notification Backend Volledig Verwijderd
-- **Verwijderd uit server.py**:
-  - `pywebpush` import
-  - VAPID config en keys
-  - `get_vapid_private_key()` functie
-  - Alle `/push/*` endpoints (subscribe, unsubscribe, test, etc.)
-  - `send_push_notification_to_user()` en `send_push_to_all_dealers()` functies
-  - Push notification calls bij nieuwe motoren en biedingen
-- **Resultaat**: ~500 regels code verwijderd, backend is nu schoner
-
-#### ✅ Dealer Beheer Gesplitst in NL en Buitenlandse Dealers
-- **Nieuwe tabs**:
-  - "Wachtend op goedkeuring" (bestaand)
-  - "🇳🇱 Nederlandse Dealers (X)"
-  - "🌍 Buitenlandse Dealers (X)"
-  - "Alle (X)"
-- **Filter logica**: `is_foreign_dealer` boolean bepaalt in welke tab een dealer verschijnt
-- **Header**: Toont nu "X NL Dealers • X Buitenlandse Dealers"
-
-#### ✅ Dashboard Scrollbaar Gemaakt
-- **CSS wijziging**: `overflow-y: auto` toegevoegd aan `.main-content` en `.content-body`
-- **Resultaat**: Lange lijsten zijn nu scrollbaar zonder pagina-overflow
-
-### Session - 19 February 2025 (Part 2 - Push Notificaties Verwijderd)
-
-#### ✅ Push Notification Systeem Verwijderd
-- **Feature**: Alle push notification UI/UX verwijderd (werkte niet betrouwbaar)
-- **Verwijderd**:
-  - `PushNotificationToggle.js` component
-  - `PushNotificationReminder.js` component  
-  - `AdminPushStatus.js` pagina
-  - Push Status menu item in sidebar
-  - Push notification toggle op admin en dealer dashboards
-- **Reden**: Push notifications waren onbetrouwbaar, veel klachten van dealers
-
-#### ✅ Nieuwe Email Notificatie Banner (Vervanging)
-- **Feature**: Simpele groene banner op dealer dashboard
-- **Component**: `EmailNotificationBanner.js`
-- **Functie**: 
-  - Toont "Email Meldingen Actief ✓"
-  - Toont dealer email adres
-  - Meldt dat ze automatisch emails ontvangen bij nieuwe motoren
-  - Dismiss knop (X) om te verbergen (localStorage)
-- **Voordeel**: Duidelijk, simpel, geen complexe browser permissions nodig
-
-### Session - 19 February 2025 (Part 1 - Email & Notificatie Verbeteringen)
-
-#### ✅ Email Notificaties Alleen voor Nederlandse Dealers (P0 Feature)
-- **Feature**: Nieuwe motor notificaties worden nu alleen naar Nederlandse dealers gestuurd
-- **Wijziging**: Buitenlandse dealers (is_foreign_dealer=true) ontvangen geen email/notificatie bij nieuwe motoren
-- **Logica**: Query filter `is_foreign_dealer: {"$ne": True}` toegevoegd aan dealer ophaal
-- **Reden**: Buitenlandse dealers zijn leveranciers, geen kopers
-
-#### ✅ CSV Upload voor Marketing Emails (P0 Feature)
-- **Feature**: Admin kan nu eigen email lijsten uploaden via CSV
-- **Endpoint**: `POST /api/admin/upload-marketing-csv`
-- **Ondersteunde formaten**: 
-  - Komma-gescheiden (internationaal)
-  - Puntkomma-gescheiden (Europees/Nederlands)
-- **Auto-detectie**: Kolom met "email", "e-mail", "mail" wordt automatisch gevonden
-- **Response**: `{message, filename, count, emails[]}`
-- **Frontend**: Drag-drop upload zone op `/admin/bulk-email`
-
-#### ✅ Flyer Bijlagen bij Marketing Emails (P0 Feature)
-- **Feature**: Admin kan PDF flyers bijvoegen bij bulk emails
-- **Endpoint**: `GET /api/admin/available-flyers` - Lijst van beschikbare PDFs
-- **Backend**: `send_email_with_attachment()` functie voor PDF bijlagen
-- **Beschikbare flyers**:
-  - `Moto_Import_Dealer_Flyer_NL.pdf`
-  - `Moto_Import_Dealer_Flyer_DE.pdf`
-  - `Moto_Import_Dealer_Flyer_FR.pdf`
-  - `Moto_Import_Dealer_Flyer_IT.pdf`
-- **Frontend**: Dropdown met bestandsnaam en grootte in KB
-
-#### ✅ "Over Ons" Sectie bij Marketing Emails (P0 Feature)
-- **Feature**: Admin kan bedrijfsinformatie toevoegen aan marketing emails
-- **Parameter**: `include_about_us: true` in bulk-email request
-- **Inhoud**: `ABOUT_US_HTML` constante met:
-  - Bedrijfsbeschrijving
-  - Voordelen opsomming (ruim aanbod, scherpe prijzen, snelle levering, etc.)
-  - Contactgegevens en adres
-- **Frontend**: Checkbox "Over Ons sectie toevoegen" met beschrijving
-
-#### ✅ Marketing Lijsten Verbeterd (Verbetering)
-- **Wijziging**: `GET /api/admin/marketing-lists` toont nu ook geüploade CSV's
-- **Velden**: `filename, display_name, count, is_uploaded, url`
-- **Sortering**: Pre-made lijsten eerst, dan geüploade
-- **Bestaande lijsten**:
-  - Motorzaken_Benelux_Frankrijk.csv (40 dealers)
-  - Motorzaken_Noord_Italie.csv (110 dealers)
-  - Motorzaken_Zwitserland.csv (39 dealers)
-
-#### ✅ Test Status: 100% Geslaagd
-- Backend: 21 tests geslaagd
-- Frontend: Alle UI elementen aanwezig en werkend
-- Test rapport: `/app/test_reports/iteration_12.json`
-
-### Session - December 2025 (Lead Generation)
-
-#### ✅ Motordealers Lijst Noord-Italië (P0 Taak)
-- **Taak**: Uitgebreide lijst van motordealers met e-mailadressen voor marketing
-- **Focus gebieden**: Lombardia, Veneto, Emilia-Romagna, Piemonte, Friuli-Venezia Giulia
-- **Resultaat**: CSV bestand met **110 dealers** (was 22)
-- **Verdeling per regio**:
-  - **Lombardia**: 66 contacten (Milano, Monza, Bergamo, Brescia, Como, Varese, Mantova, Pavia)
-  - **Veneto**: 17 contacten (Verona, Vicenza, Treviso, Padova, Venezia)
-  - **Emilia-Romagna**: 13 contacten (Bologna, Modena, Parma)
-  - **Piemonte**: 10 contacten (Torino, Alessandria, Cuneo, Alba)
-  - **Friuli-Venezia Giulia**: 4 contacten (Udine)
-- **Bestand**: `/app/backend/uploads/Motorzaken_Noord_Italie.csv`
-- **Status**: Voltooid ✓
-
-### Session - 18 February 2025 (Part 6)
-
-#### ✅ Bestelling Verwijderen voor Dealers (P0 Feature)
-- **Feature**: Dealers kunnen nu hun eigen bestellingen verwijderen van de "Mijn Bestellingen" pagina
-- **Backend Endpoint**: `DELETE /api/orders/{order_id}`
-  - Dealers kunnen alleen hun eigen bestellingen verwijderen
-  - Admins kunnen elke bestelling verwijderen
-  - Motor wordt weer beschikbaar na verwijdering
-- **Frontend Updates**:
-  - Rode "Verwijderen" knop bij elke bestelling
-  - Bevestigingsdialoog met motor naam (indien beschikbaar)
-  - Success toast "Succesvol verwijderd" na verwijdering
-  - Bestelling verdwijnt direct uit de lijst
-- **Test Status**: 100% geslaagd (backend en frontend)
-
-#### ✅ Bestelling Archiveren Functie (Verbetering)
-- **Feature**: Dealers kunnen bestellingen archiveren in plaats van permanent verwijderen
-- **Backend Endpoints**:
-  - `PUT /api/orders/{order_id}/archive` - Archiveert een bestelling
-  - `PUT /api/orders/{order_id}/restore` - Herstelt een gearchiveerde bestelling
-  - `GET /api/orders/archived` - Haalt gearchiveerde bestellingen op
-  - `GET /api/orders` - Filtert nu gearchiveerde bestellingen uit
-- **Frontend Updates**:
-  - Amber "Archiveren" knop naast de verwijderknop
-  - "Bekijk Archief" knop rechtsboven op de bestellingen pagina
-  - Nieuwe pagina `/dealer/orders/archived` met gearchiveerde bestellingen
-  - Grayscale effect en "Gearchiveerd" badge op gearchiveerde bestellingen
-  - Groene "Herstellen" knop om bestellingen te herstellen
-  - Bevestigingsdialogen voor archiveren en herstellen
-- **Test Status**: 100% geslaagd (backend en frontend)
-
-#### ✅ CHF Wisselkoers Integratie (Verbetering)
-- **Feature**: Real-time CHF naar EUR conversie voor buitenlandse (Zwitserse) dealers
-- **Backend Endpoints**:
-  - `GET /api/exchange-rate/chf-eur` - Haalt huidige wisselkoers op
-  - `GET /api/exchange-rate/margin` - Haalt huidige marge op
-  - `PUT /api/exchange-rate/margin` - Admin past marge aan (0-50%)
-  - `POST /api/exchange-rate/convert` - Converteert bedragen
-  - `GET /api/motorcycles/available` - Live EUR prijzen voor CHF motors
-- **Exchange Rate API**: exchangerate-api.com (gratis, 5 min cache)
-- **Marge Systeem**:
-  - Standaard: **0% marge** (pure wisselkoers)
-  - Admin kan marge aanpassen via `/admin/exchange-rate` indien gewenst
-  - Admin vult verkoopprijzen handmatig in bij activeren
-- **Live Prijzen voor Dealers**:
-  - Nederlandse dealers zien real-time EUR prijzen
-  - Prijzen bewegen mee met CHF/EUR koers
-  - "🟢 Live wisselkoers" indicator bij CHF motors
-  - Zowel EUR als originele CHF prijs worden getoond
-- **Frontend Updates**:
-  - CHF/EUR dropdown in buitenlandse dealer formulier
-  - Real-time EUR conversie preview
-  - Admin pagina `/admin/exchange-rate` met koers overzicht
-  - Catalogus en detail pagina's tonen beide prijzen + live indicator
-- **Test Status**: Volledig getest, live prijzen werken correct
-
-### Session - 17 February 2025 (Part 5)
-
-#### ✅ RDW Document Upload voor Kentekens
-- **Feature**: Admin kan RDW documenten uploaden bij kentekens
-- **Ondersteunde formaten**: PDF, JPG, PNG, WEBP
-- **Max bestandsgrootte**: 10MB
-- **Backend Endpoints**:
-  - `POST /api/license-plates/{plate_id}/document` - Upload document
-  - `DELETE /api/license-plates/{plate_id}/document` - Verwijder document
-- **Opslag**: `/app/backend/uploads/rdw/` met unieke bestandsnamen
-- **Frontend Updates**:
-  - "RDW Document Uploaden" knop bij kentekens zonder document
-  - Groene badge met bestandsnaam bij kentekens met document
-  - Download knop (opent in nieuw tabblad)
-  - Verwijder knop (met bevestigingsdialoog)
-- **Bestanden gewijzigd**:
-  - `/app/backend/server.py` (upload/delete endpoints)
-  - `/app/frontend/src/pages/admin/AdminLicensePlates.js`
-- **Test Status**: 100% geslaagd (16 backend tests, alle frontend tests)
-
-#### ✅ Dealer Online Notificatie
-- **Feature**: Dealers ontvangen automatisch een notificatie wanneer ze weer online worden gezet
-- **Notificatie tekst**: "Goed nieuws! Wij waren bezig met een update en alles is nu afgerond. Uw account is weer online en u kunt weer volop gebruik maken van het platform."
-- **Push notificatie**: "Account weer online! ✅" met auto-login link
-- **In-app notificatie**: Zichtbaar in het notificatiepaneel
-- **Bestanden gewijzigd**:
-  - `/app/backend/server.py` (toggle_dealer_offline endpoint uitgebreid)
-
-### Session - 17 February 2025 (Part 4)
-
-#### ✅ Dealer Filters met Voorraad Telling
-- Zoekbalk vervangen door merk/type dropdown filters
-- Filters tonen aantal op voorraad: "BMW (1)", "Honda (2)", etc.
-- "X motoren gevonden" resultaat telling
-
-#### ✅ Mobiele Uitlog Knop
-- Rode uitlog knop toegevoegd aan mobiele header
-- Werkt voor admin en dealers
-
-#### ✅ Admin Dashboard Verbeteringen
-- KPI kaarten zijn nu klikbaar (linken naar relevante pagina's)
-- Dealers telling gefixd (was 0, nu correct)
-- Orders filter: alleen laatste 24 uur zichtbaar voor admin
-
-#### ✅ Alle URLs naar Productie
-- Push notificaties → www.motoimportbv.nl
-- E-mail links → www.motoimportbv.nl
-- WhatsApp links → www.motoimportbv.nl
-
-#### ✅ Verwijderde Features
-- SMS functie uit admin motoren pagina
-- "Bekijk Pakbon Online" link uit e-mails
-- Persoonlijke Login Link component
-
-#### ✅ Bestel Dialog Scroll Fix
-- Dealers kunnen nu scrollen in de bestelpopup op mobiel
-
-### Session - 17 February 2025 (Part 3)
-
-#### ✅ Short Code Permanent Login System (P0 Feature)
-- **Problem**: Previous permanent login attempts (`?token=` and `/login/TOKEN`) failed on iOS when bookmarked
-- **Solution**: Implemented short code system using `/go/{SHORT_CODE}` URL format
-- **Features**:
-  - 8-character alphanumeric codes (excluding confusing chars: 0, O, I, 1, L)
-  - Codes stored in user profile (`login_short_code` field)
-  - Case-insensitive code matching
-  - Frontend page at `/go/:code` auto-logs in and redirects to `/dealer`
-  - UI component shows link in dealer dashboard with copy/regenerate/revoke options
-  - Security warning displayed to users about not sharing the link
-- **Backend Endpoints**:
-  - `POST /api/auth/generate-permanent-link` - Generate short code
-  - `GET /api/auth/shortcode/{code}` - Verify code validity
-  - `POST /api/auth/shortcode-login` - Exchange code for session token
-  - `GET /api/auth/my-permanent-link` - Get user's current permanent link
-  - `POST /api/auth/revoke-permanent-link` - Revoke the permanent link
-- **Files Modified**:
-  - `/app/backend/server.py` (short code functions and endpoints)
-  - `/app/frontend/src/pages/ShortCodeLoginPage.js` (NEW)
-  - `/app/frontend/src/App.js` (new route)
-  - `/app/frontend/src/components/PermanentLoginLink.js`
-- **Test Status**: 100% passed (12 backend tests, all frontend tests)
-
-### Session - 17 February 2025 (Part 2)
-
-#### ✅ Push Notification Click Fix (P0 Bug Fix)
-- **Issue**: Dealers were forced to re-login when clicking a push notification
-- **Root Cause**: Service worker's `notificationclick` handler was opening new windows incorrectly, causing auth state loss
-- **Solution**: 
-  - Updated service worker to prioritize focusing existing tabs
-  - Added `NotificationHandler` React component for React Router navigation
-  - Navigation now uses `navigate()` instead of `window.location.href`
-  - Service worker version bumped to v4
-- **Files Modified**:
-  - `/app/frontend/public/service-worker.js`
-  - `/app/frontend/src/App.js`
-
-### Session - 17 February 2025 (Part 1)
-
-#### ✅ License Plates (Kentekens) System
-- Admin can add license plates to dealers
-- Admin can edit/delete license plates
-- Admin can search by plate, dealer, chassis number
-- Dealers see their assigned plates in "Mijn Kentekens"
-- Notification sent to dealer when plate is added
-- Dutch-style yellow license plate display
-
-#### ✅ Chassis Number (VIN) Field
-- Added required chassis_number field to all motorcycle forms
-- Admin, Dealer, and Foreign Dealer forms updated
-- Auto-uppercase, max 17 characters
-- Admin can also set license_plate on motorcycles
-
-#### ✅ Photo Lightbox on Motorcycle Detail
-- Dealers can click photos to enlarge
-- Navigation arrows, thumbnails, counter
-- Works on desktop and mobile
-
-#### ✅ Security Fix: Offline Dealers Blocked
-- Dealers set to "offline" are now blocked from all functionality
-- Error message: "Uw account is tijdelijk offline gezet door de beheerder. Neem contact op met Moto Import."
-- Blocked endpoints: catalog, orders, buy-now, payments, etc.
-
-#### ✅ Foreign Dealer Registration Improvements
-- Direct link: `/register/supplier` for foreign dealers
-- Default language set to German
-- Language order: Deutsch → Italiano → Français → Nederlands
-- Custom language selector on registration page
-
-#### ✅ Searchable Dropdowns (UX Improvement)
-- Brand, Model, and Year fields now have searchable dropdowns
-- Type to filter (e.g., "Y" jumps to Yamaha)
-- Implemented across all motorcycle forms:
-  - Admin: `/admin/motorcycles/new`
-  - Dealer: `/dealer/sell`
-  - Foreign Dealer: `/foreign-dealer/add`
-- New component: `/frontend/src/components/ui/searchable-select.jsx`
-
-#### ✅ Simplified Activation Modal
-- Removed "Minimum biedprijs" field from foreign motorcycle approval
-- Only one price field (Verkoopprijs) now required
-
-#### ✅ Order Photo Lightbox
-- Photos in "Mijn Bestellingen" are now clickable
-- Full lightbox with:
-  - Large photo view
-  - Navigation arrows (left/right)
-  - Thumbnail strip
-  - Photo counter (1/3)
-  - Close button
-- Works on both desktop and mobile
-- Motorcycle snapshot saved with order (photos preserved even if motorcycle deleted)
-
-### Previous Sessions
-- White screen bug fix on motorcycle detail page
-- Removed all bidding terminology from UI
-- "Always On" server fix for UptimeRobot (HEAD request support)
-- Brand/Model/Year dropdowns with motoroccasion.nl data
-- Multi-step wizard for parts management
-- Foreign dealer business rules (no voucher, specific notifications, CHF label)
-
----
-
-## Foreign Dealer Business Rules
-1. ❌ No welcome voucher on approval
-2. ❌ No notifications for new motorcycles in catalog
-3. ✅ Receive notification when their motorcycle is sold
-4. ✅ Form shows "Vraagprijs (CHF) *" instead of EUR
+### Session - 24-25 February 2025 (Performance & Features)
+
+#### ✅ Cloud Image Migration
+- Alle 550+ productie images gemigreerd van MongoDB naar Emergent Object Storage
+- Image loading 12-18x sneller
+- Thumbnails gegenereerd voor snellere previews
+
+#### ✅ Dealer Activity Tracking
+- Nieuwe endpoints: `/api/admin/activity-stats`, `/api/admin/activity-notifications`
+- Admin krijgt real-time notificaties wanneer dealers motors bekijken
+- Nieuwe component: `AdminActivityBell.js`
+
+#### ✅ Foto's Herordenen
+- Admin kan volgorde van foto's wijzigen in MotorcycleForm.js
+- Up/down knoppen en "set as primary" functie
+
+#### ✅ Orders 7 Dagen Zichtbaar
+- Was 24 uur, nu 7 dagen
+
+#### ✅ Motormodellen Uitgebreid
+- BMW Adventure series toegevoegd
+- Honda, Kawasaki en andere merken uitgebreid
 
 ---
 
 ## Technical Stack
 - **Backend**: FastAPI, MongoDB (motor), Pydantic, JWT Auth
 - **Frontend**: React, React Router, TailwindCSS, Axios, Shadcn/UI
-- **Notifications**: Web Push (pywebpush)
 - **Email**: Gmail SMTP
+- **SMS**: Twilio
+- **Images**: Emergent Object Storage
 
 ---
 
-## Key Files Modified (This Session)
-- `/app/backend/server.py` (DELETE /api/orders/{order_id}, archive/restore endpoints)
-- `/app/frontend/src/pages/dealer/DealerOrders.js` (delete/archive buttons, dialogs)
-- `/app/frontend/src/pages/dealer/DealerArchivedOrders.js` (NEW - archived orders page)
-- `/app/frontend/src/App.js` (route for /dealer/orders/archived)
-- `/app/frontend/src/locales/nl.json` (orders vertalingen voor delete/archive/restore)
-- `/app/backend/tests/test_delete_order.py` (NEW - tests)
-- `/app/backend/tests/test_archive_orders.py` (NEW - tests)
+## Backend Architecture
 
----
+### Config (`config.py`)
+- PRODUCTION_BASE_URL
+- JWT_SECRET, JWT_ALGORITHM
+- Email config (ADMIN_EMAILS, GMAIL credentials)
+- Stripe, Twilio config
+- Exchange rate settings
 
-## Technical Debt / Future Tasks
+### Database (`database.py`)
+- MongoDB connection via motor
+- Collection references
 
-### P1 - High Priority
-- Native app build (iOS/Android) - guide exists at `NATIVE_APP_BUILD_GUIDE.md`
-- Frontend refactoring: extract MOTORCYCLE_DATABASE to shared hook/data file
-- Extract parts wizard from AdminParts.js to separate component
-- WhatsApp Business API integratie - user requested automatic notifications
+### Services
+- **auth_service.py**: hash_password, verify_password, create_token, get_current_user, require_admin, require_approved_dealer
+- **email_service.py**: send_email, send_email_with_attachment, send_admin_notification
+- **sms_service.py**: send_sms, twilio_client
+- **storage_service.py**: init_storage, put_object, get_object
+- **currency_service.py**: get_chf_to_eur_rate, convert_chf_to_eur_with_margin
 
-### P2 - Medium Priority
-- Backend refactoring: split server.py into routers/services (5138+ lines)
-- Remove obsolete Bid model and auction code
-- Replace hardcoded VAPID keys with environment variables
-- Clean up abandoned permanent login implementations (token URL params, `/login/:token` route)
-- Simplify AuthContext.js (multiple login/token strategies accumulated)
-- Remove push notification code (feature abandoned by user)
-
-### Notities
-- **CHF/EUR Koers**: De koers 1.10 is de ECHTE live koers van exchangerate-api.com (geen bug!)
-- **Push Notifications**: Feature is verlaten door user, vervangen door email notificaties
+### Models (`models/schemas.py`)
+- User models (UserCreate, User, SupplierCreate)
+- Motorcycle models (Motorcycle, MotorcycleCreate, MotorcycleUpdate)
+- Order models (Order, OrderCreate, OrderWithMotorcycle)
+- Notification, Chat, Voucher, PriceProposal models
+- WantedRequest, Part, PartOrder models
+- Request models (SMSRequest, BulkEmailRequest, etc.)
 
 ---
 
 ## Test Credentials
 - **Admin**: `motoimportbv@gmail.com` / `Enolim12`
-- **Test Dealer**: `zoektest@dealer.nl` / `ZoekTest123!`
-- **Foreign Dealer**: `testdealer@germany.de` / `Test1234!`
+- **Test Dealer**: `testdealer@motoimport.nl` / `MotoTest123!`
 
 ---
 
 ## URLs
-- **Foreign Dealer Registration**: `/register/supplier` (or `?lang=de|it|fr|nl`)
 - **Preview**: https://dealer-inventory-pro.preview.emergentagent.com
+- **Production**: https://www.motoimportbv.nl
+
+---
+
+## Upcoming Tasks
+
+### P1 - High Priority
+1. **WhatsApp Notificaties** - Automatische berichten naar dealers
+2. **Verdere Backend Refactoring** - Routes splitsen in aparte bestanden
+
+### P2 - Medium Priority
+1. Marketing bestanden migreren naar permanente opslag
+2. Flyers download pagina maken
+3. Dealer analytics (conversie tracking)
+
+### P3 - Low Priority
+1. Native app build (iOS/Android)
+2. Push notification systeem herimplementeren (indien gewenst)
+
+---
+
+## Known Issues
+- AI Welcome Message niet actief (budget overschreden)
+- webpush code uitgeschakeld (package niet geïnstalleerd)
