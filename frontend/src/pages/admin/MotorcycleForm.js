@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { Switch } from '../../components/ui/switch';
 import { Checkbox } from '../../components/ui/checkbox';
-import { ArrowLeft, Save, Plus, X, ImageIcon, Camera, Upload, Loader2, MessageCircle, Share2, Users, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, ImageIcon, Camera, Upload, Loader2, MessageCircle, Share2, Users, Eye, EyeOff, ChevronUp, ChevronDown, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
