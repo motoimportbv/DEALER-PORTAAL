@@ -81,6 +81,9 @@ from models import (
     BulkEmailRequest, BulkEmailResponse, PaymentRequest
 )
 
+# Routers - Modulaire route handlers
+from routers.auth import router as auth_router
+
 # Legacy imports for backwards compatibility (still needed in some routes)
 import bcrypt
 import jwt
