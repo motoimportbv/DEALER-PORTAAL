@@ -3794,7 +3794,8 @@ async def get_admin_notifications(user: dict = Depends(require_admin)):
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     return notifications
-            html_content = f"""
+
+@api_router.get("/admin/activity-notifications/unread-count")
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #18181b; padding: 25px; text-align: center;">
                     <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
