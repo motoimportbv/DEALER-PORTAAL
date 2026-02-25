@@ -3809,7 +3809,8 @@ async def mark_admin_notifications_read(user: dict = Depends(require_admin)):
         {"$set": {"is_read": True}}
     )
     return {"message": "All notifications marked as read"}
-                </div>
+
+@api_router.delete("/admin/activity-notifications/all")
                 
                 <div style="padding: 30px; background: #f9fafb;">
                     <h2 style="color: #16a34a; margin-top: 0;">✅ Account Approved!</h2>
