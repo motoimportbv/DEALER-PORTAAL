@@ -3750,7 +3750,9 @@ async def get_notifications(user: dict = Depends(get_current_user)):
     return notifications
 
 @api_router.get("/notifications/unread-count")
-        {"id": dealer_id},
+async def get_unread_count(user: dict = Depends(get_current_user)):
+    count = await db.notifications.count_documents({"user_id": user["id"], "is_read": False})
+    return {"count": count}
         {"$set": {"is_approved": True}}
     )
     
