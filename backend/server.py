@@ -1,109 +1,180 @@
-# =============================================================================
-# MOTO IMPORT BACKEND SERVER
-# =============================================================================
-# Gerefactorde versie met modulaire structuur
-# Config, Database, Services en Models zijn nu in aparte bestanden
-# =============================================================================
-
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import RedirectResponse
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import asyncio
+import smtplib
 import shutil
 import urllib.parse
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-import json
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
-
-# =============================================================================
-# IMPORTS FROM REFACTORED MODULES
-# =============================================================================
-
-# Config - alle environment variables en constanten
-from config import (
-    PRODUCTION_BASE_URL, STORAGE_URL, EMERGENT_KEY, APP_NAME,
-    JWT_SECRET, JWT_ALGORITHM,
-    ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3,
-    ADMIN_EMAILS_FULL, ADMIN_EMAIL_LIMITED, ADMIN_EMAILS_DEALER_MOTO,
-    GMAIL_EMAIL, GMAIL_APP_PASSWORD,
-    EMAIL_FOOTER_DEALER, EMAIL_FOOTER_SUPPLIER,
-    STRIPE_API_KEY, DELIVERY_COST, DEPOSIT_PERCENTAGE,
-    TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER,
-    EXCHANGE_RATE_CACHE_DURATION, MOTORCYCLE_BRANDS,
-    logger, ROOT_DIR
-)
-
-# Database - MongoDB connectie
-from database import db, client
-
-# Services - Auth, Email, SMS, Storage, Currency
-from services import (
-    # Auth
-    hash_password, verify_password,
-    create_token, create_notification_token, create_permanent_login_token,
-    decode_token, get_current_user, require_admin, require_approved_dealer,
-    generate_short_code, security,
-    # Email
-    send_email, send_email_with_attachment, send_admin_notification,
-    # SMS
-    send_sms, is_twilio_configured, twilio_client,
-    # Storage
-    init_storage, put_object, get_object,
-    # Currency
-    get_chf_eur_margin, set_chf_eur_margin, get_chf_to_eur_rate,
-    convert_chf_to_eur_with_margin, convert_chf_to_eur, DEFAULT_CHF_EUR_MARGIN
-)
-
-# Models - Pydantic schemas
-from models import (
-    UserCreate, SupplierCreate, UserLogin, User,
-    MotorcycleCreate, MotorcycleUpdate, Motorcycle, BulkMotorcycleItem, BulkMotorcycleCreate,
-    BidCreate, Bid,
-    LicensePlateCreate, LicensePlate,
-    OrderCreate, Order, OrderWithMotorcycle, BuyNowRequest,
-    Notification, ChatMessage, ChatMessageCreate, PushSubscription, Voucher,
-    PriceProposalCreate, PriceProposal,
-    WantedRequestCreate, WantedRequestApprove, WantedRequest,
-    PartCategory, PartCategoryCreate, Part, PartCreate, PartUpdate,
-    PartOrderItem, PartOrderCreate, PartOrder,
-    NotificationAutoLogin, PermanentLoginRequest, ShortCodeLoginRequest,
-    PasswordResetRequest, PasswordResetConfirm, ChangePasswordRequest,
-    CreateAdminRequest, ResetPasswordRequest, DealerPhoneUpdate,
-    SMSRequest, BulkSMSRequest, SelectedSMSRequest,
-    BulkEmailRequest, BulkEmailResponse, PaymentRequest
-)
-
-# Routers - Modulaire route handlers
-from routers.auth import router as auth_router
-from routers.dealers import router as dealers_router
-
-# Legacy imports for backwards compatibility (still needed in some routes)
 import bcrypt
 import jwt
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
+import json
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from twilio.rest import Client as TwilioClient
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+# PRODUCTION URL - ALWAYS use this for customer-facing links
+# This ensures links work correctly regardless of environment variables
+PRODUCTION_BASE_URL = "https://www.motoimportbv.nl"
+
+# Emergent Object Storage Configuration
+STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
+APP_NAME = "moto-import"
+storage_key = None  # Module-level, set once and reused globally
+
+def init_storage():
+    """Initialize Emergent Object Storage - call once at startup"""
+    global storage_key
+    if storage_key:
+        return storage_key
+    if not EMERGENT_KEY:
+        logger.warning("EMERGENT_LLM_KEY not set - cloud storage disabled")
+        return None
+    try:
+        import requests
+        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
+        resp.raise_for_status()
+        storage_key = resp.json()["storage_key"]
+        logger.info("Emergent Object Storage initialized successfully")
+        return storage_key
+    except Exception as e:
+        logger.error(f"Failed to initialize storage: {e}")
+        return None
+
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    """Upload file to Emergent Object Storage"""
+    import requests
+    key = init_storage()
+    if not key:
+        raise Exception("Storage not initialized")
+    resp = requests.put(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key, "Content-Type": content_type},
+        data=data, timeout=120
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+def get_object(path: str) -> tuple:
+    """Download file from Emergent Object Storage"""
+    import requests
+    key = init_storage()
+    if not key:
+        raise Exception("Storage not initialized")
+    resp = requests.get(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key}, timeout=60
+    )
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+
+# MongoDB connection
+mongo_url = os.environ['MONGO_URL']
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ['DB_NAME']]
+
+# JWT Config
+JWT_SECRET = os.environ.get('JWT_SECRET')
+if not JWT_SECRET:
+    raise ValueError("JWT_SECRET environment variable is required")
+JWT_ALGORITHM = "HS256"
+
+# Gmail Config
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', '')
+ADMIN_EMAIL_2 = os.environ.get('ADMIN_EMAIL_2', '')  # Second admin - only dealer/motorcycle notifications
+ADMIN_EMAIL_3 = os.environ.get('ADMIN_EMAIL_3', '')  # Third admin email
+
+# Full admin list (receives ALL notifications)
+ADMIN_EMAILS_FULL = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_3] if e.strip()]
+
+# Limited admin (only new dealers and new motorcycles)
+ADMIN_EMAIL_LIMITED = ADMIN_EMAIL_2.strip() if ADMIN_EMAIL_2 else None
+
+# Combined list for dealer/motorcycle notifications
+ADMIN_EMAILS_DEALER_MOTO = [e.strip() for e in [ADMIN_EMAIL, ADMIN_EMAIL_2, ADMIN_EMAIL_3] if e.strip()]
+
+GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
+
+# Email footer templates
+# For DEALERS - NO address shown
+EMAIL_FOOTER_DEALER = """
+    <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+        <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
+    </div>
+"""
+
+# For SUPPLIERS/FOREIGN DEALERS - WITH address
+EMAIL_FOOTER_SUPPLIER = """
+    <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+        <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
+        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
+        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">www.motoimportbv.nl</p>
+    </div>
+"""
+
+# Stripe Config
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
+DELIVERY_COST = 50.0  # €50 bezorgkosten
+DEPOSIT_PERCENTAGE = 0.10  # 10% aanbetaling
+
+# Twilio SMS Config
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+
+# Initialize Twilio client if credentials are available
+twilio_client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    try:
+        twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        logging.info("Twilio client initialized successfully")
+    except Exception as e:
+        logging.warning(f"Failed to initialize Twilio client: {e}")
+
+# ============ EXCHANGE RATE CONFIG ============
 import httpx
 
-# =============================================================================
-# EXCHANGE RATE CACHE (local to server.py, used by currency_service)
-# =============================================================================
+# Cache for exchange rates (to avoid too many API calls)
 exchange_rate_cache = {
     "CHF_EUR": None,
     "last_updated": None
 }
+EXCHANGE_RATE_CACHE_DURATION = 300  # 5 minutes cache
+DEFAULT_CHF_EUR_MARGIN = 0.0  # No default margin - admin sets prices manually
 
-# Override currency service functions to use local cache
+async def get_chf_eur_margin():
+    """Get the current CHF to EUR margin from database, or use default"""
+    settings = await db.settings.find_one({"key": "chf_eur_margin"}, {"_id": 0})
+    if settings and "value" in settings:
+        return settings["value"]
+    return DEFAULT_CHF_EUR_MARGIN
+
+async def set_chf_eur_margin(margin: float):
+    """Set the CHF to EUR margin in database"""
+    await db.settings.update_one(
+        {"key": "chf_eur_margin"},
+        {"$set": {"key": "chf_eur_margin", "value": margin, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+
 async def get_chf_to_eur_rate():
     """Get real-time CHF to EUR exchange rate with caching"""
     global exchange_rate_cache
@@ -160,10 +231,400 @@ security = HTTPBearer()
 UPLOAD_DIR = ROOT_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# =============================================================================
-# NOTE: Models zijn verplaatst naar models/schemas.py
-# NOTE: Auth helpers zijn verplaatst naar services/auth_service.py
-# =============================================================================
+# ============ MODELS ============
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    company_name: str
+    kvk_number: str = ""
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    phone: str = ""
+    contact_person: str = ""
+    role: str = "dealer"  # "admin" or "dealer"
+
+class SupplierCreate(BaseModel):
+    email: str
+    password: str
+    company_name: str
+    country: str
+    contact_person: str = ""
+    phone: str = ""
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    company_name: str
+    kvk_number: str = ""
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    phone: str = ""
+    contact_person: str = ""
+    role: str  # "admin", "dealer", or "foreign_dealer"
+    is_approved: bool = False  # Dealer moet goedgekeurd worden
+    is_foreign_dealer: bool = False  # Buitenlandse dealer (leverancier)
+    is_offline: bool = False  # Tijdelijk offline - ontvangt geen meldingen
+    country: str = ""  # Land van buitenlandse dealer
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class MotorcycleCreate(BaseModel):
+    brand: str
+    model: str
+    year: int
+    price: float  # Koop nu prijs
+    starting_price: Optional[float] = None  # Vanaf prijs voor bieden
+    mileage: int = 0
+    color: str = ""
+    description: str = ""
+    condition: str = "good"  # "new", "excellent", "good", "fair"
+    images: List[str] = []
+    auction_duration_hours: int = 3  # Standaard 3 uur
+    chassis_number: str = ""  # VIN/Chassisnummer
+    currency: str = "EUR"  # Currency for price (EUR or CHF)
+    auto_delete_hours: int = 24  # Auto-delete after X hours if not sold (0 = no auto-delete)
+    has_maintenance_history: Optional[bool] = None  # Required for foreign dealers
+    maintenance_history_details: Optional[str] = None  # Optional details
+    # Visibility settings
+    visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
+    visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
+
+class MotorcycleUpdate(BaseModel):
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    price: Optional[float] = None
+    starting_price: Optional[float] = None
+    mileage: Optional[int] = None
+    color: Optional[str] = None
+    description: Optional[str] = None
+    condition: Optional[str] = None
+    images: Optional[List[str]] = None
+    is_available: Optional[bool] = None
+    chassis_number: Optional[str] = None  # VIN/Chassisnummer
+    license_plate: Optional[str] = None  # Kenteken (set by admin later)
+    # Visibility settings
+    visibility: Optional[str] = None  # "all" or "selected"
+    visible_to_dealers: Optional[List[str]] = None  # List of dealer IDs
+
+class Motorcycle(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    brand: str
+    model: str
+    year: int
+    price: float  # Koop nu prijs
+    starting_price: Optional[float] = None  # Vanaf prijs
+    mileage: int
+    color: str
+    description: str
+    condition: str
+    images: List[str] = []
+    is_available: bool = True
+    is_paused: bool = False  # Dealer can pause listing temporarily
+    auction_end_time: Optional[str] = None  # Wanneer de veiling eindigt
+    highest_bid: Optional[float] = None
+    highest_bidder_id: Optional[str] = None
+    chassis_number: str = ""  # VIN/Chassisnummer
+    license_plate: Optional[str] = None  # Kenteken (set by admin)
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_by: str = ""
+    auto_delete_at: Optional[str] = None  # Auto-delete time if not sold
+    # Dealer marketplace fields
+    is_dealer_listing: bool = False  # True if listed by dealer
+    seller_company: Optional[str] = None  # Company name of selling dealer
+    seller_id: Optional[str] = None  # ID of selling dealer
+    listing_fee_invoiced: bool = False  # Admin marks when €250 fee is invoiced
+    # Foreign dealer fields
+    is_foreign_listing: bool = False  # True if from foreign dealer
+    is_pending_approval: bool = False  # True if waiting for admin to set price/activate
+    foreign_dealer_id: Optional[str] = None  # ID of foreign dealer
+    foreign_dealer_company: Optional[str] = None  # Company name of foreign dealer
+    original_price: Optional[float] = None  # Price suggested by foreign dealer
+    original_currency: str = "EUR"  # Currency of original price (EUR or CHF)
+    has_maintenance_history: Optional[bool] = None  # Required for foreign dealers: does it have maintenance history?
+    maintenance_history_details: Optional[str] = None  # Optional details about maintenance
+    # Visibility settings
+    visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
+    visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
+
+class BidCreate(BaseModel):
+    motorcycle_id: str
+    amount: float
+
+class Bid(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    motorcycle_id: str
+    dealer_id: str
+    dealer_company: str
+    amount: float
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# License plate (Kenteken) model - admin adds these for dealers
+class LicensePlateCreate(BaseModel):
+    dealer_id: str
+    license_plate: str
+    chassis_number: Optional[str] = None  # Optional link to motorcycle
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    notes: Optional[str] = ""
+
+class LicensePlate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    license_plate: str
+    chassis_number: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    notes: str = ""
+    document_url: Optional[str] = None  # URL to uploaded RDW document
+    document_filename: Optional[str] = None  # Original filename
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class OrderCreate(BaseModel):
+    motorcycle_id: str
+    notes: Optional[str] = ""
+    needs_delivery: bool = False
+
+class Order(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    motorcycle_id: str
+    dealer_id: str
+    dealer_email: str
+    dealer_company: str
+    status: str = "pending"  # pending, paid, approved, rejected, completed
+    notes: str = ""
+    needs_delivery: bool = False
+    delivery_cost: float = 0.0
+    deposit_amount: float = 0.0
+    total_price: float = 0.0
+    payment_status: str = "unpaid"  # unpaid, pending, paid
+    stripe_session_id: Optional[str] = None
+    motorcycle_snapshot: Optional[dict] = None  # Snapshot of motorcycle data at time of order
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class OrderWithMotorcycle(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    motorcycle_id: str
+    dealer_id: str
+    dealer_email: str = ""
+    dealer_company: str = ""
+    status: str = "pending"
+    notes: str = ""
+    needs_delivery: bool = False
+    delivery_cost: float = 0.0
+    needs_inspection: bool = False  # Keuring
+    inspection_cost: float = 0.0
+    needs_valuation: bool = False   # Taxatie
+    valuation_cost: float = 0.0
+    voucher_code: Optional[str] = None  # Voucher code used
+    voucher_discount: float = 0.0  # Voucher discount amount
+    deposit_amount: float = 0.0
+    total_price: float = 0.0
+    payment_status: str = "unpaid"
+    created_at: Optional[str] = None  # Made optional for legacy orders
+    motorcycle: Optional[dict] = None
+    motorcycle_snapshot: Optional[dict] = None  # Fallback data if motorcycle is deleted
+    order_type: Optional[str] = None  # "price_proposal" if from accepted proposal
+    discount_amount: float = 0.0  # Discount given (original_price - total_price)
+    original_price: Optional[float] = None  # Original price before discount
+
+class Notification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    type: str  # "new_motorcycle", "order_update"
+    title: str
+    message: str
+    motorcycle_id: Optional[str] = None
+    is_read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    conversation_id: str  # Usually dealer_id for dealer-admin chats
+    sender_id: str
+    sender_name: str
+    sender_role: str  # "admin" or "dealer"
+    message: str
+    is_read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ChatMessageCreate(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None  # Optional for dealers (defaults to their own ID)
+
+class PushSubscription(BaseModel):
+    endpoint: str
+    keys: dict  # Contains p256dh and auth keys
+
+class Voucher(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    code: str  # Unique voucher code like "WELKOM-XXXXX"
+    dealer_id: str
+    amount: float = 250.0  # €250 voucher
+    is_used: bool = False
+    used_on_order_id: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    used_at: Optional[str] = None
+
+# ============ PRICE PROPOSAL MODELS ============
+
+class PriceProposalCreate(BaseModel):
+    motorcycle_id: str
+    proposed_price: float
+    reason: str = ""
+
+class PriceProposal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    motorcycle_id: str
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    original_price: float
+    proposed_price: float
+    reason: str = ""
+    status: str = "pending"  # pending, accepted, rejected, counter
+    admin_response: str = ""
+    counter_price: Optional[float] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
+
+# ============ WANTED REQUEST MODELS (Motor Zoekertje) ============
+
+class WantedRequestCreate(BaseModel):
+    brand: str
+    model: str = ""
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    max_mileage: Optional[int] = None
+    max_budget: float
+    notes: str = ""
+
+class WantedRequestApprove(BaseModel):
+    supplier_price: float  # Price to show to suppliers
+    admin_notes: str = ""
+
+class WantedRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    dealer_email: str
+    dealer_phone: str = ""
+    brand: str
+    model: str = ""
+    year_min: Optional[int] = None
+    year_max: Optional[int] = None
+    max_mileage: Optional[int] = None
+    max_budget: float  # Dealer's budget (private)
+    supplier_price: Optional[float] = None  # Price shown to suppliers (set by admin)
+    notes: str = ""
+    status: str = "pending"  # pending, active, fulfilled, expired, cancelled
+    admin_notes: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    approved_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    fulfilled_by: Optional[str] = None  # Supplier who fulfilled the request
+
+# ============ PARTS SHOP MODELS ============
+
+# Predefined motorcycle brands for parts compatibility
+MOTORCYCLE_BRANDS = ["Yamaha", "Honda", "Kawasaki", "Ducati", "Triumph", "KTM", "Suzuki", "BMW"]
+
+class PartCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PartCategoryCreate(BaseModel):
+    name: str
+    description: str = ""
+
+class Part(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    price: float
+    category_id: str
+    category_name: str = ""
+    compatible_brands: List[str] = []  # Which motorcycle brands this part fits
+    stock: int = 0
+    sku: str = ""  # Article number
+    images: List[str] = []
+    is_active: bool = True
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class PartCreate(BaseModel):
+    name: str
+    description: str = ""
+    price: float
+    category_id: str
+    compatible_brands: List[str] = []
+    stock: int = 0
+    sku: str = ""
+    images: List[str] = []
+
+class PartUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    category_id: Optional[str] = None
+    compatible_brands: Optional[List[str]] = None
+    stock: Optional[int] = None
+    sku: Optional[str] = None
+    images: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+
+class PartOrderItem(BaseModel):
+    part_id: str
+    part_name: str = ""
+    quantity: int
+    price: float
+
+class PartOrderCreate(BaseModel):
+    items: List[PartOrderItem]
+    needs_shipping: bool = True  # True = €9.95 shipping, False = free pickup
+    notes: str = ""
+
+class PartOrder(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    order_number: str = ""  # e.g. "PO-2026-0001"
+    dealer_id: str
+    dealer_email: str
+    dealer_company: str
+    dealer_address: str = ""
+    dealer_postal_code: str = ""
+    dealer_city: str = ""
+    dealer_phone: str = ""
+    items: List[dict] = []
+    subtotal: float = 0.0
+    shipping_cost: float = 0.0  # €9.95 or €0
+    total: float = 0.0
+    status: str = "pending"  # pending, paid, shipped, completed, cancelled
+    notes: str = ""
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    paid_at: Optional[str] = None
 
 # ============ ROOT ENDPOINT ============
 
@@ -181,11 +642,143 @@ async def health_check():
     except Exception as e:
         return {"status": "degraded", "database": "error", "detail": str(e)}
 
-# =============================================================================
-# NOTE: Auth helpers zijn verplaatst naar services/auth_service.py
-# NOTE: Email helpers zijn verplaatst naar services/email_service.py
-# De functies worden geïmporteerd aan het begin van dit bestand
-# =============================================================================
+# ============ AUTH HELPERS ============
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_token(user_id: str, email: str, role: str) -> str:
+    # Dealers krijgen een lang geldig token (1 jaar) zodat ze altijd ingelogd blijven
+    # Admins krijgen een korter token (30 dagen) voor extra veiligheid
+    if role == 'dealer':
+        expiry_days = 365  # 1 jaar voor dealers
+    else:
+        expiry_days = 30   # 30 dagen voor admins
+    
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "role": role,
+        "exp": datetime.now(timezone.utc).timestamp() + 86400 * expiry_days
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def create_notification_token(user_id: str, email: str, role: str) -> str:
+    """Create a token for push notification auto-login (24 hours)"""
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "role": role,
+        "type": "notification",
+        "exp": datetime.now(timezone.utc).timestamp() + 86400  # 24 hours (was 10 min)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def create_permanent_login_token(user_id: str) -> str:
+    """Create a permanent auto-login token that never expires (stored in user profile)"""
+    # Generate a unique token ID
+    token_id = str(uuid.uuid4())
+    payload = {
+        "user_id": user_id,
+        "token_id": token_id,
+        "type": "permanent",
+        # No expiration - permanent token
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def generate_short_code() -> str:
+    """Generate a short 8-character alphanumeric code for easy login links"""
+    import random
+    import string
+    # Use only uppercase letters and numbers, excluding confusing characters (0, O, I, 1, L)
+    chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    return ''.join(random.choice(chars) for _ in range(8))
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # Update last_active timestamp for activity tracking (fire-and-forget)
+        try:
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$set": {"last_active": datetime.now(timezone.utc).isoformat()}}
+            )
+        except Exception:
+            pass  # Non-critical, don't break the request
+        
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def require_admin(user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+async def require_approved_dealer(user: dict = Depends(get_current_user)):
+    """Helper to check if a dealer is approved and not offline"""
+    if user["role"] == "dealer":
+        if not user.get("is_approved", False):
+            raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+        if user.get("is_offline", False):
+            raise HTTPException(status_code=403, detail="Uw account is tijdelijk offline gezet door de beheerder. Neem contact op met Moto Import.")
+    return user
+
+# ============ EMAIL HELPER ============
+
+async def send_email(to_email: str, subject: str, html_content: str):
+    """Send email via Gmail SMTP"""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"Moto Import <{GMAIL_EMAIL}>"
+        msg['To'] = to_email
+        
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        def send_sync():
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+                server.sendmail(GMAIL_EMAIL, to_email, msg.as_string())
+        
+        await asyncio.to_thread(send_sync)
+        logger.info(f"Email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+        return False
+
+async def send_admin_notification(subject: str, html_content: str, include_limited_admin: bool = False):
+    """Send email notification to admin email addresses
+    
+    Args:
+        subject: Email subject
+        html_content: HTML email body
+        include_limited_admin: If True, also sends to limited admin (daniel2002jay@hotmail.com)
+                              Only use for: new dealer registrations and new motorcycles
+    """
+    # Determine which admins to notify
+    if include_limited_admin:
+        admin_list = ADMIN_EMAILS_DEALER_MOTO  # All 3 admins
+    else:
+        admin_list = ADMIN_EMAILS_FULL  # Only main admins (excludes daniel2002jay)
+    
+    for admin_email in admin_list:
+        try:
+            await send_email(admin_email, subject, html_content)
+            logger.info(f"Admin notification sent to {admin_email}")
+        except Exception as e:
+            logger.error(f"Failed to send admin notification to {admin_email}: {e}")
 
 # ============ EXCHANGE RATE ENDPOINTS ============
 
@@ -266,9 +859,563 @@ async def convert_currency(amount: float, from_currency: str = "CHF", to_currenc
     else:
         raise HTTPException(status_code=400, detail="Only CHF/EUR conversion supported")
 
-# ============ AUTH ENDPOINTS (verplaatst naar routers/auth.py) ============
+# ============ AUTH ENDPOINTS ============
 
-# ============ DEALER MANAGEMENT (verplaatst naar routers/dealers.py) ============
+@api_router.post("/auth/register")
+async def register(user_data: UserCreate):
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check KVK for dealers
+    if user_data.role == "dealer" and not user_data.kvk_number:
+        raise HTTPException(status_code=400, detail="KVK nummer is verplicht voor dealers")
+    
+    user_id = str(uuid.uuid4())
+    is_approved = user_data.role == "admin"  # Admins zijn direct goedgekeurd
+    
+    user_doc = {
+        "id": user_id,
+        "email": user_data.email,
+        "password_hash": hash_password(user_data.password),
+        "company_name": user_data.company_name,
+        "kvk_number": user_data.kvk_number,
+        "address": user_data.address,
+        "postal_code": user_data.postal_code,
+        "city": user_data.city,
+        "phone": user_data.phone,
+        "contact_person": user_data.contact_person,
+        "role": user_data.role,
+        "is_approved": is_approved,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user_doc)
+    
+    # Stuur email naar admin bij nieuwe dealer registratie
+    if user_data.role == "dealer":
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #DC2626;">🏍️ Nieuwe Dealer Registratie</h2>
+            <p>Er heeft zich een nieuwe dealer geregistreerd op Moto Import:</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bedrijfsnaam</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.company_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>KVK Nummer</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.kvk_number}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Contactpersoon</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.contact_person}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Email</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.email}</td>
+                </tr>
+                <tr style="background: #f4f4f5;">
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Telefoon</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.phone}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Adres</strong></td>
+                    <td style="padding: 10px; border: 1px solid #e4e4e7;">{user_data.address}, {user_data.postal_code} {user_data.city}</td>
+                </tr>
+            </table>
+            <p style="color: #71717a;">Log in op het admin dashboard om deze dealer goed te keuren.</p>
+        </div>
+        """
+        await send_admin_notification(
+            f"Nieuwe Dealer Registratie: {user_data.company_name}",
+            html_content,
+            include_limited_admin=True  # Also notify daniel2002jay@hotmail.com
+        )
+    
+    token = create_token(user_id, user_data.email, user_data.role)
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": user_data.email,
+            "company_name": user_data.company_name,
+            "kvk_number": user_data.kvk_number,
+            "role": user_data.role,
+            "is_approved": is_approved
+        }
+    }
+
+@api_router.post("/auth/register-supplier")
+async def register_supplier(supplier_data: SupplierCreate):
+    """Registratie voor buitenlandse leveranciers - vereenvoudigd formulier"""
+    existing = await db.users.find_one({"email": supplier_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    
+    user_doc = {
+        "id": user_id,
+        "email": supplier_data.email,
+        "password_hash": hash_password(supplier_data.password),
+        "company_name": supplier_data.company_name,
+        "kvk_number": "",
+        "address": "",
+        "postal_code": "",
+        "city": "",
+        "phone": supplier_data.phone,
+        "contact_person": supplier_data.contact_person,
+        "role": "dealer",
+        "is_approved": False,
+        "is_foreign_dealer": True,
+        "country": supplier_data.country,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user_doc)
+    
+    # Stuur email naar admin bij nieuwe leverancier registratie
+    country_names = {
+        "germany": "Duitsland",
+        "italy": "Italië",
+        "france": "Frankrijk",
+        "belgium": "België",
+        "austria": "Oostenrijk",
+        "spain": "Spanje",
+        "poland": "Polen",
+        "other": "Anders"
+    }
+    country_display = country_names.get(supplier_data.country, supplier_data.country)
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #7C3AED;">🌍 Nieuwe Buitenlandse Leverancier</h2>
+        <p>Er heeft zich een nieuwe buitenlandse leverancier geregistreerd op Moto Import:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Bedrijfsnaam</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.company_name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Land</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">🌍 {country_display}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Contactpersoon</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.contact_person}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Email</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.email}</td>
+            </tr>
+            <tr style="background: #f4f4f5;">
+                <td style="padding: 10px; border: 1px solid #e4e4e7;"><strong>Telefoon</strong></td>
+                <td style="padding: 10px; border: 1px solid #e4e4e7;">{supplier_data.phone or '-'}</td>
+            </tr>
+        </table>
+        <p style="color: #71717a;">Log in op het admin dashboard om deze leverancier goed te keuren.</p>
+        <p style="color: #7C3AED;"><strong>Let op:</strong> Dit is een buitenlandse leverancier. Na goedkeuring kunnen zij direct motoren toevoegen.</p>
+    </div>
+    """
+    await send_admin_notification(
+        f"🌍 Nieuwe Leverancier: {supplier_data.company_name} ({country_display})",
+        html_content,
+        include_limited_admin=True  # Also notify daniel2002jay@hotmail.com
+    )
+    
+    token = create_token(user_id, supplier_data.email, "dealer")
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": supplier_data.email,
+            "company_name": supplier_data.company_name,
+            "role": "dealer",
+            "is_approved": False,
+            "is_foreign_dealer": True,
+            "country": supplier_data.country
+        }
+    }
+
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin):
+    user = await db.users.find_one({"email": credentials.email})
+    if not user or not verify_password(credentials.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check if dealer is approved
+    is_approved = user.get("is_approved", True)  # Default True for backwards compatibility
+    if user["role"] == "dealer" and not is_approved:
+        raise HTTPException(status_code=403, detail="Uw account wacht nog op goedkeuring door Moto Import")
+    
+    # Track login activity for dealers
+    if user["role"] == "dealer":
+        await db.users.update_one(
+            {"id": user["id"]},
+            {
+                "$inc": {"login_count": 1},
+                "$set": {"last_login": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+    
+    token = create_token(user["id"], user["email"], user["role"])
+    return {
+        "token": token,
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "company_name": user["company_name"],
+            "role": user["role"],
+            "is_approved": is_approved,
+            "terms_accepted": user.get("terms_accepted", False),
+            "is_foreign_dealer": user.get("is_foreign_dealer", False),
+            "country": user.get("country", "")
+        }
+    }
+
+@api_router.get("/auth/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    return user
+
+class NotificationAutoLogin(BaseModel):
+    token: str
+
+@api_router.post("/auth/notification-login")
+async def notification_auto_login(data: NotificationAutoLogin):
+    """Auto-login via push notification token - returns a full session token"""
+    try:
+        payload = jwt.decode(data.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        
+        # Verify this is a notification token
+        if payload.get("type") != "notification":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        
+        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # Check if user is offline
+        if user.get("is_offline"):
+            raise HTTPException(status_code=403, detail="Account is offline")
+        
+        # Create a full session token
+        full_token = create_token(user["id"], user["email"], user["role"])
+        
+        return {
+            "token": full_token,
+            "user": user
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@api_router.post("/auth/accept-terms")
+async def accept_terms(user: dict = Depends(get_current_user)):
+    """Accept terms and conditions"""
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"terms_accepted": True, "terms_accepted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Voorwaarden geaccepteerd", "terms_accepted": True}
+
+@api_router.post("/auth/generate-permanent-link")
+async def generate_permanent_link(user: dict = Depends(get_current_user)):
+    """Generate a permanent auto-login link for the user"""
+    # Create permanent token
+    permanent_token = create_permanent_login_token(user["id"])
+    
+    # Generate a short code for easy URLs
+    short_code = generate_short_code()
+    
+    # Ensure short code is unique
+    while await db.users.find_one({"login_short_code": short_code}):
+        short_code = generate_short_code()
+    
+    # Store token and short code in user profile
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {
+            "permanent_login_token": permanent_token,
+            "login_short_code": short_code,
+            "permanent_link_created_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Build the permanent login URL using query parameter format (works better with iOS bookmarks)
+    base_url = PRODUCTION_BASE_URL
+    permanent_url = f"{base_url}/login?code={short_code}"
+    
+    return {
+        "permanent_url": permanent_url,
+        "short_code": short_code,
+        "token": permanent_token,
+        "message": "Permanente login link aangemaakt"
+    }
+
+@api_router.get("/auth/my-permanent-link")
+async def get_my_permanent_link(user: dict = Depends(get_current_user)):
+    """Get the user's permanent login link"""
+    permanent_token = user.get("permanent_login_token")
+    short_code = user.get("login_short_code")
+    
+    if not permanent_token or not short_code:
+        return {"has_permanent_link": False, "permanent_url": None}
+    
+    # Use query parameter format (works better with iOS bookmarks)
+    base_url = PRODUCTION_BASE_URL
+    permanent_url = f"{base_url}/login?code={short_code}"
+    
+    return {
+        "has_permanent_link": True,
+        "permanent_url": permanent_url,
+        "short_code": short_code,
+        "created_at": user.get("permanent_link_created_at")
+    }
+
+class PermanentLoginRequest(BaseModel):
+    token: str
+
+class ShortCodeLoginRequest(BaseModel):
+    code: str
+
+@api_router.post("/auth/permanent-login")
+async def permanent_login(data: PermanentLoginRequest):
+    """Login using a permanent auto-login token"""
+    try:
+        payload = jwt.decode(data.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        
+        # Verify this is a permanent token
+        if payload.get("type") != "permanent":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        
+        # Find user and verify token matches
+        user = await db.users.find_one(
+            {"id": payload["user_id"], "permanent_login_token": data.token},
+            {"_id": 0, "password_hash": 0}
+        )
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid or revoked token")
+        
+        # Check if user is offline
+        if user.get("is_offline"):
+            raise HTTPException(status_code=403, detail="Account is offline")
+        
+        # Create a regular session token
+        session_token = create_token(user["id"], user["email"], user["role"])
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"last_permanent_login": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        return {
+            "token": session_token,
+            "user": user
+        }
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@api_router.post("/auth/shortcode-login")
+async def shortcode_login(data: ShortCodeLoginRequest):
+    """Login using a short code - for iOS home screen bookmarks"""
+    # Find user by short code
+    user = await db.users.find_one(
+        {"login_short_code": data.code.upper()},
+        {"_id": 0, "password_hash": 0}
+    )
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Ongeldige code")
+    
+    # Check if user is offline
+    if user.get("is_offline"):
+        raise HTTPException(status_code=403, detail="Account is offline")
+    
+    # Create a regular session token
+    session_token = create_token(user["id"], user["email"], user["role"])
+    
+    # Update last login
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"last_shortcode_login": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {
+        "token": session_token,
+        "user": user
+    }
+
+@api_router.get("/auth/shortcode/{code}")
+async def get_user_by_shortcode(code: str):
+    """Get user info by short code (for auto-login page)"""
+    user = await db.users.find_one(
+        {"login_short_code": code.upper()},
+        {"_id": 0, "password_hash": 0, "permanent_login_token": 0}
+    )
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Ongeldige code")
+    
+    if user.get("is_offline"):
+        raise HTTPException(status_code=403, detail="Account is offline")
+    
+    # Return limited info for security
+    return {
+        "valid": True,
+        "company_name": user.get("company_name", ""),
+        "user_id": user["id"]
+    }
+
+@api_router.post("/auth/revoke-permanent-link")
+async def revoke_permanent_link(user: dict = Depends(get_current_user)):
+    """Revoke the user's permanent login link"""
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$unset": {"permanent_login_token": "", "permanent_link_created_at": ""}}
+    )
+    return {"message": "Permanente login link ingetrokken"}
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: Request, data: PasswordResetRequest):
+    """Send password reset email"""
+    user = await db.users.find_one({"email": data.email})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "Als dit e-mailadres bij ons bekend is, ontvangt u een e-mail met instructies."}
+    
+    # Generate reset token (valid for 1 hour)
+    import secrets
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Store reset token
+    await db.password_resets.delete_many({"email": data.email})  # Remove old tokens
+    await db.password_resets.insert_one({
+        "email": data.email,
+        "token": reset_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Always use production URL for email links
+    base_url = "https://www.motoimportbv.nl"
+    
+    reset_link = f"{base_url}/reset-password?token={reset_token}"
+    
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #18181b; padding: 25px; text-align: center;">
+            <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+        </div>
+        
+        <div style="padding: 30px; background: #f9fafb;">
+            <h2 style="color: #18181b; margin-top: 0;">Wachtwoord Resetten</h2>
+            <p>Beste {user.get('contact_person', user.get('company_name', 'Klant'))},</p>
+            <p>U heeft een verzoek ingediend om uw wachtwoord te resetten.</p>
+            <p>Klik op de onderstaande knop om een nieuw wachtwoord in te stellen:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_link}" 
+                   style="display: inline-block; background: #DC2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                    Nieuw Wachtwoord Instellen
+                </a>
+            </div>
+            
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    <strong>⚠️ Let op:</strong> Deze link is 1 uur geldig. Als u dit verzoek niet heeft gedaan, kunt u deze email negeren.
+                </p>
+            </div>
+            
+            <p style="color: #71717a; font-size: 12px; margin-top: 20px;">
+                Werkt de knop niet? Kopieer deze link naar uw browser:<br>
+                <span style="word-break: break-all; color: #DC2626;">{reset_link}</span>
+            </p>
+        </div>
+        
+        <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+            <p style="margin: 5px 0;">Moto Import B.V. | www.motoimportbv.nl</p>
+        </div>
+    </div>
+    """
+    
+    try:
+        await send_email(data.email, "🔐 Wachtwoord Resetten - Moto Import", html_content)
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+    
+    return {"message": "Als dit e-mailadres bij ons bekend is, ontvangt u een e-mail met instructies."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: PasswordResetConfirm):
+    """Reset password using token"""
+    # Find reset token
+    reset_doc = await db.password_resets.find_one({"token": data.token})
+    
+    if not reset_doc:
+        raise HTTPException(status_code=400, detail="Ongeldige of verlopen reset link")
+    
+    # Check if expired
+    expires_at = datetime.fromisoformat(reset_doc["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires_at:
+        await db.password_resets.delete_one({"token": data.token})
+        raise HTTPException(status_code=400, detail="Reset link is verlopen. Vraag een nieuwe aan.")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minimaal 6 tekens zijn")
+    
+    # Update password
+    password_hash = hash_password(data.new_password)
+    await db.users.update_one(
+        {"email": reset_doc["email"]},
+        {"$set": {"password_hash": password_hash}}
+    )
+    
+    # Delete used token
+    await db.password_resets.delete_one({"token": data.token})
+    
+    return {"message": "Wachtwoord succesvol gewijzigd. U kunt nu inloggen met uw nieuwe wachtwoord."}
+
+# ============ DEALER MANAGEMENT ============
+
+@api_router.post("/dealers/{dealer_id}/set-foreign")
+async def set_foreign_dealer(dealer_id: str, country: str, user: dict = Depends(require_admin)):
+    """Mark a dealer as foreign dealer (supplier)"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_foreign_dealer": True, "country": country}}
+    )
+    
+    return {"message": f"Dealer gemarkeerd als buitenlandse dealer ({country})"}
+
+@api_router.post("/dealers/{dealer_id}/unset-foreign")
+async def unset_foreign_dealer(dealer_id: str, user: dict = Depends(require_admin)):
+    """Remove foreign dealer status"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_foreign_dealer": False, "country": ""}}
+    )
+    
+    return {"message": "Buitenlandse dealer status verwijderd"}
 
 # ============ MOTORCYCLE ENDPOINTS ============
 
@@ -3737,119 +4884,59 @@ async def get_pending_proposals_count(user: dict = Depends(require_admin)):
     return {"count": count}
 
 
-# ============ DEALER MANAGEMENT (verplaatst naar routers/dealers.py) ============
+# ============ DEALER MANAGEMENT ENDPOINTS ============
 
-# ============ NOTIFICATION ENDPOINTS ============
+@api_router.get("/dealers")
+async def get_dealers(user: dict = Depends(require_admin)):
+    dealers = await db.users.find(
+        {"role": "dealer"},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    return dealers
 
-@api_router.get("/notifications", response_model=List[Notification])
-async def get_notifications(user: dict = Depends(get_current_user)):
-    notifications = await db.notifications.find(
-        {"user_id": user["id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(50)
-    return notifications
+@api_router.get("/dealers/pending")
+async def get_pending_dealers(user: dict = Depends(require_admin)):
+    dealers = await db.users.find(
+        {"role": "dealer", "is_approved": False},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    return dealers
 
-@api_router.get("/notifications/unread-count")
-async def get_unread_count(user: dict = Depends(get_current_user)):
-    count = await db.notifications.count_documents({"user_id": user["id"], "is_read": False})
-    return {"count": count}
-
-@api_router.put("/notifications/{notification_id}/read")
-async def mark_notification_read(notification_id: str, user: dict = Depends(get_current_user)):
-    await db.notifications.update_one(
-        {"id": notification_id, "user_id": user["id"]},
-        {"$set": {"is_read": True}}
+@api_router.put("/dealers/{dealer_id}/approve")
+async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(require_admin)):
+    dealer = await db.users.find_one({"id": dealer_id, "role": "dealer"})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"is_approved": True}}
     )
-    return {"message": "Notification marked as read"}
-
-@api_router.put("/notifications/read-all")
-async def mark_all_read(user: dict = Depends(get_current_user)):
-    await db.notifications.update_many(
-        {"user_id": user["id"], "is_read": False},
-        {"$set": {"is_read": True}}
-    )
-    return {"message": "All notifications marked as read"}
-
-
-@api_router.delete("/notifications/all")
-async def delete_all_notifications(user: dict = Depends(get_current_user)):
-    await db.notifications.delete_many({"user_id": user["id"]})
-    return {"message": "All notifications deleted"}
-
-@api_router.delete("/notifications/{notification_id}")
-async def delete_notification(notification_id: str, user: dict = Depends(get_current_user)):
-    result = await db.notifications.delete_one({"id": notification_id, "user_id": user["id"]})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    return {"message": "Notification deleted"}
-
-
-# ============ ADMIN ACTIVITY TRACKING ENDPOINTS ============
-
-@api_router.get("/admin/activity-notifications")
-async def get_admin_notifications(user: dict = Depends(require_admin)):
-    """Get admin notifications for dealer activity"""
-    notifications = await db.admin_notifications.find(
-        {},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(100)
-    return notifications
-
-@api_router.get("/admin/activity-notifications/unread-count")
-async def get_admin_unread_count(user: dict = Depends(require_admin)):
-    """Get unread admin notification count"""
-    count = await db.admin_notifications.count_documents({"is_read": False})
-    return {"count": count}
-
-@api_router.put("/admin/activity-notifications/read-all")
-async def mark_admin_notifications_read(user: dict = Depends(require_admin)):
-    """Mark all admin notifications as read"""
-    await db.admin_notifications.update_many(
-        {"is_read": False},
-        {"$set": {"is_read": True}}
-    )
-    return {"message": "All notifications marked as read"}
-
-@api_router.delete("/admin/activity-notifications/all")
-async def delete_admin_notifications(user: dict = Depends(require_admin)):
-    """Delete all admin notifications"""
-    await db.admin_notifications.delete_many({})
-    return {"message": "All admin notifications deleted"}
-
-@api_router.get("/admin/activity-stats")
-async def get_activity_stats(user: dict = Depends(require_admin)):
-    """Get dealer activity statistics for admin dashboard"""
-    from datetime import timedelta
     
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-    week_ago = (now - timedelta(days=7)).isoformat()
+    # Check of het een buitenlandse dealer is
+    is_foreign = dealer.get("is_foreign_dealer", False)
     
-    # Views today
-    views_today = await db.activity_logs.count_documents({
-        "type": "motorcycle_view",
-        "timestamp": {"$gte": today_start}
-    })
+    # Always use production URL for email links
+    base_url = PRODUCTION_BASE_URL
+    login_url = f"{base_url}/login"
     
-    # Views this week
-    views_week = await db.activity_logs.count_documents({
-        "type": "motorcycle_view",
-        "timestamp": {"$gte": week_ago}
-    })
-    
-    # Most viewed motorcycles (last 7 days)
-    pipeline = [
-        {"$match": {"type": "motorcycle_view", "timestamp": {"$gte": week_ago}}},
-        {"$group": {
-            "_id": "$motorcycle_id",
-            "brand": {"$first": "$motorcycle_brand"},
-            "model": {"$first": "$motorcycle_model"},
-            "views": {"$sum": 1}
-        }},
-        {"$sort": {"views": -1}},
-        {"$limit": 5}
-    ]
-    top_motorcycles = await db.activity_logs.aggregate(pipeline).to_list(5)
+    # Buitenlandse dealers krijgen GEEN voucher
+    if is_foreign:
+        # Email voor buitenlandse dealer (zonder voucher)
+        try:
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #18181b; padding: 25px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">🏍️ MOTO IMPORT</h1>
+                </div>
+                
+                <div style="padding: 30px; background: #f9fafb;">
+                    <h2 style="color: #16a34a; margin-top: 0;">✅ Account Approved!</h2>
+                    <p>Dear {dealer.get('contact_person', dealer['company_name'])},</p>
+                    <p>Your supplier account at <strong>Moto Import</strong> has been approved!</p>
+                    <p>You can now log in and submit motorcycles for sale to our dealer network.</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
                         <a href="{login_url}" 
                            style="display: inline-block; background: #DC2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                             Login Now
@@ -4005,6 +5092,10 @@ async def create_admin_user(data: CreateAdminRequest, user: dict = Depends(requi
         "user_id": user_id
     }
 
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+
 @api_router.post("/admin/reset-password")
 async def reset_user_password(data: ResetPasswordRequest, user: dict = Depends(require_admin)):
     """Admin kan wachtwoord van een gebruiker resetten"""
@@ -4030,6 +5121,35 @@ async def reset_user_password(data: ResetPasswordRequest, user: dict = Depends(r
         "message": f"Wachtwoord gereset voor {target_user.get('company_name', data.email)}",
         "email": target_user["email"]
     }
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.post("/auth/change-password")
+async def change_own_password(data: ChangePasswordRequest, user: dict = Depends(get_current_user)):
+    """Gebruiker kan eigen wachtwoord wijzigen"""
+    # Get full user data with password hash
+    full_user = await db.users.find_one({"id": user["id"]})
+    if not full_user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    
+    # Verify current password
+    if not verify_password(data.current_password, full_user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Huidig wachtwoord is onjuist")
+    
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Nieuw wachtwoord moet minimaal 6 tekens zijn")
+    
+    # Hash and save new password
+    new_hash = hash_password(data.new_password)
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    return {"message": "Wachtwoord succesvol gewijzigd"}
 
 @api_router.put("/dealers/{dealer_id}/toggle-offline")
 async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_admin)):
@@ -4102,22 +5222,21 @@ async def toggle_dealer_offline(dealer_id: str, user: dict = Depends(require_adm
                         "tag": "account-online"
                     })
                     
-                    # Note: webpush functionality disabled - requires pywebpush package
-                    # webpush(
-                    #     subscription_info=subscription_info,
-                    #     data=payload,
-                    #     vapid_private_key=get_vapid_private_key(),
-                    #     vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
-                    # )
+                    webpush(
+                        subscription_info=subscription_info,
+                        data=payload,
+                        vapid_private_key=get_vapid_private_key(),
+                        vapid_claims={"sub": VAPID_CLAIMS_EMAIL}
+                    )
                     push_sent += 1
-                    logger.info(f"[ONLINE PUSH] Would send to endpoint: {sub['endpoint'][:50]}...")
+                    print(f"[ONLINE PUSH] Successfully sent to endpoint: {sub['endpoint'][:50]}...")
                 except Exception as push_error:
                     push_failed += 1
-                    logger.error(f"[ONLINE PUSH] Failed to send: {push_error}")
+                    print(f"[ONLINE PUSH] Failed to send: {push_error}")
             
-            logger.info(f"[ONLINE PUSH] Result: {push_sent} sent, {push_failed} failed")
+            print(f"[ONLINE PUSH] Result: {push_sent} sent, {push_failed} failed")
         except Exception as e:
-            logger.error(f"[ONLINE PUSH] Error: {e}")
+            print(f"[ONLINE PUSH] Error: {e}")
     
         return {
             "message": f"Dealer {dealer['company_name']} is nu {status_text}",
@@ -5087,7 +6206,7 @@ Moto Import
                 logger.error(f"Failed to send invoice email: {e}")
         
         # Also notify all admins
-        if ADMIN_EMAILS_FULL and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
+        if ADMIN_EMAILS and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
             items_list = "\n".join([f"- {item['part_name']} x{item['quantity']} (€{item['price'] * item['quantity']:.2f})" for item in order_items])
             admin_body = f"""
 Nieuwe onderdelen bestelling ontvangen!
@@ -5680,10 +6799,6 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
 
 # Include the router
 app.include_router(api_router)
-
-# Include modular routers
-app.include_router(auth_router, prefix="/api")
-app.include_router(dealers_router, prefix="/api")
 
 # Mount static files for uploads AFTER router (via /api/uploads)
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
