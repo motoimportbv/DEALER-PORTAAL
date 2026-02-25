@@ -3817,7 +3817,11 @@ async def delete_admin_notifications(user: dict = Depends(require_admin)):
     return {"message": "All admin notifications deleted"}
 
 @api_router.get("/admin/activity-stats")
-                    <p>Dear {dealer.get('contact_person', dealer['company_name'])},</p>
+async def get_activity_stats(user: dict = Depends(require_admin)):
+    """Get dealer activity statistics for admin dashboard"""
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
                     <p>Your supplier account at <strong>Moto Import</strong> has been approved!</p>
                     <p>You can now log in and submit motorcycles for sale to our dealer network.</p>
                     
