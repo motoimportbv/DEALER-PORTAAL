@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from './NotificationBell';
+import AdminActivityBell from './AdminActivityBell';
 import LanguageSelector from './LanguageSelector';
 import ChangePasswordModal from './ChangePasswordModal';
 import axios from 'axios';
