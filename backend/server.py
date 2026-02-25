@@ -3772,7 +3772,9 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
 
 
 @api_router.delete("/notifications/all")
-    base_url = PRODUCTION_BASE_URL
+async def delete_all_notifications(user: dict = Depends(get_current_user)):
+    await db.notifications.delete_many({"user_id": user["id"]})
+    return {"message": "All notifications deleted"}
     login_url = f"{base_url}/login"
     
     # Buitenlandse dealers krijgen GEEN voucher
