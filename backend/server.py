@@ -3777,8 +3777,11 @@ async def delete_all_notifications(user: dict = Depends(get_current_user)):
     return {"message": "All notifications deleted"}
 
 @api_router.delete("/notifications/{notification_id}")
-    
-    # Buitenlandse dealers krijgen GEEN voucher
+async def delete_notification(notification_id: str, user: dict = Depends(get_current_user)):
+    result = await db.notifications.delete_one({"id": notification_id, "user_id": user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"message": "Notification deleted"}
     if is_foreign:
         # Email voor buitenlandse dealer (zonder voucher)
         try:
