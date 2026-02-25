@@ -2373,6 +2373,47 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
     
+    # Track dealer view activity (only for non-admin users)
+    if user.get("role") != "admin":
+        try:
+            # Log the view
+            view_log = {
+                "id": str(uuid.uuid4()),
+                "type": "motorcycle_view",
+                "dealer_id": user["id"],
+                "dealer_name": user.get("company_name", user.get("email", "Unknown")),
+                "motorcycle_id": motorcycle_id,
+                "motorcycle_brand": motorcycle.get("brand", ""),
+                "motorcycle_model": motorcycle.get("model", ""),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            await db.activity_logs.insert_one(view_log)
+            
+            # Create admin notification (limit to 1 per dealer per motorcycle per hour)
+            one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+            recent_notification = await db.admin_notifications.find_one({
+                "type": "dealer_view",
+                "dealer_id": user["id"],
+                "motorcycle_id": motorcycle_id,
+                "created_at": {"$gte": one_hour_ago}
+            })
+            
+            if not recent_notification:
+                admin_notification = {
+                    "id": str(uuid.uuid4()),
+                    "type": "dealer_view",
+                    "title": f"Motor Bekeken",
+                    "message": f"{user.get('company_name', 'Dealer')} heeft {motorcycle.get('brand')} {motorcycle.get('model')} bekeken",
+                    "dealer_id": user["id"],
+                    "dealer_name": user.get("company_name", user.get("email")),
+                    "motorcycle_id": motorcycle_id,
+                    "is_read": False,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.admin_notifications.insert_one(admin_notification)
+        except Exception as e:
+            logger.error(f"Failed to log activity: {e}")
+    
     # Add default starting_price if missing
     if "starting_price" not in motorcycle or motorcycle["starting_price"] is None:
         motorcycle["starting_price"] = motorcycle.get("price", 0) * 0.8
