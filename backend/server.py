@@ -3822,7 +3822,11 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
     from datetime import timedelta
     
     now = datetime.now(timezone.utc)
-                    <p>Your supplier account at <strong>Moto Import</strong> has been approved!</p>
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    week_ago = (now - timedelta(days=7)).isoformat()
+    
+    # Views today
+    views_today = await db.activity_logs.count_documents({
                     <p>You can now log in and submit motorcycles for sale to our dealer network.</p>
                     
                     <div style="text-align: center; margin: 30px 0;">
