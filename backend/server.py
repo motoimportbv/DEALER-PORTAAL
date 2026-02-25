@@ -5062,6 +5062,101 @@ async def delete_notification(notification_id: str, user: dict = Depends(get_cur
     return {"message": "Notification deleted"}
 
 
+# ============ ADMIN ACTIVITY TRACKING ENDPOINTS ============
+
+@api_router.get("/admin/activity-notifications")
+async def get_admin_notifications(user: dict = Depends(require_admin)):
+    """Get admin notifications for dealer activity"""
+    notifications = await db.admin_notifications.find(
+        {},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return notifications
+
+@api_router.get("/admin/activity-notifications/unread-count")
+async def get_admin_unread_count(user: dict = Depends(require_admin)):
+    """Get unread admin notification count"""
+    count = await db.admin_notifications.count_documents({"is_read": False})
+    return {"count": count}
+
+@api_router.put("/admin/activity-notifications/read-all")
+async def mark_admin_notifications_read(user: dict = Depends(require_admin)):
+    """Mark all admin notifications as read"""
+    await db.admin_notifications.update_many(
+        {"is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "All notifications marked as read"}
+
+@api_router.delete("/admin/activity-notifications/all")
+async def delete_admin_notifications(user: dict = Depends(require_admin)):
+    """Delete all admin notifications"""
+    await db.admin_notifications.delete_many({})
+    return {"message": "All admin notifications deleted"}
+
+@api_router.get("/admin/activity-stats")
+async def get_activity_stats(user: dict = Depends(require_admin)):
+    """Get dealer activity statistics for admin dashboard"""
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    week_ago = (now - timedelta(days=7)).isoformat()
+    
+    # Views today
+    views_today = await db.activity_logs.count_documents({
+        "type": "motorcycle_view",
+        "timestamp": {"$gte": today_start}
+    })
+    
+    # Views this week
+    views_week = await db.activity_logs.count_documents({
+        "type": "motorcycle_view",
+        "timestamp": {"$gte": week_ago}
+    })
+    
+    # Most viewed motorcycles (last 7 days)
+    pipeline = [
+        {"$match": {"type": "motorcycle_view", "timestamp": {"$gte": week_ago}}},
+        {"$group": {
+            "_id": "$motorcycle_id",
+            "brand": {"$first": "$motorcycle_brand"},
+            "model": {"$first": "$motorcycle_model"},
+            "views": {"$sum": 1}
+        }},
+        {"$sort": {"views": -1}},
+        {"$limit": 5}
+    ]
+    top_motorcycles = await db.activity_logs.aggregate(pipeline).to_list(5)
+    
+    # Most active dealers (last 7 days)
+    dealer_pipeline = [
+        {"$match": {"type": "motorcycle_view", "timestamp": {"$gte": week_ago}}},
+        {"$group": {
+            "_id": "$dealer_id",
+            "dealer_name": {"$first": "$dealer_name"},
+            "views": {"$sum": 1}
+        }},
+        {"$sort": {"views": -1}},
+        {"$limit": 5}
+    ]
+    top_dealers = await db.activity_logs.aggregate(dealer_pipeline).to_list(5)
+    
+    # Recent activity (last 10)
+    recent_activity = await db.activity_logs.find(
+        {"type": "motorcycle_view"},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(10)
+    
+    return {
+        "views_today": views_today,
+        "views_week": views_week,
+        "top_motorcycles": top_motorcycles,
+        "top_dealers": top_dealers,
+        "recent_activity": recent_activity
+    }
+
+
 # ============ AI WELCOME MESSAGE ENDPOINTS ============
 
 async def generate_welcome_message(dealer_name: str, new_motorcycles: list) -> str:
