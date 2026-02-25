@@ -80,9 +80,18 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("user_id")
         
-        user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0, "password_hash": 0})
         if not user:
             raise HTTPException(status_code=401, detail="Gebruiker niet gevonden")
+        
+        # Update last_active timestamp for activity tracking (fire-and-forget)
+        try:
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$set": {"last_active": datetime.now(timezone.utc).isoformat()}}
+            )
+        except Exception:
+            pass  # Non-critical, don't break the request
         
         return user
     except jwt.ExpiredSignatureError:
