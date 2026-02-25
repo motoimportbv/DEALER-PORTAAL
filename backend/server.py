@@ -3891,6 +3891,69 @@ async def optimize_all_images(user: dict = Depends(require_admin), batch_size: i
         logger.error(f"Optimize-all endpoint error: {e}")
         return {"message": "Error", "error": str(e), "optimized": 0, "remaining": -1}
 
+@api_router.post("/images/migrate-to-cloud")
+async def migrate_images_to_cloud(user: dict = Depends(require_admin), batch_size: int = 5):
+    """Migrate existing MongoDB images to cloud storage for faster delivery"""
+    import base64
+    
+    if not init_storage():
+        return {"message": "Cloud storage not available", "migrated": 0}
+    
+    # Get images not yet migrated
+    images = await db.images.find(
+        {"cloud_stored": {"$ne": True}, "data": {"$exists": True}},
+        {"id": 1, "data": 1, "thumbnail": 1, "_id": 0}
+    ).to_list(batch_size)
+    
+    total_remaining = await db.images.count_documents({"cloud_stored": {"$ne": True}, "data": {"$exists": True}})
+    
+    migrated = 0
+    errors = 0
+    
+    for img in images:
+        try:
+            image_id = img["id"]
+            
+            # Upload full image
+            full_data = base64.b64decode(img["data"])
+            full_path = f"{APP_NAME}/images/{image_id}.jpg"
+            put_object(full_path, full_data, "image/jpeg")
+            
+            # Upload thumbnail if exists
+            thumb_path = None
+            if img.get("thumbnail"):
+                thumb_data = base64.b64decode(img["thumbnail"])
+                thumb_path = f"{APP_NAME}/thumbs/{image_id}.jpg"
+                put_object(thumb_path, thumb_data, "image/jpeg")
+            
+            # Update database - mark as cloud stored and remove base64 data
+            await db.images.update_one(
+                {"id": image_id},
+                {
+                    "$set": {
+                        "cloud_stored": True,
+                        "storage_path": full_path,
+                        "thumb_path": thumb_path
+                    },
+                    "$unset": {"data": "", "thumbnail": ""}
+                }
+            )
+            
+            migrated += 1
+            logger.info(f"Migrated image {image_id} to cloud")
+            
+        except Exception as e:
+            logger.error(f"Failed to migrate image {img.get('id')}: {e}")
+            errors += 1
+    
+    return {
+        "message": "Migratie batch voltooid",
+        "migrated": migrated,
+        "errors": errors,
+        "remaining": max(0, total_remaining - migrated),
+        "batch_size": batch_size
+    }
+
 @api_router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
     """Upload multiple images and store in MongoDB - with compression"""
