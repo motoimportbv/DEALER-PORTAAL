@@ -1,23 +1,17 @@
-# Authentication service - JWT token handling
+# Authentication Service
+# JWT token handling, password hashing, user dependencies
 
 import os
 import jwt
 import bcrypt
+import logging
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pathlib import Path
-from dotenv import load_dotenv
+from config import JWT_SECRET, JWT_ALGORITHM
+from database import db
 
-ROOT_DIR = Path(__file__).parent.parent
-load_dotenv(ROOT_DIR / '.env')
-
-# JWT Config
-JWT_SECRET = os.environ.get('JWT_SECRET')
-if not JWT_SECRET:
-    raise ValueError("JWT_SECRET environment variable is required")
-JWT_ALGORITHM = "HS256"
-
+logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 
@@ -32,12 +26,33 @@ def verify_password(password: str, hashed: str) -> bool:
 
 
 def create_token(user_id: str, email: str, role: str) -> str:
-    """Create a JWT token for a user"""
+    """Create a JWT token for a user (7 day expiry)"""
     payload = {
         "user_id": user_id,
         "email": email,
         "role": role,
-        "exp": datetime.now(timezone.utc) + timedelta(days=7)
+        "exp": (datetime.now(timezone.utc) + timedelta(days=7)).timestamp()
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def create_notification_token(user_id: str, email: str, role: str) -> str:
+    """Create a short-lived JWT token for email notification links (24 hours)"""
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "role": role,
+        "exp": (datetime.now(timezone.utc) + timedelta(hours=24)).timestamp()
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def create_permanent_login_token(user_id: str) -> str:
+    """Create a permanent login token (no expiry, for bookmarked links)"""
+    payload = {
+        "user_id": user_id,
+        "type": "permanent",
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -52,24 +67,53 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Ongeldig token")
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """Get current user from JWT token - use as FastAPI dependency"""
-    from models.database import db
-    
-    payload = decode_token(credentials.credentials)
-    user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
-    
-    if not user:
-        raise HTTPException(status_code=401, detail="Gebruiker niet gevonden")
-    
-    return user
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="Gebruiker niet gevonden")
+        
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token verlopen")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Ongeldig token")
 
 
-async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current user and verify they are admin"""
-    user = await get_current_user(credentials)
-    
+async def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    """Require admin role - use as FastAPI dependency"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin rechten vereist")
-    
     return user
+
+
+async def require_approved_dealer(user: dict = Depends(get_current_user)) -> dict:
+    """Require approved dealer - use as FastAPI dependency"""
+    if user.get("role") not in ["dealer", "admin"]:
+        raise HTTPException(status_code=403, detail="Dealer rechten vereist")
+    if user.get("role") == "dealer" and not user.get("is_approved"):
+        raise HTTPException(status_code=403, detail="Account wacht op goedkeuring")
+    return user
+
+
+async def require_foreign_dealer(user: dict = Depends(get_current_user)) -> dict:
+    """Require foreign dealer role - use as FastAPI dependency"""
+    if user.get("role") != "foreign_dealer":
+        raise HTTPException(status_code=403, detail="Buitenlandse leverancier rechten vereist")
+    if not user.get("is_approved"):
+        raise HTTPException(status_code=403, detail="Account wacht op goedkeuring")
+    return user
+
+
+def generate_short_code() -> str:
+    """Generate a short alphanumeric code for easy login"""
+    import random
+    import string
+    chars = string.ascii_uppercase + string.digits
+    # Remove confusing characters
+    chars = chars.replace('O', '').replace('0', '').replace('I', '').replace('1', '').replace('L', '')
+    return ''.join(random.choice(chars) for _ in range(6))
