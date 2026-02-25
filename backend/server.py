@@ -3836,8 +3836,20 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
         "type": "motorcycle_view",
         "timestamp": {"$gte": week_ago}
     })
-                    
-                    <div style="text-align: center; margin: 30px 0;">
+    
+    # Most viewed motorcycles (last 7 days)
+    pipeline = [
+        {"$match": {"type": "motorcycle_view", "timestamp": {"$gte": week_ago}}},
+        {"$group": {
+            "_id": "$motorcycle_id",
+            "brand": {"$first": "$motorcycle_brand"},
+            "model": {"$first": "$motorcycle_model"},
+            "views": {"$sum": 1}
+        }},
+        {"$sort": {"views": -1}},
+        {"$limit": 5}
+    ]
+    top_motorcycles = await db.activity_logs.aggregate(pipeline).to_list(5)
                         <a href="{login_url}" 
                            style="display: inline-block; background: #DC2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                             Login Now
