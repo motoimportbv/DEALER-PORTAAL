@@ -83,6 +83,7 @@ from models import (
 
 # Routers - Modulaire route handlers
 from routers.auth import router as auth_router
+from routers.dealers import router as dealers_router
 
 # Legacy imports for backwards compatibility (still needed in some routes)
 import bcrypt
