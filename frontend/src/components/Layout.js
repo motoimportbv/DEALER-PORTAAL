@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import WhatsAppButton from './WhatsAppButton';
 import LanguageSelector from './LanguageSelector';
 import NotificationBell from './NotificationBell';
+import AdminActivityBell from './AdminActivityBell';
 import { AlertCircle, RefreshCw, Bike, LogOut, Menu, X, LayoutDashboard, ShoppingCart, Plus, Wrench, CreditCard, Globe } from 'lucide-react';
 import { Button } from './ui/button';
 
