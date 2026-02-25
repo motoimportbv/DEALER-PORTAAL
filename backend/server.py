@@ -3755,7 +3755,12 @@ async def get_unread_count(user: dict = Depends(get_current_user)):
     return {"count": count}
 
 @api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user: dict = Depends(get_current_user)):
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": user["id"]},
+        {"$set": {"is_read": True}}
     )
+    return {"message": "Notification marked as read"}
     
     # Check of het een buitenlandse dealer is
     is_foreign = dealer.get("is_foreign_dealer", False)
