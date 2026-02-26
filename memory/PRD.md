@@ -1,34 +1,72 @@
 # Moto Import - Motorcycle Dealer Platform
 
+## Original Problem Statement
+A comprehensive application for a motorcycle dealership network "Moto Import". The platform supports an Admin who manages inventory and users, and two types of dealers: local Dealers who can buy, and Foreign Dealers who act as suppliers.
+
+---
+
 ## Backend Refactoring Status (25 February 2025)
 
-### ✅ Fase 1 - Compleet & Werkend
-Nieuwe modulaire bestanden aangemaakt:
-- `config.py` (84 regels) - Environment variables
-- `database.py` (37 regels) - MongoDB connectie  
-- `services/` (486 regels totaal)
-  - `auth_service.py` - JWT, passwords, dependencies
-  - `email_service.py` - Gmail SMTP
-  - `sms_service.py` - Twilio
-  - `storage_service.py` - Emergent Object Storage
-  - `currency_service.py` - CHF/EUR conversie
-- `models/schemas.py` (554 regels) - Alle Pydantic models
+### ✅ Fase 1 - Modules Geëxtraheerd (Klaar voor gebruik)
 
-### ⚠️ Fase 2 - Router Extractie (In Progress)
-Router bestanden aangemaakt maar nog niet geïntegreerd:
-- `routers/auth.py` (533 regels) - 15 auth endpoints
-- `routers/dealers.py` (345 regels) - Dealer management
+Nieuwe modulaire bestanden aangemaakt en werkend:
 
-**Reden gestopt**: Route extractie veroorzaakte syntax errors door complexe HTML email templates in de code. Een veiligere aanpak is nodig.
+| Bestand | Regels | Beschrijving |
+|---------|--------|--------------|
+| `config.py` | 84 | Environment variables, constanten |
+| `database.py` | 37 | MongoDB connectie |
+| `services/auth_service.py` | 136 | JWT, passwords, user dependencies |
+| `services/email_service.py` | 99 | Gmail SMTP |
+| `services/sms_service.py` | 55 | Twilio SMS |
+| `services/storage_service.py` | 65 | Emergent Object Storage |
+| `services/currency_service.py` | 86 | CHF/EUR conversie |
+| `models/schemas.py` | 554 | Alle Pydantic models |
 
-### 📋 Volgende Stappen voor Refactoring
+**Totaal nieuwe modulaire code: 1116 regels**
 
-**Aanbevolen aanpak voor verdere refactoring:**
+### 📋 Router Bestanden (Aangemaakt, nog niet geïntegreerd)
 
-1. **Test eerst**: Importeer de nieuwe modules in server.py zonder routes te verwijderen
-2. **Geleidelijke migratie**: Verwijder per route één voor één na succesvolle test
-3. **Email templates**: Verplaats HTML templates naar aparte bestanden/functies
-4. **Backup strategie**: Git commit na elke succesvolle stap
+| Bestand | Regels | Endpoints |
+|---------|--------|-----------|
+| `routers/auth.py` | 533 | 15 auth endpoints |
+| `routers/dealers.py` | 345 | 10 dealer endpoints |
+
+### 🔄 Geleidelijke Migratie Plan
+
+De modules zijn klaar. Integratie kan later stap voor stap:
+
+1. **Week 1-2**: Test modules in development
+2. **Week 3-4**: Vervang auth functies door services imports
+3. **Week 5-6**: Vervang routes door router imports
+4. **Week 7-8**: Verwijder dubbele code, cleanup
+
+---
+
+## Huidige Backend Structuur
+
+```
+/app/backend/
+├── server.py              # 6922 regels (main server - ongewijzigd)
+├── config.py              # ✅ Nieuw - environment config
+├── database.py            # ✅ Nieuw - MongoDB connectie
+│
+├── services/              # ✅ Nieuw - herbruikbare services
+│   ├── __init__.py
+│   ├── auth_service.py
+│   ├── email_service.py
+│   ├── sms_service.py
+│   ├── storage_service.py
+│   └── currency_service.py
+│
+├── models/                # ✅ Nieuw - Pydantic schemas
+│   ├── __init__.py
+│   └── schemas.py
+│
+└── routers/               # ⏳ Aangemaakt, nog niet actief
+    ├── __init__.py
+    ├── auth.py
+    └── dealers.py
+```
 
 ---
 
@@ -42,11 +80,19 @@ Router bestanden aangemaakt maar nog niet geïntegreerd:
 
 ---
 
-## Volgende Taken (P1)
-1. Veiligere route extractie methode implementeren
-2. WhatsApp notificaties
+## Upcoming Tasks
 
-## Toekomstige Taken (P2)
-1. Marketing bestanden migreren
-2. Flyers download pagina
-3. Dealer analytics
+### P1 - High Priority
+1. **WhatsApp Notificaties** - Automatische berichten naar dealers
+2. **Verdere Router Integratie** - Geleidelijk routes migreren
+
+### P2 - Medium Priority
+1. Marketing bestanden migreren naar permanente opslag
+2. Flyers download pagina maken
+3. Dealer analytics (conversie tracking)
+
+---
+
+## Known Issues
+- AI Welcome Message niet actief (Emergent LLM Key budget overschreden)
+- webpush code uitgeschakeld (package niet geïnstalleerd)
