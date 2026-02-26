@@ -316,7 +316,7 @@ const MotorcycleDetail = () => {
             )}
           </div>
           <p className="text-sm text-zinc-400 mt-8">
-            Heeft u vragen? Neem contact op: +31 6 81792660
+            Heeft u vragen? Neem contact op: +31 6 24264861
           </p>
         </div>
       </Wrapper>

@@ -108,7 +108,7 @@ const TermsModal = ({ isOpen, onAccept, token }) => {
               <p className="text-zinc-600 text-sm">
                 <strong>Moto Import B.V.</strong><br/>
                 KvK: 94622086<br/>
-                Tel: +31 6 81792660<br/>
+                Tel: +31 6 24264861<br/>
                 www.motoimportbv.nl
               </p>
             </div>

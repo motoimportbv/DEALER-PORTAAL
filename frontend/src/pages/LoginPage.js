@@ -312,7 +312,7 @@ const LoginPage = () => {
           </p>
           <div className="text-sm text-zinc-400 space-y-1">
             <p className="font-semibold text-zinc-300">Moto Import B.V.</p>
-            <p>Tel: +31 6 81792660</p>
+            <p>Tel: +31 6 24264861</p>
             <p>Motoimportbv@gmail.com</p>
             <p>www.motoimportbv.nl</p>
           </div>

@@ -61,7 +61,7 @@ const EmailNotificationBanner = ({ userEmail }) => {
             </p>
             <div className="mt-2 bg-white rounded-lg p-3 border border-blue-200">
               <p className="text-sm font-medium text-gray-800">📱 Sla dit nummer op in uw contacten:</p>
-              <p className="text-lg font-bold text-blue-600 mt-1">+1 765-681-4620</p>
+              <p className="text-lg font-bold text-blue-600 mt-1">+31 6 24264861</p>
               <p className="text-xs text-gray-500 mt-1">Opslaan als "Moto Import"</p>
             </div>
           </div>

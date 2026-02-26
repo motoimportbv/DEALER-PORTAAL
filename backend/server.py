@@ -126,7 +126,7 @@ GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 EMAIL_FOOTER_DEALER = """
     <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
         <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
     </div>
 """
@@ -136,7 +136,7 @@ EMAIL_FOOTER_SUPPLIER = """
     <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
         <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
     </div>
 """
@@ -2189,7 +2189,7 @@ async def send_pending_motorcycle_emails():
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                     <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                    <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
                     <p style="margin: 10px 0; font-size: 11px; color: #6b7280;">U ontvangt maximaal 3 emails per dag</p>
                 </div>
             </div>
@@ -3222,7 +3222,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
             <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
             <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-            <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+            <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
         </div>
     </div>
     """
@@ -3290,7 +3290,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                         <td style="width: 50%; vertical-align: top;">
                             <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>AFZENDER</strong></p>
                             <p style="margin: 0; font-weight: bold; font-size: 16px;">Moto Import B.V.</p>
-                            <p style="margin: 10px 0 0 0; color: #52525b;">Tel: +31 6 81792660</p>
+                            <p style="margin: 10px 0 0 0; color: #52525b;">Tel: +31 6 24264861</p>
                             <p style="margin: 5px 0; color: #52525b;">Motoimportbv@gmail.com</p>
                             <p style="margin: 5px 0; color: #52525b;">www.motoimportbv.nl</p>
                         </td>
@@ -3647,7 +3647,7 @@ async def get_payment_status(session_id: str, user: dict = Depends(require_appro
                             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                                 <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                                <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
                             </div>
                         </div>
                         """
@@ -4821,7 +4821,7 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             <div style="text-align: center; padding: 20px; background: #f4f4f5; border-radius: 8px;">
                 <p style="margin: 0 0 10px 0; font-weight: bold;">Moto Import B.V.</p>
                 
-                <p style="margin: 5px 0; color: #666;">📞 +31 6 81792660 | ✉️ motoimportbv@gmail.com</p>
+                <p style="margin: 5px 0; color: #666;">📞 +31 6 24264861 | ✉️ motoimportbv@gmail.com</p>
                 <p style="margin: 5px 0; color: #666;">🌐 www.motoimportbv.nl</p>
             </div>
         </div>
@@ -4898,7 +4898,7 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             </div>
             
             <div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
-                <p>Moto Import B.V. | +31 6 81792660 | motoimportbv@gmail.com</p>
+                <p>Moto Import B.V. | +31 6 24264861 | motoimportbv@gmail.com</p>
             </div>
         </div>
         """
@@ -4984,7 +4984,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                     <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                    <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
                 </div>
             </div>
             """
@@ -5055,7 +5055,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                 <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
             </div>
         </div>
         """
@@ -6349,7 +6349,7 @@ ABOUT_US_HTML = """
         <li>✓ Persoonlijke service</li>
     </ul>
     <p style="color: #666; font-size: 14px; margin-bottom: 0;">
-        <strong>Contact:</strong> +31 6 81792660 | info@motoimportbv.nl<br>
+        <strong>Contact:</strong> +31 6 24264861 | info@motoimportbv.nl<br>
         <strong>Adres:</strong> Horsterhoekweg 11, 7433 SV Schalkhaar, Nederland
     </p>
 </div>
@@ -6424,7 +6424,7 @@ async def send_bulk_email(data: BulkEmailRequest, user: dict = Depends(require_a
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
             <p><strong>Moto Import BV</strong></p>
             <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
-            <p>Tel: +31 6 81792660 | www.motoimportbv.nl</p>
+            <p>Tel: +31 6 24264861 | www.motoimportbv.nl</p>
         </div>
     </body>
     </html>

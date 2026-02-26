@@ -129,7 +129,7 @@ const Pakbon = () => {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{t('pakbon.sender')}</h3>
                 <div className="text-sm">
                   <p className="font-bold text-lg">Moto Import B.V.</p>
-                  <p className="text-zinc-600">Tel: +31 6 81792660</p>
+                  <p className="text-zinc-600">Tel: +31 6 24264861</p>
                   <p className="text-zinc-600">Email: Motoimportbv@gmail.com</p>
                   <p className="text-zinc-600">www.motoimportbv.nl</p>
                 </div>
@@ -275,7 +275,7 @@ const Pakbon = () => {
             {/* Footer */}
             <div className="mt-12 pt-6 border-t border-zinc-200 text-center text-xs text-zinc-400">
               <p>Moto Import B.V. | KVK: 94622086 | BTW: NL123456789B01</p>
-              <p>+31 6 81792660 | Motoimportbv@gmail.com | www.motoimportbv.nl</p>
+              <p>+31 6 24264861 | Motoimportbv@gmail.com | www.motoimportbv.nl</p>
             </div>
           </div>
         </div>

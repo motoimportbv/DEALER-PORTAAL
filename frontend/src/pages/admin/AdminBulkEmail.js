@@ -30,7 +30,7 @@ Mit freundlichen Grüßen,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660`
+📞 +31 6 24264861`
   },
   fr: {
     flag: '🇫🇷',
@@ -53,7 +53,7 @@ Cordialement,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660`
+📞 +31 6 24264861`
   },
   it: {
     flag: '🇮🇹',
@@ -76,7 +76,7 @@ Cordiali saluti,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660`
+📞 +31 6 24264861`
   },
   nl: {
     flag: '🇳🇱',
@@ -99,7 +99,7 @@ Met vriendelijke groet,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660`
+📞 +31 6 24264861`
   }
 };
 

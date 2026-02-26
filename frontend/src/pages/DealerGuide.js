@@ -515,7 +515,7 @@ const DealerGuide = () => {
             <p className="text-zinc-700 mb-4">{c.contactText}</p>
             <div className="space-y-2 text-zinc-800">
               <p><strong>Moto Import B.V.</strong></p>
-              <p>Tel: +31 6 81792660</p>
+              <p>Tel: +31 6 24264861</p>
               <p>Email: motoimportbv@gmail.com</p>
               <p>www.motoimportbv.nl</p>
             </div>
