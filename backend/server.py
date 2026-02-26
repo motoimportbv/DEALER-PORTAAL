@@ -2345,6 +2345,15 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
 @api_router.get("/motorcycles/with-exchange-rate")
 async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approved_dealer)):
     """Get motorcycles with real-time CHF to EUR conversion for foreign listings"""
+    # SECURITY: Foreign dealers can only see their own motorcycles
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
+    if is_foreign_dealer:
+        own_motorcycles = await db.motorcycles.find(
+            {"foreign_dealer_id": user.get("id")}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(100)
+        return {"motorcycles": own_motorcycles, "exchange_rate": {"CHF_EUR": 0.95}, "margin_percent": 0}
+    
     # Sort by created_at descending (newest first)
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
