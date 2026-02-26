@@ -23,6 +23,17 @@ import json
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 from twilio.rest import Client as TwilioClient
 
+# =============================================================================
+# REFACTORED MODULES (beschikbaar voor geleidelijke migratie)
+# Deze modules bevatten geëxtraheerde code die later kan worden gebruikt
+# om de bestaande code te vervangen. Voorlopig blijft de oude code actief.
+# =============================================================================
+# from config import PRODUCTION_BASE_URL, JWT_SECRET, ADMIN_EMAILS_FULL  # etc.
+# from database import db  # MongoDB connectie
+# from services import hash_password, send_email, get_chf_to_eur_rate  # etc.
+# from models import User, Motorcycle, Order  # etc.
+# =============================================================================
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
