@@ -259,6 +259,22 @@ const DealerDashboard = () => {
         token={token} 
       />
       
+      {/* Price Disclaimer Banner */}
+      <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+            <span className="text-xl">💡</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-amber-900 mb-1">Belangrijk over onze prijzen</h3>
+            <p className="text-amber-800 text-sm leading-relaxed">
+              Niet alle motoren zijn altijd even goed qua prijs. Wij als <strong>Moto Import B.V.</strong> proberen altijd de beste prijzen voor onze klanten te realiseren. 
+              Heeft u vragen over een specifieke motor? Neem gerust contact met ons op!
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <div className="content-header">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
