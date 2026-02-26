@@ -2274,9 +2274,15 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     chf_eur_rate = await get_chf_to_eur_rate()
     margin = await get_chf_eur_margin()
     
-    # Check if user is admin
+    # Check user role
     is_admin = user.get("role") == "admin"
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
     user_id = user.get("id")
+    
+    # SECURITY: Foreign dealers can ONLY see their own motorcycles
+    if is_foreign_dealer:
+        own_motorcycles = [m for m in motorcycles if m.get("foreign_dealer_id") == user_id]
+        return own_motorcycles
     
     # Filter motorcycles based on visibility (admin sees all)
     filtered_motorcycles = []
