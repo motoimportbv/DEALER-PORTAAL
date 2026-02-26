@@ -2391,6 +2391,11 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
 
 @api_router.get("/motorcycles/available")
 async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
+    # SECURITY: Foreign dealers cannot access available motorcycles list
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
+    if is_foreign_dealer:
+        raise HTTPException(status_code=403, detail="Leveranciers hebben geen toegang tot de catalogus")
+    
     # For dealers, exclude their own listings from the available motorcycles
     query = {"is_available": True}
     if user["role"] == "dealer":
