@@ -37,7 +37,7 @@ Met vriendelijke groet,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660
+📞 +31 6 24264861
 🌐 www.motoimportbv.nl
 
 Horsterhoekweg 11
@@ -81,7 +81,7 @@ Mit freundlichen Grüßen,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660
+📞 +31 6 24264861
 🌐 www.motoimportbv.nl
 
 Horsterhoekweg 11
@@ -125,7 +125,7 @@ Cordialement,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660
+📞 +31 6 24264861
 🌐 www.motoimportbv.nl
 
 Horsterhoekweg 11
@@ -169,7 +169,7 @@ Cordiali saluti,
 
 Moto Import B.V.
 📧 motoimportbv@gmail.com
-📞 +31 6 81792660
+📞 +31 6 24264861
 🌐 www.motoimportbv.nl
 
 Horsterhoekweg 11

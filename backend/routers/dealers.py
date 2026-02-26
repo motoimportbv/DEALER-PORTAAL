@@ -119,7 +119,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                     <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                    <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
                 </div>
             </div>
             """
@@ -186,7 +186,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                 <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
             </div>
         </div>
         """

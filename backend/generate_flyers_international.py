@@ -42,7 +42,7 @@ class DealerFlyer(FPDF):
         self.set_font('Helvetica', '', 9)
         self.set_text_color(255, 255, 255)
         self.set_xy(15, 277)
-        self.cell(0, 5, 'Moto Import B.V.  |  Horsterhoekweg 11, 7433 SV Schalkhaar  |  +31 6 81792660', align='C')
+        self.cell(0, 5, 'Moto Import B.V.  |  Horsterhoekweg 11, 7433 SV Schalkhaar  |  +31 6 24264861', align='C')
         self.set_xy(15, 283)
         self.cell(0, 5, 'www.motoimportbv.nl  |  motoimportbv@gmail.com', align='C')
     
