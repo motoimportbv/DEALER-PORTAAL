@@ -2541,8 +2541,14 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
     
-    # Track dealer view activity (only for non-admin users)
-    if user.get("role") != "admin":
+    # SECURITY: Foreign dealers can only see their own motorcycles
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
+    if is_foreign_dealer:
+        if motorcycle.get("foreign_dealer_id") != user.get("id"):
+            raise HTTPException(status_code=403, detail="U heeft geen toegang tot deze motor")
+    
+    # Track dealer view activity (only for Dutch dealers, not admins or foreign dealers)
+    if user.get("role") != "admin" and not is_foreign_dealer:
         try:
             # Log the view
             view_log = {
