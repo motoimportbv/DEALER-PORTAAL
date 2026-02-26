@@ -40,6 +40,15 @@ const DealerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPriceDisclaimer, setShowPriceDisclaimer] = useState(() => {
+    // Check if user has dismissed the banner in this session
+    return sessionStorage.getItem('hidePriceDisclaimer') !== 'true';
+  });
+
+  const dismissPriceDisclaimer = () => {
+    setShowPriceDisclaimer(false);
+    sessionStorage.setItem('hidePriceDisclaimer', 'true');
+  };
 
   // Get unique brands with count
   const brandsWithCount = useMemo(() => {
