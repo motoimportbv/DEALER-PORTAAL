@@ -3348,6 +3348,9 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                     <td style="padding: 12px; border: 1px solid #e4e4e7; color: #DC2626; font-weight: bold; font-size: 18px;">€{total_price:,.2f}</td>
                 </tr>
             </table>
+            
+            <!-- Supplier/Source Info -->
+            {supplier_info_html}
         </div>
         
         <!-- PAKBON -->
