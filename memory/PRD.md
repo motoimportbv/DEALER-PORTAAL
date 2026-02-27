@@ -5,7 +5,25 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ---
 
-## Backend Refactoring Status (25 February 2025)
+## ✅ Voltooid - Real-Time Update Systeem (27 februari 2025)
+
+### Wat is geïmplementeerd:
+- **DataRefreshProvider** - Globale context voor auto-refresh via polling (elke 30 seconden)
+- **Toast Notificatie Bug Fix** - Toasts worden nu ALLEEN getoond bij echte nieuwe notificaties, niet bij elke poll
+- **Pagina's met Auto-Refresh**:
+  - `DealerDashboard.js` ✅
+  - `DealerOrders.js` ✅
+  - `ForeignDealerDashboard.js` ✅
+
+### Technische Details:
+- `isFirstCheck` ref voorkomt toast bij initiële page load
+- `lastCountRef` trackt notification count om stale closure issues te voorkomen
+- Handmatige "Vernieuwen" knop op alle pagina's
+- Visibility change listener refresh data wanneer tab weer actief wordt
+
+---
+
+## Backend Refactoring Status (25 februari 2025)
 
 ### ✅ Fase 1 - Modules Geëxtraheerd (Klaar voor gebruik)
 
@@ -82,9 +100,13 @@ De modules zijn klaar. Integratie kan later stap voor stap:
 
 ## Upcoming Tasks
 
+### P0 - Critical
+1. **DEPLOYMENT NODIG** - Kritieke beveiligingsfix (foreign dealers konden andere suppliers' motoren zien) staat klaar maar moet live
+
 ### P1 - High Priority
 1. **WhatsApp Notificaties** - Automatische berichten naar dealers
-2. **Verdere Router Integratie** - Geleidelijk routes migreren
+2. **Emergent LLM Key Budget** - Herinnering voor AI welkomstbericht
+3. **Verdere Router Integratie** - Geleidelijk routes migreren
 
 ### P2 - Medium Priority
 1. Marketing bestanden migreren naar permanente opslag
@@ -96,3 +118,13 @@ De modules zijn klaar. Integratie kan later stap voor stap:
 ## Known Issues
 - AI Welcome Message niet actief (Emergent LLM Key budget overschreden)
 - webpush code uitgeschakeld (package niet geïnstalleerd)
+
+---
+
+## Recent Completed Features (februari 2025)
+- ✅ Beveiligingsfix: Foreign dealers kunnen nu ALLEEN eigen listings zien
+- ✅ Prijsdisclaimer banner op dealer dashboard
+- ✅ Telefoonnummer update door hele applicatie
+- ✅ Leverancierinfo op admin order emails en pakbonnen
+- ✅ Real-time update systeem met DataRefreshProvider
+- ✅ Toast notificatie bug fix (geen spam meer bij polling)
