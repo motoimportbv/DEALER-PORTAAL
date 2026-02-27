@@ -68,6 +68,41 @@ const ForeignDealerDashboard = () => {
     fetchListings(true);
   };
 
+  // Handle marking motorcycle as sold elsewhere
+  const handleMarkSoldElsewhere = (motorcycle) => {
+    setSelectedMotorcycle(motorcycle);
+    setSoldElsewhereDialog(true);
+  };
+
+  const confirmMarkSoldElsewhere = async () => {
+    if (!selectedMotorcycle) return;
+    
+    setMarkingSold(true);
+    try {
+      const response = await axios.post(
+        `${API}/motorcycles/foreign-listings/${selectedMotorcycle.id}/mark-sold-elsewhere`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Motor gemarkeerd als elders verkocht');
+      
+      if (response.data.orders_affected > 0) {
+        toast.info(`${response.data.orders_affected} dealer(s) zijn per email geïnformeerd`);
+      }
+      
+      // Refresh listings
+      fetchListings(false);
+      setSoldElsewhereDialog(false);
+      setSelectedMotorcycle(null);
+    } catch (error) {
+      console.error('Error marking sold elsewhere:', error);
+      toast.error(error.response?.data?.detail || 'Er ging iets mis');
+    } finally {
+      setMarkingSold(false);
+    }
+  };
+
   const getStatusBadge = (motorcycle) => {
     if (motorcycle.is_pending_approval) {
       return (
