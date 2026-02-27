@@ -389,6 +389,173 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Analytics Section */}
+        {conversionData && (
+          <Card className="mt-8">
+            <CardHeader className="border-b border-zinc-100">
+              <div className="flex items-center justify-between">
+                <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" />
+                  Dealer Analytics (30 dagen)
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-purple-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="w-4 h-4 text-purple-600" />
+                    <span className="text-xs text-purple-600 uppercase font-semibold">Views</span>
+                  </div>
+                  <p className="font-barlow text-2xl font-bold text-purple-900">
+                    {conversionData.summary?.total_views_30d?.toLocaleString() || 0}
+                  </p>
+                </div>
+                <div className="bg-green-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShoppingCart className="w-4 h-4 text-green-600" />
+                    <span className="text-xs text-green-600 uppercase font-semibold">Verkopen</span>
+                  </div>
+                  <p className="font-barlow text-2xl font-bold text-green-900">
+                    {conversionData.summary?.total_orders_30d || 0}
+                  </p>
+                </div>
+                <div className="bg-amber-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-amber-600" />
+                    <span className="text-xs text-amber-600 uppercase font-semibold">Conversie</span>
+                  </div>
+                  <p className="font-barlow text-2xl font-bold text-amber-900">
+                    {conversionData.summary?.conversion_rate || 0}%
+                  </p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Euro className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs text-blue-600 uppercase font-semibold">Omzet</span>
+                  </div>
+                  <p className="font-barlow text-2xl font-bold text-blue-900">
+                    €{(conversionData.summary?.total_revenue_30d || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Brand Performance */}
+              {conversionData.brand_performance?.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-zinc-700 mb-3">Merk Prestaties</h4>
+                  <div className="space-y-2">
+                    {conversionData.brand_performance.slice(0, 5).map((brand, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-zinc-50 rounded-lg p-3">
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-zinc-400 w-6">{idx + 1}</span>
+                          <span className="font-semibold text-zinc-800">{brand.brand}</span>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <span className="text-purple-600">{brand.views} views</span>
+                          <span className="text-green-600">{brand.purchases} verkocht</span>
+                          <Badge className={brand.conversion_rate >= 10 ? 'bg-green-100 text-green-700' : 'bg-zinc-100 text-zinc-600'}>
+                            {brand.conversion_rate}%
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Converting Dealers */}
+              {conversionData.top_converting_dealers?.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-zinc-700 mb-3">Top Converterende Dealers</h4>
+                  <div className="space-y-2">
+                    {conversionData.top_converting_dealers.slice(0, 5).map((dealer, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-zinc-50 rounded-lg p-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                            idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-zinc-400' : idx === 2 ? 'bg-orange-400' : 'bg-zinc-300'
+                          }`}>
+                            {idx + 1}
+                          </div>
+                          <span className="font-semibold text-zinc-800">{dealer.dealer_name}</span>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <span className="text-purple-600">{dealer.views} views</span>
+                          <span className="text-green-600">{dealer.purchases} gekocht</span>
+                          <Badge className="bg-green-100 text-green-700">
+                            {dealer.conversion_rate}% conversie
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Marketing Files Section */}
+        {marketingFiles && (
+          <Card className="mt-8">
+            <CardHeader className="border-b border-zinc-100">
+              <div className="flex items-center justify-between">
+                <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
+                  <Cloud className="w-5 h-5 text-blue-500" />
+                  Marketing Bestanden
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-zinc-500">
+                    {marketingFiles.migrated_count}/{marketingFiles.total_files} in cloud
+                  </span>
+                  {marketingFiles.migrated_count < marketingFiles.total_files && (
+                    <Button 
+                      size="sm" 
+                      onClick={handleMigrateFiles}
+                      disabled={migrating}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {migrating ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Cloud className="w-4 h-4 mr-2" />
+                      )}
+                      {migrating ? 'Migreren...' : 'Migreer naar Cloud'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {marketingFiles.files?.slice(0, 9).map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between bg-zinc-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {file.migrated ? (
+                        <Cloud className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <Download className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                      )}
+                      <span className="text-sm text-zinc-700 truncate" title={file.filename}>
+                        {file.filename.length > 25 ? file.filename.slice(0, 25) + '...' : file.filename}
+                      </span>
+                    </div>
+                    <span className="text-xs text-zinc-400 flex-shrink-0">
+                      {file.size_kb > 1000 ? `${(file.size_kb/1024).toFixed(1)} MB` : `${file.size_kb} KB`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {marketingFiles.total_files > 9 && (
+                <p className="text-center text-sm text-zinc-500 mt-4">
+                  +{marketingFiles.total_files - 9} meer bestanden ({marketingFiles.total_size_mb} MB totaal)
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* WhatsApp Button */}
         <WhatsAppButton />
       </div>
