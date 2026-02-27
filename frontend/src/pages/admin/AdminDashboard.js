@@ -8,6 +8,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import { 
   Bike, 
   ShoppingCart, 
@@ -24,7 +35,8 @@ import {
   Euro,
   Cloud,
   Download,
-  RefreshCw
+  RefreshCw,
+  Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,6 +52,16 @@ const AdminDashboard = () => {
   const [conversionData, setConversionData] = useState(null);
   const [marketingFiles, setMarketingFiles] = useState(null);
   const [migrating, setMigrating] = useState(false);
+  
+  // Email flyer state
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [selectedFlyer, setSelectedFlyer] = useState(null);
+  const [emailForm, setEmailForm] = useState({
+    recipient_email: '',
+    recipient_name: '',
+    custom_message: ''
+  });
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     fetchData();
