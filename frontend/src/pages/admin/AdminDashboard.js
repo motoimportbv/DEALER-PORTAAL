@@ -675,6 +675,78 @@ const AdminDashboard = () => {
         {/* WhatsApp Button */}
         <WhatsAppButton />
       </div>
+
+      {/* Email Flyer Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-blue-500" />
+              Flyer Versturen
+            </DialogTitle>
+            <DialogDescription>
+              {selectedFlyer && (
+                <span className="text-red-600 font-medium">
+                  {selectedFlyer.filename.replace('Moto_Import_', '').replace('.pdf', '').replace(/_/g, ' ')}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipient_email">Email adres *</Label>
+              <Input
+                id="recipient_email"
+                type="email"
+                placeholder="voorbeeld@email.com"
+                value={emailForm.recipient_email}
+                onChange={(e) => setEmailForm({...emailForm, recipient_email: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="recipient_name">Naam ontvanger</Label>
+              <Input
+                id="recipient_name"
+                placeholder="Geachte heer/mevrouw"
+                value={emailForm.recipient_name}
+                onChange={(e) => setEmailForm({...emailForm, recipient_name: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="custom_message">Extra bericht (optioneel)</Label>
+              <Textarea
+                id="custom_message"
+                placeholder="Eventuele persoonlijke boodschap..."
+                value={emailForm.custom_message}
+                onChange={(e) => setEmailForm({...emailForm, custom_message: e.target.value})}
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)} disabled={sendingEmail}>
+              Annuleren
+            </Button>
+            <Button onClick={handleSendFlyerEmail} disabled={sendingEmail || !emailForm.recipient_email}>
+              {sendingEmail ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Verzenden...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Verstuur
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
