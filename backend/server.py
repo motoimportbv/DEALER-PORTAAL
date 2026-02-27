@@ -3397,6 +3397,18 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                     </tr>
                 </table>
                 
+                <!-- Herkomst Motor (alleen voor admin) -->
+                {f'''
+                <div style="background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: #92400e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>🌍 HERKOMST MOTOR (ALLEEN VOOR ADMIN)</strong></p>
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: #78350f;">{foreign_dealer.get("company_name", "N/A") if foreign_dealer_id else (seller.get("company_name", "N/A") if is_dealer_listing and seller_id else "Moto Import B.V. (eigen voorraad)")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">{foreign_dealer.get("contact_person", "") if foreign_dealer_id else (seller.get("contact_person", "") if is_dealer_listing and seller_id else "")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">{foreign_dealer.get("address", "Adres niet opgegeven") if foreign_dealer_id else (f"{seller.get('address', '')} {seller.get('postal_code', '')} {seller.get('city', '')}" if is_dealer_listing and seller_id else "")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">Tel: {foreign_dealer.get("phone", "N/A") if foreign_dealer_id else (seller.get("phone", "N/A") if is_dealer_listing and seller_id else "+31 6 24264861")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">Email: {foreign_dealer.get("email", "N/A") if foreign_dealer_id else (seller.get("email", "N/A") if is_dealer_listing and seller_id else "Motoimportbv@gmail.com")}</p>
+                </div>
+                ''' if (foreign_dealer_id or is_dealer_listing) else ''}
+                
                 <!-- Motor Details Tabel -->
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                     <tr style="background: #f4f4f5;">
