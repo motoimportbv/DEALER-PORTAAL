@@ -5,6 +5,21 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ---
 
+## ✅ Voltooid - "Elders Verkocht" Feature (27 februari 2025)
+
+### Nieuwe Functionaliteit:
+Leveranciers (foreign dealers) kunnen nu aangeven dat een motor elders is verkocht. Het systeem:
+- Markeert de motor als "elders verkocht" en niet meer beschikbaar
+- Stuurt automatisch een email naar dealers die deze motor hebben besteld
+- Email bevat: welke motor, excuses/uitleg, en vergelijkbare beschikbare motoren als alternatief
+- Creëert een in-app notificatie voor de betrokken dealers
+
+### Bestanden:
+- **Backend:** `/app/backend/server.py` - Nieuwe endpoint `POST /api/motorcycles/foreign-listings/{id}/mark-sold-elsewhere`
+- **Frontend:** `/app/frontend/src/pages/foreign-dealer/ForeignDealerDashboard.js` - "Elders verkocht" knop + bevestigingsdialog
+
+---
+
 ## ✅ Voltooid - Real-Time Update Systeem (27 februari 2025)
 
 ### Wat is geïmplementeerd:
@@ -27,8 +42,6 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ### ✅ Fase 1 - Modules Geëxtraheerd (Klaar voor gebruik)
 
-Nieuwe modulaire bestanden aangemaakt en werkend:
-
 | Bestand | Regels | Beschrijving |
 |---------|--------|--------------|
 | `config.py` | 84 | Environment variables, constanten |
@@ -39,52 +52,6 @@ Nieuwe modulaire bestanden aangemaakt en werkend:
 | `services/storage_service.py` | 65 | Emergent Object Storage |
 | `services/currency_service.py` | 86 | CHF/EUR conversie |
 | `models/schemas.py` | 554 | Alle Pydantic models |
-
-**Totaal nieuwe modulaire code: 1116 regels**
-
-### 📋 Router Bestanden (Aangemaakt, nog niet geïntegreerd)
-
-| Bestand | Regels | Endpoints |
-|---------|--------|-----------|
-| `routers/auth.py` | 533 | 15 auth endpoints |
-| `routers/dealers.py` | 345 | 10 dealer endpoints |
-
-### 🔄 Geleidelijke Migratie Plan
-
-De modules zijn klaar. Integratie kan later stap voor stap:
-
-1. **Week 1-2**: Test modules in development
-2. **Week 3-4**: Vervang auth functies door services imports
-3. **Week 5-6**: Vervang routes door router imports
-4. **Week 7-8**: Verwijder dubbele code, cleanup
-
----
-
-## Huidige Backend Structuur
-
-```
-/app/backend/
-├── server.py              # 6922 regels (main server - ongewijzigd)
-├── config.py              # ✅ Nieuw - environment config
-├── database.py            # ✅ Nieuw - MongoDB connectie
-│
-├── services/              # ✅ Nieuw - herbruikbare services
-│   ├── __init__.py
-│   ├── auth_service.py
-│   ├── email_service.py
-│   ├── sms_service.py
-│   ├── storage_service.py
-│   └── currency_service.py
-│
-├── models/                # ✅ Nieuw - Pydantic schemas
-│   ├── __init__.py
-│   └── schemas.py
-│
-└── routers/               # ⏳ Aangemaakt, nog niet actief
-    ├── __init__.py
-    ├── auth.py
-    └── dealers.py
-```
 
 ---
 
@@ -101,12 +68,12 @@ De modules zijn klaar. Integratie kan later stap voor stap:
 ## Upcoming Tasks
 
 ### P0 - Critical
-1. **DEPLOYMENT NODIG** - Kritieke beveiligingsfix (foreign dealers konden andere suppliers' motoren zien) staat klaar maar moet live
+1. **DEPLOYMENT NODIG** - Kritieke beveiligingsfix + nieuwe features moeten live
 
 ### P1 - High Priority
 1. **WhatsApp Notificaties** - Automatische berichten naar dealers
 2. **Emergent LLM Key Budget** - Herinnering voor AI welkomstbericht
-3. **Verdere Router Integratie** - Geleidelijk routes migreren
+3. **Backend Router Integratie** - Geleidelijk routes migreren
 
 ### P2 - Medium Priority
 1. Marketing bestanden migreren naar permanente opslag
@@ -122,6 +89,7 @@ De modules zijn klaar. Integratie kan later stap voor stap:
 ---
 
 ## Recent Completed Features (februari 2025)
+- ✅ **"Elders Verkocht" Feature** - Leveranciers kunnen motors markeren als elders verkocht met auto-email naar dealers
 - ✅ Beveiligingsfix: Foreign dealers kunnen nu ALLEEN eigen listings zien
 - ✅ Prijsdisclaimer banner op dealer dashboard
 - ✅ Telefoonnummer update door hele applicatie
