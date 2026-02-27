@@ -3238,6 +3238,92 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     order_date = datetime.now(timezone.utc).strftime('%d-%m-%Y')
     order_time = datetime.now(timezone.utc).strftime('%H:%M')
     
+    # Get supplier/source info for admin
+    supplier_info_html = ""
+    if foreign_dealer_id:
+        # Motor komt van buitenlandse leverancier
+        foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0})
+        if foreign_dealer:
+            country_names = {
+                "CH": "🇨🇭 Zwitserland", "DE": "🇩🇪 Duitsland", "AT": "🇦🇹 Oostenrijk",
+                "IT": "🇮🇹 Italië", "FR": "🇫🇷 Frankrijk", "BE": "🇧🇪 België"
+            }
+            country_display = country_names.get(foreign_dealer.get("country", ""), foreign_dealer.get("country", "Onbekend"))
+            supplier_info_html = f"""
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                <tr style="background: #f59e0b;">
+                    <td colspan="2" style="padding: 12px; color: white; font-weight: bold;">🌍 LEVERANCIER INFORMATIE</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #fcd34d; width: 30%;"><strong>Bedrijf</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d; font-weight: bold;">{foreign_dealer.get('company_name', 'N/A')}</td>
+                </tr>
+                <tr style="background: #fef9c3;">
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Land</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{country_display}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Contactpersoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{foreign_dealer.get('contact_person', 'N/A')}</td>
+                </tr>
+                <tr style="background: #fef9c3;">
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Email</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><a href="mailto:{foreign_dealer.get('email', '')}">{foreign_dealer.get('email', 'N/A')}</a></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Telefoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{foreign_dealer.get('phone', 'N/A')}</td>
+                </tr>
+                <tr style="background: #fef9c3;">
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Adres</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{foreign_dealer.get('address', 'Niet opgegeven')}</td>
+                </tr>
+            </table>
+            """
+    elif is_dealer_listing:
+        # Motor komt van Nederlandse dealer
+        seller = await db.users.find_one({"id": seller_id}, {"_id": 0}) if seller_id else None
+        if seller:
+            supplier_info_html = f"""
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: #dbeafe; border-radius: 8px; border: 2px solid #3b82f6;">
+                <tr style="background: #3b82f6;">
+                    <td colspan="2" style="padding: 12px; color: white; font-weight: bold;">🏪 VERKOPENDE DEALER</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #93c5fd; width: 30%;"><strong>Bedrijf</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd; font-weight: bold;">{seller.get('company_name', 'N/A')}</td>
+                </tr>
+                <tr style="background: #eff6ff;">
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Contactpersoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;">{seller.get('contact_person', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Email</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><a href="mailto:{seller.get('email', '')}">{seller.get('email', 'N/A')}</a></td>
+                </tr>
+                <tr style="background: #eff6ff;">
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Telefoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;">{seller.get('phone', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Adres</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;">{seller.get('address', '')} {seller.get('postal_code', '')} {seller.get('city', '')}</td>
+                </tr>
+            </table>
+            """
+    else:
+        # Motor is van Moto Import zelf
+        supplier_info_html = """
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: #dcfce7; border-radius: 8px; border: 2px solid #22c55e;">
+                <tr style="background: #22c55e;">
+                    <td style="padding: 12px; color: white; font-weight: bold;">✅ EIGEN VOORRAAD</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #86efac;">Deze motor komt uit de eigen voorraad van Moto Import B.V.</td>
+                </tr>
+            </table>
+            """
+    
     admin_html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
         <div style="background: #18181b; padding: 20px; text-align: center;">
