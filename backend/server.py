@@ -237,6 +237,7 @@ def convert_chf_to_eur(chf_amount: float, rate: float, margin: float = 0) -> flo
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
+security_optional = HTTPBearer(auto_error=False)
 
 # Uploads directory
 UPLOAD_DIR = ROOT_DIR / "uploads"
