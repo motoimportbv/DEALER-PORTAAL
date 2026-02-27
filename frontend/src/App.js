@@ -254,6 +254,7 @@ function App() {
           <WelcomePopup />
         </BrowserRouter>
       </div>
+      </DataRefreshProvider>
     </AuthProvider>
   );
 }
