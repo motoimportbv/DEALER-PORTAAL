@@ -103,6 +103,42 @@ const AdminDashboard = () => {
     }
   };
 
+  // Open email dialog for a flyer
+  const handleEmailFlyer = (file) => {
+    setSelectedFlyer(file);
+    setEmailForm({
+      recipient_email: '',
+      recipient_name: '',
+      custom_message: ''
+    });
+    setEmailDialogOpen(true);
+  };
+
+  // Send flyer via email
+  const handleSendFlyerEmail = async () => {
+    if (!emailForm.recipient_email) {
+      toast.error('Vul een emailadres in');
+      return;
+    }
+    
+    setSendingEmail(true);
+    try {
+      const response = await axios.post(`${API}/admin/marketing-files/send-email`, {
+        filename: selectedFlyer.filename,
+        recipient_email: emailForm.recipient_email,
+        recipient_name: emailForm.recipient_name || 'Geachte heer/mevrouw',
+        custom_message: emailForm.custom_message
+      });
+      
+      toast.success(`Flyer verzonden naar ${emailForm.recipient_email}`);
+      setEmailDialogOpen(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Verzenden mislukt');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       pending: 'bg-amber-100 text-amber-800',
