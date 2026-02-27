@@ -17,7 +17,14 @@ import {
   ArrowRight,
   Package,
   Trophy,
-  Send
+  Send,
+  BarChart3,
+  Eye,
+  Target,
+  Euro,
+  Cloud,
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
