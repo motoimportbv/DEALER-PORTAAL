@@ -1,0 +1,74 @@
+{
+  "summary": "Frontend testing of DataRefreshProvider polling mechanism and price disclaimer banner. All features working correctly. Polling does NOT show toasts on every 30-second poll - only when new notifications exist. Manual refresh button shows 'Gegevens bijgewerkt' toast. Price disclaimer banner is visible, dismissible, and persists in sessionStorage.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Login flow for dealer account (testdealer@motoimport.nl) works correctly",
+    "Price disclaimer banner 'Belangrijk over onze prijzen' is visible on dealer dashboard",
+    "Price disclaimer banner X button dismisses the banner successfully",
+    "Price disclaimer banner stays hidden after dismiss (sessionStorage persistence)",
+    "Price disclaimer banner reappears after clearing sessionStorage and reloading",
+    "Manual refresh button 'Vernieuwen' is visible and clickable",
+    "Manual refresh button shows 'Gegevens bijgewerkt' toast on click",
+    "DataRefreshProvider polling (30 seconds) does NOT show toasts on every poll",
+    "No excessive toasts during 35-second observation period (toast count remained at 1)",
+    "isFirstCheck ref prevents toast on initial page load",
+    "lastCountRef properly tracks notification count to prevent false positives"
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DataRefreshProvider.js correctly implements isFirstCheck ref (line 26) to skip toast on initial load",
+    "lastCountRef (line 28) properly tracks notification count to prevent stale closure issues",
+    "Toast only fires when newCount > lastCount (line 63), preventing false positives",
+    "DealerDashboard.js correctly manages showPriceDisclaimer state with sessionStorage (lines 47-55)",
+    "Manual refresh correctly calls fetchMotorcycles(true) to show toast (line 92)",
+    "No duplicate 30-second interval in DealerDashboard.js - auto-refresh managed by DataRefreshProvider"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (skipped per request)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "dealer": "testdealer@motoimport.nl / MotoTest123!",
+    "admin": "motoimportbv@gmail.com / Enolim12"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "DataRefreshProvider polling fix verified working. The fix uses isFirstCheck ref to skip toast on initial load and lastCountRef to properly track notification count. Toasts only appear when notification count INCREASES. Price disclaimer banner uses sessionStorage with key 'hidePriceDisclaimer' for persistence.",
+  "verified_features": {
+    "data_refresh_provider_polling": {
+      "status": "WORKING",
+      "location": "/app/frontend/src/components/DataRefreshProvider.js",
+      "polling_interval": "30 seconds",
+      "toast_behavior": "Only shows toast when notification count increases, not on every poll",
+      "key_fixes": [
+        "isFirstCheck ref (line 26) - skips toast on initial load",
+        "lastCountRef (line 28) - tracks count to prevent stale closure issues",
+        "Condition: newCount > lastCount (line 63) - only toast when count increases"
+      ]
+    },
+    "manual_refresh_button": {
+      "status": "WORKING",
+      "location": "/app/frontend/src/pages/dealer/DealerDashboard.js line 324-333",
+      "data_testid": "refresh-btn",
+      "toast_message": "Gegevens bijgewerkt"
+    },
+    "price_disclaimer_banner": {
+      "status": "WORKING",
+      "location": "/app/frontend/src/pages/dealer/DealerDashboard.js lines 289-311",
+      "title": "Belangrijk over onze prijzen",
+      "dismiss_button": "X button with aria-label='Sluiten'",
+      "persistence": "sessionStorage key 'hidePriceDisclaimer'"
+    }
+  }
+}
