@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
+import { useDataRefresh } from '../../components/DataRefreshProvider';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -21,7 +22,8 @@ import {
   ZoomIn,
   Trash2,
   Archive,
-  FolderArchive
+  FolderArchive,
+  RefreshCw
 } from 'lucide-react';
 import {
   Dialog,
