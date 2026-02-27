@@ -5997,10 +5997,22 @@ async def get_marketing_files(user: dict = Depends(require_admin)):
 
 
 @api_router.get("/admin/marketing-files/download/{filename}")
-async def download_marketing_file(filename: str, user: dict = Depends(require_admin)):
+async def download_marketing_file(filename: str, token: str = None, user: dict = Depends(get_optional_user)):
     """Download a marketing file from cloud storage"""
     from fastapi.responses import Response
     import requests
+    
+    # Verify user is admin (either from header or query param)
+    if not user:
+        if token:
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0})
+            except:
+                pass
+    
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Alleen voor administrators")
     
     # Check if file exists in our list
     if filename not in MARKETING_FILES_CLOUD:
