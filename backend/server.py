@@ -6071,6 +6071,192 @@ async def download_marketing_file(filename: str, token: str = None, user: dict =
         raise HTTPException(status_code=500, detail=f"Download mislukt: {str(e)}")
 
 
+class EmailFlyerRequest(BaseModel):
+    filename: str
+    recipient_email: str
+    recipient_name: str = "Geachte heer/mevrouw"
+    custom_message: str = ""
+
+@api_router.post("/admin/marketing-files/send-email")
+async def send_flyer_email(request: EmailFlyerRequest, user: dict = Depends(require_admin)):
+    """Send a marketing flyer via email to a specified address"""
+    import requests as req
+    import base64
+    
+    # Check if file exists
+    if request.filename not in MARKETING_FILES_CLOUD:
+        raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+    
+    file_info = MARKETING_FILES_CLOUD[request.filename]
+    storage_path = f"moto-import/marketing/{request.filename}"
+    
+    # Get storage key and download file
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Cloud storage niet beschikbaar")
+    
+    try:
+        # Fetch file from cloud
+        resp = req.get(
+            f"{STORAGE_URL}/objects/{storage_path}",
+            headers={"X-Storage-Key": key},
+            timeout=60
+        )
+        resp.raise_for_status()
+        file_content = resp.content
+        file_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # Determine language from filename for email text
+        lang = "nl"
+        if "_DE" in request.filename or "_DE." in request.filename:
+            lang = "de"
+        elif "_FR" in request.filename or "_FR." in request.filename:
+            lang = "fr"
+        elif "_IT" in request.filename or "_IT." in request.filename:
+            lang = "it"
+        
+        # Email texts per language
+        email_texts = {
+            "nl": {
+                "subject": "Moto Import - Dealer Informatie",
+                "greeting": f"Beste {request.recipient_name},",
+                "intro": "Hierbij ontvangt u onze dealer flyer met informatie over samenwerking met Moto Import B.V.",
+                "cta": "Heeft u interesse of vragen? Neem gerust contact met ons op!",
+                "closing": "Met vriendelijke groet,"
+            },
+            "de": {
+                "subject": "Moto Import - Händler Information",
+                "greeting": f"Sehr geehrte(r) {request.recipient_name},",
+                "intro": "Anbei erhalten Sie unseren Händler-Flyer mit Informationen zur Zusammenarbeit mit Moto Import B.V.",
+                "cta": "Haben Sie Interesse oder Fragen? Kontaktieren Sie uns gerne!",
+                "closing": "Mit freundlichen Grüßen,"
+            },
+            "fr": {
+                "subject": "Moto Import - Information Concessionnaire",
+                "greeting": f"Cher/Chère {request.recipient_name},",
+                "intro": "Veuillez trouver ci-joint notre flyer concessionnaire avec des informations sur la collaboration avec Moto Import B.V.",
+                "cta": "Vous avez des questions ou êtes intéressé? N'hésitez pas à nous contacter!",
+                "closing": "Cordialement,"
+            },
+            "it": {
+                "subject": "Moto Import - Informazioni Concessionario",
+                "greeting": f"Gentile {request.recipient_name},",
+                "intro": "In allegato troverà il nostro flyer per concessionari con informazioni sulla collaborazione con Moto Import B.V.",
+                "cta": "Ha domande o è interessato? Non esiti a contattarci!",
+                "closing": "Cordiali saluti,"
+            }
+        }
+        
+        texts = email_texts.get(lang, email_texts["nl"])
+        
+        # Custom message if provided
+        custom_section = ""
+        if request.custom_message:
+            custom_section = f"""
+            <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #0369a1;">{request.custom_message}</p>
+            </div>
+            """
+        
+        # Build email HTML
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f5;">
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">MOTO IMPORT B.V.</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Premium Motorcycles</p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 30px;">
+                    <p style="font-size: 16px; color: #374151;">{texts['greeting']}</p>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        {texts['intro']}
+                    </p>
+                    
+                    {custom_section}
+                    
+                    <div style="background: #fef2f2; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #991b1b; font-weight: bold;">📎 Bijlage / Attachment</p>
+                        <p style="margin: 0; color: #666;">{request.filename}</p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        {texts['cta']}
+                    </p>
+                    
+                    <p style="margin-top: 30px; color: #374151;">
+                        {texts['closing']}<br>
+                        <strong>Team Moto Import B.V.</strong><br>
+                        <span style="color: #666;">📞 +31 6 24264861</span><br>
+                        <span style="color: #666;">✉️ motoimportbv@gmail.com</span><br>
+                        <span style="color: #666;">🌐 www.motoimportbv.nl</span>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send email with attachment using Gmail
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+        
+        gmail_user = os.environ.get("GMAIL_USER", "motoimportbv@gmail.com")
+        gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
+        
+        if not gmail_password:
+            raise HTTPException(status_code=500, detail="Email configuratie ontbreekt")
+        
+        msg = MIMEMultipart()
+        msg['From'] = f"Moto Import B.V. <{gmail_user}>"
+        msg['To'] = request.recipient_email
+        msg['Subject'] = texts['subject']
+        
+        # Attach HTML body
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        # Attach the PDF/file
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(file_content)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{request.filename}"')
+        msg.attach(part)
+        
+        # Send email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(gmail_user, gmail_password)
+            server.send_message(msg)
+        
+        logger.info(f"Flyer email sent to {request.recipient_email}: {request.filename}")
+        
+        return {
+            "success": True,
+            "message": f"Email verzonden naar {request.recipient_email}",
+            "filename": request.filename,
+            "language": lang
+        }
+        
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP error sending flyer: {e}")
+        raise HTTPException(status_code=500, detail=f"Email verzenden mislukt: {str(e)}")
+    except Exception as e:
+        logger.error(f"Failed to send flyer email: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout: {str(e)}")
+
+
+
+
 @api_router.post("/admin/marketing-files/migrate")
 async def migrate_marketing_files(user: dict = Depends(require_admin)):
     """Migrate all marketing files to Emergent Object Storage"""
