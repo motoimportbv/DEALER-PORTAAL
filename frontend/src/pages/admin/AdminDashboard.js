@@ -37,6 +37,9 @@ const AdminDashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [topDealers, setTopDealers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [conversionData, setConversionData] = useState(null);
+  const [marketingFiles, setMarketingFiles] = useState(null);
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -44,18 +47,37 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [statsRes, ordersRes, topDealersRes] = await Promise.all([
+      const [statsRes, ordersRes, topDealersRes, conversionRes, marketingRes] = await Promise.all([
         axios.get(`${API}/stats`),
         axios.get(`${API}/orders`),
-        axios.get(`${API}/stats/top-dealers`).catch(() => ({ data: [] }))
+        axios.get(`${API}/stats/top-dealers`).catch(() => ({ data: [] })),
+        axios.get(`${API}/admin/analytics/conversion`).catch(() => ({ data: null })),
+        axios.get(`${API}/admin/marketing-files`).catch(() => ({ data: null }))
       ]);
       setStats(statsRes.data);
       setRecentOrders(ordersRes.data.slice(0, 5));
       setTopDealers(topDealersRes.data);
+      setConversionData(conversionRes.data);
+      setMarketingFiles(marketingRes.data);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMigrateFiles = async () => {
+    setMigrating(true);
+    try {
+      const response = await axios.post(`${API}/admin/marketing-files/migrate`);
+      toast.success(`${response.data.summary.total_migrated} bestanden gemigreerd naar cloud`);
+      // Refresh marketing files list
+      const marketingRes = await axios.get(`${API}/admin/marketing-files`);
+      setMarketingFiles(marketingRes.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Migratie mislukt');
+    } finally {
+      setMigrating(false);
     }
   };
 
