@@ -1996,6 +1996,199 @@ async def get_pending_foreign_listings(user: dict = Depends(require_admin)):
     ).to_list(100)
     return motorcycles
 
+
+@api_router.post("/motorcycles/foreign-listings/{motorcycle_id}/mark-sold-elsewhere")
+async def mark_motorcycle_sold_elsewhere(motorcycle_id: str, user: dict = Depends(get_current_user)):
+    """Mark a motorcycle as sold elsewhere by the foreign dealer/supplier.
+    This will notify any dealer who has ordered this motorcycle."""
+    
+    # Check if user is foreign dealer
+    if not user.get("is_foreign_dealer", False):
+        raise HTTPException(status_code=403, detail="Alleen voor buitenlandse leveranciers")
+    
+    # Find the motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Verify ownership
+    if motorcycle.get("foreign_dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U bent niet de eigenaar van deze motor")
+    
+    # Check if motorcycle is already marked as sold elsewhere
+    if motorcycle.get("sold_elsewhere"):
+        raise HTTPException(status_code=400, detail="Motor is al gemarkeerd als elders verkocht")
+    
+    # Find any orders for this motorcycle
+    orders = await db.orders.find(
+        {"motorcycle_id": motorcycle_id, "archived": {"$ne": True}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Mark motorcycle as sold elsewhere and unavailable
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {
+            "sold_elsewhere": True,
+            "sold_elsewhere_at": datetime.now(timezone.utc).isoformat(),
+            "is_available": False
+        }}
+    )
+    
+    # Get supplier info for the email
+    supplier = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    supplier_company = supplier.get("company_name", "Leverancier") if supplier else "Leverancier"
+    
+    # Find similar motorcycles to suggest
+    similar_motorcycles = await db.motorcycles.find(
+        {
+            "is_available": True,
+            "brand": motorcycle.get("brand"),
+            "id": {"$ne": motorcycle_id}
+        },
+        {"_id": 0}
+    ).to_list(3)
+    
+    # Notify each dealer who ordered this motorcycle
+    notified_dealers = []
+    for order in orders:
+        dealer = await db.users.find_one({"id": order["dealer_id"]}, {"_id": 0})
+        if dealer and dealer.get("email"):
+            # Send email notification
+            asyncio.create_task(send_sold_elsewhere_email(
+                dealer, 
+                motorcycle, 
+                supplier_company,
+                similar_motorcycles
+            ))
+            notified_dealers.append(dealer.get("company_name", dealer.get("email")))
+            
+            # Create in-app notification
+            notification = Notification(
+                user_id=dealer["id"],
+                type="motorcycle_sold_elsewhere",
+                title="Motor niet meer beschikbaar",
+                message=f"De {motorcycle['brand']} {motorcycle['model']} is helaas elders verkocht door de leverancier.",
+                motorcycle_id=motorcycle_id
+            ).model_dump()
+            await db.notifications.insert_one(notification)
+    
+    return {
+        "message": "Motor gemarkeerd als elders verkocht",
+        "notified_dealers": notified_dealers,
+        "orders_affected": len(orders)
+    }
+
+async def send_sold_elsewhere_email(dealer: dict, motorcycle: dict, supplier_company: str, similar_motorcycles: list):
+    """Send email to dealer when a motorcycle they ordered is sold elsewhere by supplier"""
+    try:
+        dealer_name = dealer.get("contact_person", dealer.get("company_name", "Dealer"))
+        dealer_email = dealer.get("email")
+        
+        if not dealer_email:
+            return
+        
+        # Format price
+        price = motorcycle.get("price", 0)
+        price_formatted = f"€{price:,.0f}".replace(",", ".")
+        
+        # Build similar motorcycles section
+        similar_html = ""
+        if similar_motorcycles:
+            similar_html = """
+            <div style="margin-top: 30px; padding: 20px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                <h3 style="color: #166534; margin: 0 0 15px 0; font-size: 16px;">🔍 Vergelijkbare motoren beschikbaar:</h3>
+            """
+            for moto in similar_motorcycles:
+                moto_price = f"€{moto.get('price', 0):,.0f}".replace(",", ".")
+                similar_html += f"""
+                <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{moto.get('brand', '')} {moto.get('model', '')}</strong><br>
+                        <span style="color: #666; font-size: 14px;">{moto.get('year', '')} • {moto.get('mileage', 0):,} km</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: #dc2626; font-weight: bold; font-size: 18px;">{moto_price}</span>
+                    </div>
+                </div>
+                """
+            similar_html += """
+                <a href="https://www.motoimportbv.nl/dealer" 
+                   style="display: inline-block; margin-top: 10px; background: #166534; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                    Bekijk alle motoren →
+                </a>
+            </div>
+            """
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f5;">
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">⚠️ Motor Niet Meer Beschikbaar</h1>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 30px;">
+                    <p style="font-size: 16px; color: #374151;">Beste {dealer_name},</p>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Helaas moeten wij u mededelen dat de motor waarin u geïnteresseerd was, door de leverancier 
+                        <strong>{supplier_company}</strong> elders is verkocht.
+                    </p>
+                    
+                    <!-- Motorcycle info -->
+                    <div style="background: #fef2f2; border: 2px solid #fecaca; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin: 0 0 10px 0; color: #991b1b;">
+                            {motorcycle.get('brand', '')} {motorcycle.get('model', '')}
+                        </h3>
+                        <p style="margin: 0; color: #666;">
+                            {motorcycle.get('year', '')} • {motorcycle.get('mileage', 0):,} km • {motorcycle.get('color', '')}
+                        </p>
+                        <p style="margin: 10px 0 0 0; font-size: 20px; font-weight: bold; color: #dc2626;">
+                            {price_formatted}
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Onze excuses voor het ongemak. Dit kan soms gebeuren wanneer een leverancier de motor via 
+                        een ander kanaal verkoopt voordat de transactie bij ons is afgerond.
+                    </p>
+                    
+                    {similar_html}
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 20px;">
+                        Heeft u vragen? Neem gerust contact met ons op.
+                    </p>
+                    
+                    <p style="margin-top: 30px; color: #374151;">
+                        Met vriendelijke groet,<br>
+                        <strong>Team Moto Import B.V.</strong><br>
+                        <span style="color: #666;">📞 +31 6 24264861</span><br>
+                        <span style="color: #666;">✉️ motoimportbv@gmail.com</span>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        await send_email(
+            to_email=dealer_email,
+            subject=f"⚠️ Motor niet meer beschikbaar: {motorcycle.get('brand', '')} {motorcycle.get('model', '')}",
+            html_content=html_content
+        )
+        print(f"Sold elsewhere email sent to {dealer_email}")
+        
+    except Exception as e:
+        print(f"Failed to send sold elsewhere email: {e}")
+
+
 @api_router.post("/motorcycles/{motorcycle_id}/activate")
 async def activate_foreign_listing(motorcycle_id: str, price: float, starting_price: Optional[float] = None, user: dict = Depends(require_admin)):
     """Activate a foreign dealer listing with new price (admin only)"""
