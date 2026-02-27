@@ -39,8 +39,10 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DealerOrders = () => {
   const { t } = useTranslation();
+  const { refreshTrigger } = useDataRefresh();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -67,19 +69,38 @@ const DealerOrders = () => {
     setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
+  // Fetch orders functie - kan worden hergebruikt voor refresh
+  const fetchOrders = useCallback(async (showToast = false) => {
     try {
+      if (showToast) setIsRefreshing(true);
       const response = await axios.get(`${API}/orders`);
       setOrders(response.data);
+      if (showToast) {
+        toast.success('Bestellingen bijgewerkt');
+      }
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // Auto-refresh wanneer er updates zijn via DataRefreshProvider
+  useEffect(() => {
+    if (refreshTrigger > 0 && !loading) {
+      fetchOrders(false);
+    }
+  }, [refreshTrigger, loading, fetchOrders]);
+
+  // Handmatige refresh functie
+  const handleManualRefresh = () => {
+    fetchOrders(true);
   };
 
   const handleDeleteClick = (order) => {
