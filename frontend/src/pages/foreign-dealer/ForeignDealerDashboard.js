@@ -8,8 +8,16 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import { toast } from 'sonner';
-import { Bike, Plus, Clock, CheckCircle, Globe, RefreshCw } from 'lucide-react';
+import { Bike, Plus, Clock, CheckCircle, Globe, RefreshCw, AlertTriangle, XCircle } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -20,6 +28,9 @@ const ForeignDealerDashboard = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [soldElsewhereDialog, setSoldElsewhereDialog] = useState(false);
+  const [selectedMotorcycle, setSelectedMotorcycle] = useState(null);
+  const [markingSold, setMarkingSold] = useState(false);
 
   // Fetch listings functie - kan worden hergebruikt voor refresh
   const fetchListings = useCallback(async (showToast = false) => {
