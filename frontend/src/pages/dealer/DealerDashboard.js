@@ -35,11 +35,13 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const DealerDashboard = () => {
   const { t } = useTranslation();
   const { user, token, refreshUser } = useAuth();
+  const { refreshTrigger } = useDataRefresh();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedModel, setSelectedModel] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPriceDisclaimer, setShowPriceDisclaimer] = useState(() => {
@@ -50,6 +52,39 @@ const DealerDashboard = () => {
   const dismissPriceDisclaimer = () => {
     setShowPriceDisclaimer(false);
     sessionStorage.setItem('hidePriceDisclaimer', 'true');
+  };
+
+  // Fetch motorcycles functie - kan worden hergebruikt voor refresh
+  const fetchMotorcycles = useCallback(async (showToast = false) => {
+    if (!token) return;
+    
+    try {
+      setIsRefreshing(true);
+      const response = await axios.get(`${API}/motorcycles`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMotorcycles(response.data);
+      if (showToast) {
+        toast.success('Gegevens bijgewerkt');
+      }
+    } catch (error) {
+      console.error('Failed to fetch motorcycles:', error);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [token]);
+
+  // Auto-refresh wanneer er updates zijn
+  useEffect(() => {
+    if (refreshTrigger > 0 && !loading) {
+      fetchMotorcycles(false);
+    }
+  }, [refreshTrigger]);
+
+  // Handmatige refresh functie
+  const handleManualRefresh = () => {
+    fetchMotorcycles(true);
   };
 
   // Get unique brands with count
