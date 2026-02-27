@@ -1,37 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDataRefresh } from '../../components/DataRefreshProvider';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Bike, Plus, Clock, CheckCircle, Globe } from 'lucide-react';
+import { toast } from 'sonner';
+import { Bike, Plus, Clock, CheckCircle, Globe, RefreshCw } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const ForeignDealerDashboard = () => {
   const { token, user } = useAuth();
   const { t } = useTranslation();
+  const { refreshTrigger } = useDataRefresh();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchListings();
-  }, []);
-
-  const fetchListings = async () => {
+  // Fetch listings functie - kan worden hergebruikt voor refresh
+  const fetchListings = useCallback(async (showToast = false) => {
     try {
+      if (showToast) setIsRefreshing(true);
       const response = await axios.get(`${API}/motorcycles/foreign-listings`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setListings(response.data);
+      if (showToast) {
+        toast.success('Gegevens bijgewerkt');
+      }
     } catch (error) {
       console.error('Error fetching listings:', error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
+  }, [token]);
+
+  // Initial load
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
+
+  // Auto-refresh wanneer er updates zijn via DataRefreshProvider
+  useEffect(() => {
+    if (refreshTrigger > 0 && !loading) {
+      fetchListings(false);
+    }
+  }, [refreshTrigger, loading, fetchListings]);
+
+  // Handmatige refresh functie
+  const handleManualRefresh = () => {
+    fetchListings(true);
   };
 
   const getStatusBadge = (motorcycle) => {
