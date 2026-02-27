@@ -5976,6 +5976,7 @@ async def get_marketing_files(user: dict = Depends(require_admin)):
 async def migrate_marketing_files(user: dict = Depends(require_admin)):
     """Migrate all marketing files to Emergent Object Storage"""
     import glob
+    import requests
     
     # Initialize storage
     key = init_storage()
