@@ -574,26 +574,39 @@ const AdminDashboard = () => {
                 <h4 className="font-semibold text-zinc-700 mb-3 flex items-center gap-2">
                   📄 Dealer & Supplier Flyers
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {marketingFiles.files?.filter(f => f.filename.endsWith('.pdf')).map((file, idx) => (
-                    <a 
+                    <div 
                       key={idx} 
-                      href={`${API}/admin/marketing-files/download/${encodeURIComponent(file.filename)}?token=${token}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 bg-red-50 hover:bg-red-100 rounded-lg p-3 transition-colors cursor-pointer group"
-                      title={`Download ${file.filename}`}
+                      className="flex items-center gap-2 bg-red-50 rounded-lg p-3 group"
                     >
-                      <Download className="w-4 h-4 text-red-500 group-hover:text-red-600 flex-shrink-0" />
                       <div className="overflow-hidden flex-1">
-                        <span className="text-sm text-zinc-700 truncate block" title={file.filename}>
+                        <span className="text-sm text-zinc-700 truncate block font-medium" title={file.filename}>
                           {file.filename.replace('Moto_Import_', '').replace('.pdf', '').replace(/_/g, ' ')}
                         </span>
                         <span className="text-xs text-zinc-400">
                           {file.size_kb > 1000 ? `${(file.size_kb/1024).toFixed(1)} MB` : `${Math.round(file.size_kb)} KB`}
                         </span>
                       </div>
-                    </a>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <a 
+                          href={`${API}/admin/marketing-files/download/${encodeURIComponent(file.filename)}?token=${token}`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-md bg-white hover:bg-red-100 transition-colors"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4 text-red-500" />
+                        </a>
+                        <button
+                          onClick={() => handleEmailFlyer(file)}
+                          className="p-2 rounded-md bg-white hover:bg-blue-100 transition-colors"
+                          title="Verstuur per email"
+                        >
+                          <Mail className="w-4 h-4 text-blue-500" />
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
