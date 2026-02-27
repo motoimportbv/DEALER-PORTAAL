@@ -6212,7 +6212,7 @@ async def send_flyer_email(request: EmailFlyerRequest, user: dict = Depends(requ
         from email.mime.base import MIMEBase
         from email import encoders
         
-        gmail_user = os.environ.get("GMAIL_USER", "motoimportbv@gmail.com")
+        gmail_user = os.environ.get("GMAIL_EMAIL", os.environ.get("GMAIL_USER", "motoimportbv@gmail.com"))
         gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
         
         if not gmail_password:
