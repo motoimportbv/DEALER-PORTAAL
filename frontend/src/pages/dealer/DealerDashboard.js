@@ -193,17 +193,16 @@ const DealerDashboard = () => {
     }
   };
 
-  // Auto-refresh elke 10 minuten voor dealers
+  // Auto-refresh elke 30 seconden voor snelle updates
   useEffect(() => {
     if (user && user.role === 'dealer' && !pendingApproval) {
       const refreshInterval = setInterval(() => {
-        console.log('Auto-refresh: nieuwe motoren ophalen...');
-        fetchMotorcycles();
-      }, 10 * 60 * 1000); // 10 minuten in milliseconden
+        fetchMotorcycles(false); // Stille refresh zonder toast
+      }, 30 * 1000); // 30 seconden
 
       return () => clearInterval(refreshInterval);
     }
-  }, [user, pendingApproval]);
+  }, [user, pendingApproval, fetchMotorcycles]);
 
   // Show pending approval screen
   if (pendingApproval) {
