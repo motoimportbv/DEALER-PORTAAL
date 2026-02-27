@@ -115,12 +115,25 @@ const ForeignDealerDashboard = () => {
               {listings.length} {listings.length !== 1 ? 'motors' : 'motor'}
             </p>
           </div>
-          <Link to="/foreign-dealer/add">
-            <Button className="bg-purple-600 hover:bg-purple-700 font-barlow uppercase tracking-wide">
-              <Plus className="w-5 h-5 mr-2" />
-              {t('foreignDealer.addMotorcycle')}
+          <div className="flex gap-2">
+            {/* Refresh Button */}
+            <Button 
+              variant="outline" 
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="text-zinc-600"
+              data-testid="refresh-listings-btn"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Laden...' : 'Vernieuwen'}
             </Button>
-          </Link>
+            <Link to="/foreign-dealer/add">
+              <Button className="bg-purple-600 hover:bg-purple-700 font-barlow uppercase tracking-wide">
+                <Plus className="w-5 h-5 mr-2" />
+                {t('foreignDealer.addMotorcycle')}
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
