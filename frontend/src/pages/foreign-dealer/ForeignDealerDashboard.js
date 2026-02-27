@@ -104,7 +104,14 @@ const ForeignDealerDashboard = () => {
   };
 
   const getStatusBadge = (motorcycle) => {
-    if (motorcycle.is_pending_approval) {
+    if (motorcycle.sold_elsewhere) {
+      return (
+        <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
+          <XCircle className="w-3 h-3" />
+          Elders verkocht
+        </Badge>
+      );
+    } else if (motorcycle.is_pending_approval) {
       return (
         <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1">
           <Clock className="w-3 h-3" />
