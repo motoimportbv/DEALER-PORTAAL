@@ -5996,6 +5996,56 @@ async def get_marketing_files(user: dict = Depends(require_admin)):
     }
 
 
+@api_router.get("/admin/marketing-files/download/{filename}")
+async def download_marketing_file(filename: str, user: dict = Depends(require_admin)):
+    """Download a marketing file from cloud storage"""
+    from fastapi.responses import Response
+    import requests
+    
+    # Check if file exists in our list
+    if filename not in MARKETING_FILES_CLOUD:
+        raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+    
+    file_info = MARKETING_FILES_CLOUD[filename]
+    storage_path = f"moto-import/marketing/{filename}"
+    
+    # Get storage key
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Cloud storage niet beschikbaar")
+    
+    try:
+        # Fetch file from cloud storage with proper header
+        resp = requests.get(
+            f"{STORAGE_URL}/objects/{storage_path}",
+            headers={"X-Storage-Key": key},
+            timeout=60
+        )
+        resp.raise_for_status()
+        
+        # Determine content type
+        ext = filename.split('.')[-1].lower()
+        content_types = {
+            'pdf': 'application/pdf',
+            'csv': 'text/csv',
+            'md': 'text/markdown',
+            'txt': 'text/plain',
+            'png': 'image/png'
+        }
+        content_type = content_types.get(ext, 'application/octet-stream')
+        
+        return Response(
+            content=resp.content,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to download {filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"Download mislukt: {str(e)}")
+
+
 @api_router.post("/admin/marketing-files/migrate")
 async def migrate_marketing_files(user: dict = Depends(require_admin)):
     """Migrate all marketing files to Emergent Object Storage"""
