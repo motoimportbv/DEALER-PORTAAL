@@ -185,12 +185,13 @@ function App() {
 
   return (
     <AuthProvider>
-      <div className="App">
-        <Toaster position="top-right" richColors />
-        <BrowserRouter>
-          <PreviewRedirect />
-          <NotificationHandler />
-          <Routes>
+      <DataRefreshProvider>
+        <div className="App">
+          <Toaster position="top-right" richColors />
+          <BrowserRouter>
+            <PreviewRedirect />
+            <NotificationHandler />
+            <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/login/:token" element={<AutoLoginPage />} />
