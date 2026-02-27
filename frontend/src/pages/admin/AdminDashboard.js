@@ -520,7 +520,7 @@ const AdminDashboard = () => {
                   {marketingFiles.files?.filter(f => f.filename.endsWith('.pdf')).map((file, idx) => (
                     <a 
                       key={idx} 
-                      href={file.cloud_url} 
+                      href={`${API}/admin/marketing-files/download/${encodeURIComponent(file.filename)}`}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 bg-red-50 hover:bg-red-100 rounded-lg p-3 transition-colors cursor-pointer group"
@@ -549,7 +549,7 @@ const AdminDashboard = () => {
                   {marketingFiles.files?.filter(f => f.filename.endsWith('.csv')).map((file, idx) => (
                     <a 
                       key={idx} 
-                      href={file.cloud_url} 
+                      href={`${API}/admin/marketing-files/download/${encodeURIComponent(file.filename)}`}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 bg-green-50 hover:bg-green-100 rounded-lg p-3 transition-colors cursor-pointer group"
@@ -578,7 +578,7 @@ const AdminDashboard = () => {
                   {marketingFiles.files?.filter(f => f.filename.endsWith('.md') || f.filename.endsWith('.txt') || f.filename.endsWith('.png')).map((file, idx) => (
                     <a 
                       key={idx} 
-                      href={file.cloud_url} 
+                      href={`${API}/admin/marketing-files/download/${encodeURIComponent(file.filename)}`}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 rounded-lg p-3 transition-colors cursor-pointer group"
