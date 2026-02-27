@@ -4,6 +4,7 @@ import "./i18n"; // Initialize i18n
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
+import { DataRefreshProvider } from "./components/DataRefreshProvider";
 import { initializeNativeFeatures, isNative } from "./services/nativeService";
 import InstallPrompt from "./components/InstallPrompt";
 import WelcomePopup from "./components/WelcomePopup";
