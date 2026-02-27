@@ -505,53 +505,98 @@ const AdminDashboard = () => {
                   <Cloud className="w-5 h-5 text-blue-500" />
                   Marketing Bestanden
                 </CardTitle>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-zinc-500">
-                    {marketingFiles.migrated_count}/{marketingFiles.total_files} in cloud
-                  </span>
-                  {marketingFiles.migrated_count < marketingFiles.total_files && (
-                    <Button 
-                      size="sm" 
-                      onClick={handleMigrateFiles}
-                      disabled={migrating}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {migrating ? (
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Cloud className="w-4 h-4 mr-2" />
-                      )}
-                      {migrating ? 'Migreren...' : 'Migreer naar Cloud'}
-                    </Button>
-                  )}
-                </div>
+                <span className="text-sm text-zinc-500">
+                  {marketingFiles.migrated_count}/{marketingFiles.total_files} in cloud • {marketingFiles.total_size_mb} MB
+                </span>
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {marketingFiles.files?.slice(0, 9).map((file, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-zinc-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      {file.migrated ? (
-                        <Cloud className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      ) : (
-                        <Download className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                      )}
-                      <span className="text-sm text-zinc-700 truncate" title={file.filename}>
-                        {file.filename.length > 25 ? file.filename.slice(0, 25) + '...' : file.filename}
-                      </span>
-                    </div>
-                    <span className="text-xs text-zinc-400 flex-shrink-0">
-                      {file.size_kb > 1000 ? `${(file.size_kb/1024).toFixed(1)} MB` : `${file.size_kb} KB`}
-                    </span>
-                  </div>
-                ))}
+              {/* PDF Flyers Section */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-zinc-700 mb-3 flex items-center gap-2">
+                  📄 Dealer & Supplier Flyers
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {marketingFiles.files?.filter(f => f.filename.endsWith('.pdf')).map((file, idx) => (
+                    <a 
+                      key={idx} 
+                      href={file.cloud_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-red-50 hover:bg-red-100 rounded-lg p-3 transition-colors cursor-pointer group"
+                      title={`Download ${file.filename}`}
+                    >
+                      <Download className="w-4 h-4 text-red-500 group-hover:text-red-600 flex-shrink-0" />
+                      <div className="overflow-hidden flex-1">
+                        <span className="text-sm text-zinc-700 truncate block" title={file.filename}>
+                          {file.filename.replace('Moto_Import_', '').replace('.pdf', '').replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs text-zinc-400">
+                          {file.size_kb > 1000 ? `${(file.size_kb/1024).toFixed(1)} MB` : `${Math.round(file.size_kb)} KB`}
+                        </span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
               </div>
-              {marketingFiles.total_files > 9 && (
-                <p className="text-center text-sm text-zinc-500 mt-4">
-                  +{marketingFiles.total_files - 9} meer bestanden ({marketingFiles.total_size_mb} MB totaal)
-                </p>
-              )}
+
+              {/* CSV Dealer Lists Section */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-zinc-700 mb-3 flex items-center gap-2">
+                  📊 Dealer Contactlijsten
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {marketingFiles.files?.filter(f => f.filename.endsWith('.csv')).map((file, idx) => (
+                    <a 
+                      key={idx} 
+                      href={file.cloud_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-green-50 hover:bg-green-100 rounded-lg p-3 transition-colors cursor-pointer group"
+                      title={`Download ${file.filename}`}
+                    >
+                      <Download className="w-4 h-4 text-green-500 group-hover:text-green-600 flex-shrink-0" />
+                      <div className="overflow-hidden flex-1">
+                        <span className="text-sm text-zinc-700 truncate block" title={file.filename}>
+                          {file.filename.replace('.csv', '').replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs text-zinc-400">
+                          {file.size_kb > 1000 ? `${(file.size_kb/1024).toFixed(1)} MB` : `${Math.round(file.size_kb)} KB`}
+                        </span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* Other Files Section */}
+              <div>
+                <h4 className="font-semibold text-zinc-700 mb-3 flex items-center gap-2">
+                  📝 Templates & Documenten
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {marketingFiles.files?.filter(f => f.filename.endsWith('.md') || f.filename.endsWith('.txt') || f.filename.endsWith('.png')).map((file, idx) => (
+                    <a 
+                      key={idx} 
+                      href={file.cloud_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 rounded-lg p-3 transition-colors cursor-pointer group"
+                      title={`Download ${file.filename}`}
+                    >
+                      <Download className="w-4 h-4 text-blue-500 group-hover:text-blue-600 flex-shrink-0" />
+                      <div className="overflow-hidden flex-1">
+                        <span className="text-sm text-zinc-700 truncate block" title={file.filename}>
+                          {file.filename.replace('.md', '').replace('.txt', '').replace('.png', '').replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs text-zinc-400">
+                          {file.size_kb > 1000 ? `${(file.size_kb/1024).toFixed(1)} MB` : `${Math.round(file.size_kb)} KB`}
+                        </span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
