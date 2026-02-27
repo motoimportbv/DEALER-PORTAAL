@@ -5747,7 +5747,341 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
     }
 
 
-# ============ AI WELCOME MESSAGE ENDPOINTS ============
+@api_router.get("/admin/analytics/conversion")
+async def get_conversion_analytics(user: dict = Depends(require_admin)):
+    """Get detailed conversion analytics - views to purchases"""
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    week_ago = (now - timedelta(days=7)).isoformat()
+    month_ago = (now - timedelta(days=30)).isoformat()
+    
+    # Get all orders from last 30 days
+    orders = await db.orders.find(
+        {"created_at": {"$gte": month_ago}},
+        {"_id": 0, "motorcycle_id": 1, "dealer_id": 1, "created_at": 1, "total_price": 1}
+    ).to_list(1000)
+    
+    # Get all views from last 30 days
+    views = await db.activity_logs.find(
+        {"type": "motorcycle_view", "timestamp": {"$gte": month_ago}},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    # Calculate conversion rate
+    unique_viewed_motorcycles = set(v.get("motorcycle_id") for v in views if v.get("motorcycle_id"))
+    purchased_motorcycles = set(o.get("motorcycle_id") for o in orders if o.get("motorcycle_id"))
+    
+    # Motorcycles that were viewed AND then purchased
+    viewed_and_purchased = unique_viewed_motorcycles.intersection(purchased_motorcycles)
+    
+    conversion_rate = (len(viewed_and_purchased) / len(unique_viewed_motorcycles) * 100) if unique_viewed_motorcycles else 0
+    
+    # Views per purchase (how many views before a motorcycle sells)
+    views_per_purchase = {}
+    for order in orders:
+        moto_id = order.get("motorcycle_id")
+        if moto_id:
+            view_count = sum(1 for v in views if v.get("motorcycle_id") == moto_id)
+            views_per_purchase[moto_id] = view_count
+    
+    avg_views_before_sale = sum(views_per_purchase.values()) / len(views_per_purchase) if views_per_purchase else 0
+    
+    # Top converting dealers (most purchases relative to views)
+    dealer_stats = {}
+    for view in views:
+        dealer_id = view.get("dealer_id")
+        if dealer_id:
+            if dealer_id not in dealer_stats:
+                dealer_stats[dealer_id] = {"views": 0, "purchases": 0, "name": view.get("dealer_name", "Onbekend")}
+            dealer_stats[dealer_id]["views"] += 1
+    
+    for order in orders:
+        dealer_id = order.get("dealer_id")
+        if dealer_id and dealer_id in dealer_stats:
+            dealer_stats[dealer_id]["purchases"] += 1
+    
+    # Calculate conversion per dealer
+    dealer_conversions = []
+    for dealer_id, stats in dealer_stats.items():
+        if stats["views"] >= 5:  # Only include dealers with significant activity
+            conversion = (stats["purchases"] / stats["views"] * 100) if stats["views"] > 0 else 0
+            dealer_conversions.append({
+                "dealer_id": dealer_id,
+                "dealer_name": stats["name"],
+                "views": stats["views"],
+                "purchases": stats["purchases"],
+                "conversion_rate": round(conversion, 1)
+            })
+    
+    dealer_conversions.sort(key=lambda x: x["conversion_rate"], reverse=True)
+    
+    # Brand popularity analysis
+    brand_views = {}
+    for view in views:
+        brand = view.get("motorcycle_brand", "Onbekend")
+        if brand:
+            brand_views[brand] = brand_views.get(brand, 0) + 1
+    
+    brand_purchases = {}
+    for order in orders:
+        # Get motorcycle info
+        moto = await db.motorcycles.find_one({"id": order.get("motorcycle_id")}, {"brand": 1, "_id": 0})
+        if moto:
+            brand = moto.get("brand", "Onbekend")
+            brand_purchases[brand] = brand_purchases.get(brand, 0) + 1
+    
+    brand_stats = []
+    for brand, view_count in brand_views.items():
+        purchase_count = brand_purchases.get(brand, 0)
+        conversion = (purchase_count / view_count * 100) if view_count > 0 else 0
+        brand_stats.append({
+            "brand": brand,
+            "views": view_count,
+            "purchases": purchase_count,
+            "conversion_rate": round(conversion, 1)
+        })
+    
+    brand_stats.sort(key=lambda x: x["views"], reverse=True)
+    
+    # Price range analysis
+    price_ranges = [
+        {"label": "< €5.000", "min": 0, "max": 5000},
+        {"label": "€5.000 - €10.000", "min": 5000, "max": 10000},
+        {"label": "€10.000 - €15.000", "min": 10000, "max": 15000},
+        {"label": "€15.000 - €20.000", "min": 15000, "max": 20000},
+        {"label": "> €20.000", "min": 20000, "max": 999999}
+    ]
+    
+    price_stats = []
+    for pr in price_ranges:
+        range_orders = [o for o in orders if pr["min"] <= (o.get("total_price") or 0) < pr["max"]]
+        range_views = [v for v in views if pr["min"] <= (v.get("motorcycle_price") or 0) < pr["max"]]
+        price_stats.append({
+            "range": pr["label"],
+            "views": len(range_views),
+            "purchases": len(range_orders),
+            "revenue": sum(o.get("total_price", 0) for o in range_orders)
+        })
+    
+    return {
+        "summary": {
+            "total_views_30d": len(views),
+            "total_orders_30d": len(orders),
+            "unique_motorcycles_viewed": len(unique_viewed_motorcycles),
+            "motorcycles_sold": len(purchased_motorcycles),
+            "conversion_rate": round(conversion_rate, 1),
+            "avg_views_before_sale": round(avg_views_before_sale, 1),
+            "total_revenue_30d": sum(o.get("total_price", 0) for o in orders)
+        },
+        "top_converting_dealers": dealer_conversions[:10],
+        "brand_performance": brand_stats[:10],
+        "price_range_performance": price_stats
+    }
+
+
+@api_router.get("/admin/analytics/dealer/{dealer_id}")
+async def get_dealer_analytics(dealer_id: str, user: dict = Depends(require_admin)):
+    """Get detailed analytics for a specific dealer"""
+    from datetime import timedelta
+    
+    dealer = await db.users.find_one({"id": dealer_id}, {"_id": 0, "email": 1, "company_name": 1, "contact_person": 1})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    now = datetime.now(timezone.utc)
+    month_ago = (now - timedelta(days=30)).isoformat()
+    
+    # Dealer's views
+    views = await db.activity_logs.find(
+        {"type": "motorcycle_view", "dealer_id": dealer_id, "timestamp": {"$gte": month_ago}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Dealer's orders
+    orders = await db.orders.find(
+        {"dealer_id": dealer_id, "created_at": {"$gte": month_ago}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Most viewed brands by this dealer
+    brand_views = {}
+    for view in views:
+        brand = view.get("motorcycle_brand", "Onbekend")
+        brand_views[brand] = brand_views.get(brand, 0) + 1
+    
+    top_brands = sorted(brand_views.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    # Activity timeline (views per day)
+    daily_activity = {}
+    for view in views:
+        day = view.get("timestamp", "")[:10]  # Get date part
+        daily_activity[day] = daily_activity.get(day, 0) + 1
+    
+    return {
+        "dealer": dealer,
+        "stats": {
+            "total_views_30d": len(views),
+            "total_orders_30d": len(orders),
+            "total_spent_30d": sum(o.get("total_price", 0) for o in orders),
+            "conversion_rate": round((len(orders) / len(views) * 100) if views else 0, 1)
+        },
+        "top_brands": [{"brand": b, "views": c} for b, c in top_brands],
+        "daily_activity": daily_activity,
+        "recent_orders": orders[:5]
+    }
+
+
+# ============ MARKETING FILES MIGRATION ============
+
+@api_router.get("/admin/marketing-files")
+async def get_marketing_files(user: dict = Depends(require_admin)):
+    """Get all marketing files with their storage status"""
+    import glob
+    upload_dir = ROOT_DIR / "uploads"
+    
+    # Marketing file types
+    marketing_patterns = ["*.pdf", "*.csv", "*.md", "*.txt", "*.png"]
+    
+    files = []
+    for pattern in marketing_patterns:
+        for filepath in glob.glob(str(upload_dir / pattern)):
+            filename = os.path.basename(filepath)
+            size_kb = os.path.getsize(filepath) / 1024
+            
+            # Check if already migrated to cloud
+            cloud_record = await db.marketing_files.find_one({"filename": filename}, {"_id": 0})
+            
+            files.append({
+                "filename": filename,
+                "size_kb": round(size_kb, 1),
+                "local_path": f"/api/uploads/{filename}",
+                "cloud_url": cloud_record.get("cloud_url") if cloud_record else None,
+                "migrated": cloud_record is not None,
+                "migrated_at": cloud_record.get("migrated_at") if cloud_record else None
+            })
+    
+    # Sort by filename
+    files.sort(key=lambda x: x["filename"])
+    
+    return {
+        "files": files,
+        "total_files": len(files),
+        "migrated_count": sum(1 for f in files if f["migrated"]),
+        "total_size_mb": round(sum(f["size_kb"] for f in files) / 1024, 2)
+    }
+
+
+@api_router.post("/admin/marketing-files/migrate")
+async def migrate_marketing_files(user: dict = Depends(require_admin)):
+    """Migrate all marketing files to Emergent Object Storage"""
+    import glob
+    
+    # Initialize storage
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Cloud storage niet beschikbaar. Controleer EMERGENT_LLM_KEY.")
+    
+    upload_dir = ROOT_DIR / "uploads"
+    marketing_patterns = ["*.pdf", "*.csv", "*.md", "*.txt", "*.png"]
+    
+    migrated = []
+    failed = []
+    skipped = []
+    
+    for pattern in marketing_patterns:
+        for filepath in glob.glob(str(upload_dir / pattern)):
+            filename = os.path.basename(filepath)
+            
+            # Check if already migrated
+            existing = await db.marketing_files.find_one({"filename": filename})
+            if existing:
+                skipped.append(filename)
+                continue
+            
+            try:
+                # Read file
+                with open(filepath, 'rb') as f:
+                    content = f.read()
+                
+                # Determine content type
+                ext = filename.split('.')[-1].lower()
+                content_types = {
+                    'pdf': 'application/pdf',
+                    'csv': 'text/csv',
+                    'md': 'text/markdown',
+                    'txt': 'text/plain',
+                    'png': 'image/png',
+                    'jpg': 'image/jpeg'
+                }
+                content_type = content_types.get(ext, 'application/octet-stream')
+                
+                # Upload to cloud storage
+                storage_path = f"{APP_NAME}/marketing/{filename}"
+                resp = requests.put(
+                    f"{STORAGE_URL}/objects/{storage_path}",
+                    headers={"X-Storage-Key": key, "Content-Type": content_type},
+                    data=content,
+                    timeout=60
+                )
+                resp.raise_for_status()
+                result = resp.json()
+                
+                # Save record to database
+                await db.marketing_files.insert_one({
+                    "filename": filename,
+                    "storage_path": storage_path,
+                    "cloud_url": result.get("url", f"{STORAGE_URL}/objects/{storage_path}?key={key}"),
+                    "content_type": content_type,
+                    "size_bytes": len(content),
+                    "migrated_at": datetime.now(timezone.utc).isoformat(),
+                    "migrated_by": user["email"]
+                })
+                
+                migrated.append(filename)
+                logger.info(f"Migrated marketing file: {filename}")
+                
+            except Exception as e:
+                logger.error(f"Failed to migrate {filename}: {e}")
+                failed.append({"filename": filename, "error": str(e)})
+    
+    return {
+        "message": f"Migratie voltooid: {len(migrated)} bestanden gemigreerd",
+        "migrated": migrated,
+        "skipped": skipped,
+        "failed": failed,
+        "summary": {
+            "total_migrated": len(migrated),
+            "total_skipped": len(skipped),
+            "total_failed": len(failed)
+        }
+    }
+
+
+@api_router.get("/admin/marketing-files/{filename}/download")
+async def download_marketing_file(filename: str, user: dict = Depends(require_admin)):
+    """Get download URL for a marketing file (prefers cloud, fallback to local)"""
+    from fastapi.responses import FileResponse
+    
+    # Check if file exists in cloud
+    cloud_record = await db.marketing_files.find_one({"filename": filename}, {"_id": 0})
+    
+    if cloud_record and cloud_record.get("cloud_url"):
+        return {"url": cloud_record["cloud_url"], "source": "cloud"}
+    
+    # Fallback to local file
+    local_path = ROOT_DIR / "uploads" / filename
+    if local_path.exists():
+        return FileResponse(
+            path=str(local_path),
+            filename=filename,
+            media_type="application/octet-stream"
+        )
+    
+    raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+
+
+
 
 async def generate_welcome_message(dealer_name: str, new_motorcycles: list) -> str:
     """Generate a personalized welcome message using GPT-5.2"""
