@@ -327,13 +327,26 @@ const DealerDashboard = () => {
               </h1>
               <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} {t('motorcycle.available')}</p>
             </div>
-            {/* Prominent Sell Motorcycle Button */}
-            <Link to="/dealer/sell">
-              <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold" data-testid="sell-motorcycle-btn">
-                <Plus className="w-5 h-5 mr-2" />
-                {t('nav.sellMotorcycle')}
+            <div className="flex gap-2">
+              {/* Refresh Button */}
+              <Button 
+                variant="outline" 
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="text-zinc-600"
+                data-testid="refresh-btn"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Laden...' : 'Vernieuwen'}
               </Button>
-            </Link>
+              {/* Prominent Sell Motorcycle Button */}
+              <Link to="/dealer/sell">
+                <Button className="bg-green-600 hover:bg-green-700 text-white font-semibold" data-testid="sell-motorcycle-btn">
+                  <Plus className="w-5 h-5 mr-2" />
+                  {t('nav.sellMotorcycle')}
+                </Button>
+              </Link>
+            </div>
           </div>
           
           {/* Brand Logo Filter */}
