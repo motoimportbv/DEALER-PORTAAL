@@ -60,14 +60,19 @@ const DealerDashboard = () => {
     
     try {
       setIsRefreshing(true);
-      const response = await axios.get(`${API}/motorcycles`, {
+      const response = await axios.get(`${API}/motorcycles/available`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMotorcycles(response.data);
+      setFilteredMotorcycles(response.data);
       if (showToast) {
         toast.success('Gegevens bijgewerkt');
       }
     } catch (error) {
+      // Check if it's a 403 (not approved)
+      if (error.response?.status === 403) {
+        setPendingApproval(true);
+      }
       console.error('Failed to fetch motorcycles:', error);
     } finally {
       setLoading(false);
