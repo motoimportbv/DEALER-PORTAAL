@@ -266,12 +266,72 @@ const ForeignDealerDashboard = () => {
                       Origineel: {formatPrice(motorcycle.original_price)}
                     </div>
                   )}
+
+                  {/* Elders verkocht knop - alleen tonen als nog niet verkocht */}
+                  {!motorcycle.sold_elsewhere && motorcycle.is_available && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => handleMarkSoldElsewhere(motorcycle)}
+                      data-testid={`mark-sold-elsewhere-${motorcycle.id}`}
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-2" />
+                      Elders verkocht
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      {/* Sold Elsewhere Confirmation Dialog */}
+      <Dialog open={soldElsewhereDialog} onOpenChange={setSoldElsewhereDialog}>
+        <DialogContent data-testid="sold-elsewhere-dialog">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Motor elders verkocht?
+            </DialogTitle>
+            <DialogDescription>
+              {selectedMotorcycle && (
+                <>
+                  Weet u zeker dat u de <strong>{selectedMotorcycle.brand} {selectedMotorcycle.model}</strong> wilt 
+                  markeren als elders verkocht?
+                  <br /><br />
+                  <span className="text-amber-600 font-medium">
+                    ⚠️ Dealers die deze motor hebben besteld worden automatisch per email geïnformeerd.
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setSoldElsewhereDialog(false)}
+              disabled={markingSold}
+            >
+              Annuleren
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmMarkSoldElsewhere}
+              disabled={markingSold}
+              data-testid="confirm-sold-elsewhere-btn"
+            >
+              {markingSold ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <XCircle className="w-4 h-4 mr-2" />
+              )}
+              Ja, elders verkocht
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
