@@ -6018,9 +6018,10 @@ async def download_marketing_file(filename: str, token: str = None, user: dict =
     if not user:
         if token:
             try:
-                payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
                 user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0})
-            except:
+            except Exception as e:
+                logger.error(f"Token decode error: {e}")
                 pass
     
     if not user or user.get("role") != "admin":
