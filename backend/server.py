@@ -3240,6 +3240,9 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     
     # Get supplier/source info for admin
     supplier_info_html = ""
+    foreign_dealer = None
+    seller = None
+    
     if foreign_dealer_id:
         # Motor komt van buitenlandse leverancier
         foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0})
