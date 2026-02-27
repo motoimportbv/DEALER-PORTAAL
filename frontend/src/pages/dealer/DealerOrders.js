@@ -204,12 +204,25 @@ const DealerOrders = () => {
             </h1>
             <p className="text-zinc-500 mt-1">{orders.length} {t('orders.totalOrders')}</p>
           </div>
-          <Link to="/dealer/orders/archived">
-            <Button variant="outline" data-testid="view-archived-orders-btn">
-              <FolderArchive className="w-4 h-4 mr-2" />
-              {t('orders.viewArchivedOrders')}
+          <div className="flex gap-2">
+            {/* Refresh Button */}
+            <Button 
+              variant="outline" 
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="text-zinc-600"
+              data-testid="refresh-orders-btn"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Laden...' : 'Vernieuwen'}
             </Button>
-          </Link>
+            <Link to="/dealer/orders/archived">
+              <Button variant="outline" data-testid="view-archived-orders-btn">
+                <FolderArchive className="w-4 h-4 mr-2" />
+                {t('orders.viewArchivedOrders')}
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
