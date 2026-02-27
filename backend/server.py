@@ -5934,32 +5934,56 @@ async def get_dealer_analytics(dealer_id: str, user: dict = Depends(require_admi
 
 # ============ MARKETING FILES MIGRATION ============
 
+# Hardcoded cloud URLs for marketing files (migrated to Emergent Object Storage)
+MARKETING_FILES_CLOUD = {
+    "Dealer_Contacten.csv": {"size_kb": 0.1, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Dealer_Contacten.csv?key=***REMOVED***"},
+    "Duitse_Motorhaendler.csv": {"size_kb": 2.7, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Duitse_Motorhaendler.csv?key=***REMOVED***"},
+    "Email_Templates_4_Talen.md": {"size_kb": 5.7, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Email_Templates_4_Talen.md?key=***REMOVED***"},
+    "Email_Templates_Kopieerbaar.txt": {"size_kb": 5.6, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Email_Templates_Kopieerbaar.txt?key=***REMOVED***"},
+    "MotoImport_EmailCampagne.md": {"size_kb": 4.1, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/MotoImport_EmailCampagne.md?key=***REMOVED***"},
+    "MotoImport_SocialMedia.md": {"size_kb": 4.7, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/MotoImport_SocialMedia.md?key=***REMOVED***"},
+    "MotoImport_Storyboard.md": {"size_kb": 14.5, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/MotoImport_Storyboard.md?key=***REMOVED***"},
+    "MotoImport_VideoScript.md": {"size_kb": 3.6, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/MotoImport_VideoScript.md?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_2025_DE.pdf": {"size_kb": 1721.0, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_2025_DE.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_2025_FR.pdf": {"size_kb": 1721.0, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_2025_FR.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_2025_IT.pdf": {"size_kb": 1721.0, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_2025_IT.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_2025_NL.pdf": {"size_kb": 1721.0, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_2025_NL.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_DE.pdf": {"size_kb": 3.3, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_DE.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_FR.pdf": {"size_kb": 3.3, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_FR.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_IT.pdf": {"size_kb": 3.3, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_IT.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Flyer_NL.pdf": {"size_kb": 3.2, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Flyer_NL.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Info.pdf": {"size_kb": 2.4, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Info.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Info_DE.pdf": {"size_kb": 2.4, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Info_DE.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Info_FR.pdf": {"size_kb": 2.4, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Info_FR.pdf?key=***REMOVED***"},
+    "Moto_Import_Dealer_Info_IT.pdf": {"size_kb": 2.4, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Dealer_Info_IT.pdf?key=***REMOVED***"},
+    "Moto_Import_Supplier_Flyer_DE.pdf": {"size_kb": 2838.5, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Supplier_Flyer_DE.pdf?key=***REMOVED***"},
+    "Moto_Import_Supplier_Flyer_FR.pdf": {"size_kb": 2838.5, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Supplier_Flyer_FR.pdf?key=***REMOVED***"},
+    "Moto_Import_Supplier_Flyer_IT.pdf": {"size_kb": 2838.5, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Supplier_Flyer_IT.pdf?key=***REMOVED***"},
+    "Moto_Import_Supplier_Flyer_NL.pdf": {"size_kb": 2838.4, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Moto_Import_Supplier_Flyer_NL.pdf?key=***REMOVED***"},
+    "Motorzaken_Benelux_Frankrijk.csv": {"size_kb": 2.8, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Motorzaken_Benelux_Frankrijk.csv?key=***REMOVED***"},
+    "Motorzaken_Nederland.csv": {"size_kb": 2.8, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Motorzaken_Nederland.csv?key=***REMOVED***"},
+    "Motorzaken_Noord_Italie.csv": {"size_kb": 6.9, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Motorzaken_Noord_Italie.csv?key=***REMOVED***"},
+    "Motorzaken_Zwitserland.csv": {"size_kb": 2.3, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Motorzaken_Zwitserland.csv?key=***REMOVED***"},
+    "Oostenrijkse_Motorhaendler.csv": {"size_kb": 2.7, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Oostenrijkse_Motorhaendler.csv?key=***REMOVED***"},
+    "Zwitserse_Motorhaendler.csv": {"size_kb": 4.6, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/Zwitserse_Motorhaendler.csv?key=***REMOVED***"},
+    "flyer_hero.png": {"size_kb": 1139.4, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/flyer_hero.png?key=***REMOVED***"},
+    "portal_hero.png": {"size_kb": 1620.0, "cloud_url": "https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/portal_hero.png?key=***REMOVED***"},
+}
+
 @api_router.get("/admin/marketing-files")
 async def get_marketing_files(user: dict = Depends(require_admin)):
-    """Get all marketing files with their storage status"""
-    import glob
-    upload_dir = ROOT_DIR / "uploads"
+    """Get all marketing files - uses hardcoded cloud URLs for production compatibility"""
     
-    # Marketing file types
-    marketing_patterns = ["*.pdf", "*.csv", "*.md", "*.txt", "*.png"]
-    
+    # Use hardcoded cloud files as primary source
     files = []
-    for pattern in marketing_patterns:
-        for filepath in glob.glob(str(upload_dir / pattern)):
-            filename = os.path.basename(filepath)
-            size_kb = os.path.getsize(filepath) / 1024
-            
-            # Check if already migrated to cloud
-            cloud_record = await db.marketing_files.find_one({"filename": filename}, {"_id": 0})
-            
-            files.append({
-                "filename": filename,
-                "size_kb": round(size_kb, 1),
-                "local_path": f"/api/uploads/{filename}",
-                "cloud_url": cloud_record.get("cloud_url") if cloud_record else None,
-                "migrated": cloud_record is not None,
-                "migrated_at": cloud_record.get("migrated_at") if cloud_record else None
-            })
+    for filename, data in MARKETING_FILES_CLOUD.items():
+        files.append({
+            "filename": filename,
+            "size_kb": data["size_kb"],
+            "cloud_url": data["cloud_url"],
+            "migrated": True,
+            "migrated_at": "2026-02-27T19:59:00+00:00"
+        })
     
     # Sort by filename
     files.sort(key=lambda x: x["filename"])
@@ -5967,7 +5991,7 @@ async def get_marketing_files(user: dict = Depends(require_admin)):
     return {
         "files": files,
         "total_files": len(files),
-        "migrated_count": sum(1 for f in files if f["migrated"]),
+        "migrated_count": len(files),
         "total_size_mb": round(sum(f["size_kb"] for f in files) / 1024, 2)
     }
 
