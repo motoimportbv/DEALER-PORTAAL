@@ -193,16 +193,8 @@ const DealerDashboard = () => {
     }
   };
 
-  // Auto-refresh elke 30 seconden voor snelle updates
-  useEffect(() => {
-    if (user && user.role === 'dealer' && !pendingApproval) {
-      const refreshInterval = setInterval(() => {
-        fetchMotorcycles(false); // Stille refresh zonder toast
-      }, 30 * 1000); // 30 seconden
-
-      return () => clearInterval(refreshInterval);
-    }
-  }, [user, pendingApproval, fetchMotorcycles]);
+  // Auto-refresh wordt nu beheerd door DataRefreshProvider
+  // Geen extra interval nodig hier - voorkomt dubbele API calls
 
   // Show pending approval screen
   if (pendingApproval) {

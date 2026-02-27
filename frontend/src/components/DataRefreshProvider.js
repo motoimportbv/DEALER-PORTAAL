@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { RefreshCw, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -22,6 +22,11 @@ export const DataRefreshProvider = ({ children }) => {
   const [lastCheck, setLastCheck] = useState(Date.now());
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
+  // Track of het de eerste check is (geen toast bij initiële load)
+  const isFirstCheck = useRef(true);
+  // Bewaar laatste count in ref om stale closure issues te voorkomen
+  const lastCountRef = useRef(null);
+  
   // Trigger een refresh voor alle luisterende componenten
   const triggerRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
@@ -38,11 +43,24 @@ export const DataRefreshProvider = ({ children }) => {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        const newCount = response.data.count;
-        const lastCount = parseInt(sessionStorage.getItem('lastNotificationCount') || '0');
+        const newCount = response.data.count || 0;
         
+        // Bij eerste check: sla alleen de count op, geen toast
+        if (isFirstCheck.current) {
+          isFirstCheck.current = false;
+          lastCountRef.current = newCount;
+          sessionStorage.setItem('lastNotificationCount', newCount.toString());
+          setLastCheck(Date.now());
+          return;
+        }
+        
+        // Haal vorige count op (gebruik ref of sessionStorage als fallback)
+        const lastCount = lastCountRef.current !== null 
+          ? lastCountRef.current 
+          : parseInt(sessionStorage.getItem('lastNotificationCount') || newCount.toString());
+        
+        // Alleen toast tonen als er ECHT nieuwe notificaties zijn
         if (newCount > lastCount) {
-          // Er zijn nieuwe notificaties!
           const diff = newCount - lastCount;
           
           // Toon toast
@@ -57,14 +75,17 @@ export const DataRefreshProvider = ({ children }) => {
             }
           );
           
-          // Trigger data refresh
+          // Trigger data refresh voor alle componenten
           triggerRefresh();
         }
         
+        // Update stored count
+        lastCountRef.current = newCount;
         sessionStorage.setItem('lastNotificationCount', newCount.toString());
         setLastCheck(Date.now());
         
       } catch (error) {
+        // Stille fout - niet storend voor gebruiker
         console.error('Failed to check for updates:', error);
       }
     };
