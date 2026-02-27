@@ -5,53 +5,34 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ---
 
-## ✅ Voltooid - "Elders Verkocht" Feature (27 februari 2025)
+## ✅ Voltooid - Marketing Migratie & Analytics (27 februari 2025)
 
-### Nieuwe Functionaliteit:
-Leveranciers (foreign dealers) kunnen nu aangeven dat een motor elders is verkocht. Het systeem:
-- Markeert de motor als "elders verkocht" en niet meer beschikbaar
-- Stuurt automatisch een email naar dealers die deze motor hebben besteld
-- Email bevat: welke motor, excuses/uitleg, en vergelijkbare beschikbare motoren als alternatief
-- Creëert een in-app notificatie voor de betrokken dealers
+### 1. Marketing Bestanden naar Cloud Gemigreerd
+- **39 bestanden** succesvol gemigreerd naar Emergent Object Storage
+- Totaal 20.59 MB aan marketing materiaal nu permanent opgeslagen
+- Bestanden inclusief: PDF flyers (NL, DE, FR, IT), CSV dealer contacten, email templates, storyboards
+- Admin Dashboard toont "39/39 in cloud" status
 
-### Bestanden:
-- **Backend:** `/app/backend/server.py` - Nieuwe endpoint `POST /api/motorcycles/foreign-listings/{id}/mark-sold-elsewhere`
-- **Frontend:** `/app/frontend/src/pages/foreign-dealer/ForeignDealerDashboard.js` - "Elders verkocht" knop + bevestigingsdialog
+### 2. Dealer Analytics Dashboard
+Uitgebreide analytics sectie toegevoegd aan Admin Dashboard:
+- **KPI's**: Views, Verkopen, Conversie %, Omzet
+- **Merk Prestaties**: Top merken met views, verkopen en conversie %
+- **Top Converterende Dealers**: Dealer ranking op basis van conversie
+- **Per-Dealer Analytics**: `/api/admin/analytics/dealer/{id}` endpoint
+
+### 3. "Elders Verkocht" Feature
+Leveranciers kunnen nu motors markeren als elders verkocht:
+- Automatische email naar dealers die de motor bestelden
+- Email bevat: motor info, excuses, vergelijkbare alternatieven
+- In-app notificatie voor betrokken dealers
 
 ---
 
 ## ✅ Voltooid - Real-Time Update Systeem (27 februari 2025)
 
-### Wat is geïmplementeerd:
-- **DataRefreshProvider** - Globale context voor auto-refresh via polling (elke 30 seconden)
-- **Toast Notificatie Bug Fix** - Toasts worden nu ALLEEN getoond bij echte nieuwe notificaties, niet bij elke poll
-- **Pagina's met Auto-Refresh**:
-  - `DealerDashboard.js` ✅
-  - `DealerOrders.js` ✅
-  - `ForeignDealerDashboard.js` ✅
-
-### Technische Details:
-- `isFirstCheck` ref voorkomt toast bij initiële page load
-- `lastCountRef` trackt notification count om stale closure issues te voorkomen
-- Handmatige "Vernieuwen" knop op alle pagina's
-- Visibility change listener refresh data wanneer tab weer actief wordt
-
----
-
-## Backend Refactoring Status (25 februari 2025)
-
-### ✅ Fase 1 - Modules Geëxtraheerd (Klaar voor gebruik)
-
-| Bestand | Regels | Beschrijving |
-|---------|--------|--------------|
-| `config.py` | 84 | Environment variables, constanten |
-| `database.py` | 37 | MongoDB connectie |
-| `services/auth_service.py` | 136 | JWT, passwords, user dependencies |
-| `services/email_service.py` | 99 | Gmail SMTP |
-| `services/sms_service.py` | 55 | Twilio SMS |
-| `services/storage_service.py` | 65 | Emergent Object Storage |
-| `services/currency_service.py` | 86 | CHF/EUR conversie |
-| `models/schemas.py` | 554 | Alle Pydantic models |
+- **DataRefreshProvider** - Globale auto-refresh via polling (30 sec)
+- **Toast Bug Fix** - Alleen toasts bij echte nieuwe notificaties
+- **Pagina's met Auto-Refresh**: DealerDashboard, DealerOrders, ForeignDealerDashboard
 
 ---
 
@@ -68,17 +49,27 @@ Leveranciers (foreign dealers) kunnen nu aangeven dat een motor elders is verkoc
 ## Upcoming Tasks
 
 ### P0 - Critical
-1. **DEPLOYMENT NODIG** - Kritieke beveiligingsfix + nieuwe features moeten live
+1. **DEPLOYMENT NODIG** - Alle nieuwe features moeten live gezet worden
 
 ### P1 - High Priority
 1. **WhatsApp Notificaties** - Automatische berichten naar dealers
 2. **Emergent LLM Key Budget** - Herinnering voor AI welkomstbericht
-3. **Backend Router Integratie** - Geleidelijk routes migreren
 
 ### P2 - Medium Priority
-1. Marketing bestanden migreren naar permanente opslag
-2. Flyers download pagina maken
-3. Dealer analytics (conversie tracking)
+1. Backend router integratie voortzetten
+2. Flyers download pagina maken (nu alle files in cloud)
+
+---
+
+## API Endpoints (Nieuw)
+
+| Endpoint | Method | Beschrijving |
+|----------|--------|--------------|
+| `/api/admin/analytics/conversion` | GET | Conversie analytics (30 dagen) |
+| `/api/admin/analytics/dealer/{id}` | GET | Per-dealer analytics |
+| `/api/admin/marketing-files` | GET | Lijst marketing bestanden |
+| `/api/admin/marketing-files/migrate` | POST | Migreer naar cloud |
+| `/api/motorcycles/foreign-listings/{id}/mark-sold-elsewhere` | POST | Markeer motor als elders verkocht |
 
 ---
 
@@ -89,10 +80,10 @@ Leveranciers (foreign dealers) kunnen nu aangeven dat een motor elders is verkoc
 ---
 
 ## Recent Completed Features (februari 2025)
-- ✅ **"Elders Verkocht" Feature** - Leveranciers kunnen motors markeren als elders verkocht met auto-email naar dealers
-- ✅ Beveiligingsfix: Foreign dealers kunnen nu ALLEEN eigen listings zien
+- ✅ Marketing bestanden gemigreerd naar cloud (39 files, 20.59 MB)
+- ✅ Dealer Analytics dashboard met conversie tracking
+- ✅ "Elders Verkocht" feature met auto-email naar dealers
+- ✅ Real-time update systeem (DataRefreshProvider)
+- ✅ Beveiligingsfix: Foreign dealers zien alleen eigen listings
 - ✅ Prijsdisclaimer banner op dealer dashboard
-- ✅ Telefoonnummer update door hele applicatie
 - ✅ Leverancierinfo op admin order emails en pakbonnen
-- ✅ Real-time update systeem met DataRefreshProvider
-- ✅ Toast notificatie bug fix (geen spam meer bij polling)
