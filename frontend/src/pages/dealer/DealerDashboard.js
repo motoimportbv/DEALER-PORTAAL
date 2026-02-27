@@ -205,22 +205,6 @@ const DealerDashboard = () => {
     }
   }, [user, pendingApproval]);
 
-  const fetchMotorcycles = async () => {
-    try {
-      const response = await axios.get(`${API}/motorcycles/available`);
-      setMotorcycles(response.data);
-      setFilteredMotorcycles(response.data);
-    } catch (error) {
-      // Check if it's a 403 (not approved)
-      if (error.response?.status === 403) {
-        setPendingApproval(true);
-      }
-      console.error('Failed to fetch motorcycles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Show pending approval screen
   if (pendingApproval) {
     return (
