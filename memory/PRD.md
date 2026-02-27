@@ -75,7 +75,7 @@ De modules zijn klaar. Integratie kan later stap voor stap:
 - **Test Dealer**: `testdealer@motoimport.nl` / `MotoTest123!`
 
 ## URLs
-- **Preview**: https://dealer-inventory-pro.preview.emergentagent.com
+- **Preview**: https://bike-dealer-hub-1.preview.emergentagent.com
 - **Production**: https://www.motoimportbv.nl
 
 ---
