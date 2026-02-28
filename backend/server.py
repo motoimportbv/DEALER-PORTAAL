@@ -5132,8 +5132,14 @@ async def respond_to_proposal(
     # Get motorcycle info
     motorcycle = await db.motorcycles.find_one({"id": proposal.get("motorcycle_id")}, {"_id": 0})
     
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
     # Get dealer info
     dealer = await db.users.find_one({"id": proposal.get("dealer_id")}, {"_id": 0, "password_hash": 0})
+    
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
     
     # If ACCEPTED: Create order, mark as sold, send pakbon
     if response == "accepted":
