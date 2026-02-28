@@ -5,7 +5,18 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ---
 
-## ✅ Voltooid Vandaag (27 februari 2025)
+## ✅ Voltooid Vandaag (28 februari 2025)
+
+### Prijswijziging Bug Fix (P0 - OPGELOST)
+- **Probleem**: Admin kon de prijs van een motorfiets niet wijzigen - de prijs keerde terug naar de oude waarde
+- **Root Cause**: `fetchMotorcycle()` functie in MotorcycleForm.js miste Authorization header
+- **Fix**: Authorization header toegevoegd aan GET request voor motorcycle data
+- **Tweede fix**: Token variabele correct gedefinieerd in `fetchDealers()` scope
+- **Status**: Getest en werkend ✅
+
+---
+
+## ✅ Eerder Voltooid (27 februari 2025)
 
 ### 1. Marketing Bestanden - Klikbaar & Cloud
 - **32 bestanden** in Emergent Object Storage (20.59 MB)
@@ -30,7 +41,8 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ---
 
 ## Test Credentials
-- **Admin**: `motoimportbv@gmail.com` / `Enolim12`
+- **Admin (test)**: `admin145807@test.nl` / `admin123`
+- **Admin (productie)**: `motoimportbv@gmail.com` / `Enolim12`
 - **Test Dealer**: `testdealer@motoimport.nl` / `MotoTest123!`
 
 ## URLs
@@ -41,8 +53,19 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## Upcoming Tasks
 
-### P0 - Deployment nodig voor alle nieuwe features
+### P0 - Kritiek
+- Deployment nodig voor prijswijziging fix op productie
 
-### P1 - WhatsApp notificaties automatiseren
+### P1 - Hoog
+- WhatsApp notificaties automatiseren
+- AI welkomstbericht budget opladen (Emergent LLM Key)
+- Email flyer functionaliteit testen op productie
 
-### P2 - Backend refactoring voortzetten
+### P2 - Medium
+- Backend refactoring (server.py opsplitsen in modules)
+- Flyer download pagina voor dealers
+
+---
+
+## Bekende Issues
+- **AI Welkomstbericht**: Niet functioneel - LLM key budget op. Gebruiker moet naar Profile > Universal Key > Add Balance gaan.
