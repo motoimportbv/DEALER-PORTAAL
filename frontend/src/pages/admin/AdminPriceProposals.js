@@ -304,6 +304,33 @@ const AdminPriceProposals = () => {
                         </div>
                       )}
 
+                      {/* Show extra options for accepted proposals */}
+                      {proposal.status === 'accepted' && (proposal.include_inspection || proposal.include_appraisal || proposal.include_delivery) && (
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                          <p className="text-xs text-green-600 uppercase tracking-wide mb-2">Extra opties</p>
+                          <div className="flex flex-wrap gap-2">
+                            {proposal.include_inspection && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                <ClipboardCheck className="w-3 h-3" />
+                                Keuring
+                              </span>
+                            )}
+                            {proposal.include_appraisal && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                <Calculator className="w-3 h-3" />
+                                Taxatie
+                              </span>
+                            )}
+                            {proposal.include_delivery && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                <Truck className="w-3 h-3" />
+                                Bezorging
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Actions for pending proposals */}
                       {proposal.status === 'pending' && (
                         <div className="flex gap-2 pt-2">
