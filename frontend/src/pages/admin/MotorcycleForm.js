@@ -152,6 +152,7 @@ const MotorcycleForm = () => {
   const fetchDealers = async () => {
     setLoadingDealers(true);
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/dealers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
