@@ -5000,7 +5000,10 @@ async def create_price_proposal(data: PriceProposalCreate, user: dict = Depends(
         dealer_email=user.get("email", ""),
         original_price=motorcycle.get("price", 0),
         proposed_price=data.proposed_price,
-        reason=data.reason
+        reason=data.reason,
+        request_inspection=data.request_inspection,
+        request_appraisal=data.request_appraisal,
+        request_delivery=data.request_delivery
     )
     
     await db.price_proposals.insert_one(proposal.model_dump())
