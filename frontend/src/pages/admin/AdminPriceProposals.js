@@ -381,6 +381,49 @@ const AdminPriceProposals = () => {
               </div>
             </div>
 
+            {/* Extra options for accepted proposals */}
+            {responseType === 'accepted' && (
+              <div className="space-y-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-semibold text-green-800 mb-3">Extra opties voor de dealer:</p>
+                
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="inspection"
+                    checked={includeInspection}
+                    onCheckedChange={setIncludeInspection}
+                  />
+                  <Label htmlFor="inspection" className="flex items-center gap-2 cursor-pointer">
+                    <ClipboardCheck className="w-4 h-4 text-green-600" />
+                    <span>Keuringskosten</span>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="appraisal"
+                    checked={includeAppraisal}
+                    onCheckedChange={setIncludeAppraisal}
+                  />
+                  <Label htmlFor="appraisal" className="flex items-center gap-2 cursor-pointer">
+                    <Calculator className="w-4 h-4 text-green-600" />
+                    <span>Taxatiekosten</span>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="delivery"
+                    checked={includeDelivery}
+                    onCheckedChange={setIncludeDelivery}
+                  />
+                  <Label htmlFor="delivery" className="flex items-center gap-2 cursor-pointer">
+                    <Truck className="w-4 h-4 text-green-600" />
+                    <span>Bezorgen</span>
+                  </Label>
+                </div>
+              </div>
+            )}
+
             {/* Counter price input */}
             {responseType === 'counter' && (
               <div className="space-y-2">
