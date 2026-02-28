@@ -326,6 +326,19 @@ const MotorcycleList = () => {
                     >
                       <MessageCircle className="w-4 h-4" />
                     </Button>
+                    {/* Relist button for unavailable motorcycles */}
+                    {!motorcycle.is_available && (
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleRelist(motorcycle)}
+                        data-testid={`relist-btn-${motorcycle.id}`}
+                        title="Herplaatsen"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Link to={`/admin/motorcycles/${motorcycle.id}/edit`}>
                       <Button variant="outline" size="icon" data-testid={`edit-btn-${motorcycle.id}`}>
                         <Pencil className="w-4 h-4" />
