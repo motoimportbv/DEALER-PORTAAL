@@ -19,7 +19,7 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Professionele email template met motor info, oude/nieuwe prijs, besparing
 - **Status**: Geïmplementeerd en getest ✅
 
-### 3. Extra Opties bij Prijsvoorstel Acceptatie (NIEUW)
+### 3. Extra Opties bij Prijsvoorstel Acceptatie - Admin (NIEUW)
 - Bij accepteren van een prijsvoorstel kan admin nu kiezen:
   - ✅ Keuringskosten
   - ✅ Taxatiekosten
@@ -34,6 +34,15 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Herplaatsen knop (blauw ↻ icoon) voor verkochte/niet-beschikbare motoren
 - Met één klik motor weer beschikbaar maken
 - Reset ook "elders verkocht" status
+- **Status**: Geïmplementeerd en getest ✅
+
+### 5. Extra Opties bij Prijsvoorstel - Dealer (NIEUW)
+- Dealers kunnen nu bij hun prijsvoorstel aangeven of ze wensen:
+  - ✅ Keuringskosten
+  - ✅ Taxatiekosten
+  - ✅ Bezorgen
+- Admin ziet deze gevraagde opties in de prijsvoorstellen lijst
+- Opties worden ook meegestuurd in de email notificatie naar admin
 - **Status**: Geïmplementeerd en getest ✅
 
 ---
