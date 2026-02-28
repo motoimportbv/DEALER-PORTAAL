@@ -5091,7 +5091,16 @@ async def get_my_price_proposals(user: dict = Depends(get_current_user)):
 
 
 @api_router.put("/price-proposals/{proposal_id}/respond")
-async def respond_to_proposal(proposal_id: str, response: str, admin_message: str = "", counter_price: float = None, user: dict = Depends(require_admin)):
+async def respond_to_proposal(
+    proposal_id: str, 
+    response: str, 
+    admin_message: str = "", 
+    counter_price: float = None,
+    include_inspection: bool = False,
+    include_appraisal: bool = False,
+    include_delivery: bool = False,
+    user: dict = Depends(require_admin)
+):
     """Admin responds to a price proposal (accept/reject/counter)"""
     proposal = await db.price_proposals.find_one({"id": proposal_id}, {"_id": 0})
     if not proposal:
@@ -5111,6 +5120,12 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
     }
     if response == "counter" and counter_price:
         update_data["counter_price"] = counter_price
+    
+    # Store extra options for accepted proposals
+    if response == "accepted":
+        update_data["include_inspection"] = include_inspection
+        update_data["include_appraisal"] = include_appraisal
+        update_data["include_delivery"] = include_delivery
     
     await db.price_proposals.update_one({"id": proposal_id}, {"$set": update_data})
     
