@@ -48,6 +48,11 @@ const AdminPriceProposals = () => {
   const [counterPrice, setCounterPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState('pending');
+  
+  // Extra options for accepted proposals
+  const [includeInspection, setIncludeInspection] = useState(false);
+  const [includeAppraisal, setIncludeAppraisal] = useState(false);
+  const [includeDelivery, setIncludeDelivery] = useState(false);
 
   useEffect(() => {
     fetchProposals();
