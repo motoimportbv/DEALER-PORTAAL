@@ -79,13 +79,20 @@ const AdminPriceProposals = () => {
 
     setSubmitting(true);
     try {
-      await axios.put(`${API}/price-proposals/${respondingTo.id}/respond`, null, {
-        params: {
-          response: responseType,
-          admin_message: adminMessage,
-          counter_price: responseType === 'counter' ? Number(counterPrice) : null
-        }
-      });
+      const params = {
+        response: responseType,
+        admin_message: adminMessage,
+        counter_price: responseType === 'counter' ? Number(counterPrice) : null
+      };
+      
+      // Add extra options for accepted proposals
+      if (responseType === 'accepted') {
+        params.include_inspection = includeInspection;
+        params.include_appraisal = includeAppraisal;
+        params.include_delivery = includeDelivery;
+      }
+      
+      await axios.put(`${API}/price-proposals/${respondingTo.id}/respond`, null, { params });
       toast.success(
         responseType === 'accepted' ? 'Voorstel geaccepteerd!' :
         responseType === 'rejected' ? 'Voorstel afgewezen' :
@@ -95,6 +102,9 @@ const AdminPriceProposals = () => {
       setResponseType('');
       setAdminMessage('');
       setCounterPrice('');
+      setIncludeInspection(false);
+      setIncludeAppraisal(false);
+      setIncludeDelivery(false);
       fetchProposals();
     } catch (error) {
       toast.error('Fout bij versturen reactie');
