@@ -5051,6 +5051,8 @@ async def create_price_proposal(data: PriceProposalCreate, user: dict = Depends(
                 
                 {f'<div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;"><strong>Toelichting dealer:</strong><br><em>"{data.reason}"</em></div>' if data.reason else ''}
                 
+                {'<div style="margin-top: 15px; padding: 15px; background: #dbeafe; border-radius: 8px; border: 1px solid #3b82f6;"><strong style="color: #1d4ed8;">📋 Gevraagde opties:</strong><ul style="margin: 10px 0 0 0; padding-left: 20px;">' + (''.join([f'<li>Keuringskosten</li>' if data.request_inspection else '', f'<li>Taxatiekosten</li>' if data.request_appraisal else '', f'<li>Bezorging</li>' if data.request_delivery else ''])) + '</ul></div>' if (data.request_inspection or data.request_appraisal or data.request_delivery) else ''}
+                
                 <div style="margin-top: 25px; text-align: center;">
                     <a href="https://www.motoimportbv.nl/admin/price-proposals" 
                        style="display: inline-block; background: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">
