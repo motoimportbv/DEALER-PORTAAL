@@ -112,6 +112,25 @@ const MotorcycleList = () => {
     }
   };
 
+  const handleRelist = async (motorcycle) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/motorcycles/${motorcycle.id}`, 
+        { 
+          is_available: true,
+          sold_elsewhere: false,
+          sold_elsewhere_at: null,
+          sold_elsewhere_reason: null
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${motorcycle.brand} ${motorcycle.model} is herplaatst!`);
+      fetchMotorcycles();
+    } catch (error) {
+      toast.error('Kon motor niet herplaatsen');
+    }
+  };
+
   const getConditionBadge = (condition) => {
     const styles = {
       new: 'bg-emerald-100 text-emerald-800',
