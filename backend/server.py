@@ -803,6 +803,123 @@ async def send_admin_notification(subject: str, html_content: str, include_limit
         except Exception as e:
             logger.error(f"Failed to send admin notification to {admin_email}: {e}")
 
+async def send_price_reduction_emails(motorcycle_id: str, brand: str, model: str, year: int, old_price: float, new_price: float):
+    """Send email to dealers who viewed this motorcycle when price is reduced"""
+    try:
+        # Find unique dealers who viewed this motorcycle
+        viewed_dealer_ids = await db.activity_logs.distinct(
+            "dealer_id",
+            {"type": "motorcycle_view", "motorcycle_id": motorcycle_id}
+        )
+        
+        if not viewed_dealer_ids:
+            logger.info(f"No dealers have viewed motorcycle {motorcycle_id}, skipping price reduction emails")
+            return
+        
+        # Get dealer details
+        dealers = await db.users.find(
+            {
+                "id": {"$in": viewed_dealer_ids},
+                "role": "dealer",
+                "is_approved": True,
+                "is_foreign_dealer": {"$ne": True}
+            },
+            {"_id": 0, "email": 1, "company_name": 1}
+        ).to_list(100)
+        
+        if not dealers:
+            logger.info(f"No eligible dealers found for price reduction notification")
+            return
+        
+        # Calculate price difference
+        price_diff = old_price - new_price
+        discount_percent = round((price_diff / old_price) * 100) if old_price > 0 else 0
+        
+        # Build motorcycle link
+        moto_link = f"{PRODUCTION_BASE_URL}/motorcycle/{motorcycle_id}"
+        
+        # Create email content
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🏷️ PRIJSVERLAGING</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Een motor die u eerder heeft bekeken is nu goedkoper!</p>
+                </div>
+                
+                <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="color: #1a1a1a; margin: 0 0 5px 0; font-size: 28px; font-weight: bold;">
+                            {brand} {model}
+                        </h2>
+                        <p style="color: #666; margin: 0; font-size: 16px;">Bouwjaar {year}</p>
+                    </div>
+                    
+                    <div style="background: #f8f8f8; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
+                            <div style="text-align: center;">
+                                <p style="color: #999; font-size: 12px; margin: 0 0 5px 0; text-transform: uppercase;">Was</p>
+                                <p style="color: #999; font-size: 24px; margin: 0; text-decoration: line-through;">€{old_price:,.0f}</p>
+                            </div>
+                            <div style="font-size: 30px;">→</div>
+                            <div style="text-align: center;">
+                                <p style="color: #16a34a; font-size: 12px; margin: 0 0 5px 0; text-transform: uppercase;">Nu</p>
+                                <p style="color: #16a34a; font-size: 32px; margin: 0; font-weight: bold;">€{new_price:,.0f}</p>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 15px;">
+                            <span style="background: #dcfce7; color: #16a34a; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px;">
+                                U bespaart €{price_diff:,.0f} ({discount_percent}% korting)
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="{moto_link}" style="display: inline-block; background: #dc2626; color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                            BEKIJK MOTOR →
+                        </a>
+                    </div>
+                    
+                    <p style="color: #999; font-size: 12px; text-align: center; margin-top: 25px;">
+                        U ontvangt deze email omdat u deze motor eerder heeft bekeken op Moto Import.
+                    </p>
+                </div>
+                
+                <div style="text-align: center; padding: 20px;">
+                    <p style="color: #666; font-size: 12px; margin: 0;">
+                        © {datetime.now().year} Moto Import BV | <a href="{PRODUCTION_BASE_URL}" style="color: #dc2626;">motoimportbv.nl</a>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send emails to all dealers who viewed this motorcycle
+        sent_count = 0
+        for dealer in dealers:
+            try:
+                await send_email(
+                    dealer["email"],
+                    f"🏷️ Prijsverlaging: {brand} {model} nu €{new_price:,.0f}",
+                    html_content
+                )
+                sent_count += 1
+                logger.info(f"Price reduction email sent to {dealer.get('company_name', dealer['email'])}")
+            except Exception as e:
+                logger.error(f"Failed to send price reduction email to {dealer['email']}: {e}")
+        
+        logger.info(f"Price reduction emails sent to {sent_count}/{len(dealers)} dealers for {brand} {model}")
+        
+    except Exception as e:
+        logger.error(f"Error in send_price_reduction_emails: {e}")
+
 # ============ EXCHANGE RATE ENDPOINTS ============
 
 @api_router.get("/exchange-rate/chf-eur")
