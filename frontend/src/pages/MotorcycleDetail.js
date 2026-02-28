@@ -85,6 +85,9 @@ const MotorcycleDetail = () => {
   const [proposedPrice, setProposedPrice] = useState('');
   const [proposalReason, setProposalReason] = useState('');
   const [submittingProposal, setSubmittingProposal] = useState(false);
+  const [proposalIncludeInspection, setProposalIncludeInspection] = useState(false);
+  const [proposalIncludeAppraisal, setProposalIncludeAppraisal] = useState(false);
+  const [proposalIncludeDelivery, setProposalIncludeDelivery] = useState(false);
 
   const openLightbox = (index = 0) => {
     setSelectedImage(index);
