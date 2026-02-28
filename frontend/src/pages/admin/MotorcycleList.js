@@ -202,24 +202,55 @@ const MotorcycleList = () => {
         </div>
         
         {/* Search Bar */}
-        <div className="mt-4 relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-          <Input
-            type="text"
-            placeholder="Zoek op merk, model, jaar of kleur..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-10"
-            data-testid="motorcycle-search-input"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+        <div className="mt-4 flex flex-col sm:flex-row gap-4">
+          {/* Availability Filter */}
+          <div className="flex gap-2">
+            <Button
+              variant={availabilityFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setAvailabilityFilter('all')}
+              className={availabilityFilter === 'all' ? 'bg-zinc-900' : ''}
             >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+              Alle ({motorcycles.length})
+            </Button>
+            <Button
+              variant={availabilityFilter === 'available' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setAvailabilityFilter('available')}
+              className={availabilityFilter === 'available' ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              Beschikbaar ({motorcycles.filter(m => m.is_available).length})
+            </Button>
+            <Button
+              variant={availabilityFilter === 'unavailable' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setAvailabilityFilter('unavailable')}
+              className={availabilityFilter === 'unavailable' ? 'bg-red-600 hover:bg-red-700' : ''}
+            >
+              Verkocht ({motorcycles.filter(m => !m.is_available).length})
+            </Button>
+          </div>
+          
+          {/* Search Input */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+            <Input
+              type="text"
+              placeholder="Zoek op merk, model, jaar of kleur..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-10"
+              data-testid="motorcycle-search-input"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
