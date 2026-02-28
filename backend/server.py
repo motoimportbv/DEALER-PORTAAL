@@ -5269,6 +5269,8 @@ async def respond_to_proposal(
                 </tr>
             </table>
             
+            {'<h3 style="border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;">📋 Extra Opties</h3><div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><ul style="margin: 0; padding-left: 20px;">' + (''.join([f'<li style="color: #16a34a;">✅ Keuringskosten inbegrepen</li>' if include_inspection else '', f'<li style="color: #16a34a;">✅ Taxatiekosten inbegrepen</li>' if include_appraisal else '', f'<li style="color: #16a34a;">✅ Bezorging inbegrepen</li>' if include_delivery else ''])) + '</ul></div>' if (include_inspection or include_appraisal or include_delivery) else ''}
+            
             {f'<div style="padding: 15px; background: #f0f9ff; border-left: 4px solid #3b82f6; margin-bottom: 20px;"><strong>Bericht van Moto Import:</strong><br>{admin_message}</div>' if admin_message else ''}
             
             <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
