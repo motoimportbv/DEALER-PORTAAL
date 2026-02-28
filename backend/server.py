@@ -2843,6 +2843,11 @@ async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: di
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     
+    # Track old price for price reduction notification
+    old_price = motorcycle.get("price", 0)
+    new_price = update_data.get("price")
+    price_reduced = new_price is not None and new_price < old_price
+    
     # If admin manually sets price, mark it as overridden and save original price
     if "price" in update_data:
         # Save original price if not already saved
@@ -2870,6 +2875,19 @@ async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: di
         await db.motorcycles.update_one({"id": motorcycle_id}, {"$set": update_data})
     
     updated = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    
+    # Send price reduction email to dealers who viewed this motorcycle
+    if price_reduced and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
+        asyncio.create_task(send_price_reduction_emails(
+            motorcycle_id=motorcycle_id,
+            brand=motorcycle.get("brand", ""),
+            model=motorcycle.get("model", ""),
+            year=motorcycle.get("year", ""),
+            old_price=old_price,
+            new_price=new_price
+        ))
+        logger.info(f"Price reduction detected for {motorcycle.get('brand')} {motorcycle.get('model')}: €{old_price} -> €{new_price}")
+    
     return updated
 
 @api_router.delete("/motorcycles/{motorcycle_id}")
