@@ -5152,7 +5152,7 @@ async def respond_to_proposal(
             "description": motorcycle.get("description"),
         }
         
-        # Create order with the accepted price
+        # Create order with the accepted price and extra options
         order_id = str(uuid.uuid4())
         order = {
             "id": order_id,
@@ -5167,11 +5167,14 @@ async def respond_to_proposal(
             "motorcycle_snapshot": motorcycle_snapshot,
             "status": "confirmed",
             "payment_status": "pending",
-            "needs_delivery": False,
+            "needs_delivery": include_delivery,
             "delivery_cost": 0,
             "deposit_amount": 0,
             "order_type": "price_proposal",
             "proposal_id": proposal_id,
+            "include_inspection": include_inspection,
+            "include_appraisal": include_appraisal,
+            "include_delivery": include_delivery,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.orders.insert_one(order)
