@@ -501,6 +501,9 @@ class PriceProposalCreate(BaseModel):
     motorcycle_id: str
     proposed_price: float
     reason: str = ""
+    request_inspection: bool = False
+    request_appraisal: bool = False
+    request_delivery: bool = False
 
 class PriceProposal(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -512,9 +515,15 @@ class PriceProposal(BaseModel):
     original_price: float
     proposed_price: float
     reason: str = ""
+    request_inspection: bool = False
+    request_appraisal: bool = False
+    request_delivery: bool = False
     status: str = "pending"  # pending, accepted, rejected, counter
     admin_response: str = ""
     counter_price: Optional[float] = None
+    include_inspection: bool = False  # Admin's decision
+    include_appraisal: bool = False   # Admin's decision
+    include_delivery: bool = False    # Admin's decision
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Optional[str] = None
 
