@@ -29,7 +29,9 @@ import {
   ChevronRight,
   ZoomIn,
   MessageSquare,
-  Send
+  Send,
+  ClipboardCheck,
+  Calculator
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
