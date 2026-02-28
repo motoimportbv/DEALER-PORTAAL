@@ -222,7 +222,10 @@ const MotorcycleForm = () => {
 
   const fetchMotorcycle = async () => {
     try {
-      const response = await axios.get(`${API}/motorcycles/${id}`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/motorcycles/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setFormData(response.data);
     } catch (error) {
       toast.error('Kon motor niet laden');
