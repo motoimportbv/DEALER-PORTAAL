@@ -290,6 +290,33 @@ const AdminPriceProposals = () => {
                         </div>
                       )}
 
+                      {/* Show requested options from dealer */}
+                      {(proposal.request_inspection || proposal.request_appraisal || proposal.request_delivery) && (
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-xs text-blue-600 uppercase tracking-wide mb-2">Gevraagde opties door dealer</p>
+                          <div className="flex flex-wrap gap-2">
+                            {proposal.request_inspection && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                                <ClipboardCheck className="w-3 h-3" />
+                                Keuring
+                              </span>
+                            )}
+                            {proposal.request_appraisal && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                                <Calculator className="w-3 h-3" />
+                                Taxatie
+                              </span>
+                            )}
+                            {proposal.request_delivery && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                                <Truck className="w-3 h-3" />
+                                Bezorging
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {proposal.status === 'counter' && proposal.counter_price && (
                         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                           <p className="text-xs text-blue-600 uppercase tracking-wide mb-1">Uw tegenbod</p>
