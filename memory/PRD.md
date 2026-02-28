@@ -29,6 +29,13 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Zichtbaar in geaccepteerde voorstellen lijst
 - **Status**: Geïmplementeerd en getest ✅
 
+### 4. Motor Herplaatsen Feature (NIEUW)
+- Filter knoppen: **Alle** | **Beschikbaar** | **Verkocht**
+- Herplaatsen knop (blauw ↻ icoon) voor verkochte/niet-beschikbare motoren
+- Met één klik motor weer beschikbaar maken
+- Reset ook "elders verkocht" status
+- **Status**: Geïmplementeerd en getest ✅
+
 ---
 
 ## ✅ Eerder Voltooid
