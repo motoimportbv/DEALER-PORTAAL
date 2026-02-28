@@ -46,6 +46,7 @@ const MotorcycleList = () => {
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [availabilityFilter, setAvailabilityFilter] = useState('all'); // 'all', 'available', 'unavailable'
   const [loading, setLoading] = useState(true);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsappData, setWhatsappData] = useState(null);
@@ -54,21 +55,30 @@ const MotorcycleList = () => {
     fetchMotorcycles();
   }, []);
 
-  // Filter motorcycles when search term changes
+  // Filter motorcycles when search term or availability filter changes
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredMotorcycles(motorcycles);
-    } else {
+    let filtered = motorcycles;
+    
+    // Apply availability filter
+    if (availabilityFilter === 'available') {
+      filtered = filtered.filter(m => m.is_available);
+    } else if (availabilityFilter === 'unavailable') {
+      filtered = filtered.filter(m => !m.is_available);
+    }
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      const filtered = motorcycles.filter(m => 
+      filtered = filtered.filter(m => 
         m.brand?.toLowerCase().includes(search) ||
         m.model?.toLowerCase().includes(search) ||
         m.year?.toString().includes(search) ||
         m.color?.toLowerCase().includes(search)
       );
-      setFilteredMotorcycles(filtered);
     }
-  }, [searchTerm, motorcycles]);
+    
+    setFilteredMotorcycles(filtered);
+  }, [searchTerm, motorcycles, availabilityFilter]);
 
   const fetchMotorcycles = async () => {
     try {
