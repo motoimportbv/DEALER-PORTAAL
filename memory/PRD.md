@@ -16,16 +16,22 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ### 2. Prijsverlaging Email Notificaties (NIEUW)
 - Email wordt automatisch verzonden naar dealers die de motor eerder hebben bekeken
 - Alleen bij prijsverlaging (niet bij verhoging)
-- Professionele email template met:
-  - Motor info (merk, model, jaar)
-  - Oude prijs → Nieuwe prijs
-  - Besparing in € en %
-  - Directe link naar motor
+- Professionele email template met motor info, oude/nieuwe prijs, besparing
+- **Status**: Geïmplementeerd en getest ✅
+
+### 3. Extra Opties bij Prijsvoorstel Acceptatie (NIEUW)
+- Bij accepteren van een prijsvoorstel kan admin nu kiezen:
+  - ✅ Keuringskosten
+  - ✅ Taxatiekosten
+  - ✅ Bezorgen
+- Opties worden opgeslagen bij order en proposal
+- Getoond in pakbon email naar dealer
+- Zichtbaar in geaccepteerde voorstellen lijst
 - **Status**: Geïmplementeerd en getest ✅
 
 ---
 
-## ✅ Eerder Voltooid (27 februari 2025)
+## ✅ Eerder Voltooid
 
 ### Marketing Bestanden - Cloud
 - 32 bestanden in Emergent Object Storage
