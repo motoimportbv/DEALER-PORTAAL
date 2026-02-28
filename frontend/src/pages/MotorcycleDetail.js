@@ -865,6 +865,47 @@ const MotorcycleDetail = () => {
               />
             </div>
 
+            {/* Extra Options */}
+            <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm font-semibold text-blue-800 mb-3">Gewenste extra opties:</p>
+              
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="proposal-inspection"
+                  checked={proposalIncludeInspection}
+                  onCheckedChange={setProposalIncludeInspection}
+                />
+                <Label htmlFor="proposal-inspection" className="flex items-center gap-2 cursor-pointer">
+                  <ClipboardCheck className="w-4 h-4 text-blue-600" />
+                  <span>Keuringskosten</span>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="proposal-appraisal"
+                  checked={proposalIncludeAppraisal}
+                  onCheckedChange={setProposalIncludeAppraisal}
+                />
+                <Label htmlFor="proposal-appraisal" className="flex items-center gap-2 cursor-pointer">
+                  <Calculator className="w-4 h-4 text-blue-600" />
+                  <span>Taxatiekosten</span>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="proposal-delivery"
+                  checked={proposalIncludeDelivery}
+                  onCheckedChange={setProposalIncludeDelivery}
+                />
+                <Label htmlFor="proposal-delivery" className="flex items-center gap-2 cursor-pointer">
+                  <Truck className="w-4 h-4 text-blue-600" />
+                  <span>Bezorgen</span>
+                </Label>
+              </div>
+            </div>
+
             {/* Info */}
             <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
               <p>📧 Uw voorstel wordt direct naar de admin gestuurd. U ontvangt een reactie per e-mail.</p>
