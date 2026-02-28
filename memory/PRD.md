@@ -7,36 +7,38 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 
 ## ✅ Voltooid Vandaag (28 februari 2025)
 
-### Prijswijziging Bug Fix (P0 - OPGELOST)
-- **Probleem**: Admin kon de prijs van een motorfiets niet wijzigen - de prijs keerde terug naar de oude waarde
-- **Root Cause**: `fetchMotorcycle()` functie in MotorcycleForm.js miste Authorization header
-- **Fix**: Authorization header toegevoegd aan GET request voor motorcycle data
-- **Tweede fix**: Token variabele correct gedefinieerd in `fetchDealers()` scope
+### 1. Prijswijziging Bug Fix (P0 - OPGELOST)
+- **Probleem**: Admin kon de prijs van een motorfiets niet wijzigen
+- **Root Cause**: `fetchMotorcycle()` miste Authorization header
+- **Fix**: Authorization header toegevoegd aan GET request
 - **Status**: Getest en werkend ✅
+
+### 2. Prijsverlaging Email Notificaties (NIEUW)
+- Email wordt automatisch verzonden naar dealers die de motor eerder hebben bekeken
+- Alleen bij prijsverlaging (niet bij verhoging)
+- Professionele email template met:
+  - Motor info (merk, model, jaar)
+  - Oude prijs → Nieuwe prijs
+  - Besparing in € en %
+  - Directe link naar motor
+- **Status**: Geïmplementeerd en getest ✅
 
 ---
 
 ## ✅ Eerder Voltooid (27 februari 2025)
 
-### 1. Marketing Bestanden - Klikbaar & Cloud
-- **32 bestanden** in Emergent Object Storage (20.59 MB)
-- Georganiseerd per categorie: Flyers, Contactlijsten, Templates
-- **Alle bestanden klikbaar** - opent direct download in nieuw tabblad
-- Cloud URLs hardcoded voor productie compatibiliteit
+### Marketing Bestanden - Cloud
+- 32 bestanden in Emergent Object Storage
+- Download en email functionaliteit
 
-### 2. Dealer Analytics Dashboard
+### Dealer Analytics Dashboard
 - KPI's: Views, Verkopen, Conversie %, Omzet
-- Merk Prestaties met conversie per merk
-- Top Converterende Dealers ranking
 
-### 3. "Elders Verkocht" Feature
+### "Elders Verkocht" Feature
 - Leveranciers kunnen motors markeren als elders verkocht
-- Automatische email naar betrokken dealers
 
-### 4. Real-Time Update Systeem
+### Real-Time Update Systeem
 - DataRefreshProvider met 30-seconden polling
-- Toast notificaties alleen bij nieuwe data
-- Vernieuwen knop op alle dealer pagina's
 
 ---
 
@@ -54,18 +56,17 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 ## Upcoming Tasks
 
 ### P0 - Kritiek
-- Deployment nodig voor prijswijziging fix op productie
+- Deployment nodig voor alle nieuwe features op productie
 
 ### P1 - Hoog
 - WhatsApp notificaties automatiseren
 - AI welkomstbericht budget opladen (Emergent LLM Key)
-- Email flyer functionaliteit testen op productie
 
 ### P2 - Medium
-- Backend refactoring (server.py opsplitsen in modules)
+- Backend refactoring (server.py opsplitsen)
 - Flyer download pagina voor dealers
 
 ---
 
 ## Bekende Issues
-- **AI Welkomstbericht**: Niet functioneel - LLM key budget op. Gebruiker moet naar Profile > Universal Key > Add Balance gaan.
+- **AI Welkomstbericht**: Niet functioneel - LLM key budget op
