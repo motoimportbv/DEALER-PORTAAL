@@ -6,6 +6,8 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Textarea } from '../../components/ui/textarea';
 import { Input } from '../../components/ui/input';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Label } from '../../components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +31,10 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  MessageCircle
+  MessageCircle,
+  ClipboardCheck,
+  Calculator,
+  Truck
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
