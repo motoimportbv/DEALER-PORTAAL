@@ -927,10 +927,19 @@ const MotorcycleDetail = () => {
                   await axios.post(`${API}/price-proposals`, {
                     motorcycle_id: motorcycle.id,
                     proposed_price: Number(proposedPrice),
-                    reason: proposalReason
+                    reason: proposalReason,
+                    request_inspection: proposalIncludeInspection,
+                    request_appraisal: proposalIncludeAppraisal,
+                    request_delivery: proposalIncludeDelivery
                   });
                   toast.success('Prijsvoorstel verstuurd!');
                   setPriceProposalOpen(false);
+                  // Reset form
+                  setProposedPrice('');
+                  setProposalReason('');
+                  setProposalIncludeInspection(false);
+                  setProposalIncludeAppraisal(false);
+                  setProposalIncludeDelivery(false);
                 } catch (error) {
                   toast.error('Fout bij versturen voorstel');
                 } finally {
