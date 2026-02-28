@@ -308,6 +308,7 @@ const AdminPriceProposals = () => {
                       {proposal.status === 'pending' && (
                         <div className="flex gap-2 pt-2">
                           <Button
+                            data-testid={`accept-btn-${proposal.id}`}
                             className="bg-green-500 hover:bg-green-600"
                             onClick={() => {
                               setRespondingTo(proposal);
