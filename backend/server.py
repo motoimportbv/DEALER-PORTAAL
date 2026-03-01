@@ -1267,6 +1267,20 @@ async def accept_terms(user: dict = Depends(get_current_user)):
     )
     return {"message": "Voorwaarden geaccepteerd", "terms_accepted": True}
 
+class EmailPreferences(BaseModel):
+    receive_price_alerts: bool = True
+    receive_order_updates: bool = True
+    receive_new_motorcycles: bool = True
+
+@api_router.put("/users/email-preferences")
+async def update_email_preferences(preferences: EmailPreferences, user: dict = Depends(get_current_user)):
+    """Update email notification preferences for the current user"""
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"email_preferences": preferences.model_dump()}}
+    )
+    return {"message": "Email voorkeuren opgeslagen", "email_preferences": preferences.model_dump()}
+
 @api_router.post("/auth/generate-permanent-link")
 async def generate_permanent_link(user: dict = Depends(get_current_user)):
     """Generate a permanent auto-login link for the user"""
