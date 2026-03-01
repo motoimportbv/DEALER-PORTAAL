@@ -27,7 +27,10 @@ import {
   CheckCircle,
   Plus,
   X,
-  RefreshCw
+  RefreshCw,
+  Mail,
+  Bell,
+  Settings
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
