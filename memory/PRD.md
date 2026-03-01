@@ -45,6 +45,20 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - Opties worden ook meegestuurd in de email notificatie naar admin
 - **Status**: Geïmplementeerd en getest ✅
 
+### 6. Honda CRF Modellen Uitgebreid (NIEUW)
+- CRF 1000 L, CRF 1000 L DCT, CRF 1000 L Adventure Sports, CRF 1000 L Adventure Sports DCT
+- CRF 1100 L, CRF 1100 L DCT, CRF 1100 L Adventure Sports, CRF 1100 L Adventure Sports DCT
+- **Status**: Geïmplementeerd ✅
+
+### 7. Dealer Email Voorkeuren (NIEUW)
+- Dealers kunnen zelf kiezen welke emails ze willen ontvangen
+- Instellingen knop in dashboard met 3 opties:
+  - ✅ Prijsverlagingen
+  - ✅ Bestellingen
+  - ✅ Nieuwe motoren
+- Voorkeuren worden opgeslagen en gerespecteerd bij email verzending
+- **Status**: Geïmplementeerd en getest ✅
+
 ---
 
 ## ✅ Eerder Voltooid
