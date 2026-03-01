@@ -53,6 +53,40 @@ const DealerDashboard = () => {
     // Check if user has dismissed the banner in this session
     return sessionStorage.getItem('hidePriceDisclaimer') !== 'true';
   });
+  const [showSettings, setShowSettings] = useState(false);
+  const [emailPreferences, setEmailPreferences] = useState({
+    receive_price_alerts: true,
+    receive_order_updates: true,
+    receive_new_motorcycles: true
+  });
+  const [savingPreferences, setSavingPreferences] = useState(false);
+
+  // Load email preferences from user data
+  useEffect(() => {
+    if (user?.email_preferences) {
+      setEmailPreferences(user.email_preferences);
+    }
+  }, [user]);
+
+  const handleEmailPreferenceChange = async (key, value) => {
+    const newPreferences = { ...emailPreferences, [key]: value };
+    setEmailPreferences(newPreferences);
+    
+    setSavingPreferences(true);
+    try {
+      await axios.put(`${API}/users/email-preferences`, newPreferences, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Email voorkeuren opgeslagen');
+      refreshUser();
+    } catch (error) {
+      toast.error('Kon voorkeuren niet opslaan');
+      // Revert on error
+      setEmailPreferences(emailPreferences);
+    } finally {
+      setSavingPreferences(false);
+    }
+  };
 
   const dismissPriceDisclaimer = () => {
     setShowPriceDisclaimer(false);
