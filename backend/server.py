@@ -825,7 +825,7 @@ async def send_price_reduction_emails(motorcycle_id: str, brand: str, model: str
             logger.info(f"No dealers have viewed motorcycle {motorcycle_id}, skipping price reduction emails")
             return
         
-        # Get dealer details
+        # Get dealer details - include email_preferences
         dealers = await db.users.find(
             {
                 "id": {"$in": viewed_dealer_ids},
@@ -833,11 +833,14 @@ async def send_price_reduction_emails(motorcycle_id: str, brand: str, model: str
                 "is_approved": True,
                 "is_foreign_dealer": {"$ne": True}
             },
-            {"_id": 0, "email": 1, "company_name": 1}
+            {"_id": 0, "email": 1, "company_name": 1, "email_preferences": 1}
         ).to_list(100)
         
+        # Filter dealers who want to receive price alerts
+        dealers = [d for d in dealers if d.get("email_preferences", {}).get("receive_price_alerts", True)]
+        
         if not dealers:
-            logger.info(f"No eligible dealers found for price reduction notification")
+            logger.info(f"No eligible dealers found for price reduction notification (after preference filter)")
             return
         
         # Calculate price difference
