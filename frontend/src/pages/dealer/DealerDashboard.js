@@ -348,6 +348,75 @@ const DealerDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Email Settings Panel */}
+      {showSettings && (
+        <div className="mb-6 bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-zinc-600" />
+              <h3 className="font-semibold text-zinc-900">Email Notificaties</h3>
+            </div>
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="text-zinc-400 hover:text-zinc-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-sm text-zinc-500 mb-4">Kies welke email notificaties u wilt ontvangen</p>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-2 border-b border-zinc-100">
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-blue-500" />
+                <div>
+                  <Label htmlFor="price-alerts" className="font-medium">Prijsverlagingen</Label>
+                  <p className="text-xs text-zinc-500">Ontvang een email wanneer een motor die u heeft bekeken in prijs daalt</p>
+                </div>
+              </div>
+              <Switch
+                id="price-alerts"
+                checked={emailPreferences.receive_price_alerts}
+                onCheckedChange={(checked) => handleEmailPreferenceChange('receive_price_alerts', checked)}
+                disabled={savingPreferences}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between py-2 border-b border-zinc-100">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="w-4 h-4 text-green-500" />
+                <div>
+                  <Label htmlFor="order-updates" className="font-medium">Bestellingen</Label>
+                  <p className="text-xs text-zinc-500">Ontvang updates over uw bestellingen en prijsvoorstellen</p>
+                </div>
+              </div>
+              <Switch
+                id="order-updates"
+                checked={emailPreferences.receive_order_updates}
+                onCheckedChange={(checked) => handleEmailPreferenceChange('receive_order_updates', checked)}
+                disabled={savingPreferences}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-3">
+                <Bike className="w-4 h-4 text-red-500" />
+                <div>
+                  <Label htmlFor="new-motorcycles" className="font-medium">Nieuwe motoren</Label>
+                  <p className="text-xs text-zinc-500">Ontvang een email wanneer er nieuwe motoren worden toegevoegd</p>
+                </div>
+              </div>
+              <Switch
+                id="new-motorcycles"
+                checked={emailPreferences.receive_new_motorcycles}
+                onCheckedChange={(checked) => handleEmailPreferenceChange('receive_new_motorcycles', checked)}
+                disabled={savingPreferences}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="content-header">
         <div className="flex flex-col gap-4">
