@@ -359,6 +359,16 @@ const DealerDashboard = () => {
               <p className="text-zinc-500 mt-1">{filteredMotorcycles.length} {t('motorcycle.available')}</p>
             </div>
             <div className="flex gap-2">
+              {/* Settings Button */}
+              <Button 
+                variant="outline" 
+                onClick={() => setShowSettings(!showSettings)}
+                className="text-zinc-600"
+                data-testid="settings-btn"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Instellingen
+              </Button>
               {/* Refresh Button */}
               <Button 
                 variant="outline" 
