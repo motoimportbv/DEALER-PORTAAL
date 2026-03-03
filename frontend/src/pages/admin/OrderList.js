@@ -12,7 +12,10 @@ import {
   X,
   Clock,
   CheckCircle,
-  Printer
+  Printer,
+  Truck,
+  Package,
+  MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -21,6 +24,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
