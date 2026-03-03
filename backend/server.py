@@ -292,6 +292,7 @@ class MotorcycleCreate(BaseModel):
     model: str
     year: int
     price: float  # Koop nu prijs
+    purchase_price: Optional[float] = None  # Inkoopprijs - alleen voor admin
     starting_price: Optional[float] = None  # Vanaf prijs voor bieden
     mileage: int = 0
     color: str = ""
@@ -313,6 +314,7 @@ class MotorcycleUpdate(BaseModel):
     model: Optional[str] = None
     year: Optional[int] = None
     price: Optional[float] = None
+    purchase_price: Optional[float] = None  # Inkoopprijs - alleen voor admin
     starting_price: Optional[float] = None
     mileage: Optional[int] = None
     color: Optional[str] = None
