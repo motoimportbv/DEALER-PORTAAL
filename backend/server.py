@@ -3217,6 +3217,98 @@ async def restore_order(order_id: str, user: dict = Depends(require_approved_dea
     
     return {"message": "Order restored successfully"}
 
+class TransportStatusUpdate(BaseModel):
+    transport_status: str  # pending, picked_up, in_transit, delivered
+    transport_carrier: Optional[str] = None
+    transport_tracking_number: Optional[str] = None
+    transport_estimated_delivery: Optional[str] = None
+    transport_notes: Optional[str] = None
+
+@api_router.put("/orders/{order_id}/transport")
+async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):
+    """Admin updates transport status for an order"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    # Valid transport statuses
+    valid_statuses = ["pending", "picked_up", "in_transit", "delivered"]
+    if data.transport_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Ongeldige transport status")
+    
+    update_data = {
+        "transport_status": data.transport_status,
+        "transport_updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if data.transport_carrier is not None:
+        update_data["transport_carrier"] = data.transport_carrier
+    if data.transport_tracking_number is not None:
+        update_data["transport_tracking_number"] = data.transport_tracking_number
+    if data.transport_estimated_delivery is not None:
+        update_data["transport_estimated_delivery"] = data.transport_estimated_delivery
+    if data.transport_notes is not None:
+        update_data["transport_notes"] = data.transport_notes
+    
+    await db.orders.update_one({"id": order_id}, {"$set": update_data})
+    
+    # Send email notification to dealer about transport update
+    dealer = await db.users.find_one({"id": order.get("dealer_id")}, {"_id": 0, "email": 1, "company_name": 1})
+    motorcycle = order.get("motorcycle_snapshot", {})
+    
+    status_labels = {
+        "pending": "Wachtend op transport",
+        "picked_up": "Opgehaald door transporteur",
+        "in_transit": "Onderweg",
+        "delivered": "Afgeleverd"
+    }
+    
+    status_label = status_labels.get(data.transport_status, data.transport_status)
+    
+    if dealer and dealer.get("email") and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🚚 Transport Update</h1>
+                </div>
+                <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px;">
+                    <h2 style="color: #1a1a1a; margin: 0 0 10px 0;">{motorcycle.get('brand', '')} {motorcycle.get('model', '')}</h2>
+                    
+                    <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <p style="color: #1d4ed8; font-size: 14px; margin: 0 0 5px 0; text-transform: uppercase;">Status</p>
+                        <p style="color: #1d4ed8; font-size: 24px; font-weight: bold; margin: 0;">{status_label}</p>
+                    </div>
+                    
+                    {f'<p><strong>Transporteur:</strong> {data.transport_carrier}</p>' if data.transport_carrier else ''}
+                    {f'<p><strong>Trackingnummer:</strong> {data.transport_tracking_number}</p>' if data.transport_tracking_number else ''}
+                    {f'<p><strong>Verwachte levering:</strong> {data.transport_estimated_delivery}</p>' if data.transport_estimated_delivery else ''}
+                    {f'<p><strong>Opmerking:</strong> {data.transport_notes}</p>' if data.transport_notes else ''}
+                    
+                    <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                        Heeft u vragen? Neem contact met ons op via Motoimportbv@gmail.com
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            await send_email(
+                dealer["email"],
+                f"🚚 Transport Update: {motorcycle.get('brand', '')} {motorcycle.get('model', '')} - {status_label}",
+                html_content
+            )
+            logger.info(f"Transport update email sent to {dealer['email']}")
+        except Exception as e:
+            logger.error(f"Failed to send transport email: {e}")
+    
+    return {"message": "Transport status bijgewerkt", "transport_status": data.transport_status}
+
 @api_router.get("/orders/archived", response_model=List[OrderWithMotorcycle])
 async def get_archived_orders(user: dict = Depends(require_approved_dealer)):
     """Get archived orders for the current dealer"""
