@@ -357,6 +357,87 @@ const DealerOrders = () => {
                         </div>
                       </div>
 
+                      {/* Transport Tracking Section */}
+                      {order.needs_delivery && (
+                        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Package className="w-5 h-5 text-blue-600" />
+                            <h4 className="font-semibold text-blue-900">Transport Status</h4>
+                          </div>
+                          
+                          {/* Status Progress Bar */}
+                          <div className="flex items-center justify-between mb-4">
+                            {[
+                              { key: 'pending', label: 'Wachtend', icon: Clock },
+                              { key: 'picked_up', label: 'Opgehaald', icon: Package },
+                              { key: 'in_transit', label: 'Onderweg', icon: Truck },
+                              { key: 'delivered', label: 'Afgeleverd', icon: CheckCircle }
+                            ].map((step, index) => {
+                              const currentIndex = ['pending', 'picked_up', 'in_transit', 'delivered'].indexOf(order.transport_status || 'pending');
+                              const stepIndex = ['pending', 'picked_up', 'in_transit', 'delivered'].indexOf(step.key);
+                              const isActive = stepIndex <= currentIndex;
+                              const isCurrent = stepIndex === currentIndex;
+                              const Icon = step.icon;
+                              
+                              return (
+                                <div key={step.key} className="flex flex-col items-center flex-1">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all ${
+                                    isCurrent ? 'bg-blue-600 text-white ring-4 ring-blue-200' :
+                                    isActive ? 'bg-blue-600 text-white' : 'bg-zinc-200 text-zinc-400'
+                                  }`}>
+                                    <Icon className="w-5 h-5" />
+                                  </div>
+                                  <span className={`text-xs font-medium ${isActive ? 'text-blue-700' : 'text-zinc-400'}`}>
+                                    {step.label}
+                                  </span>
+                                  {index < 3 && (
+                                    <div className={`absolute h-1 w-full -z-10 ${isActive && stepIndex < currentIndex ? 'bg-blue-600' : 'bg-zinc-200'}`} 
+                                         style={{ left: `${(index + 0.5) * 25}%`, width: '25%', top: '20px' }} />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          {/* Transport Details */}
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            {order.transport_carrier && (
+                              <div className="flex items-center gap-2">
+                                <Truck className="w-4 h-4 text-blue-500" />
+                                <span className="text-zinc-600">Transporteur:</span>
+                                <span className="font-medium">{order.transport_carrier}</span>
+                              </div>
+                            )}
+                            {order.transport_tracking_number && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-blue-500" />
+                                <span className="text-zinc-600">Tracking:</span>
+                                <span className="font-medium font-mono">{order.transport_tracking_number}</span>
+                              </div>
+                            )}
+                            {order.transport_estimated_delivery && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-blue-500" />
+                                <span className="text-zinc-600">Verwacht:</span>
+                                <span className="font-medium">{order.transport_estimated_delivery}</span>
+                              </div>
+                            )}
+                            {order.transport_notes && (
+                              <div className="col-span-2 flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5" />
+                                <span className="text-zinc-600">{order.transport_notes}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {order.transport_updated_at && (
+                            <p className="text-xs text-zinc-400 mt-3">
+                              Laatste update: {new Date(order.transport_updated_at).toLocaleString('nl-NL')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       {/* Bank info reminder for paid orders */}
                       {order.payment_status === 'paid' && (
                         <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
