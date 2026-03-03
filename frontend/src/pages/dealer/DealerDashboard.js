@@ -341,7 +341,7 @@ const DealerDashboard = () => {
             <div>
               <h3 className="font-semibold text-amber-900 mb-1">Belangrijk over onze prijzen</h3>
               <p className="text-amber-800 text-sm leading-relaxed">
-                Niet alle motoren zijn altijd even goed qua prijs. Wij als <strong>Moto Import B.V.</strong> proberen altijd de beste prijzen voor onze klanten te realiseren. 
+                Niet alle motoren zijn altijd even aantrekkelijk qua prijs. Wij als <strong>Moto Import B.V.</strong> proberen altijd de beste prijzen voor onze klanten te realiseren. 
                 Heeft u vragen over een specifieke motor? Neem gerust contact met ons op!
               </p>
             </div>
