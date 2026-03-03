@@ -480,6 +480,17 @@ const OrderList = () => {
                             >
                               <Printer className="w-4 h-4" />
                             </Button>
+                            {order.needs_delivery && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-600 border-blue-200"
+                                onClick={() => openTransportDialog(order)}
+                                title="Transport status"
+                              >
+                                <Truck className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -491,6 +502,112 @@ const OrderList = () => {
           </>
         )}
       </div>
+
+      {/* Transport Status Dialog */}
+      <Dialog open={transportDialogOpen} onOpenChange={setTransportDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-blue-600" />
+              Transport Status Bijwerken
+            </DialogTitle>
+            <DialogDescription>
+              {selectedOrder?.motorcycle_brand} {selectedOrder?.motorcycle_model} - {selectedOrder?.dealer_company}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Status Select */}
+            <div className="space-y-2">
+              <Label>Transport Status</Label>
+              <Select
+                value={transportData.transport_status}
+                onValueChange={(value) => setTransportData({...transportData, transport_status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">
+                    <span className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Wachtend op transport
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="picked_up">
+                    <span className="flex items-center gap-2">
+                      <Package className="w-4 h-4" /> Opgehaald door transporteur
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="in_transit">
+                    <span className="flex items-center gap-2">
+                      <Truck className="w-4 h-4" /> Onderweg
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="delivered">
+                    <span className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" /> Afgeleverd
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Carrier */}
+            <div className="space-y-2">
+              <Label>Transporteur</Label>
+              <Input
+                placeholder="Bijv. DHL, PostNL, eigen transport..."
+                value={transportData.transport_carrier}
+                onChange={(e) => setTransportData({...transportData, transport_carrier: e.target.value})}
+              />
+            </div>
+
+            {/* Tracking Number */}
+            <div className="space-y-2">
+              <Label>Trackingnummer (optioneel)</Label>
+              <Input
+                placeholder="Track & trace code"
+                value={transportData.transport_tracking_number}
+                onChange={(e) => setTransportData({...transportData, transport_tracking_number: e.target.value})}
+              />
+            </div>
+
+            {/* Estimated Delivery */}
+            <div className="space-y-2">
+              <Label>Verwachte leverdatum</Label>
+              <Input
+                type="date"
+                value={transportData.transport_estimated_delivery}
+                onChange={(e) => setTransportData({...transportData, transport_estimated_delivery: e.target.value})}
+              />
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Opmerkingen</Label>
+              <Textarea
+                placeholder="Extra informatie over het transport..."
+                value={transportData.transport_notes}
+                onChange={(e) => setTransportData({...transportData, transport_notes: e.target.value})}
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransportDialogOpen(false)}>
+              Annuleren
+            </Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={saveTransportStatus}
+              disabled={savingTransport}
+            >
+              {savingTransport ? 'Opslaan...' : 'Opslaan & Email Versturen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
