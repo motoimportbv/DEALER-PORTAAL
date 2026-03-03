@@ -2802,6 +2802,7 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
             m.pop("price_override", None)
             m.pop("price_override_amount", None)
             m.pop("price_override_active", None)
+            m.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
     
     return motorcycles
 
