@@ -23,7 +23,9 @@ import {
   Trash2,
   Archive,
   FolderArchive,
-  RefreshCw
+  RefreshCw,
+  Package,
+  MapPin
 } from 'lucide-react';
 import {
   Dialog,
