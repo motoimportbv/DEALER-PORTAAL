@@ -160,6 +160,54 @@ const OrderList = () => {
     }).format(price);
   };
 
+  const openTransportDialog = (order) => {
+    setSelectedOrder(order);
+    setTransportData({
+      transport_status: order.transport_status || 'pending',
+      transport_carrier: order.transport_carrier || '',
+      transport_tracking_number: order.transport_tracking_number || '',
+      transport_estimated_delivery: order.transport_estimated_delivery || '',
+      transport_notes: order.transport_notes || ''
+    });
+    setTransportDialogOpen(true);
+  };
+
+  const saveTransportStatus = async () => {
+    if (!selectedOrder) return;
+    
+    setSavingTransport(true);
+    try {
+      await axios.put(`${API}/orders/${selectedOrder.id}/transport`, transportData);
+      toast.success('Transport status bijgewerkt');
+      setTransportDialogOpen(false);
+      fetchOrders();
+    } catch (error) {
+      toast.error('Kon transport status niet bijwerken');
+    } finally {
+      setSavingTransport(false);
+    }
+  };
+
+  const getTransportStatusLabel = (status) => {
+    const labels = {
+      pending: 'Wachtend',
+      picked_up: 'Opgehaald',
+      in_transit: 'Onderweg',
+      delivered: 'Afgeleverd'
+    };
+    return labels[status] || status;
+  };
+
+  const getTransportBadge = (status) => {
+    const styles = {
+      pending: 'bg-zinc-100 text-zinc-700',
+      picked_up: 'bg-amber-100 text-amber-700',
+      in_transit: 'bg-blue-100 text-blue-700',
+      delivered: 'bg-green-100 text-green-700'
+    };
+    return <Badge className={styles[status] || 'bg-zinc-100'}>{getTransportStatusLabel(status)}</Badge>;
+  };
+
   if (loading) {
     return (
       <Layout requiredRole="admin">
