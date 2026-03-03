@@ -360,7 +360,15 @@ const MotorcycleForm = () => {
         }
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Er ging iets mis');
+      // Handle Pydantic validation errors (array) or regular errors (string)
+      const errorDetail = error.response?.data?.detail;
+      if (Array.isArray(errorDetail)) {
+        // Pydantic returns array of error objects
+        const messages = errorDetail.map(e => e.msg || 'Validatiefout').join(', ');
+        toast.error(messages);
+      } else {
+        toast.error(errorDetail || 'Er ging iets mis');
+      }
     } finally {
       setLoading(false);
     }
