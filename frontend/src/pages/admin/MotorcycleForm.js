@@ -114,6 +114,7 @@ const MotorcycleForm = () => {
     model: '',
     year: new Date().getFullYear(),
     price: '',
+    purchase_price: '',  // Inkoopprijs - alleen zichtbaar voor admin
     starting_price: '',
     mileage: '',
     color: '',
