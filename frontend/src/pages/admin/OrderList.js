@@ -52,6 +52,18 @@ const OrderList = () => {
   const [lastOrderCount, setLastOrderCount] = useState(0);
   const [autoOpenPakbon, setAutoOpenPakbon] = useState(true);
   const navigate = useNavigate();
+  
+  // Transport dialog state
+  const [transportDialogOpen, setTransportDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [transportData, setTransportData] = useState({
+    transport_status: 'pending',
+    transport_carrier: '',
+    transport_tracking_number: '',
+    transport_estimated_delivery: '',
+    transport_notes: ''
+  });
+  const [savingTransport, setSavingTransport] = useState(false);
 
   useEffect(() => {
     fetchOrders();
