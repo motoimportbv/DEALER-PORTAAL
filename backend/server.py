@@ -335,6 +335,7 @@ class Motorcycle(BaseModel):
     model: str
     year: int
     price: float  # Koop nu prijs
+    purchase_price: Optional[float] = None  # Inkoopprijs - alleen voor admin
     starting_price: Optional[float] = None  # Vanaf prijs
     mileage: int
     color: str
