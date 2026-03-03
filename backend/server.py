@@ -428,6 +428,13 @@ class Order(BaseModel):
     payment_status: str = "unpaid"  # unpaid, pending, paid
     stripe_session_id: Optional[str] = None
     motorcycle_snapshot: Optional[dict] = None  # Snapshot of motorcycle data at time of order
+    # Transport tracking fields
+    transport_status: str = "pending"  # pending, picked_up, in_transit, delivered
+    transport_carrier: Optional[str] = None  # Transportbedrijf
+    transport_tracking_number: Optional[str] = None  # Trackingnummer
+    transport_estimated_delivery: Optional[str] = None  # Geschatte leverdatum
+    transport_notes: Optional[str] = None  # Transport notities
+    transport_updated_at: Optional[str] = None  # Laatste update
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OrderWithMotorcycle(BaseModel):
