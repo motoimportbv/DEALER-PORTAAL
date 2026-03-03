@@ -493,6 +493,26 @@ const MotorcycleForm = () => {
                       </p>
                     )}
                   </div>
+                  <div className="space-y-2">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500 flex items-center gap-2">
+                      Inkoopprijs (€)
+                      <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-normal normal-case">Alleen admin</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={formData.purchase_price}
+                      onChange={(e) => handleChange('purchase_price', e.target.value)}
+                      placeholder="20000"
+                      min="0"
+                      data-testid="purchase-price-input"
+                    />
+                    {formData.price && formData.purchase_price && (
+                      <p className="text-sm text-green-600">
+                        Marge: €{(Number(formData.price) - Number(formData.purchase_price)).toLocaleString('nl-NL')} 
+                        ({((Number(formData.price) - Number(formData.purchase_price)) / Number(formData.purchase_price) * 100).toFixed(1)}%)
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
