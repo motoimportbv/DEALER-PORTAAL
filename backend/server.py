@@ -2980,6 +2980,7 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
         motorcycle.pop("price_override", None)
         motorcycle.pop("price_override_amount", None)
         motorcycle.pop("price_override_active", None)
+        motorcycle.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
     
     return motorcycle
 
