@@ -351,6 +351,17 @@ const OrderList = () => {
                         >
                           <Printer className="w-4 h-4" />
                         </Button>
+                        {order.needs_delivery && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 border-blue-200"
+                            onClick={() => openTransportDialog(order)}
+                            title="Transport status"
+                          >
+                            <Truck className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
