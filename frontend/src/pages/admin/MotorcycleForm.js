@@ -332,6 +332,7 @@ const MotorcycleForm = () => {
       const payload = {
         ...formData,
         price: parseFloat(formData.price),
+        purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
         starting_price: parseFloat(formData.price), // Same as price - no auction
         mileage: parseInt(formData.mileage),
         year: parseInt(formData.year)
