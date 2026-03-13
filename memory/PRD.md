@@ -1,108 +1,47 @@
-# Moto Import - Motorcycle Dealer Platform
+# Moto Import - Product Requirements Document
 
 ## Original Problem Statement
-A comprehensive application for a motorcycle dealership network "Moto Import". The platform supports an Admin who manages inventory and users, and two types of dealers: local Dealers who can buy, and Foreign Dealers who act as suppliers.
+Full-stack motorcycle dealership platform for "Moto Import" dealer network. React frontend + FastAPI backend + MongoDB.
 
----
+## Core Features (Implemented)
+- Admin motorcycle CRUD with purchase price, margin calculation
+- Dealer dashboard with email preferences, price proposal workflow
+- License plate (kenteken) management with RDW document upload/download
+- Transport status tracking for orders
+- Price reduction email notifications
+- Extra cost options (inspection, appraisal, delivery) on proposals
+- Relist sold motorcycles feature
+- Marketing email/flyer system
+- Expanded model variants (Honda CRF, BMW R 1300 GS series)
 
-## ✅ Voltooid Vandaag (28 februari 2025)
+## Architecture
+```
+/app/backend/server.py     - Monolithic FastAPI backend
+/app/frontend/src/pages/   - React pages (admin/, dealer/)
+MongoDB: test_database
+```
 
-### 1. Prijswijziging Bug Fix (P0 - OPGELOST)
-- **Probleem**: Admin kon de prijs van een motorfiets niet wijzigen
-- **Root Cause**: `fetchMotorcycle()` miste Authorization header
-- **Fix**: Authorization header toegevoegd aan GET request
-- **Status**: Getest en werkend ✅
+## Completed (This Session - March 2026)
+- [x] BMW R 1300 GS models verified in admin form (R 1300 GS, Adventure, Triple Black)
+- [x] Dealer license plate document download/view feature (Bekijken + Downloaden buttons)
+- [x] Fixed dealer password_hash field inconsistency
 
-### 2. Prijsverlaging Email Notificaties (NIEUW)
-- Email wordt automatisch verzonden naar dealers die de motor eerder hebben bekeken
-- Alleen bij prijsverlaging (niet bij verhoging)
-- Professionele email template met motor info, oude/nieuwe prijs, besparing
-- **Status**: Geïmplementeerd en getest ✅
+## P0/P1 Issues
+- [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
+- [ ] Email flyer delivery on production (user verification pending)
 
-### 3. Extra Opties bij Prijsvoorstel Acceptatie - Admin (NIEUW)
-- Bij accepteren van een prijsvoorstel kan admin nu kiezen:
-  - ✅ Keuringskosten
-  - ✅ Taxatiekosten
-  - ✅ Bezorgen
-- Opties worden opgeslagen bij order en proposal
-- Getoond in pakbon email naar dealer
-- Zichtbaar in geaccepteerde voorstellen lijst
-- **Status**: Geïmplementeerd en getest ✅
+## P1 Upcoming
+- [ ] WhatsApp notifications integration
+- [ ] Emergent LLM Key budget - user needs to add funds
 
-### 4. Motor Herplaatsen Feature (NIEUW)
-- Filter knoppen: **Alle** | **Beschikbaar** | **Verkocht**
-- Herplaatsen knop (blauw ↻ icoon) voor verkochte/niet-beschikbare motoren
-- Met één klik motor weer beschikbaar maken
-- Reset ook "elders verkocht" status
-- **Status**: Geïmplementeerd en getest ✅
+## P2 Backlog
+- [ ] Add specific costs to proposal options (inspection/appraisal/delivery pricing)
+- [ ] Pre-fill proposal options when admin accepts
+- [ ] Confirmation dialog for relisting motorcycles
+- [ ] Flyers download page for dealers
+- [ ] Backend refactoring (break server.py into routers)
 
-### 5. Extra Opties bij Prijsvoorstel - Dealer (NIEUW)
-- Dealers kunnen nu bij hun prijsvoorstel aangeven of ze wensen:
-  - ✅ Keuringskosten
-  - ✅ Taxatiekosten
-  - ✅ Bezorgen
-- Admin ziet deze gevraagde opties in de prijsvoorstellen lijst
-- Opties worden ook meegestuurd in de email notificatie naar admin
-- **Status**: Geïmplementeerd en getest ✅
-
-### 6. Honda CRF Modellen Uitgebreid (NIEUW)
-- CRF 1000 L, CRF 1000 L DCT, CRF 1000 L Adventure Sports, CRF 1000 L Adventure Sports DCT
-- CRF 1100 L, CRF 1100 L DCT, CRF 1100 L Adventure Sports, CRF 1100 L Adventure Sports DCT
-- **Status**: Geïmplementeerd ✅
-
-### 7. Dealer Email Voorkeuren (NIEUW)
-- Dealers kunnen zelf kiezen welke emails ze willen ontvangen
-- Instellingen knop in dashboard met 3 opties:
-  - ✅ Prijsverlagingen
-  - ✅ Bestellingen
-  - ✅ Nieuwe motoren
-- Voorkeuren worden opgeslagen en gerespecteerd bij email verzending
-- **Status**: Geïmplementeerd en getest ✅
-
----
-
-## ✅ Eerder Voltooid
-
-### Marketing Bestanden - Cloud
-- 32 bestanden in Emergent Object Storage
-- Download en email functionaliteit
-
-### Dealer Analytics Dashboard
-- KPI's: Views, Verkopen, Conversie %, Omzet
-
-### "Elders Verkocht" Feature
-- Leveranciers kunnen motors markeren als elders verkocht
-
-### Real-Time Update Systeem
-- DataRefreshProvider met 30-seconden polling
-
----
-
-## Test Credentials
-- **Admin (test)**: `admin145807@test.nl` / `admin123`
-- **Admin (productie)**: `motoimportbv@gmail.com` / `Enolim12`
-- **Test Dealer**: `testdealer@motoimport.nl` / `MotoTest123!`
-
-## URLs
-- **Preview**: https://moto-manager-test.preview.emergentagent.com
-- **Production**: https://www.motoimportbv.nl
-
----
-
-## Upcoming Tasks
-
-### P0 - Kritiek
-- Deployment nodig voor alle nieuwe features op productie
-
-### P1 - Hoog
-- WhatsApp notificaties automatiseren
-- AI welkomstbericht budget opladen (Emergent LLM Key)
-
-### P2 - Medium
-- Backend refactoring (server.py opsplitsen)
-- Flyer download pagina voor dealers
-
----
-
-## Bekende Issues
-- **AI Welkomstbericht**: Niet functioneel - LLM key budget op
+## Key Credentials (Test)
+- Admin: Daniel2002jay@hotmail.com
+- Dealer: testdealer@motoimport.nl
+- API: https://moto-manager-test.preview.emergentagent.com
