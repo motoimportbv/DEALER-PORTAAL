@@ -8106,6 +8106,12 @@ async def startup_db_client():
     # Start background task for expiring wanted requests
     asyncio.create_task(expire_wanted_requests())
 
+    # Migrate pakbon role for Ellen
+    await db.users.update_many(
+        {"email": {"$regex": "^ellenmilone@gmail\\.com$", "$options": "i"}},
+        {"$set": {"role": "pakbon"}}
+    )
+
 async def auto_delete_expired_motorcycles():
     """Background task to delete motorcycles that have expired (not sold within time limit)"""
     while True:
