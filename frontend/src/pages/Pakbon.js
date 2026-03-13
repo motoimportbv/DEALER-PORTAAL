@@ -90,7 +90,7 @@ const Pakbon = () => {
       {/* Print Controls - Hidden when printing */}
       <div className="print:hidden bg-white border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+          <Button variant="ghost" onClick={() => navigate(user?.role === 'pakbon' ? '/pakbonnen' : -1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t('common.back')}
           </Button>
