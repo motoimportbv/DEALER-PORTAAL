@@ -27,7 +27,8 @@ const PakbonDashboard = () => {
       const response = await axios.get(`${API}/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setOrders(response.data);
+      const sorted = response.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setOrders(sorted);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
