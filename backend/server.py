@@ -766,6 +766,11 @@ async def require_admin(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
+async def require_pakbon(user: dict = Depends(get_current_user)):
+    if user["role"] not in ("admin", "pakbon"):
+        raise HTTPException(status_code=403, detail="Pakbon access required")
+    return user
+
 async def require_approved_dealer(user: dict = Depends(get_current_user)):
     """Helper to check if a dealer is approved and not offline"""
     if user["role"] == "dealer":
@@ -3104,8 +3109,8 @@ async def get_orders(user: dict = Depends(require_approved_dealer)):
     # Orders blijven 1 week zichtbaar
     one_week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     
-    if user["role"] == "admin":
-        # Admin ziet alle orders van de laatste week (niet gearchiveerd)
+    if user["role"] in ("admin", "pakbon"):
+        # Admin/Pakbon ziet alle orders van de laatste week (niet gearchiveerd)
         orders = await db.orders.find(
             {"created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
             {"_id": 0}

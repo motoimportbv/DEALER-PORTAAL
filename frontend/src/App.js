@@ -55,6 +55,7 @@ import ForeignDealerAddMotorcycle from "./pages/foreign-dealer/ForeignDealerAddM
 import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Pakbon from "./pages/Pakbon";
+import PakbonDashboard from "./pages/pakbon/PakbonDashboard";
 
 // Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
@@ -239,6 +240,9 @@ function App() {
             {/* Foreign Dealer Routes */}
             <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
             <Route path="/foreign-dealer/add" element={<ForeignDealerAddMotorcycle />} />
+            
+            {/* Pakbon Routes */}
+            <Route path="/pakbonnen" element={<PakbonDashboard />} />
             
             {/* Shared Routes - Motorcycle detail is PUBLIC */}
             <Route path="/motorcycle/:id" element={<MotorcycleDetail />} />

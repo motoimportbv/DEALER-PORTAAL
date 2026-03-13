@@ -246,6 +246,8 @@ const LoginPage = () => {
       let redirectPath = '/dealer';
       if (loggedInUser.role === 'admin') {
         redirectPath = '/admin';
+      } else if (loggedInUser.role === 'pakbon') {
+        redirectPath = '/pakbonnen';
       } else if (loggedInUser.is_foreign_dealer) {
         redirectPath = '/foreign-dealer';
       }

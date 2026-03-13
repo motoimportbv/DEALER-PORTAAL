@@ -26,7 +26,8 @@ import {
   MessageCircle,
   MessageSquare,
   BadgeEuro,
-  Search
+  Search,
+  Printer
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -109,6 +110,10 @@ const Sidebar = () => {
     { path: '/foreign-dealer/add', icon: Plus, label: t('foreignDealer.addMotorcycle') },
   ];
 
+  const pakbonNavItems = [
+    { path: '/pakbonnen', icon: Printer, label: 'Pakbonnen' },
+  ];
+
   // Determine nav items based on user type
   let navItems = dealerNavItems;
   let dashboardPath = '/dealer';
@@ -116,6 +121,9 @@ const Sidebar = () => {
   if (user?.role === 'admin') {
     navItems = adminNavItems;
     dashboardPath = '/admin';
+  } else if (user?.role === 'pakbon') {
+    navItems = pakbonNavItems;
+    dashboardPath = '/pakbonnen';
   } else if (user?.is_foreign_dealer) {
     navItems = foreignDealerNavItems;
     dashboardPath = '/foreign-dealer';

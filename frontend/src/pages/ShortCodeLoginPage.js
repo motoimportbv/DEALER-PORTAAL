@@ -66,6 +66,8 @@ const ShortCodeLoginPage = () => {
           
           if (role === 'admin') {
             redirectUrl = '/admin';
+          } else if (role === 'pakbon') {
+            redirectUrl = '/pakbonnen';
           } else if (isForeignDealer) {
             redirectUrl = '/foreign-dealer';
           }

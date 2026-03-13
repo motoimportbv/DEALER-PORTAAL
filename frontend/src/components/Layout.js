@@ -80,7 +80,8 @@ const Layout = ({ children, requiredRole }) => {
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/dealer'} replace />;
+    const roleRedirects = { admin: '/admin', pakbon: '/pakbonnen', foreign_dealer: '/foreign-dealer' };
+    return <Navigate to={roleRedirects[user.role] || '/dealer'} replace />;
   }
 
   // Mobile navigation items based on user role
@@ -91,6 +92,10 @@ const Layout = ({ children, requiredRole }) => {
         { path: '/admin/motorcycles', icon: Bike, label: t('nav.motorcycles') },
         { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
         { path: '/admin/dealers', icon: Globe, label: t('nav.dealers') },
+      ];
+    } else if (user?.role === 'pakbon') {
+      return [
+        { path: '/pakbonnen', icon: Bike, label: 'Pakbonnen' },
       ];
     } else if (user?.is_foreign_dealer) {
       return [
