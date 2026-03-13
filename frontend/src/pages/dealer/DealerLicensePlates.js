@@ -3,13 +3,17 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
 import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { 
   CreditCard, 
   Hash,
   Calendar,
   FileText,
-  Bike
+  Bike,
+  Download,
+  Eye,
+  File
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -115,6 +119,37 @@ const DealerLicensePlates = () => {
                       <div className="flex items-start justify-center gap-2 text-sm text-zinc-500 bg-zinc-50 rounded-lg p-2">
                         <FileText className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
                         <span>{plate.notes}</span>
+                      </div>
+                    )}
+
+                    {/* RDW Document Download */}
+                    {plate.document_url && (
+                      <div className="flex items-center justify-center gap-2 pt-2 border-t border-zinc-100" data-testid={`plate-document-${plate.id}`}>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <File className="w-3 h-3 mr-1" />
+                          {plate.document_filename || 'RDW Document'}
+                        </Badge>
+                        <a
+                          href={`${process.env.REACT_APP_BACKEND_URL}${plate.document_url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-testid={`plate-download-${plate.id}`}
+                        >
+                          <Button variant="outline" size="sm" className="h-7 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1">
+                            <Eye className="w-3.5 h-3.5" />
+                            <span className="text-xs">Bekijken</span>
+                          </Button>
+                        </a>
+                        <a
+                          href={`${process.env.REACT_APP_BACKEND_URL}${plate.document_url}`}
+                          download={plate.document_filename || 'rdw-document'}
+                          data-testid={`plate-download-btn-${plate.id}`}
+                        >
+                          <Button variant="outline" size="sm" className="h-7 px-2 text-green-600 hover:text-green-700 hover:bg-green-50 gap-1">
+                            <Download className="w-3.5 h-3.5" />
+                            <span className="text-xs">Downloaden</span>
+                          </Button>
+                        </a>
                       </div>
                     )}
                     

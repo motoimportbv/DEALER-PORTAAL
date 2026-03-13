@@ -84,7 +84,7 @@ A comprehensive application for a motorcycle dealership network "Moto Import". T
 - **Test Dealer**: `testdealer@motoimport.nl` / `MotoTest123!`
 
 ## URLs
-- **Preview**: https://moto-import-2.preview.emergentagent.com
+- **Preview**: https://moto-manager-test.preview.emergentagent.com
 - **Production**: https://www.motoimportbv.nl
 
 ---
