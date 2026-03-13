@@ -79,6 +79,11 @@ const Layout = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // Pakbon users can ONLY access /pakbonnen and /pakbon/ routes
+  if (user.role === 'pakbon' && !location.pathname.startsWith('/pakbon')) {
+    return <Navigate to="/pakbonnen" replace />;
+  }
+
   if (requiredRole && user.role !== requiredRole) {
     const roleRedirects = { admin: '/admin', pakbon: '/pakbonnen', foreign_dealer: '/foreign-dealer' };
     return <Navigate to={roleRedirects[user.role] || '/dealer'} replace />;

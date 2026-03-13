@@ -13,11 +13,18 @@ Full-stack motorcycle dealership platform for "Moto Import" dealer network. Reac
 - Relist sold motorcycles feature
 - Marketing email/flyer system
 - Expanded model variants (Honda CRF, BMW R 1300 GS series)
+- Pakbon (packing slip) role for warehouse/logistics staff
+
+## User Roles
+- **admin** - Full access to all features
+- **dealer** - Browse motorcycles, make proposals, manage orders
+- **foreign_dealer** - Add motorcycles from abroad
+- **pakbon** - View and print packing slips ONLY (e.g., ellenmilone@gmail.com)
 
 ## Architecture
 ```
 /app/backend/server.py     - Monolithic FastAPI backend
-/app/frontend/src/pages/   - React pages (admin/, dealer/)
+/app/frontend/src/pages/   - React pages (admin/, dealer/, pakbon/)
 MongoDB: test_database
 ```
 
@@ -25,6 +32,8 @@ MongoDB: test_database
 - [x] BMW R 1300 GS models verified in admin form (R 1300 GS, Adventure, Triple Black)
 - [x] Dealer license plate document download/view feature (Bekijken + Downloaden buttons)
 - [x] Fixed dealer password_hash field inconsistency
+- [x] Pakbon role for ellenmilone@gmail.com - restricted dashboard showing only packing slips
+- [x] Route protection: pakbon users cannot access /dealer or /admin routes
 
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
@@ -44,4 +53,5 @@ MongoDB: test_database
 ## Key Credentials (Test)
 - Admin: Daniel2002jay@hotmail.com
 - Dealer: testdealer@motoimport.nl
+- Pakbon: ellenmilone@gmail.com / MotoImport2024!
 - API: https://moto-manager-test.preview.emergentagent.com
