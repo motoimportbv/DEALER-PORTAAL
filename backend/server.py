@@ -1205,7 +1205,7 @@ async def register_supplier(supplier_data: SupplierCreate):
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
-    user = await db.users.find_one({"email": credentials.email})
+    user = await db.users.find_one({"email": {"$regex": f"^{credentials.email}$", "$options": "i"}})
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
