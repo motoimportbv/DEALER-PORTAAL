@@ -19,7 +19,7 @@ Full-stack motorcycle dealership platform for "Moto Import" dealer network. Reac
 - **admin** - Full access to all features
 - **dealer** - Browse motorcycles, make proposals, manage orders
 - **foreign_dealer** - Add motorcycles from abroad
-- **pakbon** - View and print packing slips ONLY (e.g., ellenmilone@gmail.com)
+- **pakbon** - View and print packing slips ONLY (ellenmilone@gmail.com / Pakbon2024!)
 
 ## Architecture
 ```
@@ -29,11 +29,12 @@ MongoDB: test_database
 ```
 
 ## Completed (This Session - March 2026)
-- [x] BMW R 1300 GS models verified in admin form (R 1300 GS, Adventure, Triple Black)
-- [x] Dealer license plate document download/view feature (Bekijken + Downloaden buttons)
+- [x] BMW R 1300 GS models verified in admin form
+- [x] Dealer license plate document download/view feature
 - [x] Fixed dealer password_hash field inconsistency
-- [x] Pakbon role for ellenmilone@gmail.com - restricted dashboard showing only packing slips
+- [x] Pakbon role for ellenmilone@gmail.com with restricted dashboard
 - [x] Route protection: pakbon users cannot access /dealer or /admin routes
+- [x] Pakbon orders sorted newest first
 
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
@@ -44,14 +45,8 @@ MongoDB: test_database
 - [ ] Emergent LLM Key budget - user needs to add funds
 
 ## P2 Backlog
-- [ ] Add specific costs to proposal options (inspection/appraisal/delivery pricing)
+- [ ] Add specific costs to proposal options
 - [ ] Pre-fill proposal options when admin accepts
 - [ ] Confirmation dialog for relisting motorcycles
 - [ ] Flyers download page for dealers
 - [ ] Backend refactoring (break server.py into routers)
-
-## Key Credentials (Test)
-- Admin: Daniel2002jay@hotmail.com
-- Dealer: testdealer@motoimport.nl
-- Pakbon: ellenmilone@gmail.com / MotoImport2024!
-- API: https://moto-manager-test.preview.emergentagent.com
