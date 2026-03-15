@@ -7,7 +7,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
-import { Printer, Search, Package, Bike, Calendar, Building, CheckCircle } from 'lucide-react';
+import { Printer, Search, Package, Bike, Calendar, Building, CheckCircle, FolderOpen, FolderCheck } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -17,6 +17,7 @@ const PakbonDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [tab, setTab] = useState('open');
 
   useEffect(() => {
     fetchOrders();
@@ -47,6 +48,10 @@ const PakbonDashboard = () => {
   };
 
   const filteredOrders = orders.filter(order => {
+    const isCompleted = !!order.pakbon_completed;
+    if (tab === 'open' && isCompleted) return false;
+    if (tab === 'done' && !isCompleted) return false;
+
     const search = searchTerm.toLowerCase();
     const moto = order.motorcycle || {};
     return (
@@ -57,6 +62,9 @@ const PakbonDashboard = () => {
       (moto.chassis_number || '').toLowerCase().includes(search)
     );
   });
+
+  const openCount = orders.filter(o => !o.pakbon_completed).length;
+  const doneCount = orders.filter(o => !!o.pakbon_completed).length;
 
   if (loading) {
     return (
@@ -80,6 +88,28 @@ const PakbonDashboard = () => {
       </div>
 
       <div className="content-body" data-testid="pakbon-dashboard">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <Button
+            variant={tab === 'open' ? 'default' : 'outline'}
+            onClick={() => setTab('open')}
+            className={tab === 'open' ? 'bg-red-600 hover:bg-red-700 gap-2' : 'gap-2'}
+            data-testid="tab-open"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Openstaand ({openCount})
+          </Button>
+          <Button
+            variant={tab === 'done' ? 'default' : 'outline'}
+            onClick={() => setTab('done')}
+            className={tab === 'done' ? 'bg-green-600 hover:bg-green-700 gap-2' : 'gap-2'}
+            data-testid="tab-done"
+          >
+            <FolderCheck className="w-4 h-4" />
+            Afgehandeld ({doneCount})
+          </Button>
+        </div>
+
         {/* Search */}
         <div className="mb-6">
           <div className="relative max-w-md">
@@ -99,10 +129,10 @@ const PakbonDashboard = () => {
             <CardContent className="p-12 text-center">
               <Package className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-zinc-900 mb-2">
-                {searchTerm ? 'Geen resultaten' : 'Geen bestellingen'}
+                {searchTerm ? 'Geen resultaten' : tab === 'done' ? 'Nog geen afgehandelde pakbonnen' : 'Geen openstaande pakbonnen'}
               </h3>
               <p className="text-zinc-500">
-                {searchTerm ? 'Probeer een andere zoekterm' : 'Er zijn nog geen bestellingen.'}
+                {searchTerm ? 'Probeer een andere zoekterm' : tab === 'done' ? 'Voltooide pakbonnen verschijnen hier.' : 'Er zijn geen openstaande bestellingen.'}
               </p>
             </CardContent>
           </Card>

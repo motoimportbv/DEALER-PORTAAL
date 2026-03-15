@@ -463,6 +463,9 @@ class OrderWithMotorcycle(BaseModel):
     order_type: Optional[str] = None  # "price_proposal" if from accepted proposal
     discount_amount: float = 0.0  # Discount given (original_price - total_price)
     original_price: Optional[float] = None  # Original price before discount
+    pakbon_completed: bool = False
+    pakbon_completed_at: Optional[str] = None
+    pakbon_completed_by: Optional[str] = None
 
 class Notification(BaseModel):
     model_config = ConfigDict(extra="ignore")
