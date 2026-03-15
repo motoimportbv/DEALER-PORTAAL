@@ -13,7 +13,8 @@ Full-stack motorcycle dealership platform for "Moto Import" dealer network. Reac
 - Relist sold motorcycles feature
 - Marketing email/flyer system
 - Expanded model variants (Honda CRF, BMW R 1300 GS series)
-- Pakbon (packing slip) role for warehouse/logistics staff
+- Pakbon role for warehouse/logistics (ellenmilone@gmail.com)
+- Pakbon voltooien + MoneyMonk factuur knoppen
 
 ## User Roles
 - **admin** - Full access to all features
@@ -31,10 +32,14 @@ MongoDB: test_database
 ## Completed (This Session - March 2026)
 - [x] BMW R 1300 GS models verified in admin form
 - [x] Dealer license plate document download/view feature
-- [x] Fixed dealer password_hash field inconsistency
 - [x] Pakbon role for ellenmilone@gmail.com with restricted dashboard
-- [x] Route protection: pakbon users cannot access /dealer or /admin routes
-- [x] Pakbon orders sorted newest first
+- [x] Route protection: pakbon users cannot access /dealer or /admin
+- [x] Case-insensitive login (email)
+- [x] Pakbon "Voltooien" button to mark packing slips as completed
+- [x] "Factuur in MoneyMonk" button on pakbon page
+- [x] Completed pakbonnen shown with green badge on dashboard
+- [x] Orders sorted newest first on pakbon dashboard
+- [x] Auto-migration of Ellen's role on server startup
 
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
@@ -43,6 +48,7 @@ MongoDB: test_database
 ## P1 Upcoming
 - [ ] WhatsApp notifications integration
 - [ ] Emergent LLM Key budget - user needs to add funds
+- [ ] MoneyMonk direct API integration (requires API key from MoneyMonk)
 
 ## P2 Backlog
 - [ ] Add specific costs to proposal options
