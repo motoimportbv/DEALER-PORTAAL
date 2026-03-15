@@ -3229,6 +3229,25 @@ class TransportStatusUpdate(BaseModel):
     transport_estimated_delivery: Optional[str] = None
     transport_notes: Optional[str] = None
 
+
+@api_router.put("/orders/{order_id}/pakbon-complete")
+async def complete_pakbon(order_id: str, user: dict = Depends(require_pakbon)):
+    """Mark a pakbon as completed"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "pakbon_completed": True,
+            "pakbon_completed_at": datetime.now(timezone.utc).isoformat(),
+            "pakbon_completed_by": user.get("email", "")
+        }}
+    )
+    return {"message": "Pakbon voltooid", "order_id": order_id}
+
+
 @api_router.put("/orders/{order_id}/transport")
 async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):
     """Admin updates transport status for an order"""

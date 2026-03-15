@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, CheckCircle, FileText } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -17,6 +17,8 @@ const Pakbon = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasPrinted, setHasPrinted] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const printRef = useRef();
 
   useEffect(() => {
@@ -28,6 +30,7 @@ const Pakbon = () => {
         const foundOrder = response.data.find(o => o.id === orderId);
         if (foundOrder) {
           setOrder(foundOrder);
+          setCompleted(!!foundOrder.pakbon_completed);
         }
       } catch (error) {
         console.error('Error fetching order:', error);
@@ -54,6 +57,24 @@ const Pakbon = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    try {
+      await axios.put(`${API}/api/orders/${orderId}/pakbon-complete`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCompleted(true);
+    } catch (error) {
+      console.error('Error completing pakbon:', error);
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const openMoneyMonk = () => {
+    window.open('https://app.moneymonk.nl/invoices/new', '_blank');
   };
 
   if (loading) {
@@ -94,10 +115,27 @@ const Pakbon = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t('common.back')}
           </Button>
-          <Button onClick={handlePrint} className="bg-red-600 hover:bg-red-700">
-            <Printer className="w-4 h-4 mr-2" />
-            {t('pakbon.print')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openMoneyMonk} variant="outline" className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="moneymonk-btn">
+              <FileText className="w-4 h-4" />
+              Factuur in MoneyMonk
+            </Button>
+            <Button onClick={handlePrint} variant="outline" className="gap-2">
+              <Printer className="w-4 h-4" />
+              {t('pakbon.print')}
+            </Button>
+            {completed ? (
+              <Button disabled className="gap-2 bg-green-600 hover:bg-green-600 text-white cursor-default" data-testid="pakbon-completed">
+                <CheckCircle className="w-4 h-4" />
+                Voltooid
+              </Button>
+            ) : (
+              <Button onClick={handleComplete} disabled={completing} className="gap-2 bg-red-600 hover:bg-red-700" data-testid="pakbon-complete-btn">
+                <CheckCircle className="w-4 h-4" />
+                {completing ? 'Bezig...' : 'Voltooien'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

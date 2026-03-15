@@ -7,7 +7,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
-import { Printer, Search, Package, Bike, Calendar, Building } from 'lucide-react';
+import { Printer, Search, Package, Bike, Calendar, Building, CheckCircle } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -154,15 +154,23 @@ const PakbonDashboard = () => {
                         </div>
                       </div>
 
-                      {/* Print button */}
-                      <Button
-                        onClick={() => window.open(`/pakbon/${order.id}?print=true`, '_blank')}
-                        className="bg-red-600 hover:bg-red-700 gap-2"
-                        data-testid={`print-pakbon-${order.id}`}
-                      >
-                        <Printer className="w-4 h-4" />
-                        Print Pakbon
-                      </Button>
+                      {/* Status + Print button */}
+                      <div className="flex items-center gap-3">
+                        {order.pakbon_completed && (
+                          <Badge className="bg-green-100 text-green-700 gap-1" data-testid={`pakbon-done-${order.id}`}>
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Voltooid
+                          </Badge>
+                        )}
+                        <Button
+                          onClick={() => window.open(`/pakbon/${order.id}`, '_blank')}
+                          className={order.pakbon_completed ? "bg-zinc-500 hover:bg-zinc-600 gap-2" : "bg-red-600 hover:bg-red-700 gap-2"}
+                          data-testid={`print-pakbon-${order.id}`}
+                        >
+                          <Printer className="w-4 h-4" />
+                          {order.pakbon_completed ? 'Bekijken' : 'Print Pakbon'}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
