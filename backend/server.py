@@ -3109,21 +3109,18 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_approved_
 
 @api_router.get("/orders", response_model=List[OrderWithMotorcycle])
 async def get_orders(user: dict = Depends(require_approved_dealer)):
-    # Orders blijven 1 week zichtbaar
-    one_week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    
     if user["role"] in ("admin", "pakbon"):
-        # Admin/Pakbon ziet alle orders van de laatste week (niet gearchiveerd)
+        # Admin/Pakbon ziet alle orders (niet gearchiveerd)
         orders = await db.orders.find(
-            {"created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
+            {"archived": {"$ne": True}}, 
             {"_id": 0}
-        ).to_list(1000)
+        ).sort("created_at", -1).to_list(10000)
     else:
-        # Dealers zien hun orders van de laatste week (niet gearchiveerd)
+        # Dealers zien hun orders (niet gearchiveerd)
         orders = await db.orders.find(
-            {"dealer_id": user["id"], "created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
+            {"dealer_id": user["id"], "archived": {"$ne": True}}, 
             {"_id": 0}
-        ).to_list(1000)
+        ).sort("created_at", -1).to_list(10000)
     
     # Filter out orders without required fields and collect motorcycle IDs
     valid_orders = []
