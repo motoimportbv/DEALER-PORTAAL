@@ -3389,7 +3389,7 @@ async def check_voucher(code: str, user: dict = Depends(get_current_user)):
     
     voucher = await db.vouchers.find_one({
         "code": code.upper(),
-        "dealer_id": user["id"],
+        "$or": [{"dealer_id": user["id"]}, {"dealer_id": None}],
         "is_used": False
     }, {"_id": 0})
     
