@@ -33,6 +33,7 @@ const MOTORCYCLE_DATABASE = {
   'Bimota': ['DB5', 'DB6', 'DB7', 'DB8', 'DB9', 'KB4', 'Tesi H2'],
   'BMW': ['C 400 GT', 'C 400 X', 'C 650 GT', 'C 650 Sport', 'CE 04', 'F 650 GS', 'F 700 GS', 'F 750 GS', 'F 800 GS', 'F 800 GS Adventure', 'F 800 GT', 'F 800 R', 'F 800 S', 'F 850 GS', 'F 850 GS Adventure', 'F 900 R', 'F 900 XR', 'G 310 GS', 'G 310 R', 'G 650 GS', 'K 1200 GT', 'K 1200 R', 'K 1200 S', 'K 1300 GT', 'K 1300 R', 'K 1300 S', 'K 1600 B', 'K 1600 GT', 'K 1600 GTL', 'M 1000 R', 'M 1000 RR', 'M 1000 XR', 'R 1200 GS', 'R 1200 GS Adventure', 'R 1200 R', 'R 1200 RS', 'R 1200 RT', 'R 1250 GS', 'R 1250 GS Adventure', 'R 1250 R', 'R 1250 RS', 'R 1250 RT', 'R 1300 GS', 'R 1300 GS Adventure', 'R 1300 GS Triple Black', 'R 18', 'R NineT', 'S 1000 R', 'S 1000 RR', 'S 1000 XR'],
   'Boom': ['Trike'],
+  'Brixton': ['Crossfire 500 X'],
   "Bos's Trikes": ['Trike'],
   'Boss Hoss': ['BHC-3', 'BHC-9'],
   'BSA': ['Gold Star'],
