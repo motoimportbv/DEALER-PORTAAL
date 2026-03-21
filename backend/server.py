@@ -3110,9 +3110,9 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_approved_
 @api_router.get("/orders", response_model=List[OrderWithMotorcycle])
 async def get_orders(user: dict = Depends(require_approved_dealer)):
     if user["role"] in ("admin", "pakbon"):
-        # Admin/Pakbon ziet alle orders (niet gearchiveerd)
+        # Admin/Pakbon ziet alle orders (inclusief gearchiveerd)
         orders = await db.orders.find(
-            {"archived": {"$ne": True}}, 
+            {}, 
             {"_id": 0}
         ).sort("created_at", -1).to_list(10000)
     else:
