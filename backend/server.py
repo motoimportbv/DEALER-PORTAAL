@@ -2188,12 +2188,29 @@ async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dic
     if not new_price or new_price <= 0:
         raise HTTPException(status_code=400, detail="Ongeldige prijs")
     
+    new_price = float(new_price)
+    old_price = float(motorcycle.get("original_price") or motorcycle.get("price", 0))
+    price_diff = old_price - new_price  # Positive = price reduction
+    
+    # Update original_price (dealer's price) and adjust selling price by the same amount
+    update_fields = {"original_price": new_price}
+    
+    current_selling_price = motorcycle.get("price", 0)
+    if current_selling_price and price_diff != 0:
+        new_selling_price = max(0, float(current_selling_price) - price_diff)
+        update_fields["price"] = new_selling_price
+    
     await db.motorcycles.update_one(
         {"id": motorcycle_id},
-        {"$set": {"price": float(new_price)}}
+        {"$set": update_fields}
     )
     
-    return {"message": "Prijs bijgewerkt", "new_price": float(new_price)}
+    return {
+        "message": "Prijs bijgewerkt", 
+        "new_supplier_price": new_price,
+        "new_selling_price": update_fields.get("price", current_selling_price),
+        "price_difference": price_diff
+    }
 
 
 @api_router.post("/motorcycles/foreign-listings/{motorcycle_id}/mark-sold-elsewhere")
