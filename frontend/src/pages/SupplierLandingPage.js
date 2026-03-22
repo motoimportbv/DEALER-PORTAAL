@@ -241,6 +241,7 @@ export default function SupplierLandingPage() {
             <h2 className="text-base sm:text-lg font-bold text-red-500 uppercase tracking-widest text-center mb-12">{t.video_title}</h2>
             <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-zinc-800/50 aspect-video bg-black group cursor-pointer" onClick={toggleVideo}>
               <video
+                key={`video-${lang}`}
                 ref={videoRef}
                 className="w-full h-full object-cover"
                 onEnded={() => setVideoPlaying(false)}
