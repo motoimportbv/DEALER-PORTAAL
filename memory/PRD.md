@@ -41,6 +41,10 @@ MongoDB: test_database
 - [x] Orders sorted newest first on pakbon dashboard
 - [x] Auto-migration of Ellen's role on server startup
 
+## Completed (This Session - Feb 2026)
+- [x] Promotievideo clip1 gegenereerd met Sora 2
+- [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
+
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
 - [ ] Email flyer delivery on production (user verification pending)
