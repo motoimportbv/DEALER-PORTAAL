@@ -659,6 +659,11 @@ const DealerDashboard = () => {
                             Live CHF koers
                           </p>
                         )}
+                        {motorcycle.supplier_price_reduced && motorcycle.supplier_price_reduction > 0 && (
+                          <p className="text-xs text-green-600 font-semibold mt-0.5" data-testid={`supplier-reduction-${motorcycle.id}`}>
+                            Prijsverlaging door leverancier
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

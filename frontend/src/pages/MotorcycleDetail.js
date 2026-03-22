@@ -458,6 +458,20 @@ const MotorcycleDetail = () => {
                       </p>
                     </div>
                   )}
+
+                  {/* Supplier price reduction banner */}
+                  {motorcycle.supplier_price_reduced && motorcycle.supplier_price_reduction > 0 && (
+                    <div className="mt-2 pt-2 border-t border-zinc-700" data-testid="supplier-price-reduction">
+                      <div className="bg-green-900/50 border border-green-700 rounded-md px-3 py-2">
+                        <p className="text-sm font-semibold text-green-400">
+                          Prijsverlaging door leverancier
+                        </p>
+                        <p className="text-xs text-green-300 mt-0.5">
+                          -{motorcycle.original_currency === 'CHF' ? 'CHF' : '€'} {motorcycle.supplier_price_reduction.toLocaleString('nl-NL')} korting
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {(user?.role === 'dealer' || user?.role === 'admin') && motorcycle.is_available && (

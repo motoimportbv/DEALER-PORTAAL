@@ -2200,6 +2200,16 @@ async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dic
         new_selling_price = max(0, float(current_selling_price) - price_diff)
         update_fields["price"] = new_selling_price
     
+    # Track supplier price reduction
+    if price_diff > 0:
+        update_fields["supplier_price_reduced"] = True
+        update_fields["supplier_price_reduction"] = price_diff
+        update_fields["supplier_price_reduced_at"] = datetime.now(timezone.utc).isoformat()
+    elif price_diff < 0:
+        # Price increase - clear reduction flag
+        update_fields["supplier_price_reduced"] = False
+        update_fields["supplier_price_reduction"] = 0
+    
     await db.motorcycles.update_one(
         {"id": motorcycle_id},
         {"$set": update_fields}
