@@ -252,8 +252,8 @@ export default function SupplierLandingPage() {
                 controls
                 data-testid="promo-video"
               >
-                <source src={`${API}/api/uploads/${t.video_file}.webm`} type="video/webm" />
-                <source src={`${API}/api/uploads/${t.video_file}.mp4`} type="video/mp4" />
+                <source src={`${API}/api/promo/video/${t.video_file}.webm`} type="video/webm" />
+                <source src={`${API}/api/promo/video/${t.video_file}.mp4`} type="video/mp4" />
               </video>
               {/* Play/Pause overlay */}
               <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${videoPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'} bg-black/30`}>

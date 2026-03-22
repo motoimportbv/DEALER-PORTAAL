@@ -1,6 +1,7 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8151,6 +8152,34 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
     )
     
     return {"message": "Document verwijderd"}
+
+# --- Promo video endpoint (serves from cloud storage) ---
+@api_router.get("/promo/video/{filename}")
+async def get_promo_video(filename: str):
+    """Serve promo videos from cloud storage - no auth required"""
+    import requests as req
+    allowed = [
+        "moto_import_reclame_it.webm", "moto_import_reclame_de.webm",
+        "moto_import_reclame_it.mp4", "moto_import_reclame_de.mp4",
+        "moto_import_reclame_fr.webm", "moto_import_reclame_fr.mp4",
+    ]
+    if filename not in allowed:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Try local file first
+    local_path = UPLOAD_DIR / filename
+    if local_path.exists():
+        content_type = "video/webm" if filename.endswith(".webm") else "video/mp4"
+        return FileResponse(str(local_path), media_type=content_type)
+    
+    # Fallback to cloud storage
+    try:
+        data, content_type = get_object(f"{APP_NAME}/promo/{filename}")
+        media = "video/webm" if filename.endswith(".webm") else "video/mp4"
+        return Response(content=data, media_type=media)
+    except Exception as e:
+        logger.error(f"Failed to get promo video {filename}: {e}")
+        raise HTTPException(status_code=404, detail="Video not found")
 
 # Include the router
 app.include_router(api_router)
