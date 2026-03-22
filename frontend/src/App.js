@@ -19,6 +19,7 @@ import RegisterPage from "./pages/RegisterPage";
 import SupplierRegisterPage from "./pages/SupplierRegisterPage";
 import SupplierGuide from "./pages/SupplierGuide";
 import SupplierLandingPage from "./pages/SupplierLandingPage";
+import DealerLandingPage from "./pages/DealerLandingPage";
 import DealerGuide from "./pages/DealerGuide";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -202,6 +203,7 @@ function App() {
             <Route path="/register/supplier" element={<SupplierRegisterPage />} />
             <Route path="/supplier-guide" element={<SupplierGuide />} />
             <Route path="/suppliers" element={<SupplierLandingPage />} />
+            <Route path="/dealers" element={<DealerLandingPage />} />
             <Route path="/dealer-guide" element={<DealerGuide />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
