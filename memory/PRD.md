@@ -48,6 +48,7 @@ MongoDB: test_database
 - [x] Leverancier reclamevideo Duits (30 sec, video + voice-over)
 - [ ] Leverancier reclamevideo Frans - GEBLOKKEERD door budget LLM Key
 - [x] Leveranciers landingspagina (/suppliers) - meertalig IT/DE/FR met video, stats, CTA
+- [x] Dealer landingspagina (/dealers) - Nederlands, voor nieuwe motorzaken
 
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
