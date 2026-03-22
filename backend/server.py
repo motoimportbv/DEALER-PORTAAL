@@ -369,6 +369,10 @@ class Motorcycle(BaseModel):
     # Visibility settings
     visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
     visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
+    # Supplier price reduction tracking
+    supplier_price_reduced: bool = False
+    supplier_price_reduction: float = 0.0
+    supplier_price_reduced_at: Optional[str] = None
 
 class BidCreate(BaseModel):
     motorcycle_id: str
@@ -2158,6 +2162,12 @@ async def get_foreign_listings(user: dict = Depends(get_current_user)):
         {"foreign_dealer_id": user["id"]},
         {"_id": 0}
     ).to_list(100)
+    
+    # Strip selling price - foreign dealers should only see their own price
+    for moto in motorcycles:
+        moto.pop("price", None)
+        moto.pop("purchase_price", None)
+    
     return motorcycles
 
 @api_router.get("/motorcycles/pending-foreign")
@@ -2701,6 +2711,10 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     # SECURITY: Foreign dealers can ONLY see their own motorcycles
     if is_foreign_dealer:
         own_motorcycles = [m for m in motorcycles if m.get("foreign_dealer_id") == user_id]
+        # Strip selling price - foreign dealers only see their own price
+        for m in own_motorcycles:
+            m.pop("price", None)
+            m.pop("purchase_price", None)
         return own_motorcycles
     
     # Filter motorcycles based on visibility (admin sees all)
@@ -2976,6 +2990,9 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     if is_foreign_dealer:
         if motorcycle.get("foreign_dealer_id") != user.get("id"):
             raise HTTPException(status_code=403, detail="U heeft geen toegang tot deze motor")
+        # Strip selling price for foreign dealers
+        motorcycle.pop("price", None)
+        motorcycle.pop("purchase_price", None)
     
     # Track dealer view activity (only for Dutch dealers, not admins or foreign dealers)
     if user.get("role") != "admin" and not is_foreign_dealer:

@@ -110,7 +110,7 @@ const ForeignDealerDashboard = () => {
 
   const handleEditPrice = (motorcycle) => {
     setEditPriceMotorcycle(motorcycle);
-    setNewPrice(motorcycle.price?.toString() || '');
+    setNewPrice(motorcycle.original_price?.toString() || motorcycle.price?.toString() || '');
     setEditPriceDialog(true);
   };
 
@@ -287,18 +287,12 @@ const ForeignDealerDashboard = () => {
 
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-zinc-500">
-                      {motorcycle.is_pending_approval ? 'Voorgestelde prijs' : t('motorcycle.price')}
+                      {motorcycle.is_pending_approval ? 'Voorgestelde prijs' : 'Uw prijs'}
                     </span>
                     <span className={`font-barlow text-xl font-bold ${motorcycle.is_pending_approval ? 'text-amber-600' : 'text-green-600'}`}>
-                      {formatPrice(motorcycle.price)}
+                      {formatPrice(motorcycle.original_price || motorcycle.price)}
                     </span>
                   </div>
-
-                  {motorcycle.original_price && motorcycle.original_price !== motorcycle.price && (
-                    <div className="text-xs text-zinc-400">
-                      Origineel: {formatPrice(motorcycle.original_price)}
-                    </div>
-                  )}
 
                   {/* Prijs aanpassen knop */}
                   {!motorcycle.sold_elsewhere && motorcycle.is_available && (
