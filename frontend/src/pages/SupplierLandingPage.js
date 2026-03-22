@@ -121,10 +121,15 @@ export default function SupplierLandingPage() {
     if (!videoRef.current) return;
     if (videoPlaying) {
       videoRef.current.pause();
+      setVideoPlaying(false);
     } else {
-      videoRef.current.play();
+      videoRef.current.play().then(() => {
+        setVideoPlaying(true);
+      }).catch(() => {
+        videoRef.current.muted = true;
+        videoRef.current.play().then(() => setVideoPlaying(true));
+      });
     }
-    setVideoPlaying(!videoPlaying);
   };
 
   return (
@@ -240,7 +245,11 @@ export default function SupplierLandingPage() {
                 src={`${API}/api/uploads/${t.video_file}`}
                 className="w-full h-full object-cover"
                 onEnded={() => setVideoPlaying(false)}
+                onPause={() => setVideoPlaying(false)}
+                onPlay={() => setVideoPlaying(true)}
                 playsInline
+                preload="auto"
+                controls
                 data-testid="promo-video"
               />
               {/* Play/Pause overlay */}
