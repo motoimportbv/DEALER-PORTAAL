@@ -8270,6 +8270,22 @@ async def startup_db_client():
         {"$set": {"role": "pakbon"}}
     )
 
+    # Download promo videos from cloud storage if not present locally
+    promo_videos = [
+        "moto_import_reclame_it.webm", "moto_import_reclame_de.webm",
+        "moto_import_reclame_it.mp4", "moto_import_reclame_de.mp4",
+    ]
+    for video_name in promo_videos:
+        local_path = UPLOAD_DIR / video_name
+        if not local_path.exists():
+            try:
+                data, _ = get_object(f"{APP_NAME}/promo/{video_name}")
+                with open(local_path, 'wb') as f:
+                    f.write(data)
+                logger.info(f"Downloaded promo video from cloud: {video_name} ({len(data)} bytes)")
+            except Exception as e:
+                logger.warning(f"Could not download promo video {video_name}: {e}")
+
 async def auto_delete_expired_motorcycles():
     """Background task to delete motorcycles that have expired (not sold within time limit)"""
     while True:
