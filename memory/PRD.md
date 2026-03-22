@@ -44,6 +44,9 @@ MongoDB: test_database
 ## Completed (This Session - Feb 2026)
 - [x] Promotievideo clip1 gegenereerd met Sora 2
 - [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
+- [x] Leverancier reclamevideo Italiaans (28 sec, video + voice-over)
+- [x] Leverancier reclamevideo Duits (30 sec, video + voice-over)
+- [ ] Leverancier reclamevideo Frans - GEBLOKKEERD door budget LLM Key
 
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
