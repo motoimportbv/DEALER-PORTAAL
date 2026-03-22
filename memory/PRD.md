@@ -51,6 +51,8 @@ MongoDB: test_database
 - [x] Dealer landingspagina (/dealers) - Nederlands, voor nieuwe motorzaken
 - [x] Video codec fix: WebM (VP9) voor browser-compatibiliteit
 - [x] Taalwissel fix: video laadt opnieuw bij taalwissel
+- [x] Video Range request support voor mobiele browsers (Samsung Internet)
+- [x] Video's geüpload naar cloud storage (werkt op productie na deploy)
 
 ## P0/P1 Issues
 - [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
