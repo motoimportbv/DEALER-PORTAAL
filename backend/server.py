@@ -8153,11 +8153,10 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
     
     return {"message": "Document verwijderd"}
 
-# --- Promo video endpoint (serves from cloud storage) ---
+# --- Promo video endpoint (serves from cloud storage with Range support) ---
 @api_router.get("/promo/video/{filename}")
-async def get_promo_video(filename: str):
-    """Serve promo videos from cloud storage - no auth required"""
-    import requests as req
+async def get_promo_video(filename: str, request: Request):
+    """Serve promo videos with Range request support for mobile browsers"""
     allowed = [
         "moto_import_reclame_it.webm", "moto_import_reclame_de.webm",
         "moto_import_reclame_it.mp4", "moto_import_reclame_de.mp4",
@@ -8166,20 +8165,51 @@ async def get_promo_video(filename: str):
     if filename not in allowed:
         raise HTTPException(status_code=404, detail="Not found")
     
+    media_type = "video/webm" if filename.endswith(".webm") else "video/mp4"
+    
     # Try local file first
     local_path = UPLOAD_DIR / filename
-    if local_path.exists():
-        content_type = "video/webm" if filename.endswith(".webm") else "video/mp4"
-        return FileResponse(str(local_path), media_type=content_type)
+    if not local_path.exists():
+        # Download from cloud storage to local cache
+        try:
+            data, _ = get_object(f"{APP_NAME}/promo/{filename}")
+            with open(local_path, 'wb') as f:
+                f.write(data)
+            logger.info(f"Cached promo video from cloud: {filename}")
+        except Exception as e:
+            logger.error(f"Failed to get promo video {filename}: {e}")
+            raise HTTPException(status_code=404, detail="Video not found")
     
-    # Fallback to cloud storage
-    try:
-        data, content_type = get_object(f"{APP_NAME}/promo/{filename}")
-        media = "video/webm" if filename.endswith(".webm") else "video/mp4"
-        return Response(content=data, media_type=media)
-    except Exception as e:
-        logger.error(f"Failed to get promo video {filename}: {e}")
-        raise HTTPException(status_code=404, detail="Video not found")
+    # Serve with Range support
+    file_size = local_path.stat().st_size
+    range_header = request.headers.get("range")
+    
+    if range_header:
+        # Parse range header: "bytes=0-1023"
+        range_str = range_header.replace("bytes=", "")
+        parts = range_str.split("-")
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if parts[1] else file_size - 1
+        end = min(end, file_size - 1)
+        content_length = end - start + 1
+        
+        with open(local_path, 'rb') as f:
+            f.seek(start)
+            data = f.read(content_length)
+        
+        return Response(
+            content=data,
+            status_code=206,
+            media_type=media_type,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(content_length),
+            }
+        )
+    
+    # No range request - return full file
+    return FileResponse(str(local_path), media_type=media_type, headers={"Accept-Ranges": "bytes"})
 
 # Include the router
 app.include_router(api_router)
