@@ -17,7 +17,8 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { toast } from 'sonner';
-import { Bike, Plus, Clock, CheckCircle, Globe, RefreshCw, AlertTriangle, XCircle } from 'lucide-react';
+import { Bike, Plus, Clock, CheckCircle, Globe, RefreshCw, AlertTriangle, XCircle, Pencil } from 'lucide-react';
+import { Input } from '../../components/ui/input';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -31,6 +32,10 @@ const ForeignDealerDashboard = () => {
   const [soldElsewhereDialog, setSoldElsewhereDialog] = useState(false);
   const [selectedMotorcycle, setSelectedMotorcycle] = useState(null);
   const [markingSold, setMarkingSold] = useState(false);
+  const [editPriceDialog, setEditPriceDialog] = useState(false);
+  const [editPriceMotorcycle, setEditPriceMotorcycle] = useState(null);
+  const [newPrice, setNewPrice] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
 
   // Fetch listings functie - kan worden hergebruikt voor refresh
   const fetchListings = useCallback(async (showToast = false) => {
@@ -100,6 +105,34 @@ const ForeignDealerDashboard = () => {
       toast.error(error.response?.data?.detail || 'Er ging iets mis');
     } finally {
       setMarkingSold(false);
+    }
+  };
+
+  const handleEditPrice = (motorcycle) => {
+    setEditPriceMotorcycle(motorcycle);
+    setNewPrice(motorcycle.price?.toString() || '');
+    setEditPriceDialog(true);
+  };
+
+  const confirmEditPrice = async () => {
+    if (!editPriceMotorcycle || !newPrice) return;
+    
+    setSavingPrice(true);
+    try {
+      await axios.put(
+        `${API}/motorcycles/foreign-listings/${editPriceMotorcycle.id}/price`,
+        { price: parseFloat(newPrice) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Prijs bijgewerkt');
+      fetchListings(false);
+      setEditPriceDialog(false);
+      setEditPriceMotorcycle(null);
+    } catch (error) {
+      console.error('Error updating price:', error);
+      toast.error(error.response?.data?.detail || 'Er ging iets mis');
+    } finally {
+      setSavingPrice(false);
     }
   };
 
@@ -267,6 +300,20 @@ const ForeignDealerDashboard = () => {
                     </div>
                   )}
 
+                  {/* Prijs aanpassen knop */}
+                  {!motorcycle.sold_elsewhere && motorcycle.is_available && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                      onClick={() => handleEditPrice(motorcycle)}
+                      data-testid={`edit-price-${motorcycle.id}`}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Prijs aanpassen
+                    </Button>
+                  )}
+
                   {/* Elders verkocht knop - alleen tonen als nog niet verkocht */}
                   {!motorcycle.sold_elsewhere && motorcycle.is_available && (
                     <Button
@@ -328,6 +375,50 @@ const ForeignDealerDashboard = () => {
                 <XCircle className="w-4 h-4 mr-2" />
               )}
               Ja, elders verkocht
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Price Dialog */}
+      <Dialog open={editPriceDialog} onOpenChange={setEditPriceDialog}>
+        <DialogContent data-testid="edit-price-dialog">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600">
+              <Pencil className="w-5 h-5" />
+              Prijs aanpassen
+            </DialogTitle>
+            <DialogDescription>
+              {editPriceMotorcycle && (
+                <>
+                  Pas de prijs aan voor de <strong>{editPriceMotorcycle.brand} {editPriceMotorcycle.model}</strong>.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium text-zinc-700 mb-2 block">Nieuwe prijs (CHF)</label>
+            <Input
+              type="number"
+              value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value)}
+              placeholder="Bijv. 12500"
+              min="0"
+              step="100"
+              data-testid="new-price-input"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditPriceDialog(false)} disabled={savingPrice}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={confirmEditPrice}
+              disabled={savingPrice || !newPrice || parseFloat(newPrice) <= 0}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="confirm-edit-price-btn"
+            >
+              {savingPrice ? 'Opslaan...' : 'Prijs opslaan'}
             </Button>
           </DialogFooter>
         </DialogContent>

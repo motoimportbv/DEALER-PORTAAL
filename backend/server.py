@@ -2170,6 +2170,32 @@ async def get_pending_foreign_listings(user: dict = Depends(require_admin)):
     return motorcycles
 
 
+
+@api_router.put("/motorcycles/foreign-listings/{motorcycle_id}/price")
+async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dict = Depends(get_current_user)):
+    """Foreign dealer updates the price of their motorcycle listing"""
+    if not user.get("is_foreign_dealer", False):
+        raise HTTPException(status_code=403, detail="Alleen voor buitenlandse leveranciers")
+    
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if motorcycle.get("foreign_dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U bent niet de eigenaar van deze motor")
+    
+    new_price = data.get("price")
+    if not new_price or new_price <= 0:
+        raise HTTPException(status_code=400, detail="Ongeldige prijs")
+    
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {"price": float(new_price)}}
+    )
+    
+    return {"message": "Prijs bijgewerkt", "new_price": float(new_price)}
+
+
 @api_router.post("/motorcycles/foreign-listings/{motorcycle_id}/mark-sold-elsewhere")
 async def mark_motorcycle_sold_elsewhere(motorcycle_id: str, user: dict = Depends(get_current_user)):
     """Mark a motorcycle as sold elsewhere by the foreign dealer/supplier.
