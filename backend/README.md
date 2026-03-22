@@ -57,5 +57,5 @@ sudo supervisorctl restart backend
 tail -f /var/log/supervisor/backend.*.log
 
 # Handmatig testen
-curl https://moto-manager-test.preview.emergentagent.com/api/
+curl https://promo-asset-lab.preview.emergentagent.com/api/
 ```

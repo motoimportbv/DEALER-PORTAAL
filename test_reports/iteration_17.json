@@ -76,9 +76,9 @@
     "root_cause": "Dealer pages (DealerDashboard.js, DealerOrders.js) use <Layout> without passing requiredRole='dealer' prop. Layout.js only checks roles when requiredRole is specified (line 82-85).",
     "reproduction_steps": [
       "Login as pakbon user (ellenmilone@gmail.com / MotoImport2024!)",
-      "Navigate to https://moto-manager-test.preview.emergentagent.com/dealer",
+      "Navigate to https://promo-asset-lab.preview.emergentagent.com/dealer",
       "Observe: User sees full dealer dashboard with 34 motorcycles and sell button",
-      "Navigate to https://moto-manager-test.preview.emergentagent.com/dealer/orders",
+      "Navigate to https://promo-asset-lab.preview.emergentagent.com/dealer/orders",
       "Observe: User sees orders with Archive/Delete buttons"
     ],
     "mitigation": "Add requiredRole='dealer' to all dealer Layout components OR add pakbon redirect in Layout.js for dealer routes"

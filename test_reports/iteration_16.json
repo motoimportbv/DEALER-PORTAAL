@@ -76,7 +76,7 @@
     "document_download_link": {
       "status": "WORKING",
       "format": "{REACT_APP_BACKEND_URL}/api/uploads/rdw/{filename}",
-      "example": "https://moto-manager-test.preview.emergentagent.com/api/uploads/rdw/32438524-68a2-48c9-969a-bcc3b301374f_abab0247.pdf",
+      "example": "https://promo-asset-lab.preview.emergentagent.com/api/uploads/rdw/32438524-68a2-48c9-969a-bcc3b301374f_abab0247.pdf",
       "accessible": true
     }
   }

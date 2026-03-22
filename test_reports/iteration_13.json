@@ -71,7 +71,7 @@
       "status": "WORKING",
       "location": "/app/frontend/src/App.js lines 88-112",
       "behavior": "Checks if hostname includes 'preview.emergentagent.com' and skips redirect to production",
-      "tested_url": "https://moto-manager-test.preview.emergentagent.com"
+      "tested_url": "https://promo-asset-lab.preview.emergentagent.com"
     },
     "auto_activation_via_put": {
       "status": "WORKING",
