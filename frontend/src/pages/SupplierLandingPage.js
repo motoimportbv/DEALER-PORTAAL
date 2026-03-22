@@ -37,7 +37,7 @@ const content = {
     countries: 'Svizzera \u2022 Germania \u2022 Italia \u2022 Francia \u2022 Belgio \u2022 Austria',
     footer_cta: 'Inizia oggi stesso',
     footer_desc: 'Unisciti a centinaia di fornitori che vendono con successo ai concessionari olandesi',
-    video_file: 'moto_import_reclame_it.mp4',
+    video_file: 'moto_import_reclame_it',
   },
   de: {
     hero_title: 'Verkaufen Sie Ihre Motorr\u00e4der an niederl\u00e4ndische H\u00e4ndler',
@@ -64,7 +64,7 @@ const content = {
     countries: 'Schweiz \u2022 Deutschland \u2022 Italien \u2022 Frankreich \u2022 Belgien \u2022 \u00d6sterreich',
     footer_cta: 'Starten Sie noch heute',
     footer_desc: 'Schlie\u00dfen Sie sich Hunderten von Lieferanten an, die erfolgreich an niederl\u00e4ndische H\u00e4ndler verkaufen',
-    video_file: 'moto_import_reclame_de.mp4',
+    video_file: 'moto_import_reclame_de',
   },
   fr: {
     hero_title: 'Vendez vos motos aux concessionnaires n\u00e9erlandais',
@@ -242,7 +242,6 @@ export default function SupplierLandingPage() {
             <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-zinc-800/50 aspect-video bg-black group cursor-pointer" onClick={toggleVideo}>
               <video
                 ref={videoRef}
-                src={`${API}/api/uploads/${t.video_file}`}
                 className="w-full h-full object-cover"
                 onEnded={() => setVideoPlaying(false)}
                 onPause={() => setVideoPlaying(false)}
@@ -251,7 +250,10 @@ export default function SupplierLandingPage() {
                 preload="auto"
                 controls
                 data-testid="promo-video"
-              />
+              >
+                <source src={`${API}/api/uploads/${t.video_file}.webm`} type="video/webm" />
+                <source src={`${API}/api/uploads/${t.video_file}.mp4`} type="video/mp4" />
+              </video>
               {/* Play/Pause overlay */}
               <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${videoPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'} bg-black/30`}>
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-600 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/40 transition-transform duration-300 hover:scale-110">
