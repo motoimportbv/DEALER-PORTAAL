@@ -2209,6 +2209,11 @@ async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dic
     if current_selling_price and price_diff != 0:
         new_selling_price = max(0, float(current_selling_price) - price_diff)
         update_fields["price"] = new_selling_price
+        
+        # Also update price_override_amount if admin set a manual price
+        if motorcycle.get("price_override") and motorcycle.get("price_override_amount"):
+            new_override = max(0, float(motorcycle["price_override_amount"]) - price_diff)
+            update_fields["price_override_amount"] = new_override
     
     # Track supplier price reduction
     if price_diff > 0:
