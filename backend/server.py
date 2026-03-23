@@ -2880,7 +2880,17 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
     is_admin = user.get("role") == "admin"
     
     # Process motorcycles - recalculate EUR prices for CHF motorcycles
+    filtered = []
+    user_id = user.get("id")
     for m in motorcycles:
+        # VISIBILITY CHECK: Skip motorcycles this dealer shouldn't see
+        if not is_admin:
+            vis = m.get("visibility", "all")
+            if vis == "selected":
+                visible_to = m.get("visible_to_dealers", [])
+                if user_id not in visible_to:
+                    continue
+        
         # Add default starting_price if missing
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
@@ -2910,8 +2920,11 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
             m.pop("price_override_amount", None)
             m.pop("price_override_active", None)
             m.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
+            m.pop("visible_to_dealers", None)  # Hide visibility settings
+        
+        filtered.append(m)
     
-    return motorcycles
+    return filtered
 
 @api_router.get("/motorcycles/my-listings")
 async def get_my_listings(user: dict = Depends(require_approved_dealer)):
@@ -3009,6 +3022,14 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
+    
+    # VISIBILITY CHECK: Dealers can only see motorcycles they have access to
+    if user.get("role") == "dealer":
+        vis = motorcycle.get("visibility", "all")
+        if vis == "selected":
+            visible_to = motorcycle.get("visible_to_dealers", [])
+            if user.get("id") not in visible_to:
+                raise HTTPException(status_code=403, detail="U heeft geen toegang tot deze motor")
     
     # SECURITY: Foreign dealers can only see their own motorcycles
     is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
