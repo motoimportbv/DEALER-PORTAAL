@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /suppliers
+Allow: /dealers
+Allow: /login
+Allow: /register
+Allow: /register/supplier
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /pakbon/
+
+Sitemap: https://motoimportbv.nl/sitemap.xml

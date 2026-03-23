@@ -3,6 +3,7 @@ import "@/App.css";
 import "./i18n"; // Initialize i18n
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DataRefreshProvider } from "./components/DataRefreshProvider";
 import { initializeNativeFeatures, isNative } from "./services/nativeService";
@@ -187,6 +188,7 @@ function App() {
   }, []);
 
   return (
+    <HelmetProvider>
     <AuthProvider>
       <DataRefreshProvider>
         <div className="App">
@@ -264,6 +266,7 @@ function App() {
       </div>
       </DataRefreshProvider>
     </AuthProvider>
+    </HelmetProvider>
   );
 }
 

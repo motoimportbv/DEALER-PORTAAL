@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '../components/ui/button';
 import { Play, Pause, ArrowRight, Users, Truck, Globe, Shield, ChevronRight, MapPin, BarChart3, Clock, Star } from 'lucide-react';
 import ReviewSection from '../components/ReviewSection';
@@ -133,8 +134,27 @@ export default function SupplierLandingPage() {
     }
   };
 
+  const seoTitles = {
+    it: 'Moto Import BV - Vendi le tue moto in Olanda | 100+ Concessionari',
+    de: 'Moto Import BV - Verkaufen Sie Motorr\u00e4der in den Niederlanden | 100+ H\u00e4ndler',
+    fr: 'Moto Import BV - Vendez vos motos aux Pays-Bas | 100+ Concessionnaires',
+  };
+  const seoDescs = {
+    it: 'Moto Import BV collega fornitori internazionali con oltre 100 concessionari nei Paesi Bassi. Registrati gratis, carica le tue moto, vendi pi\u00f9 velocemente.',
+    de: 'Moto Import BV verbindet internationale Lieferanten mit \u00fcber 100 H\u00e4ndlern in den Niederlanden. Kostenlos registrieren, Motorr\u00e4der hochladen, schneller verkaufen.',
+    fr: 'Moto Import BV connecte les fournisseurs internationaux avec plus de 100 concessionnaires aux Pays-Bas. Inscription gratuite, vendez plus vite.',
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden" data-testid="supplier-landing">
+      <Helmet>
+        <title>{seoTitles[lang]}</title>
+        <meta name="description" content={seoDescs[lang]} />
+        <meta property="og:title" content={seoTitles[lang]} />
+        <meta property="og:description" content={seoDescs[lang]} />
+        <meta property="og:url" content="https://motoimportbv.nl/suppliers" />
+        <link rel="canonical" href="https://motoimportbv.nl/suppliers" />
+      </Helmet>
       {/* Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

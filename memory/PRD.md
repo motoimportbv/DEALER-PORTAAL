@@ -49,6 +49,8 @@ MongoDB: test_database
 - [ ] Leverancier reclamevideo Frans - GEBLOKKEERD door budget LLM Key
 - [x] Leveranciers landingspagina (/suppliers) - meertalig IT/DE/FR met video, stats, CTA
 - [x] Dealer landingspagina (/dealers) - Nederlands, voor nieuwe motorzaken
+- [x] Reviews systeem: dealers kunnen reviews plaatsen (anoniem/met naam, sterren + tekst)
+- [x] SEO optimalisatie: meta tags, Open Graph, sitemap.xml, robots.txt, structured data (JSON-LD)
 - [x] Video codec fix: WebM (VP9) voor browser-compatibiliteit
 - [x] Taalwissel fix: video laadt opnieuw bij taalwissel
 - [x] Video Range request support voor mobiele browsers (Samsung Internet)

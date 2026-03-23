@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Button } from '../components/ui/button';
 import { ArrowRight, Users, ShoppingBag, TrendingUp, Shield, ChevronRight, MapPin, Bike, Clock, Euro, CheckCircle, Zap } from 'lucide-react';
 import ReviewSection from '../components/ReviewSection';
@@ -58,6 +59,14 @@ export default function DealerLandingPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden" data-testid="dealer-landing">
+      <Helmet>
+        <title>Word Dealer bij Moto Import BV | 500+ Motoren Beschikbaar</title>
+        <meta name="description" content="Word dealer bij Moto Import BV. Toegang tot 500+ exclusieve motoren uit Europa. BMW, Triumph, KTM, Ducati en meer. Gratis registratie, snelle levering aan 100+ motorzaken in Nederland." />
+        <meta property="og:title" content="Word Dealer bij Moto Import BV - Motorfiets Platform Nederland" />
+        <meta property="og:description" content="Vergroot uw aanbod met Europese motoren. 500+ motoren beschikbaar, scherpe prijzen, snelle levering." />
+        <meta property="og:url" content="https://motoimportbv.nl/dealers" />
+        <link rel="canonical" href="https://motoimportbv.nl/dealers" />
+      </Helmet>
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
