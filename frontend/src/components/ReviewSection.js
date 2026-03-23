@@ -104,7 +104,7 @@ function getTimeAgo(date) {
   return `${Math.floor(diff / 2592000)}ma`;
 }
 
-export default function ReviewSection({ lang = 'nl' }) {
+export default function ReviewSection({ lang = 'nl', variant = 'dark' }) {
   const [reviews, setReviews] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [rating, setRating] = useState(0);
@@ -166,21 +166,34 @@ export default function ReviewSection({ lang = 'nl' }) {
     setSubmitting(false);
   };
 
+  const isDark = variant === 'dark';
+  const sectionBg = isDark ? 'bg-zinc-900/40' : 'bg-zinc-50 rounded-2xl border border-zinc-200';
+  const cardBg = isDark ? 'bg-zinc-900/80 border-zinc-800/60' : 'bg-white border-zinc-200 shadow-sm';
+  const titleColor = 'text-red-500';
+  const scoreColor = isDark ? 'text-white' : 'text-zinc-900';
+  const subColor = isDark ? 'text-zinc-500' : 'text-zinc-500';
+  const nameColor = isDark ? 'text-zinc-300' : 'text-zinc-700';
+  const textColor = isDark ? 'text-zinc-400' : 'text-zinc-600';
+  const dateColor = isDark ? 'text-zinc-600' : 'text-zinc-400';
+  const avatarBg = isDark ? 'bg-zinc-800' : 'bg-zinc-100';
+  const inputBg = isDark ? 'bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600' : 'bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400';
+  const pageBtnBg = isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300';
+
   return (
-    <section className="py-20 sm:py-28 bg-zinc-900/40" data-testid="reviews-section">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <section className={`py-12 sm:py-16 ${sectionBg}`} data-testid="reviews-section">
+      <div className={`${isDark ? 'max-w-6xl mx-auto' : ''} px-4 sm:px-6`}>
         {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-base sm:text-lg font-bold text-red-500 uppercase tracking-widest mb-4">
+        <div className="text-center mb-8">
+          <h2 className={`text-base sm:text-lg font-bold ${titleColor} uppercase tracking-widest mb-4`}>
             {t.title}
           </h2>
           {reviews.length > 0 && (
             <div className="flex items-center justify-center gap-3">
               <StarRating rating={Math.round(parseFloat(avgRating))} size="w-5 h-5" />
-              <span className="text-2xl font-black text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <span className={`text-2xl font-black ${scoreColor}`} style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
                 {avgRating}
               </span>
-              <span className="text-sm text-zinc-500">
+              <span className={`text-sm ${subColor}`}>
                 ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
               </span>
             </div>
@@ -189,12 +202,26 @@ export default function ReviewSection({ lang = 'nl' }) {
 
         {/* Reviews grid */}
         {reviews.length === 0 ? (
-          <p className="text-center text-zinc-500 text-sm mb-8">{t.no_reviews}</p>
+          <p className={`text-center ${subColor} text-sm mb-8`}>{t.no_reviews}</p>
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
               {visibleReviews.map((r) => (
-                <ReviewCard key={r.id} review={r} />
+                <div key={r.id} className={`border rounded-2xl p-6 flex flex-col gap-3 min-w-0 ${cardBg}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 ${avatarBg} rounded-full flex items-center justify-center`}>
+                        <User className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                      </div>
+                      <span className={`text-sm font-medium ${nameColor} truncate`}>
+                        {r.dealer_company}
+                      </span>
+                    </div>
+                    <span className={`text-xs ${dateColor} flex-shrink-0`}>{getTimeAgo(new Date(r.created_at))}</span>
+                  </div>
+                  <StarRating rating={r.rating} size="w-4 h-4" />
+                  <p className={`text-sm ${textColor} leading-relaxed`}>{r.text}</p>
+                </div>
               ))}
             </div>
             {totalPages > 1 && (
@@ -202,17 +229,17 @@ export default function ReviewSection({ lang = 'nl' }) {
                 <button
                   onClick={() => setPage(Math.max(0, page - 1))}
                   disabled={page === 0}
-                  className="p-2 rounded-lg bg-zinc-800 text-zinc-400 disabled:opacity-30 hover:bg-zinc-700 transition-colors"
+                  className={`p-2 rounded-lg disabled:opacity-30 transition-colors ${pageBtnBg}`}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="text-sm text-zinc-500">
+                <span className={`text-sm ${subColor}`}>
                   {page + 1} / {totalPages}
                 </span>
                 <button
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page >= totalPages - 1}
-                  className="p-2 rounded-lg bg-zinc-800 text-zinc-400 disabled:opacity-30 hover:bg-zinc-700 transition-colors"
+                  className={`p-2 rounded-lg disabled:opacity-30 transition-colors ${pageBtnBg}`}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -244,7 +271,7 @@ export default function ReviewSection({ lang = 'nl' }) {
           )}
 
           {showForm && (
-            <div className="max-w-lg mx-auto bg-zinc-900/80 border border-zinc-800/60 rounded-2xl p-6 mt-4 text-left">
+            <div className={`max-w-lg mx-auto border rounded-2xl p-6 mt-4 text-left ${cardBg}`}>
               {/* Star rating */}
               <div className="mb-4">
                 <StarRating rating={rating} onRate={setRating} interactive size="w-8 h-8" />
@@ -257,7 +284,7 @@ export default function ReviewSection({ lang = 'nl' }) {
                 onChange={(e) => setText(e.target.value)}
                 placeholder={t.placeholder}
                 rows={4}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-500/50 resize-none mb-3"
+                className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-500/50 resize-none mb-3 ${inputBg}`}
               />
               {text.length > 0 && text.length < 10 && (
                 <p className="text-xs text-red-400 mb-2">{t.min_chars}</p>
@@ -270,9 +297,9 @@ export default function ReviewSection({ lang = 'nl' }) {
                   type="checkbox"
                   checked={anonymous}
                   onChange={(e) => setAnonymous(e.target.checked)}
-                  className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-red-600 focus:ring-red-500"
+                  className="w-4 h-4 rounded border-zinc-400 text-red-600 focus:ring-red-500"
                 />
-                <span className="text-sm text-zinc-400">{t.anonymous}</span>
+                <span className={`text-sm ${textColor}`}>{t.anonymous}</span>
               </label>
 
               {/* Submit */}

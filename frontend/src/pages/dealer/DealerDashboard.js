@@ -19,6 +19,7 @@ import {
 } from '../../components/ui/select';
 import TermsModal from '../../components/TermsModal';
 import EmailNotificationBanner from '../../components/EmailNotificationBanner';
+import ReviewSection from '../../components/ReviewSection';
 import { toast } from 'sonner';
 import { 
   Bike, 
@@ -679,6 +680,11 @@ const DealerDashboard = () => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Reviews sectie */}
+      <div className="mt-8">
+        <ReviewSection lang="nl" variant="light" />
       </div>
     </Layout>
   );
