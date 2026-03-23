@@ -547,6 +547,25 @@ class PriceProposal(BaseModel):
 
 # ============ WANTED REQUEST MODELS (Motor Zoekertje) ============
 
+# ============ REVIEW MODELS ============
+
+class ReviewCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    text: str = Field(min_length=10, max_length=1000)
+    anonymous: bool = False
+
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    anonymous: bool = False
+    rating: int
+    text: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============ WANTED REQUEST CREATE ============
+
 class WantedRequestCreate(BaseModel):
     brand: str
     model: str = ""
@@ -8152,6 +8171,39 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
     )
     
     return {"message": "Document verwijderd"}
+
+# ============ REVIEWS ENDPOINTS ============
+
+@api_router.get("/reviews")
+async def get_reviews():
+    """Get all reviews - public endpoint"""
+    reviews = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    # Hide dealer info for anonymous reviews
+    for r in reviews:
+        if r.get("anonymous"):
+            r["dealer_company"] = "Anoniem"
+    return reviews
+
+@api_router.post("/reviews")
+async def create_review(review_data: ReviewCreate, current_user: dict = Depends(get_current_user)):
+    """Create a review - only dealers can post"""
+    if current_user.get("role") not in ["dealer"]:
+        raise HTTPException(status_code=403, detail="Alleen dealers kunnen reviews plaatsen")
+    
+    # Check if dealer already has a review
+    existing = await db.reviews.find_one({"dealer_id": current_user["id"]}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="U heeft al een review geplaatst")
+    
+    review = Review(
+        dealer_id=current_user["id"],
+        dealer_company=current_user.get("company_name", "Dealer"),
+        anonymous=review_data.anonymous,
+        rating=review_data.rating,
+        text=review_data.text,
+    )
+    await db.reviews.insert_one(review.model_dump())
+    return {"message": "Review geplaatst", "review_id": review.id}
 
 # --- Promo video endpoint (serves from cloud storage with Range support) ---
 @api_router.get("/promo/video/{filename}")

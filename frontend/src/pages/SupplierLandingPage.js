@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Play, Pause, ArrowRight, Users, Truck, Globe, Shield, ChevronRight, MapPin, BarChart3, Clock, Star } from 'lucide-react';
+import ReviewSection from '../components/ReviewSection';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -346,6 +347,9 @@ export default function SupplierLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Reviews */}
+      <ReviewSection lang={lang} />
 
       {/* Final CTA */}
       <section className="py-20 sm:py-28 bg-gradient-to-b from-zinc-950 to-zinc-900">

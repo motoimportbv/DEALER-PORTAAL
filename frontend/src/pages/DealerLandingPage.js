@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { ArrowRight, Users, ShoppingBag, TrendingUp, Shield, ChevronRight, MapPin, Bike, Clock, Euro, CheckCircle, Zap } from 'lucide-react';
+import ReviewSection from '../components/ReviewSection';
 
 const dealerContent = {
   badge: 'Het grootste motorplatform van Nederland',
@@ -257,6 +258,9 @@ export default function DealerLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Reviews */}
+      <ReviewSection lang="nl" />
 
       {/* Final CTA */}
       <section className="py-20 sm:py-28 bg-gradient-to-b from-zinc-950 to-zinc-900">
