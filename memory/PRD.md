@@ -51,8 +51,9 @@ Collections: users, motorcycles, orders, private_listings, payment_transactions,
   - Login redirect: particulier users worden automatisch naar /particulier gestuurd
   - Dealers: nieuw tabblad "Particulier Aanbod" op dealer dashboard om actieve aanbiedingen te bekijken
   - Stripe: €4.95/week abonnement via iDEAL/creditcard, 7 dagen actief na betaling
-  - Dealer betaalmuur: contactgegevens pas zichtbaar na eenmalige betaling van €175
-  - DB: private_listings, private_listing_dealer_access, payment_transactions collections
+  - Dealer betaling: €175 eenmalig bij KOPEN van motor (niet voor contact bekijken)
+  - Admin restrictie: alleen Motoimportbv@gmail.com kan Particulier Aanbod zien, andere admins niet
+  - DB: private_listings, private_listing_purchases, payment_transactions collections
 - [x] Landingspagina /particulier-verkopen voor SEO en promotie
   - Hero met prijsbadge, stappen, pricing card, voordelen, FAQ, reviews, CTA
   - SEO: meta tags, Open Graph, canonical, structured data (JSON-LD)

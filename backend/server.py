@@ -8238,7 +8238,8 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
 # ============ PRIVATE LISTINGS (PARTICULIEREN) ENDPOINTS ============
 
 PRIVATE_LISTING_PRICE = 4.95  # EUR per week
-DEALER_CONTACT_FEE = 175.00  # EUR one-time fee for dealer to access private listing contact info
+DEALER_CONTACT_FEE = 175.00  # EUR one-time fee when dealer BUYS a motorcycle from a private seller
+ALLOWED_ADMIN_EMAIL_PRIVATE = "motoimportbv@gmail.com"  # Only this admin may see private listings
 
 @api_router.post("/private-listings/register")
 async def register_private_seller(data: dict = Body(...)):
@@ -8422,20 +8423,25 @@ async def stripe_webhook(request: Request):
                     {"session_id": event.session_id},
                     {"$set": {"status": "completed", "payment_status": "paid"}}
                 )
-        # Handle dealer private access payment
-        elif event.payment_status == "paid" and event.metadata.get("type") == "dealer_private_access":
+        # Handle dealer private purchase payment
+        elif event.payment_status == "paid" and event.metadata.get("type") == "dealer_private_purchase":
             listing_id = event.metadata.get("listing_id")
             dealer_id = event.metadata.get("dealer_id")
             if listing_id and dealer_id:
-                existing = await db.private_listing_dealer_access.find_one({"dealer_id": dealer_id, "listing_id": listing_id})
+                existing = await db.private_listing_purchases.find_one({"dealer_id": dealer_id, "listing_id": listing_id})
                 if not existing:
-                    await db.private_listing_dealer_access.insert_one({
+                    await db.private_listing_purchases.insert_one({
                         "id": str(uuid.uuid4()),
                         "dealer_id": dealer_id,
                         "listing_id": listing_id,
                         "paid_at": datetime.now(timezone.utc).isoformat(),
                         "session_id": event.session_id,
                     })
+                    # Mark listing as sold
+                    await db.private_listings.update_one(
+                        {"id": listing_id},
+                        {"$set": {"status": "sold", "sold_to_dealer": dealer_id, "sold_at": datetime.now(timezone.utc).isoformat()}}
+                    )
                 await db.payment_transactions.update_one(
                     {"session_id": event.session_id},
                     {"$set": {"status": "completed", "payment_status": "paid"}}
@@ -8455,53 +8461,56 @@ async def get_my_private_listings(current_user: dict = Depends(get_current_user)
 
 @api_router.get("/private-listings/active")
 async def get_active_private_listings(current_user: dict = Depends(get_current_user)):
-    """Get all active private listings for dealers - hides contact info unless dealer has paid"""
-    if current_user.get("role") not in ["dealer", "admin"]:
-        raise HTTPException(status_code=403, detail="Alleen dealers en admins")
+    """Get all active private listings for dealers and the allowed admin"""
+    role = current_user.get("role")
+    email = current_user.get("email", "").lower()
+    
+    # Only dealers and the specific admin are allowed
+    if role == "admin" and email != ALLOWED_ADMIN_EMAIL_PRIVATE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    if role not in ["dealer", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen dealers")
     
     now = datetime.now(timezone.utc).isoformat()
     listings = await db.private_listings.find(
         {"is_active": True, "is_paid": True, "expires_at": {"$gt": now}}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     
-    # Check which listings this dealer has paid access to
+    # Check which listings this dealer has already purchased
     dealer_id = current_user["id"]
-    access_records = await db.private_listing_dealer_access.find(
+    purchases = await db.private_listing_purchases.find(
         {"dealer_id": dealer_id}, {"_id": 0}
     ).to_list(500)
-    accessible_listing_ids = {a["listing_id"] for a in access_records}
+    purchased_ids = {p["listing_id"] for p in purchases}
     
-    # Hide contact info for listings the dealer hasn't paid for
     for listing in listings:
-        listing["has_access"] = listing["id"] in accessible_listing_ids
-        if not listing["has_access"]:
-            listing["user_name"] = "Verborgen"
-            listing["user_email"] = ""
-            listing["user_phone"] = ""
-            listing["city"] = ""
+        listing["is_purchased"] = listing["id"] in purchased_ids
     
     return listings
 
 @api_router.post("/private-listings/{listing_id}/dealer-checkout")
-async def create_dealer_contact_checkout(listing_id: str, request: Request, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
-    """Create Stripe checkout for a dealer to access private listing contact info (EUR 175)"""
-    if current_user.get("role") not in ["dealer", "admin"]:
+async def create_dealer_purchase_checkout(listing_id: str, request: Request, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create Stripe checkout for a dealer to BUY a motorcycle from a private seller (EUR 175)"""
+    role = current_user.get("role")
+    email = current_user.get("email", "").lower()
+    if role == "admin" and email != ALLOWED_ADMIN_EMAIL_PRIVATE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    if role not in ["dealer", "admin"]:
         raise HTTPException(status_code=403, detail="Alleen dealers")
     
-    # Check if listing exists and is active
     listing = await db.private_listings.find_one({"id": listing_id, "is_active": True, "is_paid": True}, {"_id": 0})
     if not listing:
         raise HTTPException(status_code=404, detail="Advertentie niet gevonden of niet meer actief")
     
-    # Check if dealer already has access
-    existing = await db.private_listing_dealer_access.find_one({"dealer_id": current_user["id"], "listing_id": listing_id})
+    # Check if dealer already purchased
+    existing = await db.private_listing_purchases.find_one({"dealer_id": current_user["id"], "listing_id": listing_id})
     if existing:
-        raise HTTPException(status_code=400, detail="U heeft al toegang tot deze advertentie")
+        raise HTTPException(status_code=400, detail="U heeft deze motor al gekocht")
     
     from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
     
     origin_url = body.get("origin_url", str(request.base_url).rstrip("/"))
-    success_url = f"{origin_url}/dealer?private_access=success&listing_id={listing_id}"
+    success_url = f"{origin_url}/dealer?private_purchase=success&listing_id={listing_id}"
     cancel_url = f"{origin_url}/dealer?tab=particulier"
     
     api_key = os.environ.get("STRIPE_API_KEY")
@@ -8517,7 +8526,7 @@ async def create_dealer_contact_checkout(listing_id: str, request: Request, body
         metadata={
             "listing_id": listing_id,
             "dealer_id": current_user["id"],
-            "type": "dealer_private_access",
+            "type": "dealer_private_purchase",
         },
         payment_methods=["card", "ideal"],
     )
@@ -8533,53 +8542,40 @@ async def create_dealer_contact_checkout(listing_id: str, request: Request, body
         "currency": "eur",
         "status": "pending",
         "payment_status": "initiated",
-        "type": "dealer_private_access",
+        "type": "dealer_private_purchase",
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
     
     return {"checkout_url": session.url, "session_id": session.session_id}
 
-@api_router.get("/private-listings/{listing_id}/dealer-access-status")
-async def check_dealer_access_status(listing_id: str, current_user: dict = Depends(get_current_user)):
-    """Check if dealer has paid access to a private listing"""
-    access = await db.private_listing_dealer_access.find_one(
-        {"dealer_id": current_user["id"], "listing_id": listing_id}, {"_id": 0}
-    )
-    return {"has_access": access is not None}
-
-@api_router.post("/private-listings/dealer-access-confirm")
-async def confirm_dealer_access(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
-    """Confirm dealer access after successful Stripe payment by checking session"""
-    session_id = body.get("session_id", "")
+@api_router.post("/private-listings/dealer-purchase-confirm")
+async def confirm_dealer_purchase(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Confirm dealer purchase after successful Stripe payment"""
     listing_id = body.get("listing_id", "")
     
     if not listing_id:
         raise HTTPException(status_code=400, detail="listing_id is verplicht")
     
-    # Check if already has access
-    existing = await db.private_listing_dealer_access.find_one({"dealer_id": current_user["id"], "listing_id": listing_id})
+    existing = await db.private_listing_purchases.find_one({"dealer_id": current_user["id"], "listing_id": listing_id})
     if existing:
-        return {"status": "already_granted"}
+        return {"status": "already_purchased"}
     
-    # Find the payment transaction
     tx = await db.payment_transactions.find_one({
         "listing_id": listing_id,
         "dealer_id": current_user["id"],
-        "type": "dealer_private_access",
+        "type": "dealer_private_purchase",
     }, {"_id": 0})
     
     if not tx:
         raise HTTPException(status_code=404, detail="Geen betaling gevonden")
     
-    # Check Stripe session status
     from emergentintegrations.payments.stripe.checkout import StripeCheckout
     api_key = os.environ.get("STRIPE_API_KEY")
     stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
     status = await stripe_checkout.get_checkout_status(tx["session_id"])
     
     if status.payment_status == "paid":
-        # Grant access
-        await db.private_listing_dealer_access.insert_one({
+        await db.private_listing_purchases.insert_one({
             "id": str(uuid.uuid4()),
             "dealer_id": current_user["id"],
             "listing_id": listing_id,
@@ -8590,7 +8586,12 @@ async def confirm_dealer_access(body: dict = Body(...), current_user: dict = Dep
             {"session_id": tx["session_id"]},
             {"$set": {"status": "completed", "payment_status": "paid"}}
         )
-        return {"status": "granted"}
+        # Mark listing as sold
+        await db.private_listings.update_one(
+            {"id": listing_id},
+            {"$set": {"status": "sold", "sold_to_dealer": current_user["id"], "sold_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "purchased"}
     
     return {"status": "pending", "payment_status": status.payment_status}
 

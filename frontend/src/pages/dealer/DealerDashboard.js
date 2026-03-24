@@ -104,34 +104,32 @@ const DealerDashboard = () => {
     sessionStorage.setItem('hidePriceDisclaimer', 'true');
   };
 
-  // Handle return from Stripe after dealer pays for private listing access
+  // Handle return from Stripe after dealer buys a private listing
   useEffect(() => {
-    const privateAccess = searchParams.get('private_access');
+    const privatePurchase = searchParams.get('private_purchase');
     const listingId = searchParams.get('listing_id');
-    if (privateAccess === 'success' && listingId && token) {
-      // Switch to particulier tab and confirm access
+    if (privatePurchase === 'success' && listingId && token) {
       setActiveTab('particulier');
-      const confirmAccess = async () => {
+      const confirmPurchase = async () => {
         try {
-          const res = await axios.post(`${API}/private-listings/dealer-access-confirm`,
+          const res = await axios.post(`${API}/private-listings/dealer-purchase-confirm`,
             { listing_id: listingId },
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          if (res.data.status === 'granted' || res.data.status === 'already_granted') {
-            toast.success('Contactgegevens ontgrendeld!');
+          if (res.data.status === 'purchased' || res.data.status === 'already_purchased') {
+            toast.success('Motor succesvol gekocht!');
             fetchPrivateListings();
           } else {
             toast.info('Betaling wordt verwerkt, probeer het over enkele seconden opnieuw.');
           }
         } catch {
-          toast.error('Kon toegang niet bevestigen');
+          toast.error('Kon aankoop niet bevestigen');
         }
-        // Clean URL params
-        searchParams.delete('private_access');
+        searchParams.delete('private_purchase');
         searchParams.delete('listing_id');
         setSearchParams(searchParams, { replace: true });
       };
-      confirmAccess();
+      confirmPurchase();
     }
     // Also handle tab=particulier URL param
     if (searchParams.get('tab') === 'particulier') {
@@ -489,7 +487,8 @@ const DealerDashboard = () => {
         </div>
       )}
       
-      {/* Tab Navigation */}
+      {/* Tab Navigation - only show Particulier tab for dealers and allowed admin */}
+      {(user?.role === 'dealer' || (user?.role === 'admin' && user?.email?.toLowerCase() === 'motoimportbv@gmail.com')) && (
       <div className="flex gap-1 mb-6 bg-zinc-100 p-1 rounded-xl w-fit" data-testid="dashboard-tabs">
         <button
           onClick={() => setActiveTab('import')}
@@ -519,6 +518,7 @@ const DealerDashboard = () => {
           )}
         </button>
       </div>
+      )}
 
       {activeTab === 'particulier' ? (
         /* ===== PARTICULIER AANBOD TAB ===== */
@@ -594,43 +594,40 @@ const DealerDashboard = () => {
                       )}
 
                       <div className="border-t border-zinc-100 pt-3 space-y-2">
-                        {listing.has_access ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Unlock className="w-3.5 h-3.5 text-green-600" />
-                              <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider">Contact ontgrendeld</h4>
+                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Contact</h4>
+                        <div className="flex items-center gap-2 text-sm text-zinc-700">
+                          <User className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>{listing.user_name}</span>
+                        </div>
+                        {listing.city && (
+                          <div className="flex items-center gap-2 text-sm text-zinc-700">
+                            <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                            <span>{listing.city}</span>
+                          </div>
+                        )}
+                        {listing.user_phone && (
+                          <div className="flex items-center gap-2 text-sm text-zinc-700">
+                            <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                            <a href={`tel:${listing.user_phone}`} className="text-red-600 hover:underline">{listing.user_phone}</a>
+                          </div>
+                        )}
+                        {listing.user_email && (
+                          <div className="flex items-center gap-2 text-sm text-zinc-700">
+                            <Mail className="w-3.5 h-3.5 text-zinc-400" />
+                            <a href={`mailto:${listing.user_email}`} className="text-red-600 hover:underline">{listing.user_email}</a>
+                          </div>
+                        )}
+
+                        {/* Buy button - €175 */}
+                        <div className="pt-3">
+                          {listing.is_purchased ? (
+                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <span className="text-sm font-semibold text-green-700">Gekocht</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-zinc-700">
-                              <User className="w-3.5 h-3.5 text-zinc-400" />
-                              <span>{listing.user_name}</span>
-                            </div>
-                            {listing.city && (
-                              <div className="flex items-center gap-2 text-sm text-zinc-700">
-                                <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                                <span>{listing.city}</span>
-                              </div>
-                            )}
-                            {listing.user_phone && (
-                              <div className="flex items-center gap-2 text-sm text-zinc-700">
-                                <Phone className="w-3.5 h-3.5 text-zinc-400" />
-                                <a href={`tel:${listing.user_phone}`} className="text-red-600 hover:underline">{listing.user_phone}</a>
-                              </div>
-                            )}
-                            {listing.user_email && (
-                              <div className="flex items-center gap-2 text-sm text-zinc-700">
-                                <Mail className="w-3.5 h-3.5 text-zinc-400" />
-                                <a href={`mailto:${listing.user_email}`} className="text-red-600 hover:underline">{listing.user_email}</a>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-center py-2">
-                            <div className="flex items-center justify-center gap-2 text-zinc-400 mb-3">
-                              <Lock className="w-4 h-4" />
-                              <span className="text-xs font-bold uppercase tracking-wider">Contactgegevens verborgen</span>
-                            </div>
+                          ) : (
                             <Button
-                              data-testid={`unlock-btn-${listing.id}`}
+                              data-testid={`buy-btn-${listing.id}`}
                               onClick={async () => {
                                 try {
                                   const res = await axios.post(`${API}/private-listings/${listing.id}/dealer-checkout`, 
@@ -650,11 +647,11 @@ const DealerDashboard = () => {
                               }}
                               className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold"
                             >
-                              <Euro className="w-4 h-4 mr-2" />
-                              Ontgrendel contact &euro;175
+                              <ShoppingCart className="w-4 h-4 mr-2" />
+                              Kopen &euro;175
                             </Button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
