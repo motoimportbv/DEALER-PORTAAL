@@ -59,6 +59,10 @@ import MotorcycleDetail from "./pages/MotorcycleDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Pakbon from "./pages/Pakbon";
 import PakbonDashboard from "./pages/pakbon/PakbonDashboard";
+import ParticulierRegister from "./pages/particulier/ParticulierRegister";
+import ParticulierDashboard from "./pages/particulier/ParticulierDashboard";
+import ParticulierAddListing from "./pages/particulier/ParticulierAddListing";
+import ParticulierSuccess from "./pages/particulier/ParticulierSuccess";
 
 // Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
@@ -246,6 +250,12 @@ function App() {
             {/* Foreign Dealer Routes */}
             <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
             <Route path="/foreign-dealer/add" element={<ForeignDealerAddMotorcycle />} />
+            
+            {/* Particulier Routes */}
+            <Route path="/register/particulier" element={<ParticulierRegister />} />
+            <Route path="/particulier" element={<ParticulierDashboard />} />
+            <Route path="/particulier/nieuw" element={<ParticulierAddListing />} />
+            <Route path="/particulier/success" element={<ParticulierSuccess />} />
             
             {/* Pakbon Routes */}
             <Route path="/pakbonnen" element={<PakbonDashboard />} />

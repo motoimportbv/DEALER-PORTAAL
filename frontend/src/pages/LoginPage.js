@@ -147,6 +147,10 @@ const LoginPage = () => {
             
             if (role === 'admin') {
               redirectUrl = '/admin';
+            } else if (role === 'pakbon') {
+              redirectUrl = '/pakbonnen';
+            } else if (role === 'particulier') {
+              redirectUrl = '/particulier';
             } else if (isForeignDealer) {
               redirectUrl = '/foreign-dealer';
             }
@@ -248,6 +252,8 @@ const LoginPage = () => {
         redirectPath = '/admin';
       } else if (loggedInUser.role === 'pakbon') {
         redirectPath = '/pakbonnen';
+      } else if (loggedInUser.role === 'particulier') {
+        redirectPath = '/particulier';
       } else if (loggedInUser.is_foreign_dealer) {
         redirectPath = '/foreign-dealer';
       }

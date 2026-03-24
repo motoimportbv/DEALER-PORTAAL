@@ -33,7 +33,11 @@ import {
   RefreshCw,
   Mail,
   Bell,
-  Settings
+  Settings,
+  User,
+  MapPin,
+  Phone,
+  Euro
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -61,6 +65,9 @@ const DealerDashboard = () => {
     receive_new_motorcycles: true
   });
   const [savingPreferences, setSavingPreferences] = useState(false);
+  const [activeTab, setActiveTab] = useState('import'); // 'import' or 'particulier'
+  const [privateListings, setPrivateListings] = useState([]);
+  const [privateLoading, setPrivateLoading] = useState(false);
 
   // Load email preferences from user data
   useEffect(() => {
@@ -93,6 +100,29 @@ const DealerDashboard = () => {
     setShowPriceDisclaimer(false);
     sessionStorage.setItem('hidePriceDisclaimer', 'true');
   };
+
+  // Fetch private listings from particulieren
+  const fetchPrivateListings = useCallback(async () => {
+    if (!token) return;
+    setPrivateLoading(true);
+    try {
+      const response = await axios.get(`${API}/private-listings/active`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPrivateListings(response.data);
+    } catch (error) {
+      console.error('Failed to fetch private listings:', error);
+    } finally {
+      setPrivateLoading(false);
+    }
+  }, [token]);
+
+  // Load private listings when tab switches
+  useEffect(() => {
+    if (activeTab === 'particulier' && privateListings.length === 0) {
+      fetchPrivateListings();
+    }
+  }, [activeTab]);
 
   // Fetch motorcycles functie - kan worden hergebruikt voor refresh
   const fetchMotorcycles = useCallback(async (showToast = false) => {
@@ -419,6 +449,145 @@ const DealerDashboard = () => {
         </div>
       )}
       
+      {/* Tab Navigation */}
+      <div className="flex gap-1 mb-6 bg-zinc-100 p-1 rounded-xl w-fit" data-testid="dashboard-tabs">
+        <button
+          onClick={() => setActiveTab('import')}
+          data-testid="tab-import"
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === 'import'
+              ? 'bg-white text-zinc-900 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700'
+          }`}
+        >
+          <Bike className="w-4 h-4 inline mr-2" />
+          Import Motoren
+        </button>
+        <button
+          onClick={() => setActiveTab('particulier')}
+          data-testid="tab-particulier"
+          className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === 'particulier'
+              ? 'bg-white text-zinc-900 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700'
+          }`}
+        >
+          <User className="w-4 h-4 inline mr-2" />
+          Particulier Aanbod
+          {privateListings.length > 0 && (
+            <span className="ml-2 bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">{privateListings.length}</span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'particulier' ? (
+        /* ===== PARTICULIER AANBOD TAB ===== */
+        <div data-testid="particulier-listings">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="font-barlow text-3xl font-bold uppercase tracking-tight text-zinc-900">
+                Particulier Aanbod
+              </h1>
+              <p className="text-zinc-500 mt-1">Motoren aangeboden door particulieren</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={fetchPrivateListings}
+              disabled={privateLoading}
+              className="text-zinc-600"
+              data-testid="refresh-private-btn"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${privateLoading ? 'animate-spin' : ''}`} />
+              Vernieuwen
+            </Button>
+          </div>
+
+          {privateLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : privateListings.length === 0 ? (
+            <Card>
+              <CardContent className="py-16">
+                <div className="text-center">
+                  <User className="w-20 h-20 mx-auto mb-4 text-zinc-300" />
+                  <h3 className="font-barlow text-xl font-bold uppercase text-zinc-700 mb-2">
+                    Geen particulier aanbod
+                  </h3>
+                  <p className="text-zinc-500">Er zijn momenteel geen motoren aangeboden door particulieren.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {privateListings.map((listing) => {
+                const daysLeft = listing.expires_at
+                  ? Math.max(0, Math.ceil((new Date(listing.expires_at) - new Date()) / (1000 * 60 * 60 * 24)))
+                  : 0;
+                return (
+                  <Card key={listing.id} className="overflow-hidden border-2 border-zinc-100 hover:border-red-200 transition-colors" data-testid={`private-listing-${listing.id}`}>
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-2 flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Particulier</span>
+                      <span className="text-xs text-amber-700 font-medium">{daysLeft} dag{daysLeft !== 1 ? 'en' : ''} resterend</span>
+                    </div>
+                    <CardContent className="p-5">
+                      <div className="mb-3">
+                        <h3 className="font-barlow text-xl font-bold uppercase tracking-tight text-zinc-900">
+                          {listing.brand}
+                        </h3>
+                        <p className="text-zinc-600 text-sm">{listing.model}</p>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-sm text-zinc-500 mb-3">
+                        <span>{listing.year}</span>
+                        <span>·</span>
+                        <span>{listing.mileage?.toLocaleString('nl-NL')} km</span>
+                        {listing.color && (<><span>·</span><span>{listing.color}</span></>)}
+                      </div>
+
+                      <div className="text-2xl font-bold text-red-600 mb-4 font-barlow">
+                        {formatPrice(listing.price)}
+                      </div>
+
+                      {listing.description && (
+                        <p className="text-sm text-zinc-600 mb-4 line-clamp-2">{listing.description}</p>
+                      )}
+
+                      <div className="border-t border-zinc-100 pt-3 space-y-2">
+                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Contact</h4>
+                        <div className="flex items-center gap-2 text-sm text-zinc-700">
+                          <User className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>{listing.user_name}</span>
+                        </div>
+                        {listing.city && (
+                          <div className="flex items-center gap-2 text-sm text-zinc-700">
+                            <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                            <span>{listing.city}</span>
+                          </div>
+                        )}
+                        {listing.user_phone && (
+                          <div className="flex items-center gap-2 text-sm text-zinc-700">
+                            <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                            <a href={`tel:${listing.user_phone}`} className="text-red-600 hover:underline">{listing.user_phone}</a>
+                          </div>
+                        )}
+                        {listing.user_email && (
+                          <div className="flex items-center gap-2 text-sm text-zinc-700">
+                            <Mail className="w-3.5 h-3.5 text-zinc-400" />
+                            <a href={`mailto:${listing.user_email}`} className="text-red-600 hover:underline">{listing.user_email}</a>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+      <>
+      {/* ===== IMPORT MOTOREN TAB ===== */}
       <div className="content-header">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -686,6 +855,8 @@ const DealerDashboard = () => {
       <div className="mt-8">
         <ReviewSection lang="nl" variant="light" />
       </div>
+      </>
+      )}
     </Layout>
   );
 };

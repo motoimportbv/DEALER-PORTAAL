@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request, Query, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import Response, FileResponse
@@ -562,6 +562,45 @@ class Review(BaseModel):
     anonymous: bool = False
     rating: int
     text: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============ PRIVATE LISTING MODELS ============
+
+class PrivateListingCreate(BaseModel):
+    brand: str
+    model: str
+    year: int
+    mileage: int
+    price: float
+    description: str = ""
+    color: str = ""
+    phone: str = ""
+    email: str = ""
+    city: str = ""
+    name: str = ""
+    photos: List[str] = []
+
+class PrivateListing(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    user_email: str
+    user_phone: str = ""
+    city: str = ""
+    brand: str
+    model: str
+    year: int
+    mileage: int
+    price: float
+    description: str = ""
+    color: str = ""
+    photos: List[str] = []
+    is_active: bool = False
+    is_paid: bool = False
+    payment_session_id: str = ""
+    paid_at: Optional[str] = None
+    expires_at: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 # ============ WANTED REQUEST CREATE ============
@@ -1257,12 +1296,15 @@ async def login(credentials: UserLogin):
         "user": {
             "id": user["id"],
             "email": user["email"],
-            "company_name": user["company_name"],
+            "company_name": user.get("company_name", user.get("name", "")),
+            "name": user.get("name", ""),
             "role": user["role"],
             "is_approved": is_approved,
             "terms_accepted": user.get("terms_accepted", False),
             "is_foreign_dealer": user.get("is_foreign_dealer", False),
-            "country": user.get("country", "")
+            "country": user.get("country", ""),
+            "phone": user.get("phone", ""),
+            "city": user.get("city", ""),
         }
     }
 
@@ -8192,6 +8234,217 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
     )
     
     return {"message": "Document verwijderd"}
+
+# ============ PRIVATE LISTINGS (PARTICULIEREN) ENDPOINTS ============
+
+PRIVATE_LISTING_PRICE = 7.95  # EUR per week
+
+@api_router.post("/private-listings/register")
+async def register_private_seller(data: dict = Body(...)):
+    """Register a new private seller account"""
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    city = data.get("city", "").strip()
+    
+    if not email or not password or not name:
+        raise HTTPException(status_code=400, detail="Naam, email en wachtwoord zijn verplicht")
+    
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Dit emailadres is al in gebruik")
+    
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    user_id = str(uuid.uuid4())
+    user_doc = {
+        "id": user_id,
+        "email": email,
+        "name": name,
+        "phone": phone,
+        "city": city,
+        "password_hash": hashed,
+        "role": "particulier",
+        "is_approved": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(user_doc)
+    
+    token = create_token(user_id, email, "particulier")
+    return {"token": token, "user": {"id": user_id, "email": email, "name": name, "role": "particulier", "phone": phone, "city": city}}
+
+@api_router.post("/private-listings")
+async def create_private_listing(data: PrivateListingCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new private motorcycle listing (requires payment)"""
+    if current_user.get("role") != "particulier":
+        raise HTTPException(status_code=403, detail="Alleen particulieren kunnen hier adverteren")
+    
+    listing = PrivateListing(
+        user_id=current_user["id"],
+        user_name=current_user.get("name", data.name or "Particulier"),
+        user_email=current_user.get("email", data.email),
+        user_phone=data.phone or current_user.get("phone", ""),
+        city=data.city or current_user.get("city", ""),
+        brand=data.brand,
+        model=data.model,
+        year=data.year,
+        mileage=data.mileage,
+        price=data.price,
+        description=data.description,
+        color=data.color,
+        photos=data.photos,
+        is_active=False,
+        is_paid=False,
+    )
+    await db.private_listings.insert_one(listing.model_dump())
+    return {"listing_id": listing.id, "message": "Advertentie aangemaakt. Betaal om te activeren."}
+
+@api_router.post("/private-listings/{listing_id}/checkout")
+async def create_private_listing_checkout(listing_id: str, request: Request, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create Stripe checkout for a private listing"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+    
+    listing = await db.private_listings.find_one({"id": listing_id, "user_id": current_user["id"]}, {"_id": 0})
+    if not listing:
+        raise HTTPException(status_code=404, detail="Advertentie niet gevonden")
+    if listing.get("is_paid"):
+        raise HTTPException(status_code=400, detail="Deze advertentie is al betaald")
+    
+    origin_url = body.get("origin_url", str(request.base_url).rstrip("/"))
+    success_url = f"{origin_url}/particulier/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/particulier"
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    checkout_req = CheckoutSessionRequest(
+        amount=PRIVATE_LISTING_PRICE,
+        currency="eur",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "listing_id": listing_id,
+            "user_id": current_user["id"],
+            "type": "private_listing",
+        },
+        payment_methods=["card", "ideal"],
+    )
+    session = await stripe_checkout.create_checkout_session(checkout_req)
+    
+    # Store payment transaction
+    await db.payment_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "session_id": session.session_id,
+        "listing_id": listing_id,
+        "user_id": current_user["id"],
+        "amount": PRIVATE_LISTING_PRICE,
+        "currency": "eur",
+        "status": "pending",
+        "payment_status": "initiated",
+        "type": "private_listing",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    # Link session to listing
+    await db.private_listings.update_one(
+        {"id": listing_id},
+        {"$set": {"payment_session_id": session.session_id}}
+    )
+    
+    return {"checkout_url": session.url, "session_id": session.session_id}
+
+@api_router.get("/private-listings/checkout-status/{session_id}")
+async def check_private_listing_payment(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Check payment status and activate listing if paid"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+    
+    status = await stripe_checkout.get_checkout_status(session_id)
+    
+    # Update payment transaction
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {"status": status.status, "payment_status": status.payment_status}}
+    )
+    
+    # Activate listing if paid
+    if status.payment_status == "paid":
+        listing = await db.private_listings.find_one({"payment_session_id": session_id}, {"_id": 0})
+        if listing and not listing.get("is_paid"):
+            expires = datetime.now(timezone.utc) + timedelta(days=7)
+            await db.private_listings.update_one(
+                {"payment_session_id": session_id},
+                {"$set": {
+                    "is_active": True,
+                    "is_paid": True,
+                    "paid_at": datetime.now(timezone.utc).isoformat(),
+                    "expires_at": expires.isoformat(),
+                }}
+            )
+    
+    return {"status": status.status, "payment_status": status.payment_status}
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    body = await request.body()
+    sig = request.headers.get("Stripe-Signature", "")
+    
+    try:
+        event = await stripe_checkout.handle_webhook(body, sig)
+        if event.payment_status == "paid" and event.metadata.get("type") == "private_listing":
+            listing_id = event.metadata.get("listing_id")
+            if listing_id:
+                listing = await db.private_listings.find_one({"id": listing_id}, {"_id": 0})
+                if listing and not listing.get("is_paid"):
+                    expires = datetime.now(timezone.utc) + timedelta(days=7)
+                    await db.private_listings.update_one(
+                        {"id": listing_id},
+                        {"$set": {
+                            "is_active": True, "is_paid": True,
+                            "paid_at": datetime.now(timezone.utc).isoformat(),
+                            "expires_at": expires.isoformat(),
+                        }}
+                    )
+                await db.payment_transactions.update_one(
+                    {"session_id": event.session_id},
+                    {"$set": {"status": "completed", "payment_status": "paid"}}
+                )
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return {"status": "error"}
+
+@api_router.get("/private-listings/my")
+async def get_my_private_listings(current_user: dict = Depends(get_current_user)):
+    """Get listings for current private seller"""
+    listings = await db.private_listings.find(
+        {"user_id": current_user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return listings
+
+@api_router.get("/private-listings/active")
+async def get_active_private_listings(current_user: dict = Depends(get_current_user)):
+    """Get all active private listings for dealers"""
+    if current_user.get("role") not in ["dealer", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen dealers en admins")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    listings = await db.private_listings.find(
+        {"is_active": True, "is_paid": True, "expires_at": {"$gt": now}}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return listings
 
 # ============ REVIEWS ENDPOINTS ============
 
