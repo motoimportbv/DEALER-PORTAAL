@@ -21,12 +21,14 @@ Full-stack motorcycle dealership platform for "Moto Import" dealer network. Reac
 - **dealer** - Browse motorcycles, make proposals, manage orders
 - **foreign_dealer** - Add motorcycles from abroad
 - **pakbon** - View and print packing slips ONLY (ellenmilone@gmail.com / Pakbon2024!)
+- **particulier** - Register, create motorcycle listings, pay via Stripe (€7.95/week)
 
 ## Architecture
 ```
 /app/backend/server.py     - Monolithic FastAPI backend
-/app/frontend/src/pages/   - React pages (admin/, dealer/, pakbon/)
+/app/frontend/src/pages/   - React pages (admin/, dealer/, pakbon/, particulier/)
 MongoDB: test_database
+Collections: users, motorcycles, orders, private_listings, payment_transactions, reviews
 ```
 
 ## Completed (This Session - March 2026)
@@ -42,6 +44,14 @@ MongoDB: test_database
 - [x] Auto-migration of Ellen's role on server startup
 
 ## Completed (This Session - Feb 2026)
+- [x] Particulier (privé verkoper) platform volledig gebouwd
+  - Backend: registratie, login, listing CRUD, Stripe checkout, webhooks
+  - Frontend: registratie pagina, dashboard, motor toevoegen formulier, betaling succes pagina
+  - Routes: /register/particulier, /particulier, /particulier/nieuw, /particulier/success
+  - Login redirect: particulier users worden automatisch naar /particulier gestuurd
+  - Dealers: nieuw tabblad "Particulier Aanbod" op dealer dashboard om actieve aanbiedingen te bekijken
+  - Stripe: €7.95/week abonnement via iDEAL/creditcard, 7 dagen actief na betaling
+  - DB: private_users + private_listings collections
 - [x] Promotievideo clip1 gegenereerd met Sora 2
 - [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
 - [x] Leverancier reclamevideo Italiaans (28 sec, video + voice-over)
