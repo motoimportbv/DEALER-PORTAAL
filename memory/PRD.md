@@ -52,6 +52,10 @@ Collections: users, motorcycles, orders, private_listings, payment_transactions,
   - Dealers: nieuw tabblad "Particulier Aanbod" op dealer dashboard om actieve aanbiedingen te bekijken
   - Stripe: €7.95/week abonnement via iDEAL/creditcard, 7 dagen actief na betaling
   - DB: private_users + private_listings collections
+- [x] Landingspagina /particulier-verkopen voor SEO en promotie
+  - Hero met prijsbadge, stappen, pricing card, voordelen, FAQ, reviews, CTA
+  - SEO: meta tags, Open Graph, canonical, structured data (JSON-LD)
+  - Sitemap.xml bijgewerkt met nieuwe pagina's
 - [x] Promotievideo clip1 gegenereerd met Sora 2
 - [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
 - [x] Leverancier reclamevideo Italiaans (28 sec, video + voice-over)
