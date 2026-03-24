@@ -53,6 +53,8 @@ MongoDB: test_database
 - [x] SEO optimalisatie: meta tags, Open Graph, sitemap.xml, robots.txt, structured data (JSON-LD)
 - [x] Reviews systeem ook op dealer dashboard (light variant, schrijf knop voor ingelogde dealers)
 - [x] Bugfix: Motorcycle visibility filter toegevoegd aan /motorcycles/available en /motorcycles/{id} endpoints
+- [x] Bugfix: Triumph TF + ontbrekende modellen toegevoegd aan leverancier formulier (ForeignDealerAddMotorcycle.js)
+- [x] Fix: Startup video download verwijderd (veroorzaakte productie crash), MP4's verwijderd uit public folder
 - [x] Video codec fix: WebM (VP9) voor browser-compatibiliteit
 - [x] Taalwissel fix: video laadt opnieuw bij taalwissel
 - [x] Video Range request support voor mobiele browsers (Samsung Internet)
