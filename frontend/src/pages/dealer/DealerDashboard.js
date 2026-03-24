@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Layout from '../../components/Layout';
@@ -37,7 +37,9 @@ import {
   User,
   MapPin,
   Phone,
-  Euro
+  Euro,
+  Lock,
+  Unlock
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -46,6 +48,7 @@ const DealerDashboard = () => {
   const { t } = useTranslation();
   const { user, token, refreshUser } = useAuth();
   const { refreshTrigger } = useDataRefresh();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('all');
@@ -100,6 +103,43 @@ const DealerDashboard = () => {
     setShowPriceDisclaimer(false);
     sessionStorage.setItem('hidePriceDisclaimer', 'true');
   };
+
+  // Handle return from Stripe after dealer pays for private listing access
+  useEffect(() => {
+    const privateAccess = searchParams.get('private_access');
+    const listingId = searchParams.get('listing_id');
+    if (privateAccess === 'success' && listingId && token) {
+      // Switch to particulier tab and confirm access
+      setActiveTab('particulier');
+      const confirmAccess = async () => {
+        try {
+          const res = await axios.post(`${API}/private-listings/dealer-access-confirm`,
+            { listing_id: listingId },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (res.data.status === 'granted' || res.data.status === 'already_granted') {
+            toast.success('Contactgegevens ontgrendeld!');
+            fetchPrivateListings();
+          } else {
+            toast.info('Betaling wordt verwerkt, probeer het over enkele seconden opnieuw.');
+          }
+        } catch {
+          toast.error('Kon toegang niet bevestigen');
+        }
+        // Clean URL params
+        searchParams.delete('private_access');
+        searchParams.delete('listing_id');
+        setSearchParams(searchParams, { replace: true });
+      };
+      confirmAccess();
+    }
+    // Also handle tab=particulier URL param
+    if (searchParams.get('tab') === 'particulier') {
+      setActiveTab('particulier');
+      searchParams.delete('tab');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, token]);
 
   // Fetch private listings from particulieren
   const fetchPrivateListings = useCallback(async () => {
@@ -554,27 +594,65 @@ const DealerDashboard = () => {
                       )}
 
                       <div className="border-t border-zinc-100 pt-3 space-y-2">
-                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Contact</h4>
-                        <div className="flex items-center gap-2 text-sm text-zinc-700">
-                          <User className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>{listing.user_name}</span>
-                        </div>
-                        {listing.city && (
-                          <div className="flex items-center gap-2 text-sm text-zinc-700">
-                            <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                            <span>{listing.city}</span>
-                          </div>
-                        )}
-                        {listing.user_phone && (
-                          <div className="flex items-center gap-2 text-sm text-zinc-700">
-                            <Phone className="w-3.5 h-3.5 text-zinc-400" />
-                            <a href={`tel:${listing.user_phone}`} className="text-red-600 hover:underline">{listing.user_phone}</a>
-                          </div>
-                        )}
-                        {listing.user_email && (
-                          <div className="flex items-center gap-2 text-sm text-zinc-700">
-                            <Mail className="w-3.5 h-3.5 text-zinc-400" />
-                            <a href={`mailto:${listing.user_email}`} className="text-red-600 hover:underline">{listing.user_email}</a>
+                        {listing.has_access ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Unlock className="w-3.5 h-3.5 text-green-600" />
+                              <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider">Contact ontgrendeld</h4>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-zinc-700">
+                              <User className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>{listing.user_name}</span>
+                            </div>
+                            {listing.city && (
+                              <div className="flex items-center gap-2 text-sm text-zinc-700">
+                                <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                                <span>{listing.city}</span>
+                              </div>
+                            )}
+                            {listing.user_phone && (
+                              <div className="flex items-center gap-2 text-sm text-zinc-700">
+                                <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                                <a href={`tel:${listing.user_phone}`} className="text-red-600 hover:underline">{listing.user_phone}</a>
+                              </div>
+                            )}
+                            {listing.user_email && (
+                              <div className="flex items-center gap-2 text-sm text-zinc-700">
+                                <Mail className="w-3.5 h-3.5 text-zinc-400" />
+                                <a href={`mailto:${listing.user_email}`} className="text-red-600 hover:underline">{listing.user_email}</a>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-center py-2">
+                            <div className="flex items-center justify-center gap-2 text-zinc-400 mb-3">
+                              <Lock className="w-4 h-4" />
+                              <span className="text-xs font-bold uppercase tracking-wider">Contactgegevens verborgen</span>
+                            </div>
+                            <Button
+                              data-testid={`unlock-btn-${listing.id}`}
+                              onClick={async () => {
+                                try {
+                                  const res = await axios.post(`${API}/private-listings/${listing.id}/dealer-checkout`, 
+                                    { origin_url: window.location.origin },
+                                    { headers: { Authorization: `Bearer ${token}` } }
+                                  );
+                                  if (res.data.checkout_url) {
+                                    window.location.href = res.data.checkout_url;
+                                  }
+                                } catch (err) {
+                                  if (err.response?.data?.detail) {
+                                    toast.error(err.response.data.detail);
+                                  } else {
+                                    toast.error('Er ging iets mis');
+                                  }
+                                }
+                              }}
+                              className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-semibold"
+                            >
+                              <Euro className="w-4 h-4 mr-2" />
+                              Ontgrendel contact &euro;175
+                            </Button>
                           </div>
                         )}
                       </div>

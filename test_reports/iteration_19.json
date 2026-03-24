@@ -1,0 +1,55 @@
+{
+  "summary": "Tested pricing changes for private seller platform: €4.95/week for private sellers (was €7.95) and €175 dealer contact unlock fee. All 8 backend tests passed (100%). Frontend tests verified correct pricing on landing page, registration page, and dealer dashboard.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: API health check passes",
+    "Backend: Private listing checkout creates Stripe session (€4.95 configured in PRIVATE_LISTING_PRICE)",
+    "Backend: GET /api/private-listings/active returns listings with has_access=false and hidden contact info (user_name='Verborgen', empty email/phone) for dealers without access",
+    "Backend: POST /api/private-listings/{listing_id}/dealer-checkout creates Stripe checkout URL (€175 configured in DEALER_CONTACT_FEE)",
+    "Backend: POST /api/private-listings/dealer-access-confirm validates listing_id parameter (returns 400 if missing)",
+    "Backend: POST /api/private-listings/dealer-access-confirm returns 404 for non-existent payment",
+    "Backend: Test listing (Kawasaki Z900) found in active listings",
+    "Backend: Particulier users correctly blocked from /api/private-listings/active (403)",
+    "Frontend: /particulier-verkopen landing page shows €4,95 price (NOT €7,95)",
+    "Frontend: /register/particulier page shows €4,95 price",
+    "Frontend: Dealer dashboard 'Particulier Aanbod' tab shows locked contact with 'Ontgrendel contact €175' button",
+    "Frontend: Contact info hidden as 'CONTACTGEGEVENS VERBORGEN' for listings without access",
+    "Frontend: ParticulierDashboard.js shows €4,95 price in info banner and pay button"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_pricing_changes.py",
+    "/app/test_reports/pytest/pytest_pricing_changes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PRIVATE_LISTING_PRICE correctly set to 4.95 at line 8240 in server.py",
+    "DEALER_CONTACT_FEE correctly set to 175.00 at line 8241 in server.py",
+    "Contact info hiding logic working correctly in get_active_private_listings endpoint",
+    "Stripe checkout integration working for both private listing payment and dealer contact unlock",
+    "All frontend pages updated with correct €4,95 pricing"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pricing_changes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8 tests passed)",
+    "frontend": "100% - all pricing displays correctly"
+  },
+  "test_credentials": {
+    "particulier": "test-part2@example.com / test123",
+    "admin": "Daniel2002jay@hotmail.com / AdminTest1234!"
+  },
+  "seed_data_creation": "Used existing test listing (Kawasaki Z900) ID: 15356ed4-8605-4d79-a3df-4cf54fb78d98",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Pricing changes fully verified: Private sellers pay €4.95/week (was €7.95), dealers pay €175 one-time fee to unlock contact info. Backend constants PRIVATE_LISTING_PRICE=4.95 and DEALER_CONTACT_FEE=175.00 at lines 8240-8241 in server.py. Frontend pages ParticulierLandingPage.js, ParticulierRegister.js, ParticulierDashboard.js all show €4,95. DealerDashboard.js shows 'Ontgrendel contact €175' button for locked listings. Contact info hidden as 'Verborgen' until dealer pays.",
+  "rca_of_the_issue": null
+}

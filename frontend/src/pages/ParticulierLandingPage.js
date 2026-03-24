@@ -27,7 +27,7 @@ const content = {
   hero_sub: 'Bied uw motor aan via het grootste dealer netwerk van Nederland. Geen gedoe met Marktplaats, direct bereik bij serieuze kopers.',
   cta: 'Motor aanbieden',
   cta_login: 'Inloggen',
-  price_badge: '7,95',
+  price_badge: '4,95',
   price_period: 'per week',
   stats: [
     { num: '100+', label: 'Aangesloten dealers', icon: Users },
@@ -39,7 +39,7 @@ const content = {
   steps: [
     { icon: Camera, title: 'Maak een account', desc: 'Registreer gratis op ons platform. Binnen 1 minuut klaar.' },
     { icon: Bike, title: 'Voer uw motor in', desc: 'Vul merk, model, bouwjaar, km-stand en uw vraagprijs in.' },
-    { icon: CreditCard, title: 'Betaal eenmalig', desc: 'Betaal slechts \u20ac7,95 via iDEAL of creditcard voor 7 dagen zichtbaarheid.' },
+    { icon: CreditCard, title: 'Betaal eenmalig', desc: 'Betaal slechts \u20ac4,95 via iDEAL of creditcard voor 7 dagen zichtbaarheid.' },
     { icon: Eye, title: 'Dealers zien uw motor', desc: 'Alle 100+ aangesloten dealers kunnen uw motor direct bekijken en contact opnemen.' },
   ],
   features_title: 'Waarom via Moto Import?',
@@ -51,11 +51,11 @@ const content = {
   ],
   faq_title: 'Veelgestelde vragen',
   faqs: [
-    { q: 'Wat kost het om mijn motor aan te bieden?', a: 'Het aanbieden kost \u20ac7,95 per week. U betaalt eenmalig via iDEAL of creditcard. Uw motor is dan 7 dagen zichtbaar voor alle dealers.' },
+    { q: 'Wat kost het om mijn motor aan te bieden?', a: 'Het aanbieden kost \u20ac4,95 per week. U betaalt eenmalig via iDEAL of creditcard. Uw motor is dan 7 dagen zichtbaar voor alle dealers.' },
     { q: 'Hoe weet ik of een dealer interesse heeft?', a: 'Dealers zien uw contactgegevens en nemen rechtstreeks contact met u op via telefoon of e-mail als zij interesse hebben.' },
     { q: 'Welke merken/modellen kan ik aanbieden?', a: 'Alle merken en modellen zijn welkom. Van BMW en Ducati tot Kawasaki, Yamaha, Honda, Triumph, KTM en meer.' },
     { q: 'Kan ik mijn advertentie verlengen?', a: 'Ja, na 7 dagen kunt u eenvoudig opnieuw betalen om uw advertentie te verlengen.' },
-    { q: 'Is er een commissie bij verkoop?', a: 'Nee, er is geen extra commissie. U betaalt alleen de vaste advertentiekosten van \u20ac7,95. De verkoopprijs spreekt u rechtstreeks af met de dealer.' },
+    { q: 'Is er een commissie bij verkoop?', a: 'Nee, er is geen extra commissie. U betaalt alleen de vaste advertentiekosten van \u20ac4,95. De verkoopprijs spreekt u rechtstreeks af met de dealer.' },
   ],
   trust_title: 'Vertrouwd door heel Nederland',
   trust_desc: 'Moto Import B.V. is al jaren het grootste platform dat motorhandelaren verbindt. Ons netwerk van meer dan 100 dealers door heel Nederland garandeert dat uw motor bij de juiste koper terecht komt.',
@@ -103,7 +103,7 @@ export default function ParticulierLandingPage() {
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden" data-testid="particulier-landing">
       <Helmet>
         <title>Motor Verkopen? Bied aan bij 100+ Dealers | Moto Import BV</title>
-        <meta name="description" content="Verkoop uw motor snel en eerlijk via Moto Import BV. Uw motor wordt direct gezien door 100+ professionele dealers in Nederland. Vanaf slechts \u20ac7,95 per week. Veilig betalen via iDEAL." />
+        <meta name="description" content="Verkoop uw motor snel en eerlijk via Moto Import BV. Uw motor wordt direct gezien door 100+ professionele dealers in Nederland. Vanaf slechts \u20ac4,95 per week. Veilig betalen via iDEAL." />
         <meta property="og:title" content="Motor Verkopen? Bied aan bij 100+ Dealers | Moto Import BV" />
         <meta property="og:description" content="Verkoop uw motor snel en eerlijk aan professionele dealers. Geen gedoe met Marktplaats, direct bereik bij 100+ motorzaken." />
         <meta property="og:url" content="https://motoimportbv.nl/particulier-verkopen" />
@@ -115,7 +115,7 @@ export default function ParticulierLandingPage() {
           "description": "Bied uw motor aan bij 100+ professionele dealers in Nederland",
           "provider": { "@type": "Organization", "name": "Moto Import B.V." },
           "areaServed": "NL",
-          "offers": { "@type": "Offer", "price": "7.95", "priceCurrency": "EUR", "description": "7 dagen zichtbaarheid voor alle dealers" }
+          "offers": { "@type": "Offer", "price": "4.95", "priceCurrency": "EUR", "description": "7 dagen zichtbaarheid voor alle dealers" }
         })}</script>
       </Helmet>
 
@@ -260,7 +260,7 @@ export default function ParticulierLandingPage() {
           <div className="bg-zinc-900/80 border-2 border-red-500/30 rounded-3xl p-8 sm:p-12 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-xl">POPULAIR</div>
             <div className="flex items-baseline justify-center gap-1 mb-4">
-              <span className="text-6xl sm:text-7xl font-black text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>&euro;7,95</span>
+              <span className="text-6xl sm:text-7xl font-black text-white" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>&euro;4,95</span>
               <span className="text-zinc-500 text-lg">/week</span>
             </div>
             <p className="text-zinc-400 text-sm mb-8">Eenmalige betaling via iDEAL of creditcard</p>

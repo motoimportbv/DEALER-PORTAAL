@@ -52,7 +52,7 @@ export default function ParticulierRegister() {
             <Bike className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Motor verkopen?</h1>
-          <p className="text-zinc-400 text-sm">Bied uw motor aan bij 100+ dealers voor slechts &euro;7,95 per week</p>
+          <p className="text-zinc-400 text-sm">Bied uw motor aan bij 100+ dealers voor slechts &euro;4,95 per week</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-zinc-900/80 border border-zinc-800/60 rounded-2xl p-6 space-y-4" data-testid="particulier-register-form">

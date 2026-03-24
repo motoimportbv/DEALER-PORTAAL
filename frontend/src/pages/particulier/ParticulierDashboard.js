@@ -106,7 +106,7 @@ export default function ParticulierDashboard() {
         <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl p-4 mb-8 flex items-center gap-3">
           <Euro className="w-5 h-5 text-red-400 flex-shrink-0" />
           <p className="text-sm text-zinc-400">
-            Uw motor wordt 1 week lang aangeboden aan alle aangesloten dealers voor <strong className="text-white">&euro;7,95</strong>. 
+            Uw motor wordt 1 week lang aangeboden aan alle aangesloten dealers voor <strong className="text-white">&euro;4,95</strong>. 
             Betaling via iDEAL of creditcard.
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function ParticulierDashboard() {
                         onClick={() => handleCheckout(l.id)}
                         className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                       >
-                        <CreditCard className="w-3.5 h-3.5 mr-1.5" /> Betalen &euro;7,95
+                        <CreditCard className="w-3.5 h-3.5 mr-1.5" /> Betalen &euro;4,95
                       </Button>
                     )}
                   </div>

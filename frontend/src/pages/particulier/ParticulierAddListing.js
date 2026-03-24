@@ -195,7 +195,7 @@ export default function ParticulierAddListing() {
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <div className="bg-zinc-900/80 border border-zinc-800/60 rounded-xl p-4 text-sm text-zinc-400">
-            Na het aanmaken betaalt u <strong className="text-white">&euro;7,95</strong> via iDEAL of creditcard. 
+            Na het aanmaken betaalt u <strong className="text-white">&euro;4,95</strong> via iDEAL of creditcard. 
             Uw motor wordt dan 1 week lang aangeboden aan 100+ dealers in heel Nederland.
           </div>
 
