@@ -110,7 +110,7 @@ export default function ParticulierAddListing() {
               <select
                 data-testid="listing-brand"
                 value={form.brand}
-                onChange={(e) => { set('brand', e.target.value); set('model', ''); }}
+                onChange={(e) => setForm({ ...form, brand: e.target.value, model: '' })}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-red-500/50"
               >
                 <option value="">Selecteer merk</option>
