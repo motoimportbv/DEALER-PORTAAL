@@ -27,7 +27,8 @@ import {
   MessageSquare,
   BadgeEuro,
   Search,
-  Printer
+  Printer,
+  FileText
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -93,6 +94,10 @@ const Sidebar = () => {
     { path: '/admin/bulk-email', icon: Mail, label: 'Marketing E-mails' },
     { path: '/admin/sms', icon: MessageSquare, label: '📱 SMS Broadcast' },
     { path: '/admin/whatsapp', icon: MessageCircle, label: 'WhatsApp Broadcast' },
+    // Taxatie - only for info@motoimportbv.nl (filtered below)
+    ...(user?.email?.toLowerCase() === 'motoimportbv@gmail.com' ? [
+      { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
+    ] : []),
   ];
 
   const dealerNavItems = [

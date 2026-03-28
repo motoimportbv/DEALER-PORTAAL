@@ -8239,6 +8239,8 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
 
 PRIVATE_LISTING_PRICE = 4.95  # EUR per week
 DEALER_CONTACT_FEE = 175.00  # EUR one-time fee when dealer BUYS a motorcycle from a private seller
+ALLOWED_ADMIN_EMAIL_TAXATIE = "motoimportbv@gmail.com"  # Only this admin may create taxatie invoices
+TAXATIE_DEFAULT_FEE = 60.00  # EUR default taxatie fee
 ALLOWED_ADMIN_EMAIL_PRIVATE = "motoimportbv@gmail.com"  # Only this admin may see private listings
 
 @api_router.post("/private-listings/register")
@@ -8685,6 +8687,87 @@ async def get_promo_video(filename: str, request: Request):
     
     # No range request - return full file
     return FileResponse(str(local_path), media_type=media_type, headers={"Accept-Ranges": "bytes"})
+
+# ==================== TAXATIE INVOICES ====================
+TAXATIE_BANK_NAME = "S. Milone"
+TAXATIE_BANK_IBAN = "NL03SNSB8846497880"
+
+@api_router.post("/taxatie/invoices")
+async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create a taxatie invoice - only for motoimportbv@gmail.com"""
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    last = await db.taxatie_invoices.find_one(sort=[("invoice_number", -1)], projection={"_id": 0, "invoice_number": 1})
+    next_num = (last["invoice_number"] + 1) if last else 1001
+    
+    invoice = {
+        "id": str(uuid.uuid4()),
+        "invoice_number": next_num,
+        "date": body.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+        "customer_name": body.get("customer_name", ""),
+        "customer_address": body.get("customer_address", ""),
+        "customer_city": body.get("customer_city", ""),
+        "customer_phone": body.get("customer_phone", ""),
+        "customer_email": body.get("customer_email", ""),
+        "motorcycle_brand": body.get("motorcycle_brand", ""),
+        "motorcycle_model": body.get("motorcycle_model", ""),
+        "motorcycle_year": body.get("motorcycle_year", ""),
+        "motorcycle_license_plate": body.get("motorcycle_license_plate", ""),
+        "motorcycle_vin": body.get("motorcycle_vin", ""),
+        "taxatie_value": body.get("taxatie_value", 0),
+        "fee": body.get("fee", TAXATIE_DEFAULT_FEE),
+        "notes": body.get("notes", ""),
+        "bank_name": TAXATIE_BANK_NAME,
+        "bank_iban": TAXATIE_BANK_IBAN,
+        "status": "open",
+        "created_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    await db.taxatie_invoices.insert_one(invoice)
+    del invoice["_id"]
+    return invoice
+
+@api_router.get("/taxatie/invoices")
+async def list_taxatie_invoices(current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    invoices = await db.taxatie_invoices.find({}, {"_id": 0}).sort("invoice_number", -1).to_list(500)
+    return invoices
+
+@api_router.get("/taxatie/invoices/{invoice_id}")
+async def get_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    invoice = await db.taxatie_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    return invoice
+
+@api_router.put("/taxatie/invoices/{invoice_id}")
+async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    update_fields = {}
+    for field in ["status", "notes", "fee", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
+        if field in body:
+            update_fields[field] = body[field]
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Geen velden om bij te werken")
+    result = await db.taxatie_invoices.update_one({"id": invoice_id}, {"$set": update_fields})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    return {"status": "updated"}
+
+@api_router.delete("/taxatie/invoices/{invoice_id}")
+async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.taxatie_invoices.delete_one({"id": invoice_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    return {"status": "deleted"}
 
 # Include the router
 app.include_router(api_router)

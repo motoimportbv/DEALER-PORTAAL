@@ -58,7 +58,12 @@ Collections: users, motorcycles, orders, private_listings, payment_transactions,
   - Hero met prijsbadge, stappen, pricing card, voordelen, FAQ, reviews, CTA
   - SEO: meta tags, Open Graph, canonical, structured data (JSON-LD)
   - Sitemap.xml bijgewerkt met nieuwe pagina's
-- [x] Promotievideo clip1 gegenereerd met Sora 2
+- [x] Taxatie facturen module (alleen voor motoimportbv@gmail.com)
+  - Facturen aanmaken met klant/motor/taxatiewaarde/kosten (standaard €60)
+  - Professionele print/PDF layout met bankgegevens (S. Milone / NL03SNSB8846497880)
+  - Overzicht, status (open/betaald), verwijderen
+  - Backend: CRUD endpoints /api/taxatie/invoices, beperkt tot 1 admin email
+  - DB: taxatie_invoices collection
 - [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
 - [x] Leverancier reclamevideo Italiaans (28 sec, video + voice-over)
 - [x] Leverancier reclamevideo Duits (30 sec, video + voice-over)
