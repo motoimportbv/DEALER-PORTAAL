@@ -8240,7 +8240,8 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
 PRIVATE_LISTING_PRICE = 4.95  # EUR per week
 DEALER_CONTACT_FEE = 175.00  # EUR one-time fee when dealer BUYS a motorcycle from a private seller
 ALLOWED_ADMIN_EMAIL_TAXATIE = "motoimportbv@gmail.com"  # Only this admin may create taxatie invoices
-TAXATIE_DEFAULT_FEE = 60.00  # EUR default taxatie fee
+TAXATIE_DEFAULT_FEE = 160.00  # EUR default taxatie fee (ex BTW)
+TAXATIE_BTW_PERCENTAGE = 21  # BTW percentage
 ALLOWED_ADMIN_EMAIL_PRIVATE = "motoimportbv@gmail.com"  # Only this admin may see private listings
 
 @api_router.post("/private-listings/register")
@@ -8717,6 +8718,9 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
         "motorcycle_vin": body.get("motorcycle_vin", ""),
         "taxatie_value": body.get("taxatie_value", 0),
         "fee": body.get("fee", TAXATIE_DEFAULT_FEE),
+        "btw_percentage": TAXATIE_BTW_PERCENTAGE,
+        "include_extra_fee": body.get("include_extra_fee", False),
+        "extra_fee": body.get("extra_fee", 60),
         "notes": body.get("notes", ""),
         "bank_name": TAXATIE_BANK_NAME,
         "bank_iban": TAXATIE_BANK_IBAN,
@@ -8750,7 +8754,7 @@ async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), curren
     if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
         raise HTTPException(status_code=403, detail="Geen toegang")
     update_fields = {}
-    for field in ["status", "notes", "fee", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
+    for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
         if field in body:
             update_fields[field] = body[field]
     if not update_fields:

@@ -26,7 +26,7 @@ const BRANDS = ['BMW', 'Ducati', 'Honda', 'Kawasaki', 'KTM', 'Triumph', 'Yamaha'
 const emptyForm = {
   customer_name: '', customer_address: '', customer_city: '', customer_phone: '', customer_email: '',
   motorcycle_brand: '', motorcycle_model: '', motorcycle_year: '', motorcycle_license_plate: '', motorcycle_vin: '',
-  taxatie_value: '', fee: 60, notes: '', date: new Date().toISOString().split('T')[0],
+  taxatie_value: '', fee: 160, include_extra_fee: false, extra_fee: 60, notes: '', date: new Date().toISOString().split('T')[0],
 };
 
 export default function TaxatieInvoices() {
@@ -61,7 +61,9 @@ export default function TaxatieInvoices() {
     try {
       const res = await axios.post(`${API}/taxatie/invoices`, {
         ...form,
-        fee: parseFloat(form.fee) || 60,
+        fee: parseFloat(form.fee) || 160,
+        extra_fee: parseFloat(form.extra_fee) || 60,
+        include_extra_fee: form.include_extra_fee,
         taxatie_value: parseFloat(form.taxatie_value) || 0,
       }, { headers });
       toast.success(`Factuur #${res.data.invoice_number} aangemaakt`);
@@ -189,7 +191,9 @@ export default function TaxatieInvoices() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="font-bold text-zinc-900">{formatCurrency(inv.fee)}</span>
+                  <span className="font-bold text-zinc-900">{formatCurrency(
+                    ((parseFloat(inv.fee) || 0) * 1.21) + (inv.include_extra_fee ? (parseFloat(inv.extra_fee) || 0) : 0)
+                  )}</span>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${inv.status === 'betaald' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                     {inv.status === 'betaald' ? 'Betaald' : 'Open'}
                   </span>
@@ -284,21 +288,76 @@ export default function TaxatieInvoices() {
             <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider mb-4"><Euro className="w-4 h-4" /> Taxatie Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Taxatiewaarde</label>
+                <label className="block text-sm font-medium text-zinc-600 mb-1">Taxatiewaarde motor</label>
                 <input type="number" data-testid="tax-value" value={form.taxatie_value} onChange={(e) => setForm({ ...form, taxatie_value: e.target.value })}
                   className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="8500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Taxatie kosten</label>
+                <label className="block text-sm font-medium text-zinc-600 mb-1">Taxatie kosten (ex BTW)</label>
                 <input type="number" data-testid="tax-fee" value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="60" />
+                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="160" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-600 mb-1">Datum</label>
                 <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
                   className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" />
               </div>
+              <div className="flex items-end">
+                <div className="bg-zinc-100 rounded-lg px-4 py-2 text-sm text-zinc-600 w-full">
+                  BTW 21%: <strong className="text-zinc-900">{formatCurrency((parseFloat(form.fee) || 0) * 0.21)}</strong>
+                  <span className="mx-2">|</span>
+                  Totaal: <strong className="text-zinc-900">{formatCurrency((parseFloat(form.fee) || 0) * 1.21)}</strong>
+                </div>
+              </div>
             </div>
+
+            {/* Extra fee checkbox */}
+            <div className="mt-4 border border-zinc-200 rounded-lg p-4">
+              <label className="flex items-center gap-3 cursor-pointer" data-testid="extra-fee-toggle">
+                <input 
+                  type="checkbox" 
+                  checked={form.include_extra_fee} 
+                  onChange={(e) => setForm({ ...form, include_extra_fee: e.target.checked })}
+                  className="w-5 h-5 rounded border-zinc-300 text-red-600 focus:ring-red-500"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-zinc-800">Fee kosten toevoegen</span>
+                  <span className="text-sm text-zinc-500 ml-2">({formatCurrency(form.extra_fee)})</span>
+                </div>
+              </label>
+              {form.include_extra_fee && (
+                <div className="mt-3 ml-8">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">Fee bedrag</label>
+                  <input type="number" value={form.extra_fee} onChange={(e) => setForm({ ...form, extra_fee: e.target.value })}
+                    className="w-40 border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" />
+                </div>
+              )}
+            </div>
+
+            {/* Totaaloverzicht */}
+            <div className="mt-4 bg-zinc-900 rounded-xl p-4 text-white">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-zinc-400">Taxatie kosten (ex BTW)</span>
+                <span>{formatCurrency(parseFloat(form.fee) || 0)}</span>
+              </div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-zinc-400">BTW 21%</span>
+                <span>{formatCurrency((parseFloat(form.fee) || 0) * 0.21)}</span>
+              </div>
+              {form.include_extra_fee && (
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-zinc-400">Fee kosten</span>
+                  <span>{formatCurrency(parseFloat(form.extra_fee) || 0)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-zinc-700">
+                <span>Totaal te betalen</span>
+                <span>{formatCurrency(
+                  ((parseFloat(form.fee) || 0) * 1.21) + (form.include_extra_fee ? (parseFloat(form.extra_fee) || 0) : 0)
+                )}</span>
+              </div>
+            </div>
+
             <div className="mt-4">
               <label className="block text-sm font-medium text-zinc-600 mb-1">Opmerkingen</label>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3}
@@ -396,12 +455,26 @@ export default function TaxatieInvoices() {
                   </tr>
                 )}
                 <tr>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Taxatie service kosten</td>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Taxatie kosten (ex BTW)</td>
                   <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.fee)}</td>
                 </tr>
                 <tr>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>BTW {inv.btw_percentage || 21}%</td>
+                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency((parseFloat(inv.fee) || 0) * ((inv.btw_percentage || 21) / 100))}</td>
+                </tr>
+                {inv.include_extra_fee && (
+                  <tr>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Fee kosten</td>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.extra_fee || 60)}</td>
+                  </tr>
+                )}
+                <tr>
                   <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa' }}>Te betalen</td>
-                  <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa', textAlign: 'right' }}>{formatCurrency(inv.fee)}</td>
+                  <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa', textAlign: 'right' }}>
+                    {formatCurrency(
+                      ((parseFloat(inv.fee) || 0) * (1 + (inv.btw_percentage || 21) / 100)) + (inv.include_extra_fee ? (parseFloat(inv.extra_fee) || 0) : 0)
+                    )}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -409,7 +482,9 @@ export default function TaxatieInvoices() {
             <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', padding: '20px', marginTop: '20px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>Betaalinformatie</h3>
               <p style={{ fontSize: '14px', color: '#78350f', lineHeight: '1.8' }}>
-                Gelieve het bedrag van <strong>{formatCurrency(inv.fee)}</strong> over te maken naar:<br />
+                Gelieve het bedrag van <strong>{formatCurrency(
+                  ((parseFloat(inv.fee) || 0) * (1 + (inv.btw_percentage || 21) / 100)) + (inv.include_extra_fee ? (parseFloat(inv.extra_fee) || 0) : 0)
+                )}</strong> over te maken naar:<br />
                 <strong>t.n.v. {inv.bank_name}</strong><br />
                 IBAN: <strong>{inv.bank_iban}</strong><br />
                 o.v.v. Factuurnummer <strong>#{inv.invoice_number}</strong>
