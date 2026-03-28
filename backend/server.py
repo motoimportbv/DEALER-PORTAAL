@@ -3684,6 +3684,39 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     
     await db.orders.insert_one(order_dict)
     
+    # Auto-create concept taxatie invoice when dealer requests valuation
+    if data.needs_valuation:
+        last_inv = await db.taxatie_invoices.find_one(sort=[("invoice_number", -1)], projection={"_id": 0, "invoice_number": 1})
+        next_inv_num = (last_inv["invoice_number"] + 1) if last_inv else 1001
+        taxatie_concept = {
+            "id": str(uuid.uuid4()),
+            "invoice_number": next_inv_num,
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "customer_name": user.get("company_name", user.get("email", "")),
+            "customer_address": "",
+            "customer_city": "",
+            "customer_phone": user.get("phone", ""),
+            "customer_email": user.get("email", ""),
+            "motorcycle_brand": motorcycle.get("brand", ""),
+            "motorcycle_model": motorcycle.get("model", ""),
+            "motorcycle_year": str(motorcycle.get("year", "")),
+            "motorcycle_license_plate": "",
+            "motorcycle_vin": "",
+            "taxatie_value": 0,
+            "fee": TAXATIE_DEFAULT_FEE,
+            "btw_percentage": TAXATIE_BTW_PERCENTAGE,
+            "include_extra_fee": False,
+            "extra_fee": 60,
+            "notes": f"Automatisch aangemaakt bij bestelling. Order: {order_dict['id']}",
+            "bank_name": "S. Milone",
+            "bank_iban": "NL03SNSB8846497880",
+            "status": "concept",
+            "order_id": order_dict["id"],
+            "created_by": "system",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.taxatie_invoices.insert_one(taxatie_concept)
+    
     # Mark motorcycle as unavailable
     await db.motorcycles.update_one(
         {"id": data.motorcycle_id},
@@ -8825,6 +8858,9 @@ async def startup_db_client():
     
     # Start background task for expiring wanted requests
     asyncio.create_task(expire_wanted_requests())
+    
+    # Start background task for monthly taxatie invoice reminder
+    asyncio.create_task(monthly_taxatie_reminder())
 
     # Migrate pakbon role for Ellen
     await db.users.update_many(
@@ -8885,6 +8921,79 @@ async def auto_delete_expired_motorcycles():
         
         except Exception as e:
             logger.error(f"Error in auto_delete_expired_motorcycles: {e}")
+        
+        # Check every 5 minutes
+        await asyncio.sleep(300)
+
+async def monthly_taxatie_reminder():
+    """Background task: sends monthly email on the 1st with pending taxatie invoices"""
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            # Only run on the 1st of the month between 8:00-8:05 UTC
+            if now.day == 1 and now.hour == 8 and now.minute < 5:
+                # Check if reminder was already sent this month
+                month_key = now.strftime("%Y-%m")
+                already_sent = await db.system_tasks.find_one({"task": "taxatie_reminder", "month": month_key})
+                
+                if not already_sent:
+                    # Count pending concept/open invoices
+                    pending = await db.taxatie_invoices.find(
+                        {"status": {"$in": ["concept", "open"]}}, {"_id": 0}
+                    ).to_list(500)
+                    
+                    if pending:
+                        concept_count = sum(1 for p in pending if p.get("status") == "concept")
+                        open_count = sum(1 for p in pending if p.get("status") == "open")
+                        
+                        invoice_rows = ""
+                        for inv in pending[:20]:
+                            status_color = "#d97706" if inv["status"] == "open" else "#6b7280"
+                            status_label = "Open" if inv["status"] == "open" else "Concept"
+                            invoice_rows += f"""
+                            <tr>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">#{inv.get('invoice_number', '-')}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{inv.get('customer_name', '-')}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{inv.get('motorcycle_brand', '')} {inv.get('motorcycle_model', '')}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee; color: {status_color}; font-weight: bold;">{status_label}</td>
+                            </tr>"""
+                        
+                        html_content = f"""
+                        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+                            <div style="background: #dc2626; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                                <h1 style="color: white; margin: 0;">Taxatie Facturen Herinnering</h1>
+                            </div>
+                            <div style="padding: 30px; background: white; border: 1px solid #eee;">
+                                <p>Beste,</p>
+                                <p>Er staan <strong>{len(pending)}</strong> taxatie facturen open die nog verstuurd moeten worden:</p>
+                                <ul>
+                                    <li><strong>{concept_count}</strong> concept facturen (automatisch aangemaakt bij bestellingen)</li>
+                                    <li><strong>{open_count}</strong> open facturen</li>
+                                </ul>
+                                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                                    <thead>
+                                        <tr style="background: #f3f4f6;">
+                                            <th style="padding: 8px 12px; text-align: left;">Nr.</th>
+                                            <th style="padding: 8px 12px; text-align: left;">Klant</th>
+                                            <th style="padding: 8px 12px; text-align: left;">Motor</th>
+                                            <th style="padding: 8px 12px; text-align: left;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>{invoice_rows}</tbody>
+                                </table>
+                                <p>Ga naar het admin panel om de facturen te bekijken en te versturen.</p>
+                                <p style="color: #666; font-size: 12px; margin-top: 20px;">Dit is een automatisch maandelijks bericht van het Moto Import systeem.</p>
+                            </div>
+                        </div>
+                        """
+                        await send_email(ALLOWED_ADMIN_EMAIL_TAXATIE, f"Taxatie Facturen: {len(pending)} openstaand", html_content)
+                        logger.info(f"Sent monthly taxatie reminder with {len(pending)} pending invoices")
+                    
+                    # Mark as sent
+                    await db.system_tasks.insert_one({"task": "taxatie_reminder", "month": month_key, "sent_at": now.isoformat()})
+        
+        except Exception as e:
+            logger.error(f"Error in monthly_taxatie_reminder: {e}")
         
         # Check every 5 minutes
         await asyncio.sleep(300)

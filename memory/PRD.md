@@ -59,11 +59,14 @@ Collections: users, motorcycles, orders, private_listings, payment_transactions,
   - SEO: meta tags, Open Graph, canonical, structured data (JSON-LD)
   - Sitemap.xml bijgewerkt met nieuwe pagina's
 - [x] Taxatie facturen module (alleen voor motoimportbv@gmail.com)
-  - Facturen aanmaken met klant/motor/taxatiewaarde/kosten (standaard €60)
+  - Facturen aanmaken met klant/motor/taxatiewaarde/kosten (standaard €160 ex BTW + 21% BTW)
+  - Optionele fee kosten checkbox (€60)
   - Professionele print/PDF layout met bankgegevens (S. Milone / NL03SNSB8846497880)
-  - Overzicht, status (open/betaald), verwijderen
+  - Overzicht, status flow (concept → open → betaald), verwijderen
+  - Auto concept-factuur bij bestelling met taxatie aangevinkt (dealernaam + motorgegevens)
+  - Maandelijkse email herinnering (1e van de maand) met openstaande facturen
   - Backend: CRUD endpoints /api/taxatie/invoices, beperkt tot 1 admin email
-  - DB: taxatie_invoices collection
+  - DB: taxatie_invoices + system_tasks collections
 - [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
 - [x] Leverancier reclamevideo Italiaans (28 sec, video + voice-over)
 - [x] Leverancier reclamevideo Duits (30 sec, video + voice-over)

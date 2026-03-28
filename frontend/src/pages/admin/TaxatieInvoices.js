@@ -89,11 +89,11 @@ export default function TaxatieInvoices() {
   };
 
   const handleStatusToggle = async (inv) => {
-    const newStatus = inv.status === 'open' ? 'betaald' : 'open';
+    const nextStatus = inv.status === 'concept' ? 'open' : inv.status === 'open' ? 'betaald' : 'open';
     try {
-      await axios.put(`${API}/taxatie/invoices/${inv.id}`, { status: newStatus }, { headers });
-      toast.success(`Status gewijzigd naar ${newStatus}`);
-      if (selectedInvoice) setSelectedInvoice({ ...selectedInvoice, status: newStatus });
+      await axios.put(`${API}/taxatie/invoices/${inv.id}`, { status: nextStatus }, { headers });
+      toast.success(`Status gewijzigd naar ${nextStatus}`);
+      if (selectedInvoice) setSelectedInvoice({ ...selectedInvoice, status: nextStatus });
       fetchInvoices();
     } catch {
       toast.error('Fout bij bijwerken');
@@ -182,8 +182,8 @@ export default function TaxatieInvoices() {
                 data-testid={`invoice-row-${inv.invoice_number}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${inv.status === 'betaald' ? 'bg-green-100' : 'bg-amber-100'}`}>
-                    {inv.status === 'betaald' ? <CheckCircle className="w-5 h-5 text-green-600" /> : <Clock className="w-5 h-5 text-amber-600" />}
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${inv.status === 'betaald' ? 'bg-green-100' : inv.status === 'concept' ? 'bg-zinc-100' : 'bg-amber-100'}`}>
+                    {inv.status === 'betaald' ? <CheckCircle className="w-5 h-5 text-green-600" /> : inv.status === 'concept' ? <FileText className="w-5 h-5 text-zinc-500" /> : <Clock className="w-5 h-5 text-amber-600" />}
                   </div>
                   <div>
                     <p className="font-bold text-zinc-900 text-sm">#{inv.invoice_number} — {inv.customer_name}</p>
@@ -194,8 +194,8 @@ export default function TaxatieInvoices() {
                   <span className="font-bold text-zinc-900">{formatCurrency(
                     ((parseFloat(inv.fee) || 0) * 1.21) + (inv.include_extra_fee ? (parseFloat(inv.extra_fee) || 0) : 0)
                   )}</span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${inv.status === 'betaald' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {inv.status === 'betaald' ? 'Betaald' : 'Open'}
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${inv.status === 'betaald' ? 'bg-green-100 text-green-700' : inv.status === 'concept' ? 'bg-zinc-100 text-zinc-600' : 'bg-amber-100 text-amber-700'}`}>
+                    {inv.status === 'betaald' ? 'Betaald' : inv.status === 'concept' ? 'Concept' : 'Open'}
                   </span>
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function TaxatieInvoices() {
           </button>
           <div className="flex items-center gap-2">
             <Button onClick={() => handleStatusToggle(inv)} variant="outline" className="text-sm" data-testid="toggle-status-btn">
-              {inv.status === 'open' ? <><CheckCircle className="w-4 h-4 mr-1" /> Markeer Betaald</> : <><Clock className="w-4 h-4 mr-1" /> Markeer Open</>}
+              {inv.status === 'concept' ? <><Clock className="w-4 h-4 mr-1" /> Naar Open</> : inv.status === 'open' ? <><CheckCircle className="w-4 h-4 mr-1" /> Markeer Betaald</> : <><Clock className="w-4 h-4 mr-1" /> Markeer Open</>}
             </Button>
             <Button onClick={handlePrint} className="bg-zinc-900 hover:bg-zinc-800 text-white text-sm" data-testid="print-invoice-btn">
               <Printer className="w-4 h-4 mr-2" /> Printen / PDF
@@ -409,7 +409,7 @@ export default function TaxatieInvoices() {
                 <h1 style={{ fontSize: '28px', color: '#dc2626', fontWeight: 800 }}>TAXATIE FACTUUR</h1>
                 <p style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Factuurnummer: <strong style={{ color: '#111' }}>#{inv.invoice_number}</strong></p>
                 <p style={{ fontSize: '13px', color: '#888' }}>Datum: <strong style={{ color: '#111' }}>{inv.date}</strong></p>
-                <p style={{ fontSize: '13px', color: '#888' }}>Status: <strong style={{ color: inv.status === 'betaald' ? '#16a34a' : '#d97706' }}>{inv.status === 'betaald' ? 'BETAALD' : 'OPEN'}</strong></p>
+                <p style={{ fontSize: '13px', color: '#888' }}>Status: <strong style={{ color: inv.status === 'betaald' ? '#16a34a' : inv.status === 'concept' ? '#6b7280' : '#d97706' }}>{inv.status === 'betaald' ? 'BETAALD' : inv.status === 'concept' ? 'CONCEPT' : 'OPEN'}</strong></p>
               </div>
               <div style={{ textAlign: 'right', fontSize: '13px', color: '#555', lineHeight: '1.6' }}>
                 <strong style={{ color: '#111' }}>Moto Import B.V.</strong><br />
