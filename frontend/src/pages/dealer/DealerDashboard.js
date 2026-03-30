@@ -457,7 +457,7 @@ const DealerDashboard = () => {
               <div className="flex gap-3">
                 <Link to="/dealer/google-motors" className="flex-1" onClick={() => { setShowGooglePromo(false); localStorage.setItem('hideGoogleMotorPromo', 'true'); }}>
                   <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02]" data-testid="google-promo-cta">
-                    <Rocket className="w-4 h-4 mr-2" /> Bekijk Google Motoren
+                    <Rocket className="w-4 h-4 mr-2" /> Meld u nu aan
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
