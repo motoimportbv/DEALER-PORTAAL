@@ -8864,7 +8864,7 @@ async def create_google_motor_checkout(request: Request, body: dict = Body(...),
             "dealer_id": current_user["id"],
             "dealer_email": current_user.get("email", ""),
         },
-        payment_methods=["card", "ideal"],
+        payment_methods=["ideal"],
     )
     session = await stripe_checkout.create_checkout_session(checkout_req)
     
