@@ -1,101 +1,92 @@
-# Moto Import - Product Requirements Document
+# Moto Import Platform - PRD
 
-## Original Problem Statement
-Full-stack motorcycle dealership platform for "Moto Import" dealer network. React frontend + FastAPI backend + MongoDB.
+## Oorspronkelijke Probleemstelling
+Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer management, bestellingen, voorstellen, en diverse integraties.
 
-## Core Features (Implemented)
-- Admin motorcycle CRUD with purchase price, margin calculation
-- Dealer dashboard with email preferences, price proposal workflow
-- License plate (kenteken) management with RDW document upload/download
-- Transport status tracking for orders
-- Price reduction email notifications
-- Extra cost options (inspection, appraisal, delivery) on proposals
-- Relist sold motorcycles feature
-- Marketing email/flyer system
-- Expanded model variants (Honda CRF, BMW R 1300 GS series)
-- Pakbon role for warehouse/logistics (ellenmilone@gmail.com)
-- Pakbon voltooien + MoneyMonk factuur knoppen
+## Kernfuncties
+- **Dealer Platform**: Dashboard, bestellingen, voorstellen, motor verkoop, zoekertjes
+- **Admin Platform**: Motorcycles beheer, orders, dealers, marketing, taxatie
+- **Foreign Dealer**: Motoren aanmelden, prijs beheer
+- **Particulier Platform**: Private verkoop met €4.95/week Stripe abonnement
+- **Pakbon Rol**: Beperkte rol voor pakbon beheer
+- **Taxatie Facturen**: Exclusief voor motoimportbv@gmail.com
+- **Google Motoren**: SEO-geoptimaliseerde publieke motoren pagina's
 
-## User Roles
-- **admin** - Full access to all features
-- **dealer** - Browse motorcycles, make proposals, manage orders
-- **foreign_dealer** - Add motorcycles from abroad
-- **pakbon** - View and print packing slips ONLY (ellenmilone@gmail.com / Pakbon2024!)
-- **particulier** - Register, create motorcycle listings, pay via Stripe (€7.95/week)
+## Gebruikersrollen
+- **Admin** (motoimportbv@gmail.com, Daniel2002jay@hotmail.com, Motomaniabv@gmail.com)
+- **Dealer** (goedgekeurde dealers)
+- **Foreign Dealer** (buitenlandse leveranciers)
+- **Particulier** (private verkopers)
+- **Pakbon** (alleen pakbon toegang)
 
-## Architecture
-```
-/app/backend/server.py     - Monolithic FastAPI backend
-/app/frontend/src/pages/   - React pages (admin/, dealer/, pakbon/, particulier/)
-MongoDB: test_database
-Collections: users, motorcycles, orders, private_listings, payment_transactions, reviews
-```
+## Architectuur
+- **Frontend**: React + Tailwind + Shadcn/UI
+- **Backend**: FastAPI (Python)
+- **Database**: MongoDB
+- **Betalingen**: Stripe (emergentintegrations)
+- **Opslag**: Emergent Object Storage
+- **AI**: OpenAI TTS, Sora 2 (via Emergent LLM Key)
 
-## Completed (This Session - March 2026)
-- [x] BMW R 1300 GS models verified in admin form
-- [x] Dealer license plate document download/view feature
-- [x] Pakbon role for ellenmilone@gmail.com with restricted dashboard
-- [x] Route protection: pakbon users cannot access /dealer or /admin
-- [x] Case-insensitive login (email)
-- [x] Pakbon "Voltooien" button to mark packing slips as completed
-- [x] "Factuur in MoneyMonk" button on pakbon page
-- [x] Completed pakbonnen shown with green badge on dashboard
-- [x] Orders sorted newest first on pakbon dashboard
-- [x] Auto-migration of Ellen's role on server startup
+## Wat is gebouwd
 
-## Completed (This Session - Feb 2026)
-- [x] Particulier (privé verkoper) platform volledig gebouwd
-  - Backend: registratie, login, listing CRUD, Stripe checkout, webhooks
-  - Frontend: registratie pagina, dashboard, motor toevoegen formulier, betaling succes pagina
-  - Routes: /register/particulier, /particulier, /particulier/nieuw, /particulier/success
-  - Login redirect: particulier users worden automatisch naar /particulier gestuurd
-  - Dealers: nieuw tabblad "Particulier Aanbod" op dealer dashboard om actieve aanbiedingen te bekijken
-  - Stripe: €4.95/week abonnement via iDEAL/creditcard, 7 dagen actief na betaling
-  - Dealer betaling: €175 eenmalig bij KOPEN van motor (niet voor contact bekijken)
-  - Admin restrictie: alleen Motoimportbv@gmail.com kan Particulier Aanbod zien, andere admins niet
-  - DB: private_listings, private_listing_purchases, payment_transactions collections
-- [x] Landingspagina /particulier-verkopen voor SEO en promotie
-  - Hero met prijsbadge, stappen, pricing card, voordelen, FAQ, reviews, CTA
-  - SEO: meta tags, Open Graph, canonical, structured data (JSON-LD)
-  - Sitemap.xml bijgewerkt met nieuwe pagina's
-- [x] Taxatie facturen module (alleen voor motoimportbv@gmail.com)
-  - Facturen aanmaken met klant/motor/taxatiewaarde/kosten (standaard €160 ex BTW + 21% BTW)
-  - Optionele fee kosten checkbox (€60)
-  - Professionele print/PDF layout met bankgegevens (S. Milone / NL03SNSB8846497880)
-  - Overzicht, status flow (concept → open → betaald), verwijderen
-  - Auto concept-factuur bij bestelling met taxatie aangevinkt (dealernaam + motorgegevens)
-  - Maandelijkse email herinnering (1e van de maand) met openstaande facturen
-  - Backend: CRUD endpoints /api/taxatie/invoices, beperkt tot 1 admin email
-  - DB: taxatie_invoices + system_tasks collections
-- [x] 3 clips (clip1, clip2, clip3) samengevoegd tot moto_import_full_animation.mp4 (36 sec)
-- [x] Leverancier reclamevideo Italiaans (28 sec, video + voice-over)
-- [x] Leverancier reclamevideo Duits (30 sec, video + voice-over)
-- [ ] Leverancier reclamevideo Frans - GEBLOKKEERD door budget LLM Key
-- [x] Leveranciers landingspagina (/suppliers) - meertalig IT/DE/FR met video, stats, CTA
-- [x] Dealer landingspagina (/dealers) - Nederlands, voor nieuwe motorzaken
-- [x] Reviews systeem: dealers kunnen reviews plaatsen (anoniem/met naam, sterren + tekst)
-- [x] SEO optimalisatie: meta tags, Open Graph, sitemap.xml, robots.txt, structured data (JSON-LD)
-- [x] Reviews systeem ook op dealer dashboard (light variant, schrijf knop voor ingelogde dealers)
-- [x] Bugfix: Motorcycle visibility filter toegevoegd aan /motorcycles/available en /motorcycles/{id} endpoints
-- [x] Bugfix: Triumph TF + ontbrekende modellen toegevoegd aan leverancier formulier (ForeignDealerAddMotorcycle.js)
-- [x] Fix: Startup video download verwijderd (veroorzaakte productie crash), MP4's verwijderd uit public folder
-- [x] Video codec fix: WebM (VP9) voor browser-compatibiliteit
-- [x] Taalwissel fix: video laadt opnieuw bij taalwissel
-- [x] Video Range request support voor mobiele browsers (Samsung Internet)
-- [x] Video's geüpload naar cloud storage (werkt op productie na deploy)
+### Sessie 30 maart 2026
+- **Google Motoren (NIEUW)**:
+  - Dealers kunnen motoren uploaden voor Google indexering
+  - Twee betaalopties: €2.95/week per motor OF €45/maand onbeperkt
+  - Admin (motoimportbv@gmail.com) keurt motoren goed/af
+  - Publieke SEO pagina's: `/motoren` (overzicht) en `/motor/:id/:slug` (detail)
+  - Alle dealer informatie zichtbaar op publieke pagina
+  - "Ik heb interesse" formulier stuurt email naar admin
+  - Stripe integratie voor betalingen
+  - Volledig getest: 100% backend (20/20) en 100% frontend
 
-## P0/P1 Issues
-- [ ] AI Welcome Message non-functional (Emergent LLM Key budget exhausted)
-- [ ] Email flyer delivery on production (user verification pending)
+### Eerdere sessies
+- Particulier platform (registratie, Stripe €4.95/week, dashboard)
+- Dealer privé listings (€175 purchase flow)
+- Taxatie factuur module (PDF, BTW, auto-draft, maandelijkse herinnering)
+- Cloudflare DNS troubleshooting
+- Pakbon rol met beperkte toegang
+- Foreign dealer prijs management
+- Voucher systeem
+- GitHub security fix (git history cleanup)
+- AI content generatie (Italiaanse audio, video clips)
 
-## P1 Upcoming
-- [ ] WhatsApp notifications integration
-- [ ] Emergent LLM Key budget - user needs to add funds
-- [ ] MoneyMonk direct API integration (requires API key from MoneyMonk)
+## Prioritized Backlog
 
-## P2 Backlog
-- [ ] Add specific costs to proposal options
-- [ ] Pre-fill proposal options when admin accepts
-- [ ] Confirmation dialog for relisting motorcycles
-- [ ] Flyers download page for dealers
-- [ ] Backend refactoring (break server.py into routers)
+### P1 - Aankomend
+- WhatsApp notificaties implementeren
+- Franse promotievideo genereren
+- Emergent LLM Key budget monitoren
+
+### P2 - Toekomstig
+- MoneyMonk API integratie (wacht op API key)
+- Kosten toevoegen aan voorstel opties
+- Bevestigingsdialoog voor opnieuw aanbieden verkochte motor
+- "Flyers Download" pagina voor dealers
+- Backend refactoring (server.py opsplitsen)
+- Email flyer bezorging op productie (verificatie nodig)
+
+## Belangrijke API Endpoints
+
+### Google Motoren (Nieuw)
+- `POST /api/google-motors/checkout` - Stripe checkout voor abonnement
+- `GET /api/google-motors/subscription` - Abonnement status
+- `POST /api/google-motors` - Motor aanmelden
+- `GET /api/google-motors/my` - Dealer's eigen motoren
+- `DELETE /api/google-motors/{id}` - Motor verwijderen
+- `GET /api/google-motors/pending` - Admin: wachtende motoren
+- `POST /api/google-motors/{id}/approve` - Admin: goedkeuren
+- `POST /api/google-motors/{id}/reject` - Admin: afwijzen
+- `GET /api/public/motors` - Publiek: alle goedgekeurde motoren
+- `GET /api/public/motors/brands` - Publiek: merken
+- `GET /api/public/motors/{id}` - Publiek: motor detail
+- `POST /api/public/motors/{id}/interest` - Publiek: interesse formulier
+
+## Database Schema (Nieuw)
+- `google_motors`: `{ id, dealer_id, dealer_email, dealer_company, dealer_phone, dealer_city, brand, model, year, price, mileage, description, images, status, plan, expires_at }`
+- `google_motor_subscriptions`: `{ id, dealer_id, plan, amount, session_id, status, expires_at }`
+- `google_motor_leads`: `{ id, motor_id, dealer_id, visitor_name, visitor_email, visitor_phone, message }`
+
+## Test Credentials (Preview)
+- Dealer: testgoogle@dealer.nl / Test2024!
+- Admin: motoimportbv@gmail.com / Admin2024!
