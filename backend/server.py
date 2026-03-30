@@ -9052,8 +9052,8 @@ async def get_all_google_motors(current_user: dict = Depends(require_admin)):
     return motors
 
 @api_router.post("/google-motors/{motor_id}/approve")
-async def approve_google_motor(motor_id: str, current_user: dict = Depends(require_admin)):
-    """Admin: approve a Google Motor listing"""
+async def approve_google_motor(motor_id: str, request: Request, current_user: dict = Depends(require_admin)):
+    """Admin: approve a Google Motor listing and generate social media content"""
     if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
         raise HTTPException(status_code=403, detail="Geen toegang")
     result = await db.google_motors.update_one(
@@ -9063,10 +9063,15 @@ async def approve_google_motor(motor_id: str, current_user: dict = Depends(requi
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Motor niet gevonden of al verwerkt")
     
-    # Notify dealer
     motor = await db.google_motors.find_one({"id": motor_id}, {"_id": 0})
     if motor:
+        # Generate social media content in background
+        import asyncio
+        asyncio.create_task(generate_social_media_content(motor_id, motor, request))
+        
+        # Send approval email
         try:
+            motor_url = f"{PRODUCTION_BASE_URL}/motor/{motor_id}"
             html = f"""
             <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
                 <div style="background:#16a34a;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
@@ -9076,6 +9081,8 @@ async def approve_google_motor(motor_id: str, current_user: dict = Depends(requi
                     <p>Goed nieuws! Uw motor is goedgekeurd en staat nu live op Google:</p>
                     <p style="font-size:18px;font-weight:bold;">{motor['brand']} {motor['model']} ({motor['year']}) - &euro;{motor['price']:,.0f}</p>
                     <p>De motor is nu zichtbaar voor iedereen op internet.</p>
+                    <p style="margin-top:15px;">We hebben ook een <strong>social media post</strong> voor u gegenereerd! Ga naar uw Google Motoren pagina om de tekst en afbeelding te delen op Facebook en Instagram.</p>
+                    <a href="{motor_url}" style="display:inline-block;background:#dc2626;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:10px;">Bekijk op Google</a>
                 </div>
             </div>
             """
@@ -9084,6 +9091,188 @@ async def approve_google_motor(motor_id: str, current_user: dict = Depends(requi
             logger.error(f"Failed to send approval email: {e}")
     
     return {"status": "approved"}
+
+async def generate_social_media_content(motor_id: str, motor: dict, request: Request = None):
+    """Generate social media text (AI) and image card for an approved motor"""
+    social_text = ""
+    social_image_url = ""
+    
+    # 1. Generate social media text with AI
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        llm_key = os.environ.get("EMERGENT_LLM_KEY")
+        if llm_key:
+            chat = LlmChat(
+                api_key=llm_key,
+                session_id=f"social-{motor_id}",
+                system_message="Je bent een social media expert voor een motorhandel. Schrijf korte, pakkende Nederlandse social media posts voor Facebook en Instagram. Gebruik relevante emoji's. Houd het onder 200 tekens. Voeg geen hashtags toe die met # beginnen, gebruik gewone woorden."
+            )
+            chat.with_model("openai", "gpt-4.1-mini")
+            
+            prompt = f"Schrijf een pakkende social media post voor deze motor: {motor['brand']} {motor['model']} ({motor['year']}), prijs €{motor['price']:,.0f}, {motor.get('mileage', 0)} km, kleur: {motor.get('color', 'n.v.t.')}. {motor.get('description', '')[:100]}"
+            
+            user_msg = UserMessage(text=prompt)
+            social_text = await chat.send_message(user_msg)
+            logger.info(f"Generated social media text for motor {motor_id}")
+    except Exception as e:
+        logger.error(f"AI social text generation failed: {e}")
+        # Fallback text
+        social_text = f"Te koop: {motor['brand']} {motor['model']} ({motor['year']}) voor €{motor['price']:,.0f}! {motor.get('mileage', 0)} km. Interesse? Neem contact op!"
+    
+    # 2. Generate social media image card with Pillow
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import io
+        
+        width, height = 1200, 630  # Facebook/LinkedIn optimal size
+        
+        # Create base image
+        img = Image.new('RGB', (width, height), '#18181b')
+        draw = ImageDraw.Draw(img)
+        
+        # Try to load motor image as background
+        motor_img_loaded = False
+        if motor.get("images") and len(motor["images"]) > 0:
+            try:
+                import httpx
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(motor["images"][0])
+                    if resp.status_code == 200:
+                        bg = Image.open(io.BytesIO(resp.content))
+                        bg = bg.convert('RGB')
+                        # Resize to fill left half
+                        bg = bg.resize((width // 2, height), Image.Resampling.LANCZOS)
+                        img.paste(bg, (0, 0))
+                        # Add gradient overlay on left side
+                        gradient = Image.new('RGBA', (width // 2, height), (0, 0, 0, 0))
+                        gd = ImageDraw.Draw(gradient)
+                        for x in range(width // 2):
+                            alpha = int(255 * (x / (width // 2)) * 0.8)
+                            gd.line([(x, 0), (x, height)], fill=(24, 24, 27, alpha))
+                        img.paste(Image.alpha_composite(Image.new('RGBA', (width // 2, height), (0, 0, 0, 0)), gradient).convert('RGB'), (0, 0), gradient)
+                        motor_img_loaded = True
+            except Exception as e:
+                logger.error(f"Failed to load motor image: {e}")
+        
+        if not motor_img_loaded:
+            # Draw motorcycle silhouette placeholder on left
+            draw.rectangle([0, 0, width // 2, height], fill='#27272a')
+            # Simple motorcycle icon representation
+            draw.ellipse([180, 320, 260, 400], outline='#dc2626', width=3)
+            draw.ellipse([340, 320, 420, 400], outline='#dc2626', width=3)
+            draw.line([220, 340, 380, 340], fill='#dc2626', width=2)
+            draw.polygon([(260, 300), (340, 300), (380, 340), (220, 340)], outline='#dc2626', width=2)
+        
+        # Right side: Info panel
+        draw.rectangle([width // 2, 0, width, height], fill='#18181b')
+        
+        # Red accent line
+        draw.rectangle([width // 2, 0, width // 2 + 4, height], fill='#dc2626')
+        
+        # Try system fonts
+        try:
+            title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)
+            price_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 52)
+            detail_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22)
+            brand_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
+        except:
+            title_font = ImageFont.load_default()
+            price_font = title_font
+            detail_font = title_font
+            brand_font = title_font
+        
+        right_x = width // 2 + 40
+        
+        # Brand + Model
+        draw.text((right_x, 60), f"{motor['brand']}", font=title_font, fill='#ffffff')
+        draw.text((right_x, 115), f"{motor['model']}", font=title_font, fill='#a1a1aa')
+        
+        # Price
+        price_text = f"€{motor['price']:,.0f}".replace(',', '.')
+        draw.text((right_x, 200), price_text, font=price_font, fill='#dc2626')
+        
+        # Details
+        y_pos = 290
+        details = [
+            f"Bouwjaar: {motor['year']}",
+            f"Km-stand: {motor.get('mileage', 0):,} km".replace(',', '.'),
+        ]
+        if motor.get('color'):
+            details.append(f"Kleur: {motor['color']}")
+        
+        for detail in details:
+            draw.text((right_x, y_pos), detail, font=detail_font, fill='#a1a1aa')
+            y_pos += 35
+        
+        # Dealer info
+        y_pos += 20
+        draw.line([(right_x, y_pos), (width - 40, y_pos)], fill='#3f3f46', width=1)
+        y_pos += 15
+        if motor.get('dealer_company'):
+            draw.text((right_x, y_pos), motor['dealer_company'], font=detail_font, fill='#ffffff')
+            y_pos += 30
+        if motor.get('dealer_city'):
+            draw.text((right_x, y_pos), motor['dealer_city'], font=detail_font, fill='#a1a1aa')
+            y_pos += 30
+        
+        # Moto Import branding at bottom
+        draw.rectangle([width // 2, height - 60, width, height], fill='#dc2626')
+        draw.text((right_x, height - 48), "MOTO IMPORT", font=brand_font, fill='#ffffff')
+        draw.text((right_x + 160, height - 45), "motoimportbv.nl", font=detail_font, fill='#fecaca')
+        
+        # Save image
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format='JPEG', quality=90)
+        img_bytes.seek(0)
+        
+        # Upload to cloud storage
+        image_id = f"social-{motor_id}"
+        try:
+            if init_storage():
+                full_path = f"{APP_NAME}/social/{image_id}.jpg"
+                put_object(full_path, img_bytes.getvalue(), "image/jpeg")
+                social_image_url = f"{PRODUCTION_BASE_URL}/api/google-motors/social-image/{motor_id}"
+                logger.info(f"Social media image uploaded for motor {motor_id}")
+        except Exception as e:
+            logger.error(f"Cloud upload failed for social image: {e}")
+        
+        # Also store in MongoDB as fallback
+        import base64
+        await db.google_motors.update_one(
+            {"id": motor_id},
+            {"$set": {
+                "social_image_data": base64.b64encode(img_bytes.getvalue()).decode('utf-8'),
+            }}
+        )
+        
+    except Exception as e:
+        logger.error(f"Social image generation failed: {e}")
+    
+    # Update motor with social media content
+    update = {}
+    if social_text:
+        update["social_text"] = social_text
+    if social_image_url:
+        update["social_image_url"] = social_image_url
+    update["social_generated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    if update:
+        await db.google_motors.update_one({"id": motor_id}, {"$set": update})
+        logger.info(f"Social media content saved for motor {motor_id}")
+
+@api_router.get("/google-motors/social-image/{motor_id}")
+async def get_social_image(motor_id: str):
+    """Serve the generated social media image"""
+    import base64
+    motor = await db.google_motors.find_one({"id": motor_id}, {"_id": 0, "social_image_data": 1})
+    if not motor or not motor.get("social_image_data"):
+        raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
+    
+    image_data = base64.b64decode(motor["social_image_data"])
+    return Response(content=image_data, media_type="image/jpeg", headers={
+        "Content-Disposition": f"inline; filename=moto-import-{motor_id}.jpg",
+        "Cache-Control": "public, max-age=86400",
+    })
 
 @api_router.post("/google-motors/{motor_id}/reject")
 async def reject_google_motor(motor_id: str, body: dict = Body({}), current_user: dict = Depends(require_admin)):

@@ -7,7 +7,8 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import {
   Globe, Upload, CreditCard, Check, X, Clock, Eye, Trash2,
-  ChevronDown, ChevronUp, Bike, Image as ImageIcon, Loader2
+  ChevronDown, ChevronUp, Bike, Image as ImageIcon, Loader2,
+  Share2, Copy, Download
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -152,6 +153,19 @@ export default function DealerGoogleMotors() {
   };
 
   const canUpload = subscription?.has_monthly || subscription?.per_motor_credits > 0;
+  const [expandedSocial, setExpandedSocial] = useState(null);
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => toast.success('Tekst gekopieerd!')).catch(() => toast.error('Kopiëren mislukt'));
+  };
+
+  const downloadImage = (motorId) => {
+    const url = `${API}/google-motors/social-image/${motorId}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `moto-import-${motorId}.jpg`;
+    a.click();
+  };
 
   if (loading) {
     return (
@@ -414,30 +428,87 @@ export default function DealerGoogleMotors() {
           ) : (
             <div className="space-y-3">
               {motors.map(m => (
-                <div key={m.id} className="flex items-center gap-4 p-4 rounded-xl border border-zinc-100 hover:border-zinc-200 transition-colors" data-testid={`motor-${m.id}`}>
-                  <div className="w-20 h-16 rounded-lg overflow-hidden bg-zinc-100 flex-shrink-0">
-                    {m.images?.[0] ? (
-                      <img src={m.images[0]} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center"><Bike className="w-8 h-8 text-zinc-300" /></div>
-                    )}
+                <div key={m.id} className="rounded-xl border border-zinc-100 hover:border-zinc-200 transition-colors overflow-hidden" data-testid={`motor-${m.id}`}>
+                  <div className="flex items-center gap-4 p-4">
+                    <div className="w-20 h-16 rounded-lg overflow-hidden bg-zinc-100 flex-shrink-0">
+                      {m.images?.[0] ? (
+                        <img src={m.images[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"><Bike className="w-8 h-8 text-zinc-300" /></div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-zinc-900 truncate">{m.brand} {m.model} ({m.year})</p>
+                      <p className="text-sm text-red-600 font-bold">{formatPrice(m.price)}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        m.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        m.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {m.status === 'approved' ? 'Live' : m.status === 'pending' ? 'Wachtend' : 'Afgewezen'}
+                      </span>
+                      {m.status === 'approved' && m.social_text && (
+                        <button
+                          onClick={() => setExpandedSocial(expandedSocial === m.id ? null : m.id)}
+                          className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors flex items-center gap-1"
+                          data-testid={`social-toggle-${m.id}`}
+                        >
+                          <Share2 className="w-3 h-3" /> Social Media
+                        </button>
+                      )}
+                      <button onClick={() => handleDelete(m.id)} className="text-zinc-400 hover:text-red-600 transition-colors" data-testid={`delete-motor-${m.id}`}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-zinc-900 truncate">{m.brand} {m.model} ({m.year})</p>
-                    <p className="text-sm text-red-600 font-bold">{formatPrice(m.price)}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      m.status === 'approved' ? 'bg-green-100 text-green-700' :
-                      m.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {m.status === 'approved' ? 'Live' : m.status === 'pending' ? 'Wachtend' : 'Afgewezen'}
-                    </span>
-                    <button onClick={() => handleDelete(m.id)} className="text-zinc-400 hover:text-red-600 transition-colors" data-testid={`delete-motor-${m.id}`}>
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+
+                  {/* Social Media Content */}
+                  {expandedSocial === m.id && m.social_text && (
+                    <div className="border-t border-zinc-100 bg-gradient-to-r from-blue-50 to-purple-50 p-5" data-testid={`social-content-${m.id}`}>
+                      <h4 className="text-sm font-bold text-zinc-700 flex items-center gap-2 mb-3">
+                        <Share2 className="w-4 h-4 text-blue-600" /> Social Media Post
+                      </h4>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-bold text-zinc-500 uppercase mb-2">Tekst voor Facebook / Instagram</p>
+                          <div className="bg-white rounded-lg p-3 border border-zinc-200 text-sm text-zinc-800 mb-2">
+                            {m.social_text}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(m.social_text)}
+                            className="text-xs"
+                            data-testid={`copy-text-${m.id}`}
+                          >
+                            <Copy className="w-3 h-3 mr-1" /> Kopieer Tekst
+                          </Button>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-zinc-500 uppercase mb-2">Deelbare Afbeelding</p>
+                          <div className="bg-zinc-900 rounded-lg overflow-hidden mb-2">
+                            <img
+                              src={`${API}/google-motors/social-image/${m.id}`}
+                              alt="Social media card"
+                              className="w-full h-auto"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadImage(m.id)}
+                            className="text-xs"
+                            data-testid={`download-image-${m.id}`}
+                          >
+                            <Download className="w-3 h-3 mr-1" /> Download Afbeelding
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
