@@ -427,7 +427,7 @@ const DealerDashboard = () => {
             {/* Content */}
             <div className="p-6">
               <p className="text-zinc-700 leading-relaxed mb-4">
-                Google plaatst uw motor op <strong className="text-zinc-900">MotoOccasion</strong>, <strong className="text-zinc-900">Marktplaats</strong> en in de zoekresultaten. 
+                Google verkoopt uw motor <strong className="text-red-600">sneller</strong> dan <strong className="text-zinc-900">MotoOccasion</strong> en <strong className="text-zinc-900">Marktplaats</strong>. 
                 Bereik miljoenen kopers zonder extra moeite!
               </p>
               <div className="space-y-3 mb-5">
@@ -435,7 +435,7 @@ const DealerDashboard = () => {
                   <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <CheckCircle className="w-4 h-4 text-green-600" />
                   </div>
-                  <span className="text-zinc-700">Uw motor automatisch op Google, MotoOccasion & Marktplaats</span>
+                  <span className="text-zinc-700">Sneller verkopen dan via MotoOccasion & Marktplaats</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
