@@ -97,6 +97,7 @@ const Sidebar = () => {
     // Taxatie - only for info@motoimportbv.nl (filtered below)
     ...(user?.email?.toLowerCase() === 'motoimportbv@gmail.com' ? [
       { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
+      { path: '/admin/google-motors', icon: Globe, label: 'Google Motoren' },
     ] : []),
   ];
 
@@ -108,6 +109,7 @@ const Sidebar = () => {
     { path: '/dealer/orders', icon: ShoppingCart, label: t('nav.myOrders') },
     { path: '/dealer/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Mijn Kentekens' },
     { path: '/dealer/wanted-requests', icon: Search, label: '🔍 Motor Zoekertje' },
+    { path: '/dealer/google-motors', icon: Globe, label: 'Google Motoren' },
   ];
 
   const foreignDealerNavItems = [

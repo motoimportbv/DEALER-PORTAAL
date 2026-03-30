@@ -8482,6 +8482,17 @@ async def stripe_webhook(request: Request):
                     {"session_id": event.session_id},
                     {"$set": {"status": "completed", "payment_status": "paid"}}
                 )
+        # Handle Google Motor subscription payment
+        elif event.payment_status == "paid" and event.metadata.get("type") == "google_motor_subscription":
+            plan = event.metadata.get("plan")
+            dealer_id = event.metadata.get("dealer_id")
+            sub = await db.google_motor_subscriptions.find_one({"session_id": event.session_id})
+            if sub and sub.get("status") != "active":
+                update = {"status": "active", "paid_at": datetime.now(timezone.utc).isoformat()}
+                if plan == "monthly":
+                    update["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+                await db.google_motor_subscriptions.update_one({"session_id": event.session_id}, {"$set": update})
+                logger.info(f"Google motor subscription activated: {plan} for dealer {dealer_id}")
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"Webhook error: {e}")
@@ -8806,154 +8817,410 @@ async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(g
         raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     return {"status": "deleted"}
 
-# ==================== PUBLIC MOTORCYCLE PAGES (NO AUTH) ====================
+# ============ GOOGLE MOTOREN (DEALER SEO LISTINGS) ============
+
+GOOGLE_MOTOR_PRICE_PER_MOTOR = 2.95  # EUR per week per motor
+GOOGLE_MOTOR_MONTHLY_PRICE = 45.00  # EUR per month unlimited
+ALLOWED_ADMIN_EMAIL_GOOGLE = "motoimportbv@gmail.com"
+
+class GoogleMotorCreate(BaseModel):
+    brand: str
+    model: str
+    year: int
+    price: float
+    mileage: int = 0
+    description: str = ""
+    images: List[str] = []
+    color: str = ""
+    condition: str = ""
+
+@api_router.post("/google-motors/checkout")
+async def create_google_motor_checkout(request: Request, body: dict = Body(...), current_user: dict = Depends(require_approved_dealer)):
+    """Create Stripe checkout for Google Motors subscription"""
+    plan = body.get("plan")  # "per_motor" or "monthly"
+    origin_url = body.get("origin_url", str(request.base_url).rstrip("/"))
+    
+    if plan not in ["per_motor", "monthly"]:
+        raise HTTPException(status_code=400, detail="Ongeldig plan")
+    
+    amount = GOOGLE_MOTOR_PRICE_PER_MOTOR if plan == "per_motor" else GOOGLE_MOTOR_MONTHLY_PRICE
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    success_url = f"{origin_url}/dealer/google-motors?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/dealer/google-motors?payment=cancelled"
+    
+    checkout_req = CheckoutSessionRequest(
+        amount=amount,
+        currency="eur",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "type": "google_motor_subscription",
+            "plan": plan,
+            "dealer_id": current_user["id"],
+            "dealer_email": current_user.get("email", ""),
+        },
+        payment_methods=["card", "ideal"],
+    )
+    session = await stripe_checkout.create_checkout_session(checkout_req)
+    
+    sub_id = str(uuid.uuid4())
+    await db.google_motor_subscriptions.insert_one({
+        "id": sub_id,
+        "dealer_id": current_user["id"],
+        "dealer_email": current_user.get("email", ""),
+        "plan": plan,
+        "amount": amount,
+        "session_id": session.session_id,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    return {"checkout_url": session.url, "session_id": session.session_id, "subscription_id": sub_id}
+
+@api_router.get("/google-motors/subscription")
+async def get_google_motor_subscription(current_user: dict = Depends(require_approved_dealer)):
+    """Get current subscription status for dealer"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Check active monthly subscription
+    monthly = await db.google_motor_subscriptions.find_one(
+        {"dealer_id": current_user["id"], "plan": "monthly", "status": "active", "expires_at": {"$gt": now}},
+        {"_id": 0}
+    )
+    
+    # Count active per-motor credits
+    per_motor_credits = await db.google_motor_subscriptions.count_documents(
+        {"dealer_id": current_user["id"], "plan": "per_motor", "status": "active", "used": {"$ne": True}}
+    )
+    
+    # Count total active motors
+    active_motors = await db.google_motors.count_documents(
+        {"dealer_id": current_user["id"], "status": {"$in": ["pending", "approved"]}}
+    )
+    
+    return {
+        "has_monthly": monthly is not None,
+        "monthly_expires": monthly.get("expires_at") if monthly else None,
+        "per_motor_credits": per_motor_credits,
+        "active_motors": active_motors,
+    }
+
+@api_router.get("/google-motors/check-payment/{session_id}")
+async def check_google_motor_payment(session_id: str, current_user: dict = Depends(require_approved_dealer)):
+    """Check payment status for Google Motors subscription"""
+    sub = await db.google_motor_subscriptions.find_one(
+        {"session_id": session_id, "dealer_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not sub:
+        raise HTTPException(status_code=404, detail="Abonnement niet gevonden")
+    
+    if sub.get("status") == "active":
+        return {"status": "active", "plan": sub["plan"]}
+    
+    # Check with Stripe
+    api_key = os.environ.get("STRIPE_API_KEY")
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+    status = await stripe_checkout.get_checkout_status(session_id)
+    
+    if status.payment_status == "paid" and sub.get("status") != "active":
+        update = {"status": "active", "paid_at": datetime.now(timezone.utc).isoformat()}
+        if sub["plan"] == "monthly":
+            update["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        await db.google_motor_subscriptions.update_one({"session_id": session_id}, {"$set": update})
+        return {"status": "active", "plan": sub["plan"]}
+    
+    return {"status": sub.get("status", "pending"), "plan": sub["plan"]}
+
+@api_router.post("/google-motors")
+async def create_google_motor(data: GoogleMotorCreate, current_user: dict = Depends(require_approved_dealer)):
+    """Create a new Google Motor listing"""
+    now = datetime.now(timezone.utc)
+    dealer_id = current_user["id"]
+    
+    # Check if dealer has active subscription
+    has_monthly = await db.google_motor_subscriptions.find_one(
+        {"dealer_id": dealer_id, "plan": "monthly", "status": "active", "expires_at": {"$gt": now.isoformat()}}
+    )
+    
+    has_credit = None
+    if not has_monthly:
+        has_credit = await db.google_motor_subscriptions.find_one(
+            {"dealer_id": dealer_id, "plan": "per_motor", "status": "active", "used": {"$ne": True}}
+        )
+        if not has_credit:
+            raise HTTPException(status_code=402, detail="Geen actief abonnement. Koop eerst een abonnement.")
+    
+    motor_id = str(uuid.uuid4())
+    expires_at = (now + timedelta(days=7)).isoformat() if not has_monthly else has_monthly.get("expires_at", (now + timedelta(days=30)).isoformat())
+    
+    motor = {
+        "id": motor_id,
+        "dealer_id": dealer_id,
+        "dealer_email": current_user.get("email", ""),
+        "dealer_company": current_user.get("company_name", ""),
+        "dealer_phone": current_user.get("phone", ""),
+        "dealer_city": current_user.get("city", ""),
+        "dealer_contact_person": current_user.get("contact_person", ""),
+        "brand": data.brand,
+        "model": data.model,
+        "year": data.year,
+        "price": data.price,
+        "mileage": data.mileage,
+        "description": data.description,
+        "images": data.images,
+        "color": data.color,
+        "condition": data.condition,
+        "status": "pending",  # pending, approved, rejected
+        "plan": "monthly" if has_monthly else "per_motor",
+        "expires_at": expires_at,
+        "created_at": now.isoformat(),
+    }
+    
+    await db.google_motors.insert_one(motor)
+    
+    # Use up a per-motor credit if applicable
+    if has_credit and not has_monthly:
+        await db.google_motor_subscriptions.update_one(
+            {"id": has_credit["id"]}, {"$set": {"used": True, "motor_id": motor_id}}
+        )
+    
+    # Notify admin
+    try:
+        html = f"""
+        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+            <div style="background:#dc2626;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;">Nieuwe Google Motor</h1>
+            </div>
+            <div style="padding:30px;background:white;border:1px solid #eee;">
+                <p>Er is een nieuwe motor aangemeld voor Google:</p>
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="padding:8px;font-weight:bold;">Dealer:</td><td>{current_user.get('company_name','')}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Motor:</td><td>{data.brand} {data.model} ({data.year})</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Prijs:</td><td>&euro;{data.price:,.0f}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Plan:</td><td>{'Maandelijks' if has_monthly else 'Per motor'}</td></tr>
+                </table>
+                <p style="margin-top:20px;">Ga naar het admin panel om deze motor goed te keuren.</p>
+            </div>
+        </div>
+        """
+        await send_email(ALLOWED_ADMIN_EMAIL_GOOGLE, f"Nieuwe Google Motor: {data.brand} {data.model}", html)
+    except Exception as e:
+        logger.error(f"Failed to send Google motor notification: {e}")
+    
+    motor.pop("_id", None)
+    return motor
+
+@api_router.get("/google-motors/my")
+async def get_my_google_motors(current_user: dict = Depends(require_approved_dealer)):
+    """Get dealer's own Google Motor listings"""
+    motors = await db.google_motors.find(
+        {"dealer_id": current_user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return motors
+
+@api_router.delete("/google-motors/{motor_id}")
+async def delete_google_motor(motor_id: str, current_user: dict = Depends(require_approved_dealer)):
+    """Delete a Google Motor listing"""
+    result = await db.google_motors.delete_one({"id": motor_id, "dealer_id": current_user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    return {"status": "deleted"}
+
+# Admin endpoints for Google Motors
+@api_router.get("/google-motors/pending")
+async def get_pending_google_motors(current_user: dict = Depends(require_admin)):
+    """Admin: get pending Google Motor listings"""
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    motors = await db.google_motors.find(
+        {"status": "pending"}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return motors
+
+@api_router.get("/google-motors/all")
+async def get_all_google_motors(current_user: dict = Depends(require_admin)):
+    """Admin: get all Google Motor listings"""
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    motors = await db.google_motors.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return motors
+
+@api_router.post("/google-motors/{motor_id}/approve")
+async def approve_google_motor(motor_id: str, current_user: dict = Depends(require_admin)):
+    """Admin: approve a Google Motor listing"""
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.google_motors.update_one(
+        {"id": motor_id, "status": "pending"},
+        {"$set": {"status": "approved", "approved_at": datetime.now(timezone.utc).isoformat(), "approved_by": current_user["email"]}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden of al verwerkt")
+    
+    # Notify dealer
+    motor = await db.google_motors.find_one({"id": motor_id}, {"_id": 0})
+    if motor:
+        try:
+            html = f"""
+            <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+                <div style="background:#16a34a;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                    <h1 style="color:white;margin:0;">Motor Goedgekeurd!</h1>
+                </div>
+                <div style="padding:30px;background:white;border:1px solid #eee;">
+                    <p>Goed nieuws! Uw motor is goedgekeurd en staat nu live op Google:</p>
+                    <p style="font-size:18px;font-weight:bold;">{motor['brand']} {motor['model']} ({motor['year']}) - &euro;{motor['price']:,.0f}</p>
+                    <p>De motor is nu zichtbaar voor iedereen op internet.</p>
+                </div>
+            </div>
+            """
+            await send_email(motor["dealer_email"], f"Motor goedgekeurd: {motor['brand']} {motor['model']}", html)
+        except Exception as e:
+            logger.error(f"Failed to send approval email: {e}")
+    
+    return {"status": "approved"}
+
+@api_router.post("/google-motors/{motor_id}/reject")
+async def reject_google_motor(motor_id: str, body: dict = Body({}), current_user: dict = Depends(require_admin)):
+    """Admin: reject a Google Motor listing"""
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    reason = body.get("reason", "")
+    result = await db.google_motors.update_one(
+        {"id": motor_id, "status": "pending"},
+        {"$set": {"status": "rejected", "rejected_at": datetime.now(timezone.utc).isoformat(), "reject_reason": reason}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden of al verwerkt")
+    return {"status": "rejected"}
+
+# ============ PUBLIC SEO ENDPOINTS (NO AUTH) ============
 
 @api_router.get("/public/motors")
-async def get_public_motors(brand: str = None, min_price: float = None, max_price: float = None, sort_by: str = "newest"):
-    """Public endpoint: list all dealer + particulier motorcycles for SEO pages"""
-    motors = []
-    
-    # 1. Dealer/foreign dealer listed motorcycles
-    query = {"is_dealer_listing": True, "is_available": True, "is_paused": {"$ne": True}}
+async def get_public_motors(brand: str = None, sort_by: str = "newest"):
+    """Public endpoint: get all approved Google Motors for SEO"""
+    now = datetime.now(timezone.utc).isoformat()
+    query = {"status": "approved", "expires_at": {"$gt": now}}
     if brand:
         query["brand"] = brand
-    dealer_motors = await db.motorcycles.find(query, {"_id": 0}).to_list(200)
-    for m in dealer_motors:
-        motors.append({
-            "id": m["id"],
-            "type": "dealer",
-            "brand": m.get("brand", ""),
-            "model": m.get("model", ""),
-            "year": m.get("year", 0),
-            "price": m.get("price", 0),
-            "mileage": m.get("mileage", 0),
-            "color": m.get("color", ""),
-            "description": m.get("description", ""),
-            "condition": m.get("condition", ""),
-            "images": m.get("images", [])[:3],
-            "seller_company": m.get("seller_company", ""),
-            "city": "",
-            "created_at": m.get("created_at", ""),
-        })
     
-    # 2. Active paid private listings
-    now = datetime.now(timezone.utc).isoformat()
-    pquery = {"is_active": True, "is_paid": True, "expires_at": {"$gt": now}}
-    if brand:
-        pquery["brand"] = brand
-    private_motors = await db.private_listings.find(pquery, {"_id": 0}).to_list(200)
-    for p in private_motors:
-        motors.append({
-            "id": p["id"],
-            "type": "particulier",
-            "brand": p.get("brand", ""),
-            "model": p.get("model", ""),
-            "year": p.get("year", 0),
-            "price": p.get("price", 0),
-            "mileage": p.get("mileage", 0),
-            "color": p.get("color", ""),
-            "description": p.get("description", ""),
-            "condition": "",
-            "images": p.get("photos", [])[:3],
-            "seller_company": "",
-            "city": p.get("city", ""),
-            "created_at": p.get("created_at", ""),
-        })
-    
-    # Apply price filters
-    if min_price:
-        motors = [m for m in motors if (m.get("price") or 0) >= min_price]
-    if max_price:
-        motors = [m for m in motors if (m.get("price") or 0) <= max_price]
-    
-    # Sort
+    sort_field = "created_at"
+    sort_dir = -1
     if sort_by == "price_low":
-        motors.sort(key=lambda x: x.get("price", 0))
+        sort_field = "price"
+        sort_dir = 1
     elif sort_by == "price_high":
-        motors.sort(key=lambda x: x.get("price", 0), reverse=True)
-    else:
-        motors.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        sort_field = "price"
+        sort_dir = -1
     
+    motors = await db.google_motors.find(query, {
+        "_id": 0, "id": 1, "brand": 1, "model": 1, "year": 1, "price": 1,
+        "mileage": 1, "images": 1, "color": 1, "condition": 1, "description": 1,
+        "dealer_company": 1, "dealer_city": 1, "created_at": 1,
+    }).sort(sort_field, sort_dir).to_list(500)
     return motors
+
+@api_router.get("/public/motors/brands")
+async def get_public_motor_brands():
+    """Public endpoint: get distinct brands from approved motors"""
+    now = datetime.now(timezone.utc).isoformat()
+    brands = await db.google_motors.distinct("brand", {"status": "approved", "expires_at": {"$gt": now}})
+    return sorted(brands)
 
 @api_router.get("/public/motors/{motor_id}")
 async def get_public_motor_detail(motor_id: str):
-    """Public endpoint: get single motorcycle detail (no contact info)"""
-    # Try dealer motorcycle first
-    m = await db.motorcycles.find_one({"id": motor_id, "is_dealer_listing": True}, {"_id": 0})
-    if m:
-        return {
-            "id": m["id"],
-            "type": "dealer",
-            "brand": m.get("brand", ""),
-            "model": m.get("model", ""),
-            "year": m.get("year", 0),
-            "price": m.get("price", 0),
-            "mileage": m.get("mileage", 0),
-            "color": m.get("color", ""),
-            "description": m.get("description", ""),
-            "condition": m.get("condition", ""),
-            "images": m.get("images", []),
-            "seller_company": m.get("seller_company", ""),
-            "city": "",
-            "created_at": m.get("created_at", ""),
-        }
+    """Public endpoint: get single motor detail for SEO"""
+    now = datetime.now(timezone.utc).isoformat()
+    motor = await db.google_motors.find_one(
+        {"id": motor_id, "status": "approved", "expires_at": {"$gt": now}},
+        {"_id": 0}
+    )
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
-    # Try private listing
-    p = await db.private_listings.find_one({"id": motor_id, "is_active": True, "is_paid": True}, {"_id": 0})
-    if p:
-        return {
-            "id": p["id"],
-            "type": "particulier",
-            "brand": p.get("brand", ""),
-            "model": p.get("model", ""),
-            "year": p.get("year", 0),
-            "price": p.get("price", 0),
-            "mileage": p.get("mileage", 0),
-            "color": p.get("color", ""),
-            "description": p.get("description", ""),
-            "condition": "",
-            "images": p.get("photos", []),
-            "seller_company": "",
-            "city": p.get("city", ""),
-            "created_at": p.get("created_at", ""),
-        }
-    
-    raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    # Return all dealer info for public display
+    return {
+        "id": motor["id"],
+        "brand": motor["brand"],
+        "model": motor["model"],
+        "year": motor["year"],
+        "price": motor["price"],
+        "mileage": motor.get("mileage", 0),
+        "description": motor.get("description", ""),
+        "images": motor.get("images", []),
+        "color": motor.get("color", ""),
+        "condition": motor.get("condition", ""),
+        "dealer_company": motor.get("dealer_company", ""),
+        "dealer_email": motor.get("dealer_email", ""),
+        "dealer_phone": motor.get("dealer_phone", ""),
+        "dealer_city": motor.get("dealer_city", ""),
+        "dealer_contact_person": motor.get("dealer_contact_person", ""),
+        "created_at": motor.get("created_at", ""),
+    }
 
-@api_router.post("/public/motors/{motor_id}/contact")
-async def get_public_motor_contact(motor_id: str):
-    """Public endpoint: reveal contact info after user clicks 'Neem contact op'"""
-    # Try dealer motorcycle
-    m = await db.motorcycles.find_one({"id": motor_id, "is_dealer_listing": True}, {"_id": 0})
-    if m:
-        seller = await db.users.find_one({"id": m.get("seller_id")}, {"_id": 0, "company_name": 1, "email": 1, "phone": 1, "city": 1})
-        return {
-            "name": seller.get("company_name", "") if seller else m.get("seller_company", ""),
-            "email": seller.get("email", "") if seller else "",
-            "phone": seller.get("phone", "") if seller else "",
-            "city": seller.get("city", "") if seller else "",
-        }
+@api_router.post("/public/motors/{motor_id}/interest")
+async def express_interest_public_motor(motor_id: str, body: dict = Body(...)):
+    """Public: someone expresses interest in a motor, notify admin"""
+    motor = await db.google_motors.find_one({"id": motor_id, "status": "approved"}, {"_id": 0})
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
-    # Try private listing
-    p = await db.private_listings.find_one({"id": motor_id, "is_active": True, "is_paid": True}, {"_id": 0})
-    if p:
-        return {
-            "name": p.get("user_name", ""),
-            "email": p.get("user_email", ""),
-            "phone": p.get("user_phone", ""),
-            "city": p.get("city", ""),
-        }
+    name = body.get("name", "Onbekend")
+    email = body.get("email", "")
+    phone = body.get("phone", "")
+    message = body.get("message", "")
     
-    raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    if not email and not phone:
+        raise HTTPException(status_code=400, detail="Email of telefoonnummer is verplicht")
+    
+    # Store lead
+    lead_id = str(uuid.uuid4())
+    await db.google_motor_leads.insert_one({
+        "id": lead_id,
+        "motor_id": motor_id,
+        "motor_brand": motor["brand"],
+        "motor_model": motor["model"],
+        "dealer_id": motor["dealer_id"],
+        "dealer_email": motor["dealer_email"],
+        "visitor_name": name,
+        "visitor_email": email,
+        "visitor_phone": phone,
+        "message": message,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    # Notify admin (motoimportbv@gmail.com)
+    try:
+        html = f"""
+        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+            <div style="background:#dc2626;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;">Nieuwe Interesse - Google Motor</h1>
+            </div>
+            <div style="padding:30px;background:white;border:1px solid #eee;">
+                <p>Iemand heeft interesse getoond in een motor op Google:</p>
+                <table style="width:100%;border-collapse:collapse;margin:15px 0;">
+                    <tr><td style="padding:8px;font-weight:bold;width:120px;">Motor:</td><td>{motor['brand']} {motor['model']} ({motor['year']})</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Dealer:</td><td>{motor.get('dealer_company','')}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Naam:</td><td>{name}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Email:</td><td>{email}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Telefoon:</td><td>{phone}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Bericht:</td><td>{message}</td></tr>
+                </table>
+            </div>
+        </div>
+        """
+        await send_email(ALLOWED_ADMIN_EMAIL_GOOGLE, f"Interesse: {motor['brand']} {motor['model']} - {name}", html)
+    except Exception as e:
+        logger.error(f"Failed to send interest email: {e}")
+    
+    return {"status": "ok", "message": "Uw interesse is verstuurd!"}
 
-@api_router.get("/public/motors/brands")
-async def get_public_brands():
-    """Public endpoint: get all available brands for filtering"""
-    dealer_brands = await db.motorcycles.distinct("brand", {"is_dealer_listing": True, "is_available": True})
-    private_brands = await db.private_listings.distinct("brand", {"is_active": True, "is_paid": True})
-    all_brands = sorted(set(dealer_brands + private_brands))
-    return all_brands
+
 
 # Include the router
 app.include_router(api_router)
@@ -9146,6 +9413,7 @@ async def monthly_taxatie_reminder():
         
         # Check every 5 minutes
         await asyncio.sleep(300)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

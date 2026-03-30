@@ -65,6 +65,10 @@ import ParticulierRegister from "./pages/particulier/ParticulierRegister";
 import ParticulierDashboard from "./pages/particulier/ParticulierDashboard";
 import ParticulierAddListing from "./pages/particulier/ParticulierAddListing";
 import ParticulierSuccess from "./pages/particulier/ParticulierSuccess";
+import DealerGoogleMotors from "./pages/dealer/DealerGoogleMotors";
+import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
+import PublicMotorListing from "./pages/PublicMotorListing";
+import PublicMotorDetail from "./pages/PublicMotorDetail";
 
 // Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
@@ -213,6 +217,8 @@ function App() {
             <Route path="/suppliers" element={<SupplierLandingPage />} />
             <Route path="/dealers" element={<DealerLandingPage />} />
             <Route path="/particulier-verkopen" element={<ParticulierLandingPage />} />
+            <Route path="/motoren" element={<PublicMotorListing />} />
+            <Route path="/motor/:id/:slug?" element={<PublicMotorDetail />} />
             <Route path="/dealer-guide" element={<DealerGuide />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -240,6 +246,7 @@ function App() {
             <Route path="/admin/activity" element={<AdminActivity />} />
             <Route path="/admin/price-proposals" element={<AdminPriceProposals />} />
             <Route path="/admin/wanted-requests" element={<AdminWantedRequests />} />
+            <Route path="/admin/google-motors" element={<AdminGoogleMotors />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
@@ -250,6 +257,7 @@ function App() {
             <Route path="/dealer/parts" element={<PartsShop />} />
             <Route path="/dealer/license-plates" element={<DealerLicensePlates />} />
             <Route path="/dealer/wanted-requests" element={<WantedRequestPage />} />
+            <Route path="/dealer/google-motors" element={<DealerGoogleMotors />} />
             
             {/* Foreign Dealer Routes */}
             <Route path="/foreign-dealer" element={<ForeignDealerDashboard />} />
