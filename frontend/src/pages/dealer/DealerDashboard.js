@@ -39,7 +39,11 @@ import {
   Phone,
   Euro,
   Lock,
-  Unlock
+  Unlock,
+  Globe,
+  Rocket,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -62,6 +66,9 @@ const DealerDashboard = () => {
     return sessionStorage.getItem('hidePriceDisclaimer') !== 'true';
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [showGooglePromo, setShowGooglePromo] = useState(() => {
+    return localStorage.getItem('hideGoogleMotorPromo') !== 'true';
+  });
   const [emailPreferences, setEmailPreferences] = useState({
     receive_price_alerts: true,
     receive_order_updates: true,
@@ -386,6 +393,87 @@ const DealerDashboard = () => {
 
   return (
     <Layout>
+      {/* Google Motoren Promo Popup */}
+      {showGooglePromo && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" data-testid="google-promo-overlay">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowGooglePromo(false); localStorage.setItem('hideGoogleMotorPromo', 'true'); }} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-300" data-testid="google-promo-modal">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 p-6 pb-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-red-600/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+              <button
+                onClick={() => { setShowGooglePromo(false); localStorage.setItem('hideGoogleMotorPromo', 'true'); }}
+                className="absolute top-3 right-3 text-zinc-400 hover:text-white transition-colors"
+                data-testid="close-google-promo"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3 mb-3 relative">
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center">
+                  <Globe className="w-7 h-7 text-white" />
+                </div>
+                <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> NIEUW
+                </div>
+              </div>
+              <h2 className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+                Vergroot uw verkoop met Google!
+              </h2>
+              <p className="text-zinc-400 mt-1 text-sm">
+                Speciaal voor Moto Import dealers
+              </p>
+            </div>
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-zinc-700 leading-relaxed mb-4">
+                Google plaatst uw motor op <strong className="text-zinc-900">MotoOccasion</strong>, <strong className="text-zinc-900">Marktplaats</strong> en in de zoekresultaten. 
+                Bereik miljoenen kopers zonder extra moeite!
+              </p>
+              <div className="space-y-3 mb-5">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  </div>
+                  <span className="text-zinc-700">Uw motor automatisch op Google, MotoOccasion & Marktplaats</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  </div>
+                  <span className="text-zinc-700">Social media post automatisch gegenereerd</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  </div>
+                  <span className="text-zinc-700">Eerste week <strong className="text-red-600">GRATIS</strong></span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-zinc-50 rounded-xl p-3 mb-5">
+                <span className="text-2xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Vanaf &euro;2,95</span>
+                <span className="text-xs text-zinc-500">per motor / week</span>
+              </div>
+              <div className="flex gap-3">
+                <Link to="/dealer/google-motors" className="flex-1" onClick={() => { setShowGooglePromo(false); localStorage.setItem('hideGoogleMotorPromo', 'true'); }}>
+                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02]" data-testid="google-promo-cta">
+                    <Rocket className="w-4 h-4 mr-2" /> Bekijk Google Motoren
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+              <button
+                onClick={() => { setShowGooglePromo(false); localStorage.setItem('hideGoogleMotorPromo', 'true'); }}
+                className="w-full text-center text-xs text-zinc-400 hover:text-zinc-600 mt-3 transition-colors"
+                data-testid="dismiss-google-promo"
+              >
+                Niet meer tonen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Terms and Conditions Modal */}
       <TermsModal 
         isOpen={showTermsModal} 
