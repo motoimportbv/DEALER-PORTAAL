@@ -8806,6 +8806,155 @@ async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(g
         raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     return {"status": "deleted"}
 
+# ==================== PUBLIC MOTORCYCLE PAGES (NO AUTH) ====================
+
+@api_router.get("/public/motors")
+async def get_public_motors(brand: str = None, min_price: float = None, max_price: float = None, sort_by: str = "newest"):
+    """Public endpoint: list all dealer + particulier motorcycles for SEO pages"""
+    motors = []
+    
+    # 1. Dealer/foreign dealer listed motorcycles
+    query = {"is_dealer_listing": True, "is_available": True, "is_paused": {"$ne": True}}
+    if brand:
+        query["brand"] = brand
+    dealer_motors = await db.motorcycles.find(query, {"_id": 0}).to_list(200)
+    for m in dealer_motors:
+        motors.append({
+            "id": m["id"],
+            "type": "dealer",
+            "brand": m.get("brand", ""),
+            "model": m.get("model", ""),
+            "year": m.get("year", 0),
+            "price": m.get("price", 0),
+            "mileage": m.get("mileage", 0),
+            "color": m.get("color", ""),
+            "description": m.get("description", ""),
+            "condition": m.get("condition", ""),
+            "images": m.get("images", [])[:3],
+            "seller_company": m.get("seller_company", ""),
+            "city": "",
+            "created_at": m.get("created_at", ""),
+        })
+    
+    # 2. Active paid private listings
+    now = datetime.now(timezone.utc).isoformat()
+    pquery = {"is_active": True, "is_paid": True, "expires_at": {"$gt": now}}
+    if brand:
+        pquery["brand"] = brand
+    private_motors = await db.private_listings.find(pquery, {"_id": 0}).to_list(200)
+    for p in private_motors:
+        motors.append({
+            "id": p["id"],
+            "type": "particulier",
+            "brand": p.get("brand", ""),
+            "model": p.get("model", ""),
+            "year": p.get("year", 0),
+            "price": p.get("price", 0),
+            "mileage": p.get("mileage", 0),
+            "color": p.get("color", ""),
+            "description": p.get("description", ""),
+            "condition": "",
+            "images": p.get("photos", [])[:3],
+            "seller_company": "",
+            "city": p.get("city", ""),
+            "created_at": p.get("created_at", ""),
+        })
+    
+    # Apply price filters
+    if min_price:
+        motors = [m for m in motors if (m.get("price") or 0) >= min_price]
+    if max_price:
+        motors = [m for m in motors if (m.get("price") or 0) <= max_price]
+    
+    # Sort
+    if sort_by == "price_low":
+        motors.sort(key=lambda x: x.get("price", 0))
+    elif sort_by == "price_high":
+        motors.sort(key=lambda x: x.get("price", 0), reverse=True)
+    else:
+        motors.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    return motors
+
+@api_router.get("/public/motors/{motor_id}")
+async def get_public_motor_detail(motor_id: str):
+    """Public endpoint: get single motorcycle detail (no contact info)"""
+    # Try dealer motorcycle first
+    m = await db.motorcycles.find_one({"id": motor_id, "is_dealer_listing": True}, {"_id": 0})
+    if m:
+        return {
+            "id": m["id"],
+            "type": "dealer",
+            "brand": m.get("brand", ""),
+            "model": m.get("model", ""),
+            "year": m.get("year", 0),
+            "price": m.get("price", 0),
+            "mileage": m.get("mileage", 0),
+            "color": m.get("color", ""),
+            "description": m.get("description", ""),
+            "condition": m.get("condition", ""),
+            "images": m.get("images", []),
+            "seller_company": m.get("seller_company", ""),
+            "city": "",
+            "created_at": m.get("created_at", ""),
+        }
+    
+    # Try private listing
+    p = await db.private_listings.find_one({"id": motor_id, "is_active": True, "is_paid": True}, {"_id": 0})
+    if p:
+        return {
+            "id": p["id"],
+            "type": "particulier",
+            "brand": p.get("brand", ""),
+            "model": p.get("model", ""),
+            "year": p.get("year", 0),
+            "price": p.get("price", 0),
+            "mileage": p.get("mileage", 0),
+            "color": p.get("color", ""),
+            "description": p.get("description", ""),
+            "condition": "",
+            "images": p.get("photos", []),
+            "seller_company": "",
+            "city": p.get("city", ""),
+            "created_at": p.get("created_at", ""),
+        }
+    
+    raise HTTPException(status_code=404, detail="Motor niet gevonden")
+
+@api_router.post("/public/motors/{motor_id}/contact")
+async def get_public_motor_contact(motor_id: str):
+    """Public endpoint: reveal contact info after user clicks 'Neem contact op'"""
+    # Try dealer motorcycle
+    m = await db.motorcycles.find_one({"id": motor_id, "is_dealer_listing": True}, {"_id": 0})
+    if m:
+        seller = await db.users.find_one({"id": m.get("seller_id")}, {"_id": 0, "company_name": 1, "email": 1, "phone": 1, "city": 1})
+        return {
+            "name": seller.get("company_name", "") if seller else m.get("seller_company", ""),
+            "email": seller.get("email", "") if seller else "",
+            "phone": seller.get("phone", "") if seller else "",
+            "city": seller.get("city", "") if seller else "",
+        }
+    
+    # Try private listing
+    p = await db.private_listings.find_one({"id": motor_id, "is_active": True, "is_paid": True}, {"_id": 0})
+    if p:
+        return {
+            "name": p.get("user_name", ""),
+            "email": p.get("user_email", ""),
+            "phone": p.get("user_phone", ""),
+            "city": p.get("city", ""),
+        }
+    
+    raise HTTPException(status_code=404, detail="Motor niet gevonden")
+
+@api_router.get("/public/motors/brands")
+async def get_public_brands():
+    """Public endpoint: get all available brands for filtering"""
+    dealer_brands = await db.motorcycles.distinct("brand", {"is_dealer_listing": True, "is_available": True})
+    private_brands = await db.private_listings.distinct("brand", {"is_active": True, "is_paid": True})
+    all_brands = sorted(set(dealer_brands + private_brands))
+    return all_brands
+
 # Include the router
 app.include_router(api_router)
 
