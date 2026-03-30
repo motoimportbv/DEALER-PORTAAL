@@ -40,7 +40,7 @@ load_dotenv(ROOT_DIR / '.env')
 
 # PRODUCTION URL - ALWAYS use this for customer-facing links
 # This ensures links work correctly regardless of environment variables
-PRODUCTION_BASE_URL = "https://www.motoimportbv.nl"
+PRODUCTION_BASE_URL = os.environ.get('BASE_URL', 'https://www.motoimportbv.nl')
 
 # Emergent Object Storage Configuration
 STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
