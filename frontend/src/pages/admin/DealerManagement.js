@@ -19,7 +19,8 @@ import {
   Trash2,
   Globe,
   WifiOff,
-  Wifi
+  Wifi,
+  KeyRound
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -61,6 +62,9 @@ const DealerManagement = () => {
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [editingDealer, setEditingDealer] = useState(null);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [resetPasswordDealer, setResetPasswordDealer] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     fetchDealers();
@@ -165,6 +169,26 @@ const DealerManagement = () => {
       fetchDealers();
     } catch (error) {
       toast.error('Kon telefoonnummer niet bijwerken');
+    }
+  };
+
+  const resetDealerPassword = async () => {
+    if (!resetPasswordDealer || !newPassword || newPassword.length < 6) {
+      toast.error('Wachtwoord moet minimaal 6 tekens zijn');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/dealers/${resetPasswordDealer.id}/reset-password`,
+        { new_password: newPassword },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      toast.success(`Wachtwoord gereset voor ${resetPasswordDealer.company_name}. De dealer ontvangt een email.`);
+      setResetPasswordDialogOpen(false);
+      setNewPassword('');
+      setResetPasswordDealer(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kon wachtwoord niet resetten');
     }
   };
 
@@ -340,6 +364,20 @@ const DealerManagement = () => {
             )}
 
             {/* Toggle offline/online */}
+            <Button
+              variant="outline"
+              className="w-full text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              onClick={() => {
+                setResetPasswordDealer(dealer);
+                setNewPassword('');
+                setResetPasswordDialogOpen(true);
+              }}
+              data-testid={`reset-password-btn-${dealer.id}`}
+            >
+              <KeyRound className="w-4 h-4 mr-2" />
+              Wachtwoord Resetten
+            </Button>
+
             <Button
               variant="outline"
               className={`w-full ${dealer.is_offline ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'}`}
@@ -619,6 +657,49 @@ const DealerManagement = () => {
                 onClick={updateDealerPhone}
               >
                 Opslaan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Password Reset Dialog */}
+        <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-amber-600" />
+                Wachtwoord Resetten
+              </DialogTitle>
+              <DialogDescription>
+                {resetPasswordDealer?.company_name} ({resetPasswordDealer?.email})
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <label className="text-sm font-medium text-zinc-700 block mb-2">
+                Nieuw wachtwoord
+              </label>
+              <Input
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimaal 6 tekens"
+                data-testid="new-password-input"
+              />
+              <p className="text-xs text-zinc-500 mt-2">
+                De dealer ontvangt een email met het nieuwe wachtwoord.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)}>
+                Annuleren
+              </Button>
+              <Button 
+                className="bg-amber-600 hover:bg-amber-700"
+                onClick={resetDealerPassword}
+                disabled={!newPassword || newPassword.length < 6}
+                data-testid="confirm-reset-password-btn"
+              >
+                Wachtwoord Resetten
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -5752,6 +5752,43 @@ async def get_dealers(user: dict = Depends(require_admin)):
     ).to_list(1000)
     return dealers
 
+@api_router.post("/dealers/{dealer_id}/reset-password")
+async def reset_dealer_password(dealer_id: str, body: dict = Body(...), user: dict = Depends(require_admin)):
+    """Admin: reset a dealer's password"""
+    new_password = body.get("new_password", "")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minimaal 6 tekens zijn")
+    
+    dealer = await db.users.find_one({"id": dealer_id})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    
+    hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    await db.users.update_one({"id": dealer_id}, {"$set": {"password_hash": hashed}})
+    
+    # Send email to dealer with new password
+    try:
+        html = f"""
+        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+            <div style="background:#dc2626;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;">Wachtwoord Gereset</h1>
+            </div>
+            <div style="padding:30px;background:white;border:1px solid #eee;">
+                <p>Uw wachtwoord voor Moto Import is gereset.</p>
+                <p><strong>Nieuw wachtwoord:</strong> {new_password}</p>
+                <p>U kunt hiermee inloggen op <a href="{PRODUCTION_BASE_URL}/login">{PRODUCTION_BASE_URL}/login</a></p>
+                <p style="margin-top:20px;color:#666;font-size:12px;">Wijzig uw wachtwoord na het inloggen.</p>
+            </div>
+        </div>
+        """
+        await send_email(dealer["email"], "Moto Import - Wachtwoord gereset", html)
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+    
+    return {"status": "ok", "message": f"Wachtwoord gereset voor {dealer['email']}"}
+
+
+
 @api_router.get("/dealers/pending")
 async def get_pending_dealers(user: dict = Depends(require_admin)):
     dealers = await db.users.find(
