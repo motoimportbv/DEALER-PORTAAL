@@ -19,6 +19,8 @@ const Pakbon = () => {
   const [hasPrinted, setHasPrinted] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [supplierPhone, setSupplierPhone] = useState('');
+  const [supplierAddress, setSupplierAddress] = useState('');
   const printRef = useRef();
 
   useEffect(() => {
@@ -161,7 +163,7 @@ const Pakbon = () => {
           {/* Content */}
           <div className="p-8">
             {/* Two Column Layout */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-2 gap-8 mb-4">
               {/* From */}
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">{t('pakbon.sender')}</h3>
@@ -189,6 +191,35 @@ const Pakbon = () => {
                       {t('order.pickup').toUpperCase()}
                     </p>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Leverancier Info - Editable */}
+            <div className="mb-8 border border-zinc-200 rounded-lg p-4 bg-zinc-50 print:bg-white print:border-zinc-300">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Leverancier</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-zinc-500 block mb-1">Telefoonnummer</label>
+                  <input
+                    type="text"
+                    value={supplierPhone}
+                    onChange={(e) => setSupplierPhone(e.target.value)}
+                    placeholder="Telefoonnummer leverancier"
+                    className="w-full border border-zinc-300 rounded px-3 py-2 text-sm focus:border-red-500 focus:outline-none print:border-none print:px-0 print:bg-transparent"
+                    data-testid="supplier-phone-input"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-500 block mb-1">Adres</label>
+                  <input
+                    type="text"
+                    value={supplierAddress}
+                    onChange={(e) => setSupplierAddress(e.target.value)}
+                    placeholder="Adres leverancier"
+                    className="w-full border border-zinc-300 rounded px-3 py-2 text-sm focus:border-red-500 focus:outline-none print:border-none print:px-0 print:bg-transparent"
+                    data-testid="supplier-address-input"
+                  />
                 </div>
               </div>
             </div>
