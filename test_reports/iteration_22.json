@@ -1,0 +1,70 @@
+{
+  "summary": "Comprehensive testing of BPM Vermindering (BPM Tax Reduction) module completed. All 13 backend tests passed (2 skipped due to dealer account not existing). All frontend features verified working: live BPM calculation, 3 methods comparison, schade aftrek, score selectors, CRUD operations, report viewing with print button.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: BPM calculation - netto_catalogusprijs 15500 gives bruto_bpm 2797 (15500*0.194-210)",
+    "Backend: Forfaitaire percentage for ~48 months is 57-62% range",
+    "Backend: Koerslijst method - consumentenprijs 18500, koerslijst_waarde 10000 = 45.95% afschrijving",
+    "Backend: Schade aftrek - herstelkosten 1000 * 0.31 = 310",
+    "Backend: Beste methode selection picks lowest BPM option",
+    "Backend: Low value BPM tarief (<=2133 -> 9.6%)",
+    "Backend: GET /api/taxatie-programma - list all taxaties (200)",
+    "Backend: GET /api/taxatie-programma/{id} - get single taxatie (200)",
+    "Backend: PUT /api/taxatie-programma/{id} - update with BPM recalculation (200)",
+    "Backend: POST /api/taxatie-programma/{id}/finalize - finalize taxatie (200)",
+    "Backend: DELETE /api/taxatie-programma/{id} - delete taxatie (200)",
+    "Backend: Unauthenticated blocked from /api/taxatie-programma (401/403)",
+    "Backend: GET /api/taxatie-programma/{nonexistent} returns 404",
+    "Frontend: BPM Vermindering page loads with correct title",
+    "Frontend: 'Nieuwe BPM Taxatie' button opens form with BPM calculation sections",
+    "Frontend: Live BPM calculation panel updates as values are typed",
+    "Frontend: AutoTelex and RDW external link buttons present and working",
+    "Frontend: Schade checkbox enables damage fields, shows 31% aftrek calculation",
+    "Frontend: Score selectors (1-5) work for all 10 inspection items",
+    "Frontend: Save taxatie creates new entry with 'Concept' status",
+    "Frontend: View BPM rapport shows full calculation with 3 methods comparison table",
+    "Frontend: Report has print button and proper BPM layout with handtekeningen section",
+    "Frontend: Edit existing taxatie, change values, save works",
+    "Frontend: Finalize taxatie (definitief maken) works",
+    "Frontend: Delete taxatie works",
+    "Frontend: Search/filter works by brand/model/kenteken/customer",
+    "Frontend: List shows 'BPM te betalen' and 'vermindering' amounts per entry",
+    "Frontend: Sidebar shows 'BPM Vermindering' label (only for motoimportbv@gmail.com)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_bpm_taxatie.py",
+    "/app/test_reports/pytest/pytest_bpm_taxatie.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BPM calculation functions correctly implement Dutch tax rules (9.6% for <=2133, 19.4%-210 for >2133)",
+    "Forfaitaire table implementation matches Belastingdienst specifications",
+    "Access control correctly restricts to motoimportbv@gmail.com only",
+    "Live BPM calculation in frontend mirrors backend logic accurately",
+    "Report layout includes all required sections: voertuiggegevens, BPM berekening, technische inspectie, handtekeningen"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bpm_taxatie.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 passed, 2 skipped - dealer account not found)",
+    "frontend": "100% - all features working correctly"
+  },
+  "test_credentials": {
+    "admin": "motoimportbv@gmail.com / Admin2024!",
+    "dealer_for_access_control": "zoektest@dealer.nl / Test2024! (account may not exist)"
+  },
+  "seed_data_creation": "Created and deleted TEST_Suzuki GSX-R1000 taxatie during testing. Existing BMW R1250GS taxatie preserved.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "BPM Vermindering module fully tested and working. Key BPM fields: netto_catalogusprijs, consumentenprijs, koerslijst_waarde, taxatie_inruil_waarde, first_registration_date (ISO format), has_damage, herstelkosten. Backend calculates: bruto_bpm, forfaitair_percentage, forfaitair_bpm, koerslijst_percentage, koerslijst_bpm, taxatie_percentage, taxatie_bpm, schade_aftrek, beste_methode, netto_bpm, bpm_vermindering. Test file at /app/backend/tests/test_bpm_taxatie.py.",
+  "rca_of_the_issue": null
+}

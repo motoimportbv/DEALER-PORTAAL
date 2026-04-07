@@ -6,11 +6,13 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import {
   ClipboardCheck, Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink,
-  ChevronDown, ChevronUp, Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail
+  Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
+  Calculator, TrendingDown, AlertTriangle, CheckCircle2, ArrowLeft, Shield
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const formatPrice = (p) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(p || 0);
+const fmtEur = (p) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(p || 0);
+const fmtPct = (p) => `${(p || 0).toFixed(1)}%`;
 
 const CONDITION_LABELS = { 1: 'Slecht', 2: 'Matig', 3: 'Redelijk', 4: 'Goed', 5: 'Uitstekend' };
 const CONDITION_COLORS = { 1: 'bg-red-500', 2: 'bg-orange-500', 3: 'bg-yellow-500', 4: 'bg-green-500', 5: 'bg-emerald-600' };
@@ -20,60 +22,167 @@ const INSPECTION_ITEMS = [
   { key: 'frame', label: 'Frame & Chassis', desc: 'Roest, scheuren, lassen, stuurkoplagering' },
   { key: 'paint', label: 'Lak & Optisch', desc: 'Lakschade, krassen, deuken, roest' },
   { key: 'tires', label: 'Banden', desc: 'Profieldiepte, slijtage, leeftijd, merk' },
-  { key: 'brakes', label: 'Remmen', desc: 'Remschijven, remblokken, remvloeistof, werking' },
+  { key: 'brakes', label: 'Remmen', desc: 'Remschijven, remblokken, remvloeistof' },
   { key: 'electrics', label: 'Elektra', desc: 'Verlichting, accu, dashboard, schakelaars' },
-  { key: 'exhaust', label: 'Uitlaat', desc: 'Roest, lekkage, geluidsniveau, bevestiging' },
-  { key: 'suspension', label: 'Vering & Demping', desc: 'Voorvork, achterdemper, lekkage, werking' },
-  { key: 'chain_drive', label: 'Ketting/Aandrijving', desc: 'Spanning, slijtage, tandwielen, smering' },
+  { key: 'exhaust', label: 'Uitlaat', desc: 'Roest, lekkage, geluidsniveau' },
+  { key: 'suspension', label: 'Vering & Demping', desc: 'Voorvork, achterdemper, lekkage' },
+  { key: 'chain_drive', label: 'Ketting/Aandrijving', desc: 'Spanning, slijtage, tandwielen' },
   { key: 'general', label: 'Algemene Staat', desc: 'Totaalindruk, netheid, completheid' },
 ];
 
 const EMPTY_FORM = {
   kenteken: '', brand: '', model: '', year: new Date().getFullYear(), mileage: 0, color: '',
-  vin_number: '', first_registration: '', fuel_type: 'Benzine', cylinder_capacity: '', power_kw: '',
-  customer_name: '', customer_phone: '', customer_email: '', customer_address: '',
+  vin_number: '', first_registration_date: '', fuel_type: 'Benzine', cylinder_capacity: '', power_kw: '',
+  netto_catalogusprijs: 0, consumentenprijs: 0,
+  koerslijst_waarde: 0, taxatie_inruil_waarde: 0,
+  has_damage: false, damage_description: '', herstelkosten: 0,
   score_engine: 3, score_frame: 3, score_paint: 3, score_tires: 3, score_brakes: 3,
   score_electrics: 3, score_exhaust: 3, score_suspension: 3, score_chain_drive: 3, score_general: 3,
   notes_engine: '', notes_frame: '', notes_paint: '', notes_tires: '', notes_brakes: '',
   notes_electrics: '', notes_general: '',
-  accessories: '', modifications: '', damage_description: '', has_damage: false,
-  service_history: '', last_service_date: '', apk_valid_until: '',
-  autotelex_value: 0, market_value: 0, replacement_value: 0, taxatie_value: 0,
+  customer_name: '', customer_phone: '', customer_email: '', customer_address: '',
   photos: [], notes: '',
 };
 
+/* ── Local BPM calculator (mirrors backend) ── */
+function calcForfaitairPct(months) {
+  if (months < 1) return 0;
+  if (months < 3) return 12 + (months - 1) * 4;
+  if (months < 5) return 20 + (months - 3) * 3.5;
+  if (months < 9) return 27 + (months - 5) * 1.5;
+  if (months < 18) return 33 + (months - 9) * 1.0;
+  if (months < 30) return 42 + (months - 18) * 0.75;
+  if (months < 42) return 51 + (months - 30) * 0.5;
+  if (months < 54) return 57 + (months - 42) * 0.42;
+  if (months < 66) return 62 + (months - 54) * 0.42;
+  if (months < 78) return 67 + (months - 66) * 0.42;
+  if (months < 90) return 72 + (months - 78) * 0.25;
+  if (months < 102) return 75 + (months - 90) * 0.25;
+  if (months < 114) return 78 + (months - 102) * 0.25;
+  return Math.min(81 + (months - 114) * 0.19, 100);
+}
+
+function calcBpmLocal(form) {
+  const cat = form.netto_catalogusprijs || 0;
+  const bruto = cat <= 0 ? 0 : cat <= 2133 ? cat * 0.096 : cat * 0.194 - 210;
+
+  let months = 0;
+  let forfPct = 0;
+  if (form.first_registration_date) {
+    const reg = new Date(form.first_registration_date);
+    const now = new Date();
+    months = (now.getFullYear() - reg.getFullYear()) * 12 + (now.getMonth() - reg.getMonth());
+    if (months < 0) months = 0;
+    forfPct = calcForfaitairPct(months);
+  }
+  const forfBpm = bruto * (1 - forfPct / 100);
+
+  const cons = form.consumentenprijs || 0;
+  const koers = form.koerslijst_waarde || 0;
+  let koersPct = 0;
+  if (cons > 0 && koers > 0) koersPct = Math.max(0, Math.min(((cons - koers) / cons) * 100, 100));
+  const koersBpm = bruto * (1 - koersPct / 100);
+
+  const taxVal = form.taxatie_inruil_waarde || 0;
+  let taxPct = 0;
+  if (cons > 0 && taxVal > 0) taxPct = Math.max(0, Math.min(((cons - taxVal) / cons) * 100, 100));
+  const taxBpm = bruto * (1 - taxPct / 100);
+
+  const schade = form.has_damage ? (form.herstelkosten || 0) * 0.31 : 0;
+
+  const opts = { forfaitair: forfBpm, koerslijst: koersPct > 0 ? koersBpm : 999999, taxatierapport: taxPct > 0 ? taxBpm : 999999 };
+  let best = 'forfaitair';
+  let lowest = opts.forfaitair;
+  for (const [k, v] of Object.entries(opts)) { if (v < lowest) { lowest = v; best = k; } }
+  if (lowest === 999999) { best = 'forfaitair'; lowest = forfBpm; }
+
+  const netto = Math.max(0, lowest - schade);
+  return {
+    bruto_bpm: bruto, months_age: months,
+    forfaitair_percentage: forfPct, forfaitair_bpm: forfBpm,
+    koerslijst_percentage: koersPct, koerslijst_bpm: koersBpm,
+    taxatie_percentage: taxPct, taxatie_bpm: taxBpm,
+    schade_aftrek: schade, beste_methode: best,
+    netto_bpm: netto, bpm_vermindering: bruto - netto,
+  };
+}
+
+/* ── Score selector ── */
 function ScoreSelector({ value, onChange, testId }) {
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map(s => (
-        <button
-          key={s}
-          type="button"
-          onClick={() => onChange(s)}
-          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
-            s <= value ? `${CONDITION_COLORS[s]} text-white` : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'
-          }`}
-          title={CONDITION_LABELS[s]}
-          data-testid={`${testId}-${s}`}
-        >
-          {s}
-        </button>
+        <button key={s} type="button" onClick={() => onChange(s)}
+          className={`w-7 h-7 rounded text-xs font-bold transition-all ${s <= value ? `${CONDITION_COLORS[s]} text-white` : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'}`}
+          title={CONDITION_LABELS[s]} data-testid={`${testId}-${s}`}>{s}</button>
       ))}
     </div>
   );
 }
 
-function TaxatieReport({ taxatie, onClose }) {
-  const handlePrint = () => window.print();
-  const avgScore = taxatie.average_score || 0;
+/* ── BPM Summary card (live calculation) ── */
+function BpmSummary({ form }) {
+  const bpm = calcBpmLocal(form);
+  if (!form.netto_catalogusprijs) return null;
+  const methodeLabels = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white overflow-auto print:relative" data-testid="taxatie-report">
-      <div className="print:hidden sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center justify-between">
-        <Button variant="ghost" onClick={onClose}><X className="w-4 h-4 mr-2" />Sluiten</Button>
-        <div className="flex gap-2">
-          <Button onClick={handlePrint} variant="outline"><Printer className="w-4 h-4 mr-2" />Printen</Button>
+    <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-6 text-white" data-testid="bpm-summary">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-4 flex items-center gap-2">
+        <Calculator className="w-4 h-4" />BPM Berekening (Live)
+      </h3>
+      <div className="grid sm:grid-cols-3 gap-4 mb-4">
+        <div className="bg-white/10 rounded-xl p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-zinc-400">Bruto BPM</p>
+          <p className="text-lg font-black">{fmtEur(bpm.bruto_bpm)}</p>
         </div>
+        <div className="bg-green-600/20 border border-green-500/30 rounded-xl p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-green-300">Vermindering</p>
+          <p className="text-lg font-black text-green-400">- {fmtEur(bpm.bpm_vermindering)}</p>
+        </div>
+        <div className="bg-red-600/20 border border-red-500/30 rounded-xl p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-red-300">Te betalen BPM</p>
+          <p className="text-xl font-black text-red-400">{fmtEur(bpm.netto_bpm)}</p>
+        </div>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-3 text-xs">
+        {[
+          { label: 'Forfaitair', pct: bpm.forfaitair_percentage, val: bpm.forfaitair_bpm, key: 'forfaitair' },
+          { label: 'Koerslijst', pct: bpm.koerslijst_percentage, val: bpm.koerslijst_bpm, key: 'koerslijst' },
+          { label: 'Taxatierapport', pct: bpm.taxatie_percentage, val: bpm.taxatie_bpm, key: 'taxatierapport' },
+        ].map(m => (
+          <div key={m.key} className={`rounded-lg p-2.5 ${bpm.beste_methode === m.key ? 'bg-green-600/30 border border-green-500/40' : 'bg-white/5'}`}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-zinc-400">{m.label}</span>
+              {bpm.beste_methode === m.key && <span className="text-[9px] bg-green-500 text-white px-1.5 py-0.5 rounded-full font-bold">VOORDELIGST</span>}
+            </div>
+            <p className="font-bold">{fmtPct(m.pct)} afschrijving</p>
+            <p className="text-zinc-400">BPM: {fmtEur(m.val)}</p>
+          </div>
+        ))}
+      </div>
+      {bpm.schade_aftrek > 0 && (
+        <div className="mt-3 bg-amber-600/20 border border-amber-500/30 rounded-lg p-2.5 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+          <span>Schade-aftrek (31% van herstelkosten): <strong className="text-amber-300">- {fmtEur(bpm.schade_aftrek)}</strong></span>
+        </div>
+      )}
+      <p className="text-[10px] text-zinc-500 mt-3">Voordeligste methode: <strong className="text-zinc-300">{methodeLabels[bpm.beste_methode]}</strong> | Leeftijd: {bpm.months_age} maanden</p>
+    </div>
+  );
+}
+
+/* ── Print / Report view ── */
+function BpmReport({ taxatie, onClose }) {
+  const handlePrint = () => window.print();
+  const avgScore = taxatie.average_score || 0;
+  const methodeLabels = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-white overflow-auto print:relative" data-testid="bpm-report">
+      <div className="print:hidden sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center justify-between">
+        <Button variant="ghost" onClick={onClose} data-testid="close-report-btn"><ArrowLeft className="w-4 h-4 mr-2" />Terug</Button>
+        <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen / PDF</Button>
       </div>
 
       <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
@@ -81,21 +190,16 @@ function TaxatieReport({ taxatie, onClose }) {
         <div className="bg-zinc-900 text-white p-8 rounded-t-xl print:rounded-none" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}>
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">TAXATIERAPPORT</h1>
-              <p className="text-zinc-400 mt-1">Motorfiets Waardebepaling</p>
-              <p className="text-zinc-500 text-sm mt-1">Moto Import B.V.</p>
+              <h1 className="text-3xl font-bold tracking-tight">BPM VERMINDERING</h1>
+              <p className="text-zinc-400 mt-1">Taxatierapport Motorfiets</p>
+              <p className="text-zinc-500 text-sm mt-1">Moto Import B.V. | KVK: 94622086</p>
             </div>
             <div className="text-right">
               <p className="font-mono text-lg">{taxatie.taxatie_nummer}</p>
               <p className="text-sm text-zinc-400 mt-1">
-                {new Date(taxatie.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {taxatie.created_at ? new Date(taxatie.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : '-'}
               </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                Geldig tot: {taxatie.valid_until ? new Date(taxatie.valid_until).toLocaleDateString('nl-NL') : '-'}
-              </p>
-              <span className={`inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full ${
-                taxatie.status === 'definitief' ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'
-              }`}>
+              <span className={`inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full ${taxatie.status === 'definitief' ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'}`}>
                 {taxatie.status === 'definitief' ? 'DEFINITIEF' : 'CONCEPT'}
               </span>
             </div>
@@ -103,30 +207,84 @@ function TaxatieReport({ taxatie, onClose }) {
         </div>
 
         <div className="border border-t-0 border-zinc-200 rounded-b-xl print:rounded-none p-8 space-y-8">
-          {/* Voertuiggegevens + Klant */}
+          {/* Voertuig + Klant */}
           <div className="grid grid-cols-2 gap-8">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Voertuiggegevens</h3>
               <div className="space-y-1.5 text-sm">
-                <p><span className="text-zinc-500 w-32 inline-block">Merk / Model:</span> <strong>{taxatie.brand} {taxatie.model}</strong></p>
-                <p><span className="text-zinc-500 w-32 inline-block">Bouwjaar:</span> {taxatie.year}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Kenteken:</span> {taxatie.kenteken || '-'}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Km-stand:</span> {(taxatie.mileage || 0).toLocaleString('nl-NL')} km</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Kleur:</span> {taxatie.color || '-'}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Chassisnr:</span> {taxatie.vin_number || '-'}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Brandstof:</span> {taxatie.fuel_type || '-'}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Cilinderinhoud:</span> {taxatie.cylinder_capacity || '-'}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">Vermogen:</span> {taxatie.power_kw || '-'}</p>
-                <p><span className="text-zinc-500 w-32 inline-block">APK tot:</span> {taxatie.apk_valid_until || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Merk / Model:</span> <strong>{taxatie.brand} {taxatie.model}</strong></p>
+                <p><span className="text-zinc-500 w-36 inline-block">Bouwjaar:</span> {taxatie.year}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Kenteken:</span> {taxatie.kenteken || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Km-stand:</span> {(taxatie.mileage || 0).toLocaleString('nl-NL')} km</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Kleur:</span> {taxatie.color || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Chassisnummer:</span> {taxatie.vin_number || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Eerste toelating:</span> {taxatie.first_registration_date ? new Date(taxatie.first_registration_date).toLocaleDateString('nl-NL') : '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Brandstof:</span> {taxatie.fuel_type || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Cilinderinhoud:</span> {taxatie.cylinder_capacity || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Vermogen:</span> {taxatie.power_kw || '-'}</p>
               </div>
             </div>
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Klantgegevens</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Klant / Eigenaar</h3>
               <div className="space-y-1.5 text-sm">
                 <p><span className="text-zinc-500 w-28 inline-block">Naam:</span> <strong>{taxatie.customer_name || '-'}</strong></p>
                 <p><span className="text-zinc-500 w-28 inline-block">Telefoon:</span> {taxatie.customer_phone || '-'}</p>
                 <p><span className="text-zinc-500 w-28 inline-block">Email:</span> {taxatie.customer_email || '-'}</p>
                 <p><span className="text-zinc-500 w-28 inline-block">Adres:</span> {taxatie.customer_address || '-'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* BPM Berekening */}
+          <div className="bg-zinc-50 rounded-xl p-6 border-2 border-zinc-300">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4 flex items-center gap-2">
+              <Calculator className="w-4 h-4" />BPM Berekening
+            </h3>
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <p><span className="text-zinc-500">Netto catalogusprijs:</span> <strong>{fmtEur(taxatie.netto_catalogusprijs)}</strong></p>
+              <p><span className="text-zinc-500">Consumentenprijs:</span> <strong>{fmtEur(taxatie.consumentenprijs)}</strong></p>
+              <p><span className="text-zinc-500">Bruto BPM:</span> <strong>{fmtEur(taxatie.bruto_bpm)}</strong></p>
+              <p><span className="text-zinc-500">Leeftijd:</span> <strong>{taxatie.months_age || 0} maanden</strong></p>
+            </div>
+
+            <table className="w-full text-sm border-collapse mb-4">
+              <thead>
+                <tr className="border-b-2 border-zinc-300">
+                  <th className="text-left py-2 text-xs font-bold uppercase text-zinc-500">Methode</th>
+                  <th className="text-center py-2 text-xs font-bold uppercase text-zinc-500">Afschrijving %</th>
+                  <th className="text-right py-2 text-xs font-bold uppercase text-zinc-500">BPM na afschrijving</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: 'Forfaitaire tabel', pct: taxatie.forfaitair_percentage, bpm: taxatie.forfaitair_bpm, key: 'forfaitair' },
+                  { label: 'Koerslijst', pct: taxatie.koerslijst_percentage, bpm: taxatie.koerslijst_bpm, key: 'koerslijst' },
+                  { label: 'Taxatierapport', pct: taxatie.taxatie_percentage, bpm: taxatie.taxatie_bpm, key: 'taxatierapport' },
+                ].map(m => (
+                  <tr key={m.key} className={`border-b ${taxatie.beste_methode === m.key ? 'bg-green-50 font-bold' : ''}`}>
+                    <td className="py-2">{m.label} {taxatie.beste_methode === m.key && <span className="text-xs text-green-600 ml-1">(voordeligst)</span>}</td>
+                    <td className="py-2 text-center">{fmtPct(m.pct)}</td>
+                    <td className="py-2 text-right">{fmtEur(m.bpm)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {(taxatie.schade_aftrek || 0) > 0 && (
+              <p className="text-sm mb-3"><span className="text-zinc-500">Schade-aftrek (31% van {fmtEur(taxatie.herstelkosten)}):</span> <strong className="text-green-700">- {fmtEur(taxatie.schade_aftrek)}</strong></p>
+            )}
+
+            <div className="border-t-2 border-zinc-400 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-lg font-bold">Netto BPM te betalen</span>
+                  <p className="text-xs text-zinc-500">Via: {methodeLabels[taxatie.beste_methode] || '-'}</p>
+                </div>
+                <span className="text-3xl font-black text-red-600">{fmtEur(taxatie.netto_bpm)}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2 text-sm">
+                <span className="text-green-700 font-bold">Totale BPM-vermindering</span>
+                <span className="text-green-700 font-bold text-lg">- {fmtEur(taxatie.bpm_vermindering)}</span>
               </div>
             </div>
           </div>
@@ -138,8 +296,8 @@ function TaxatieReport({ taxatie, onClose }) {
               <thead>
                 <tr className="border-b border-zinc-200">
                   <th className="text-left py-2 text-xs font-bold uppercase text-zinc-500">Onderdeel</th>
-                  <th className="text-center py-2 text-xs font-bold uppercase text-zinc-500 w-24">Score</th>
-                  <th className="text-center py-2 text-xs font-bold uppercase text-zinc-500 w-28">Beoordeling</th>
+                  <th className="text-center py-2 text-xs font-bold uppercase text-zinc-500 w-20">Score</th>
+                  <th className="text-center py-2 text-xs font-bold uppercase text-zinc-500 w-24">Beoordeling</th>
                   <th className="text-left py-2 text-xs font-bold uppercase text-zinc-500">Opmerkingen</th>
                 </tr>
               </thead>
@@ -150,9 +308,7 @@ function TaxatieReport({ taxatie, onClose }) {
                   return (
                     <tr key={item.key} className="border-b border-zinc-100">
                       <td className="py-2 font-medium">{item.label}</td>
-                      <td className="py-2 text-center">
-                        <span className={`inline-block w-7 h-7 rounded text-white text-xs font-bold leading-7 ${CONDITION_COLORS[score]}`}>{score}</span>
-                      </td>
+                      <td className="py-2 text-center"><span className={`inline-block w-6 h-6 rounded text-white text-xs font-bold leading-6 ${CONDITION_COLORS[score]}`}>{score}</span></td>
                       <td className="py-2 text-center text-xs">{CONDITION_LABELS[score]}</td>
                       <td className="py-2 text-zinc-600 text-xs">{notes || '-'}</td>
                     </tr>
@@ -161,45 +317,21 @@ function TaxatieReport({ taxatie, onClose }) {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-zinc-300">
-                  <td className="py-3 font-bold">Gemiddelde Score</td>
-                  <td className="py-3 text-center">
-                    <span className="text-lg font-black">{avgScore.toFixed(1)}</span>
-                  </td>
-                  <td className="py-3 text-center">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${
-                      avgScore >= 4.5 ? 'bg-emerald-600' : avgScore >= 3.5 ? 'bg-green-500' :
-                      avgScore >= 2.5 ? 'bg-yellow-500' : avgScore >= 1.5 ? 'bg-orange-500' : 'bg-red-500'
-                    }`}>{taxatie.condition_label}</span>
-                  </td>
+                  <td className="py-3 font-bold">Gemiddelde</td>
+                  <td className="py-3 text-center"><span className="text-lg font-black">{avgScore.toFixed(1)}</span></td>
+                  <td className="py-3 text-center"><span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white ${avgScore >= 4.5 ? 'bg-emerald-600' : avgScore >= 3.5 ? 'bg-green-500' : avgScore >= 2.5 ? 'bg-yellow-500' : avgScore >= 1.5 ? 'bg-orange-500' : 'bg-red-500'}`}>{taxatie.condition_label}</span></td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
-          {/* Schade & Accessoires */}
-          <div className="grid grid-cols-2 gap-8">
+          {/* Schade */}
+          {taxatie.has_damage && (
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Schade</h3>
-              <p className="text-sm">{taxatie.has_damage ? taxatie.damage_description || 'Ja, zie opmerkingen' : 'Geen schade geconstateerd'}</p>
-            </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Onderhoudshistorie</h3>
-              <p className="text-sm">{taxatie.service_history || '-'}</p>
-              {taxatie.last_service_date && <p className="text-xs text-zinc-500 mt-1">Laatste beurt: {taxatie.last_service_date}</p>}
-            </div>
-          </div>
-
-          {taxatie.accessories && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Accessoires</h3>
-              <p className="text-sm">{taxatie.accessories}</p>
-            </div>
-          )}
-          {taxatie.modifications && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Aanpassingen / Custom</h3>
-              <p className="text-sm">{taxatie.modifications}</p>
+              <p className="text-sm">{taxatie.damage_description || 'Ja, zie opmerkingen'}</p>
+              {taxatie.herstelkosten > 0 && <p className="text-sm mt-1">Geschatte herstelkosten: <strong>{fmtEur(taxatie.herstelkosten)}</strong></p>}
             </div>
           )}
 
@@ -208,32 +340,11 @@ function TaxatieReport({ taxatie, onClose }) {
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Foto's</h3>
               <div className="grid grid-cols-3 gap-3">
-                {taxatie.photos.map((p, i) => (
-                  <img key={i} src={p} alt={`Foto ${i+1}`} className="w-full h-40 object-cover rounded-lg border" />
-                ))}
+                {taxatie.photos.map((p, i) => <img key={i} src={p} alt={`Foto ${i + 1}`} className="w-full h-40 object-cover rounded-lg border" />)}
               </div>
             </div>
           )}
 
-          {/* Waardebepaling */}
-          <div className="bg-zinc-50 rounded-xl p-6 border border-zinc-200">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">Waardebepaling</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <p><span className="text-zinc-500">AutoTelex waarde:</span> <strong>{formatPrice(taxatie.autotelex_value)}</strong></p>
-              <p><span className="text-zinc-500">Marktwaarde:</span> <strong>{formatPrice(taxatie.market_value)}</strong></p>
-              <p><span className="text-zinc-500">Vervangingswaarde:</span> <strong>{formatPrice(taxatie.replacement_value)}</strong></p>
-            </div>
-            <div className="border-t border-zinc-300 pt-4">
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold">Taxatiewaarde</span>
-                <span className="text-3xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                  {formatPrice(taxatie.taxatie_value)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Opmerkingen */}
           {taxatie.notes && (
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Opmerkingen</h3>
@@ -241,7 +352,7 @@ function TaxatieReport({ taxatie, onClose }) {
             </div>
           )}
 
-          {/* Handtekening */}
+          {/* Handtekeningen */}
           <div className="grid grid-cols-2 gap-8 mt-8 pt-6 border-t">
             <div>
               <p className="text-xs font-bold uppercase text-zinc-500 mb-12">Handtekening Taxateur</p>
@@ -255,10 +366,9 @@ function TaxatieReport({ taxatie, onClose }) {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="text-center text-xs text-zinc-400 pt-6 border-t">
             <p>Moto Import B.V. | KVK: 94622086 | +31 6 24264861 | motoimportbv@gmail.com</p>
-            <p className="mt-1">Dit taxatierapport is 3 jaar geldig vanaf de datum van afgifte.</p>
+            <p className="mt-1">Dit taxatierapport dient als onderbouwing voor de BPM-aangifte bij de Belastingdienst.</p>
           </div>
         </div>
       </div>
@@ -268,11 +378,12 @@ function TaxatieReport({ taxatie, onClose }) {
   );
 }
 
+/* ══════ MAIN COMPONENT ══════ */
 export default function TaxatieProgramma() {
   const { token, user } = useAuth();
   const [taxaties, setTaxaties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('list'); // list, form, report
+  const [view, setView] = useState('list');
   const [editingId, setEditingId] = useState(null);
   const [selectedTaxatie, setSelectedTaxatie] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -280,21 +391,21 @@ export default function TaxatieProgramma() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [searchTerm, setSearchTerm] = useState('');
 
-  if (user?.email?.toLowerCase() !== 'motoimportbv@gmail.com') {
-    return <Layout><div className="flex items-center justify-center h-64 text-zinc-500">Geen toegang tot deze pagina.</div></Layout>;
-  }
-
+  const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
   const headers = { Authorization: `Bearer ${token}` };
 
   const fetchTaxaties = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/taxatie-programma`, { headers });
-      setTaxaties(res.data);
-    } catch (e) { console.error(e); }
+    if (!isAllowed) { setLoading(false); return; }
+    try { const res = await axios.get(`${API}/taxatie-programma`, { headers }); setTaxaties(res.data); }
+    catch (e) { console.error(e); }
     setLoading(false);
-  }, [token]);
+  }, [token, isAllowed]);
 
   useEffect(() => { fetchTaxaties(); }, [fetchTaxaties]);
+
+  if (!isAllowed) {
+    return <Layout><div className="flex items-center justify-center h-64 text-zinc-500">Geen toegang tot deze pagina.</div></Layout>;
+  }
 
   const updateField = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -305,8 +416,7 @@ export default function TaxatieProgramma() {
     const newPhotos = [...form.photos];
     for (const file of files) {
       try {
-        const fd = new FormData();
-        fd.append('file', file);
+        const fd = new FormData(); fd.append('file', file);
         const res = await axios.post(`${API}/upload`, fd, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } });
         newPhotos.push(res.data.url);
       } catch { toast.error(`Upload mislukt: ${file.name}`); }
@@ -321,43 +431,28 @@ export default function TaxatieProgramma() {
     try {
       if (editingId) {
         await axios.put(`${API}/taxatie-programma/${editingId}`, form, { headers });
-        toast.success('Taxatie bijgewerkt');
+        toast.success('BPM taxatie bijgewerkt');
       } else {
         await axios.post(`${API}/taxatie-programma`, form, { headers });
-        toast.success('Taxatie aangemaakt');
+        toast.success('BPM taxatie aangemaakt');
       }
-      setView('list');
-      setEditingId(null);
-      setForm({ ...EMPTY_FORM });
-      fetchTaxaties();
+      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); fetchTaxaties();
     } catch (e) { toast.error(e.response?.data?.detail || 'Fout bij opslaan'); }
     setSaving(false);
   };
 
-  const handleEdit = (t) => {
-    setForm({ ...EMPTY_FORM, ...t });
-    setEditingId(t.id);
-    setView('form');
-  };
+  const handleEdit = (t) => { setForm({ ...EMPTY_FORM, ...t }); setEditingId(t.id); setView('form'); };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Weet u zeker dat u deze taxatie wilt verwijderen?')) return;
-    try {
-      await axios.delete(`${API}/taxatie-programma/${id}`, { headers });
-      toast.success('Taxatie verwijderd');
-      fetchTaxaties();
-    } catch { toast.error('Fout bij verwijderen'); }
+    try { await axios.delete(`${API}/taxatie-programma/${id}`, { headers }); toast.success('Verwijderd'); fetchTaxaties(); }
+    catch { toast.error('Fout bij verwijderen'); }
   };
 
   const handleFinalize = async (id) => {
-    try {
-      await axios.post(`${API}/taxatie-programma/${id}/finalize`, {}, { headers });
-      toast.success('Taxatie definitief gemaakt');
-      fetchTaxaties();
-    } catch { toast.error('Fout bij definitief maken'); }
+    try { await axios.post(`${API}/taxatie-programma/${id}/finalize`, {}, { headers }); toast.success('Taxatie definitief gemaakt'); fetchTaxaties(); }
+    catch { toast.error('Fout bij definitief maken'); }
   };
-
-  const openAutoTelex = () => window.open('https://www.autotelex.nl', '_blank');
 
   const filtered = taxaties.filter(t => {
     if (!searchTerm) return true;
@@ -365,32 +460,38 @@ export default function TaxatieProgramma() {
     return `${t.brand} ${t.model} ${t.kenteken} ${t.customer_name}`.toLowerCase().includes(s);
   });
 
-  if (selectedTaxatie) {
-    return <TaxatieReport taxatie={selectedTaxatie} onClose={() => setSelectedTaxatie(null)} />;
-  }
+  if (selectedTaxatie) return <BpmReport taxatie={selectedTaxatie} onClose={() => setSelectedTaxatie(null)} />;
 
   if (loading) return <Layout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin" /></div></Layout>;
 
-  // === FORM VIEW ===
+  /* ══ FORM VIEW ══ */
   if (view === 'form') {
+    const bpm = calcBpmLocal(form);
     return (
       <Layout>
-        <div className="space-y-6" data-testid="taxatie-form">
-          <div className="flex items-center justify-between">
+        <div className="space-y-6" data-testid="bpm-taxatie-form">
+          {/* Header */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <ClipboardCheck className="w-7 h-7 text-red-600" />
-              {editingId ? 'Taxatie Bewerken' : 'Nieuwe Taxatie'}
+              <Shield className="w-7 h-7 text-red-600" />
+              {editingId ? 'BPM Taxatie Bewerken' : 'Nieuwe BPM Taxatie'}
             </h1>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); }}>Annuleren</Button>
-              <Button onClick={openAutoTelex} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-btn">
-                <ExternalLink className="w-4 h-4 mr-2" />AutoTelex.nl
+              <Button variant="outline" onClick={() => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); }} data-testid="cancel-btn">Annuleren</Button>
+              <Button onClick={() => window.open('https://www.autotelex.nl', '_blank')} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-btn">
+                <ExternalLink className="w-4 h-4 mr-2" />AutoTelex
               </Button>
-              <Button onClick={handleSave} disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" data-testid="save-taxatie-btn">
+              <Button onClick={() => window.open('https://ovi.rdw.nl/', '_blank')} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50" data-testid="rdw-btn">
+                <ExternalLink className="w-4 h-4 mr-2" />RDW
+              </Button>
+              <Button onClick={handleSave} disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" data-testid="save-bpm-btn">
                 {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Opslaan
               </Button>
             </div>
           </div>
+
+          {/* Live BPM Summary */}
+          <BpmSummary form={form} />
 
           {/* Voertuiggegevens */}
           <div className="bg-white rounded-2xl border p-6">
@@ -403,34 +504,121 @@ export default function TaxatieProgramma() {
                 { k: 'year', l: 'Bouwjaar', p: '2023', t: 'number' },
                 { k: 'mileage', l: 'Km-stand', p: '25000', t: 'number' },
                 { k: 'color', l: 'Kleur', p: 'Zwart' },
-                { k: 'vin_number', l: 'Chassisnummer', p: 'WB10...' },
-                { k: 'first_registration', l: 'Eerste toelating', p: '01-01-2023' },
+                { k: 'vin_number', l: 'Chassisnummer (VIN)', p: 'WB10...' },
                 { k: 'fuel_type', l: 'Brandstof', p: 'Benzine' },
                 { k: 'cylinder_capacity', l: 'Cilinderinhoud', p: '1254 cc' },
                 { k: 'power_kw', l: 'Vermogen', p: '100 kW / 136 pk' },
-                { k: 'apk_valid_until', l: 'APK geldig tot', p: '01-01-2026' },
               ].map(f => (
                 <div key={f.k}>
                   <label className="text-xs font-bold text-zinc-600 block mb-1">{f.l}</label>
-                  <input type={f.t || 'text'} value={form[f.k]} onChange={e => updateField(f.k, f.t === 'number' ? Number(e.target.value) : e.target.value)} placeholder={f.p} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid={`field-${f.k}`} />
+                  <input type={f.t || 'text'} value={form[f.k]} onChange={e => updateField(f.k, f.t === 'number' ? Number(e.target.value) : e.target.value)}
+                    placeholder={f.p} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid={`field-${f.k}`} />
                 </div>
               ))}
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Datum eerste toelating</label>
+                <input type="date" value={form.first_registration_date} onChange={e => updateField('first_registration_date', e.target.value)}
+                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-first_registration_date" />
+              </div>
+            </div>
+          </div>
+
+          {/* BPM Gegevens */}
+          <div className="bg-white rounded-2xl border-2 border-red-200 p-6">
+            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-red-700"><Calculator className="w-5 h-5" />BPM Berekening</h2>
+            <p className="text-xs text-zinc-500 mb-4">Vul de prijzen in om de BPM-vermindering te berekenen. De voordeligste methode wordt automatisch gekozen.</p>
+
+            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Netto catalogusprijs (excl. BPM) *</label>
+                <input type="number" value={form.netto_catalogusprijs || ''} onChange={e => updateField('netto_catalogusprijs', Number(e.target.value))}
+                  placeholder="0" className="w-full border-2 border-red-300 rounded-lg px-3 py-2 text-sm font-bold focus:border-red-500 focus:outline-none bg-red-50" data-testid="field-netto_catalogusprijs" />
+                <p className="text-[10px] text-zinc-400 mt-1">Bruto BPM: {fmtEur(bpm.bruto_bpm)}</p>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Consumentenprijs (incl. BPM)</label>
+                <input type="number" value={form.consumentenprijs || ''} onChange={e => updateField('consumentenprijs', Number(e.target.value))}
+                  placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-consumentenprijs" />
+                <p className="text-[10px] text-zinc-400 mt-1">Nodig voor koerslijst/taxatie methode</p>
+              </div>
+            </div>
+
+            <div className="bg-zinc-50 rounded-xl p-4 mb-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 1: Forfaitaire Tabel (automatisch)</h3>
+              <div className="flex items-center gap-4 text-sm">
+                <p>Leeftijd: <strong>{bpm.months_age} maanden</strong></p>
+                <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.forfaitair_percentage)}</strong></p>
+                <p>BPM: <strong>{fmtEur(bpm.forfaitair_bpm)}</strong></p>
+              </div>
+            </div>
+
+            <div className="bg-zinc-50 rounded-xl p-4 mb-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 2: Koerslijst</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-zinc-600 block mb-1">Koerslijstwaarde</label>
+                  <input type="number" value={form.koerslijst_waarde || ''} onChange={e => updateField('koerslijst_waarde', Number(e.target.value))}
+                    placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-koerslijst_waarde" />
+                </div>
+                <div className="flex items-end text-sm pb-2">
+                  {bpm.koerslijst_percentage > 0 && <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.koerslijst_percentage)}</strong> | BPM: <strong>{fmtEur(bpm.koerslijst_bpm)}</strong></p>}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-zinc-50 rounded-xl p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 3: Taxatierapport</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-zinc-600 block mb-1">Getaxeerde (inruil)waarde</label>
+                  <input type="number" value={form.taxatie_inruil_waarde || ''} onChange={e => updateField('taxatie_inruil_waarde', Number(e.target.value))}
+                    placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-taxatie_inruil_waarde" />
+                </div>
+                <div className="flex items-end text-sm pb-2">
+                  {bpm.taxatie_percentage > 0 && <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.taxatie_percentage)}</strong> | BPM: <strong>{fmtEur(bpm.taxatie_bpm)}</strong></p>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Schade */}
+          <div className="bg-white rounded-2xl border p-6">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" />Schade (extra BPM-aftrek)</h2>
+            <p className="text-xs text-zinc-500 mb-3">31% van de geschatte herstelkosten wordt afgetrokken van de BPM (Belastingdienst norm)</p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <input type="checkbox" checked={form.has_damage} onChange={e => updateField('has_damage', e.target.checked)} className="w-4 h-4 accent-red-600" data-testid="has-damage-checkbox" />
+                <label className="text-sm font-bold">Schade geconstateerd</label>
+              </div>
+              {form.has_damage && (
+                <>
+                  <textarea value={form.damage_description} onChange={e => updateField('damage_description', e.target.value)}
+                    placeholder="Beschrijf de schade in detail..." rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="damage-description" />
+                  <div>
+                    <label className="text-xs font-bold text-zinc-600 block mb-1">Geschatte herstelkosten</label>
+                    <input type="number" value={form.herstelkosten || ''} onChange={e => updateField('herstelkosten', Number(e.target.value))}
+                      placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-herstelkosten" />
+                    {form.herstelkosten > 0 && <p className="text-xs text-green-600 mt-1 font-bold">BPM-aftrek: - {fmtEur(form.herstelkosten * 0.31)} (31%)</p>}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
           {/* Klantgegevens */}
           <div className="bg-white rounded-2xl border p-6">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-red-600" />Klantgegevens</h2>
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-red-600" />Klant / Eigenaar</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {[
-                { k: 'customer_name', l: 'Naam', p: 'Jan Jansen', icon: User },
-                { k: 'customer_phone', l: 'Telefoon', p: '+31612345678', icon: Phone },
-                { k: 'customer_email', l: 'Email', p: 'jan@email.nl', icon: Mail },
-                { k: 'customer_address', l: 'Adres', p: 'Straatnaam 1, 1234AB Stad', icon: MapPin },
+                { k: 'customer_name', l: 'Naam', p: 'Jan Jansen' },
+                { k: 'customer_phone', l: 'Telefoon', p: '+31612345678' },
+                { k: 'customer_email', l: 'Email', p: 'jan@email.nl' },
+                { k: 'customer_address', l: 'Adres', p: 'Straatnaam 1, 1234AB Stad' },
               ].map(f => (
                 <div key={f.k}>
                   <label className="text-xs font-bold text-zinc-600 block mb-1">{f.l}</label>
-                  <input type="text" value={form[f.k]} onChange={e => updateField(f.k, e.target.value)} placeholder={f.p} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid={`field-${f.k}`} />
+                  <input type="text" value={form[f.k]} onChange={e => updateField(f.k, e.target.value)} placeholder={f.p}
+                    className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid={`field-${f.k}`} />
                 </div>
               ))}
             </div>
@@ -439,8 +627,8 @@ export default function TaxatieProgramma() {
           {/* Technische Inspectie */}
           <div className="bg-white rounded-2xl border p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-red-600" />Technische Inspectie</h2>
-            <p className="text-xs text-zinc-500 mb-4">Beoordeel elk onderdeel van 1 (slecht) tot 5 (uitstekend)</p>
-            <div className="space-y-4">
+            <p className="text-xs text-zinc-500 mb-4">Beoordeel elk onderdeel van 1 (slecht) tot 5 (uitstekend). Dit onderbouwt de taxatiewaarde.</p>
+            <div className="space-y-3">
               {INSPECTION_ITEMS.map(item => (
                 <div key={item.key} className="flex items-start gap-4 p-3 rounded-lg bg-zinc-50">
                   <div className="flex-1 min-w-0">
@@ -449,49 +637,11 @@ export default function TaxatieProgramma() {
                   </div>
                   <ScoreSelector value={form[`score_${item.key}`]} onChange={v => updateField(`score_${item.key}`, v)} testId={`score-${item.key}`} />
                   {['engine', 'frame', 'paint', 'tires', 'brakes', 'electrics', 'general'].includes(item.key) && (
-                    <input type="text" value={form[`notes_${item.key}`] || ''} onChange={e => updateField(`notes_${item.key}`, e.target.value)} placeholder="Opmerking..." className="w-48 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs focus:border-red-500 focus:outline-none" />
+                    <input type="text" value={form[`notes_${item.key}`] || ''} onChange={e => updateField(`notes_${item.key}`, e.target.value)}
+                      placeholder="Opmerking..." className="w-48 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs focus:border-red-500 focus:outline-none" />
                   )}
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Schade & Onderhoud */}
-          <div className="bg-white rounded-2xl border p-6">
-            <h2 className="text-lg font-bold mb-4">Schade & Onderhoud</h2>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <input type="checkbox" checked={form.has_damage} onChange={e => updateField('has_damage', e.target.checked)} className="w-4 h-4 accent-red-600" data-testid="has-damage-checkbox" />
-                <label className="text-sm font-bold">Schade geconstateerd</label>
-              </div>
-              {form.has_damage && (
-                <textarea value={form.damage_description} onChange={e => updateField('damage_description', e.target.value)} placeholder="Beschrijf de schade..." rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="damage-description" />
-              )}
-              <div>
-                <label className="text-xs font-bold text-zinc-600 block mb-1">Onderhoudshistorie</label>
-                <textarea value={form.service_history} onChange={e => updateField('service_history', e.target.value)} placeholder="Onderhoud bij dealer, zelf onderhouden, etc." rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="service-history" />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-zinc-600 block mb-1">Laatste beurt</label>
-                  <input type="text" value={form.last_service_date} onChange={e => updateField('last_service_date', e.target.value)} placeholder="01-01-2025" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Accessoires */}
-          <div className="bg-white rounded-2xl border p-6">
-            <h2 className="text-lg font-bold mb-4">Accessoires & Aanpassingen</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-zinc-600 block mb-1">Accessoires</label>
-                <textarea value={form.accessories} onChange={e => updateField('accessories', e.target.value)} placeholder="Koffers, navigatie, windscherm, etc." rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="accessories" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-600 block mb-1">Aanpassingen / Custom</label>
-                <textarea value={form.modifications} onChange={e => updateField('modifications', e.target.value)} placeholder="Uitlaat, tuning, custom lak, etc." rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="modifications" />
-              </div>
             </div>
           </div>
 
@@ -502,7 +652,8 @@ export default function TaxatieProgramma() {
               {form.photos.map((p, i) => (
                 <div key={i} className="relative w-28 h-28 rounded-lg overflow-hidden border group">
                   <img src={p} alt="" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))} className="absolute top-1 right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}
+                    className="absolute top-1 right-1 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
                 </div>
               ))}
               <label className="w-28 h-28 rounded-lg border-2 border-dashed border-zinc-300 flex flex-col items-center justify-center cursor-pointer hover:border-red-400 transition-colors" data-testid="photo-upload">
@@ -512,37 +663,17 @@ export default function TaxatieProgramma() {
             </div>
           </div>
 
-          {/* Waardebepaling */}
-          <div className="bg-white rounded-2xl border-2 border-red-200 p-6">
-            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-red-700">Waardebepaling</h2>
-            <p className="text-xs text-zinc-500 mb-4">Bekijk de afschrijving op <button onClick={openAutoTelex} className="text-blue-600 font-bold hover:underline">AutoTelex.nl</button> en vul de waardes in</p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                { k: 'autotelex_value', l: 'AutoTelex waarde' },
-                { k: 'market_value', l: 'Marktwaarde vergelijkbaar' },
-                { k: 'replacement_value', l: 'Vervangingswaarde' },
-              ].map(f => (
-                <div key={f.k}>
-                  <label className="text-xs font-bold text-zinc-600 block mb-1">{f.l}</label>
-                  <input type="number" value={form[f.k]} onChange={e => updateField(f.k, Number(e.target.value))} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid={`field-${f.k}`} />
-                </div>
-              ))}
-              <div>
-                <label className="text-xs font-bold text-red-700 block mb-1">Taxatiewaarde (definitief)</label>
-                <input type="number" value={form.taxatie_value} onChange={e => updateField('taxatie_value', Number(e.target.value))} className="w-full border-2 border-red-300 rounded-lg px-3 py-2 text-sm font-bold text-red-700 focus:border-red-500 focus:outline-none bg-red-50" data-testid="field-taxatie_value" />
-              </div>
-            </div>
-          </div>
-
           {/* Opmerkingen */}
           <div className="bg-white rounded-2xl border p-6">
             <h2 className="text-lg font-bold mb-4">Opmerkingen</h2>
-            <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} placeholder="Overige opmerkingen..." rows={3} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="notes" />
+            <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} placeholder="Overige opmerkingen..." rows={3}
+              className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="notes" />
           </div>
 
+          {/* Save bar */}
           <div className="flex justify-end gap-3 pb-8">
             <Button variant="outline" onClick={() => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); }}>Annuleren</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" data-testid="save-taxatie-btn-bottom">
+            <Button onClick={handleSave} disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" data-testid="save-bpm-btn-bottom">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Opslaan
             </Button>
           </div>
@@ -551,32 +682,36 @@ export default function TaxatieProgramma() {
     );
   }
 
-  // === LIST VIEW ===
+  /* ══ LIST VIEW ══ */
   return (
     <Layout>
-      <div className="space-y-6" data-testid="taxatie-programma">
+      <div className="space-y-6" data-testid="bpm-taxatie-programma">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <ClipboardCheck className="w-7 h-7 text-red-600" />
-              Taxatie Programma
+              <Shield className="w-7 h-7 text-red-600" />
+              BPM Vermindering
             </h1>
-            <p className="text-zinc-500 mt-1">Motorfiets waardebepaling & taxatierapporten</p>
+            <p className="text-zinc-500 mt-1">Taxatieprogramma voor motorfiets BPM-berekening</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={openAutoTelex} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-list-btn">
-              <ExternalLink className="w-4 h-4 mr-2" />AutoTelex.nl
+            <Button onClick={() => window.open('https://www.autotelex.nl', '_blank')} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-list-btn">
+              <ExternalLink className="w-4 h-4 mr-2" />AutoTelex
             </Button>
-            <Button onClick={() => { setForm({ ...EMPTY_FORM }); setEditingId(null); setView('form'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="new-taxatie-btn">
-              <Plus className="w-4 h-4 mr-2" />Nieuwe Taxatie
+            <Button onClick={() => window.open('https://ovi.rdw.nl/', '_blank')} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50">
+              <ExternalLink className="w-4 h-4 mr-2" />RDW
+            </Button>
+            <Button onClick={() => { setForm({ ...EMPTY_FORM }); setEditingId(null); setView('form'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="new-bpm-taxatie-btn">
+              <Plus className="w-4 h-4 mr-2" />Nieuwe BPM Taxatie
             </Button>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Zoeken */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Zoek op merk, model, kenteken of klant..." className="w-full pl-10 pr-4 py-3 border border-zinc-300 rounded-xl text-sm focus:border-red-500 focus:outline-none" data-testid="search-taxatie" />
+          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Zoek op merk, model, kenteken of klant..."
+            className="w-full pl-10 pr-4 py-3 border border-zinc-300 rounded-xl text-sm focus:border-red-500 focus:outline-none" data-testid="search-bpm-taxatie" />
         </div>
 
         {/* Stats */}
@@ -595,11 +730,12 @@ export default function TaxatieProgramma() {
           </div>
         </div>
 
-        {/* List */}
+        {/* Lijst */}
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border p-10 text-center text-zinc-400">
-            <ClipboardCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Geen taxaties gevonden</p>
+            <Shield className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Geen BPM taxaties gevonden</p>
+            <p className="text-xs mt-1">Maak een nieuwe BPM taxatie aan om te starten</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -610,18 +746,19 @@ export default function TaxatieProgramma() {
                     {t.photos?.[0] ? <img src={t.photos[0]} alt="" className="w-full h-full object-cover rounded-xl" /> : <Bike className="w-8 h-8 text-zinc-300" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold text-lg">{t.brand} {t.model} ({t.year})</h3>
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === 'definitief' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                         {t.status === 'definitief' ? 'Definitief' : 'Concept'}
                       </span>
                     </div>
                     <p className="text-sm text-zinc-500">{t.kenteken && `${t.kenteken} · `}{t.customer_name || 'Geen klant'} · {(t.mileage || 0).toLocaleString('nl-NL')} km</p>
-                    <p className="text-sm text-zinc-400">{t.taxatie_nummer} · Score: <strong>{t.average_score?.toFixed(1)}</strong> ({t.condition_label})</p>
+                    <p className="text-xs text-zinc-400">{t.taxatie_nummer}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{formatPrice(t.taxatie_value)}</p>
-                    <p className="text-xs text-zinc-400">{new Date(t.created_at).toLocaleDateString('nl-NL')}</p>
+                    <p className="text-xs text-zinc-400">BPM te betalen</p>
+                    <p className="text-xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(t.netto_bpm)}</p>
+                    <p className="text-xs text-green-600 font-bold">- {fmtEur(t.bpm_vermindering)} vermindering</p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button onClick={() => setSelectedTaxatie(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Rapport bekijken" data-testid={`view-${t.id}`}><Eye className="w-4 h-4" /></button>

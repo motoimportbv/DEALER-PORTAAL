@@ -99,7 +99,7 @@ const Sidebar = () => {
     ...(user?.email?.toLowerCase() === 'motoimportbv@gmail.com' ? [
       { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
       { path: '/admin/google-motors', icon: Globe, label: 'Google Motoren' },
-      { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'Taxatie Programma' },
+      { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
     ] : []),
   ];
 

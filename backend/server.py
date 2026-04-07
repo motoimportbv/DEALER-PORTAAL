@@ -9260,7 +9260,118 @@ async def express_interest_public_motor(motor_id: str, body: dict = Body(...)):
 
 
 
-# ============ TAXATIE PROGRAMMA (MOTORFIETS WAARDEBEPALING) ============
+# ============ BPM VERMINDERING TAXATIE (MOTORFIETSEN) ============
+
+def calculate_forfaitair_percentage(months: int) -> float:
+    """Forfaitaire afschrijvingstabel Belastingdienst voor motorfietsen"""
+    if months < 1:
+        return 0.0
+    elif months < 3:
+        return 12.0 + (months - 1) * 4.0
+    elif months < 5:
+        return 20.0 + (months - 3) * 3.5
+    elif months < 9:
+        return 27.0 + (months - 5) * 1.5
+    elif months < 18:
+        return 33.0 + (months - 9) * 1.0
+    elif months < 30:
+        return 42.0 + (months - 18) * 0.75
+    elif months < 42:
+        return 51.0 + (months - 30) * 0.5
+    elif months < 54:
+        return 57.0 + (months - 42) * 0.42
+    elif months < 66:
+        return 62.0 + (months - 54) * 0.42
+    elif months < 78:
+        return 67.0 + (months - 66) * 0.42
+    elif months < 90:
+        return 72.0 + (months - 78) * 0.25
+    elif months < 102:
+        return 75.0 + (months - 90) * 0.25
+    elif months < 114:
+        return 78.0 + (months - 102) * 0.25
+    else:
+        return min(81.0 + (months - 114) * 0.19, 100.0)
+
+def calculate_bruto_bpm(netto_catalogusprijs: float) -> float:
+    """BPM tarief motorfiets (2025/2026)"""
+    if netto_catalogusprijs <= 0:
+        return 0.0
+    if netto_catalogusprijs <= 2133:
+        return round(netto_catalogusprijs * 0.096, 2)
+    return round(netto_catalogusprijs * 0.194 - 210, 2)
+
+def calculate_bpm_result(data_dict: dict) -> dict:
+    """Calculate all BPM values from form data"""
+    netto_cat = data_dict.get("netto_catalogusprijs", 0) or 0
+    bruto_bpm = calculate_bruto_bpm(netto_cat)
+
+    # Forfaitair
+    first_reg = data_dict.get("first_registration_date", "")
+    forfaitair_pct = 0.0
+    months_age = 0
+    if first_reg:
+        try:
+            reg_date = datetime.fromisoformat(first_reg)
+            now = datetime.now(timezone.utc)
+            months_age = (now.year - reg_date.year) * 12 + (now.month - reg_date.month)
+            if months_age < 0:
+                months_age = 0
+            forfaitair_pct = calculate_forfaitair_percentage(months_age)
+        except Exception:
+            pass
+    forfaitair_bpm = round(bruto_bpm * (1 - forfaitair_pct / 100), 2)
+
+    # Koerslijst
+    koerslijst_waarde = data_dict.get("koerslijst_waarde", 0) or 0
+    consumentenprijs = data_dict.get("consumentenprijs", 0) or 0
+    koerslijst_pct = 0.0
+    if consumentenprijs > 0 and koerslijst_waarde > 0:
+        koerslijst_pct = round(((consumentenprijs - koerslijst_waarde) / consumentenprijs) * 100, 2)
+        koerslijst_pct = max(0, min(koerslijst_pct, 100))
+    koerslijst_bpm = round(bruto_bpm * (1 - koerslijst_pct / 100), 2)
+
+    # Taxatierapport
+    taxatie_waarde = data_dict.get("taxatie_inruil_waarde", 0) or 0
+    taxatie_pct = 0.0
+    if consumentenprijs > 0 and taxatie_waarde > 0:
+        taxatie_pct = round(((consumentenprijs - taxatie_waarde) / consumentenprijs) * 100, 2)
+        taxatie_pct = max(0, min(taxatie_pct, 100))
+    taxatie_bpm = round(bruto_bpm * (1 - taxatie_pct / 100), 2)
+
+    # Schade aftrek (31% van herstelkosten)
+    herstelkosten = data_dict.get("herstelkosten", 0) or 0
+    schade_aftrek = round(herstelkosten * 0.31, 2) if data_dict.get("has_damage") else 0
+
+    # Determine best method
+    options = {
+        "forfaitair": forfaitair_bpm,
+        "koerslijst": koerslijst_bpm if koerslijst_pct > 0 else 999999,
+        "taxatierapport": taxatie_bpm if taxatie_pct > 0 else 999999,
+    }
+    beste_methode = min(options, key=options.get)
+    laagste_bpm = options[beste_methode]
+    if laagste_bpm == 999999:
+        beste_methode = "forfaitair"
+        laagste_bpm = forfaitair_bpm
+
+    netto_bpm = max(0, round(laagste_bpm - schade_aftrek, 2))
+    bpm_vermindering = round(bruto_bpm - netto_bpm, 2)
+
+    return {
+        "bruto_bpm": bruto_bpm,
+        "months_age": months_age,
+        "forfaitair_percentage": round(forfaitair_pct, 2),
+        "forfaitair_bpm": forfaitair_bpm,
+        "koerslijst_percentage": round(koerslijst_pct, 2),
+        "koerslijst_bpm": koerslijst_bpm,
+        "taxatie_percentage": round(taxatie_pct, 2),
+        "taxatie_bpm": taxatie_bpm,
+        "schade_aftrek": schade_aftrek,
+        "beste_methode": beste_methode,
+        "netto_bpm": netto_bpm,
+        "bpm_vermindering": bpm_vermindering,
+    }
 
 class TaxatieCreate(BaseModel):
     # Voertuiggegevens
@@ -9270,17 +9381,22 @@ class TaxatieCreate(BaseModel):
     year: int = 0
     mileage: int = 0
     color: str = ""
-    vin_number: str = ""  # chassisnummer
-    first_registration: str = ""  # datum eerste toelating
+    vin_number: str = ""
+    first_registration_date: str = ""
     fuel_type: str = "Benzine"
-    cylinder_capacity: str = ""  # cilinderinhoud
-    power_kw: str = ""  # vermogen
-    # Eigenaar / klant
-    customer_name: str = ""
-    customer_phone: str = ""
-    customer_email: str = ""
-    customer_address: str = ""
-    # Technische inspectie scores (1-5: 1=slecht, 5=uitstekend)
+    cylinder_capacity: str = ""
+    power_kw: str = ""
+    # BPM Berekening
+    netto_catalogusprijs: float = 0
+    consumentenprijs: float = 0
+    # Afschrijving methoden
+    koerslijst_waarde: float = 0
+    taxatie_inruil_waarde: float = 0
+    # Schade
+    has_damage: bool = False
+    damage_description: str = ""
+    herstelkosten: float = 0
+    # Technische inspectie scores (1-5)
     score_engine: int = 3
     score_frame: int = 3
     score_paint: int = 3
@@ -9299,60 +9415,48 @@ class TaxatieCreate(BaseModel):
     notes_brakes: str = ""
     notes_electrics: str = ""
     notes_general: str = ""
-    # Accessoires & aanpassingen
-    accessories: str = ""
-    modifications: str = ""
-    # Schade
-    damage_description: str = ""
-    has_damage: bool = False
-    # Onderhoud
-    service_history: str = ""
-    last_service_date: str = ""
-    apk_valid_until: str = ""
-    # Waardebepaling
-    autotelex_value: float = 0  # waarde via AutoTelex
-    market_value: float = 0  # marktwaarde vergelijkbare motoren
-    replacement_value: float = 0  # vervangingswaarde
-    taxatie_value: float = 0  # uiteindelijke taxatiewaarde
-    # Foto's
+    # Klant
+    customer_name: str = ""
+    customer_phone: str = ""
+    customer_email: str = ""
+    customer_address: str = ""
+    # Foto's & opmerkingen
     photos: List[str] = []
-    # Extra
     notes: str = ""
 
 @api_router.post("/taxatie-programma")
 async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(require_admin)):
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    
+
     taxatie_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
-    
-    # Calculate average condition score
+
+    data_dict = data.dict()
+    bpm = calculate_bpm_result(data_dict)
+
     scores = [data.score_engine, data.score_frame, data.score_paint, data.score_tires,
-              data.score_brakes, data.score_electrics, data.score_exhaust, 
+              data.score_brakes, data.score_electrics, data.score_exhaust,
               data.score_suspension, data.score_chain_drive, data.score_general]
-    avg_score = sum(scores) / len(scores)
-    
+    avg_score = round(sum(scores) / len(scores), 1)
     condition_label = "Slecht"
     if avg_score >= 4.5: condition_label = "Uitstekend"
     elif avg_score >= 3.5: condition_label = "Goed"
     elif avg_score >= 2.5: condition_label = "Redelijk"
     elif avg_score >= 1.5: condition_label = "Matig"
-    
-    taxatie_nr = f"TAX-{now.strftime('%Y%m%d')}-{taxatie_id[:4].upper()}"
-    
+
     doc = {
         "id": taxatie_id,
-        "taxatie_nummer": taxatie_nr,
-        **data.dict(),
-        "average_score": round(avg_score, 1),
+        "taxatie_nummer": f"BPM-{now.strftime('%Y%m%d')}-{taxatie_id[:4].upper()}",
+        **data_dict,
+        **bpm,
+        "average_score": avg_score,
         "condition_label": condition_label,
-        "status": "concept",  # concept, definitief
+        "status": "concept",
         "created_at": now.isoformat(),
         "created_by": current_user["email"],
-        "valid_until": (now + timedelta(days=365*3)).isoformat(),  # 3 jaar geldig
     }
-    
+
     await db.taxatie_programma.insert_one(doc)
     doc.pop("_id", None)
     return doc
@@ -9361,15 +9465,12 @@ async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(requi
 async def get_taxaties(current_user: dict = Depends(require_admin)):
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    
-    taxaties = await db.taxatie_programma.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
-    return taxaties
+    return await db.taxatie_programma.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
 
 @api_router.get("/taxatie-programma/{taxatie_id}")
 async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_admin)):
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    
     doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
@@ -9379,37 +9480,37 @@ async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_admi
 async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dict = Depends(require_admin)):
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    
+
+    data_dict = data.dict()
+    bpm = calculate_bpm_result(data_dict)
+
     scores = [data.score_engine, data.score_frame, data.score_paint, data.score_tires,
               data.score_brakes, data.score_electrics, data.score_exhaust,
               data.score_suspension, data.score_chain_drive, data.score_general]
-    avg_score = sum(scores) / len(scores)
-    
+    avg_score = round(sum(scores) / len(scores), 1)
     condition_label = "Slecht"
     if avg_score >= 4.5: condition_label = "Uitstekend"
     elif avg_score >= 3.5: condition_label = "Goed"
     elif avg_score >= 2.5: condition_label = "Redelijk"
     elif avg_score >= 1.5: condition_label = "Matig"
-    
+
     update = {
-        **data.dict(),
-        "average_score": round(avg_score, 1),
+        **data_dict,
+        **bpm,
+        "average_score": avg_score,
         "condition_label": condition_label,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    
+
     result = await db.taxatie_programma.update_one({"id": taxatie_id}, {"$set": update})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
-    
-    doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
-    return doc
+    return await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
 
 @api_router.post("/taxatie-programma/{taxatie_id}/finalize")
 async def finalize_taxatie(taxatie_id: str, current_user: dict = Depends(require_admin)):
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    
     result = await db.taxatie_programma.update_one(
         {"id": taxatie_id},
         {"$set": {"status": "definitief", "finalized_at": datetime.now(timezone.utc).isoformat()}}
@@ -9422,7 +9523,6 @@ async def finalize_taxatie(taxatie_id: str, current_user: dict = Depends(require
 async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_admin)):
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    
     result = await db.taxatie_programma.delete_one({"id": taxatie_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
