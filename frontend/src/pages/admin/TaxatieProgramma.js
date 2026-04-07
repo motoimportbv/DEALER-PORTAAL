@@ -60,8 +60,8 @@ const DEFAULT_DAMAGE_ITEMS = [
 ];
 
 const EMPTY_FORM = {
-  brand: '', model: '', year: new Date().getFullYear(), mileage: 0, color: '',
-  vin_number: '', first_registration_date: '', fuel_type: 'Benzine', cylinder_capacity: '', power_kw: '',
+  brand: '', model: '', bouwjaar: '', mileage: 0, color: '',
+  vin_number: '', first_registration_date: '', fuel_type: 'Benzine', cylinder_capacity: '', power_kw: 0,
   netto_catalogusprijs: 0, consumentenprijs: 0,
   koerslijst_waarde: 0, taxatie_inruil_waarde: 0,
   damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })),
@@ -296,14 +296,14 @@ function BpmReport({ taxatie, onClose }) {
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Voertuiggegevens</h3>
               <div className="space-y-1.5 text-sm">
                 <p><span className="text-zinc-500 w-36 inline-block">Merk / Model:</span> <strong>{taxatie.brand} {taxatie.model}</strong></p>
-                <p><span className="text-zinc-500 w-36 inline-block">Bouwjaar:</span> {taxatie.year}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Bouwjaar:</span> <strong>{taxatie.bouwjaar ? new Date(taxatie.bouwjaar).toLocaleDateString('nl-NL') : '-'}</strong></p>
                 <p><span className="text-zinc-500 w-36 inline-block">Km-stand:</span> {(taxatie.mileage || 0).toLocaleString('nl-NL')} km</p>
                 <p><span className="text-zinc-500 w-36 inline-block">Kleur:</span> {taxatie.color || '-'}</p>
-                <p><span className="text-zinc-500 w-36 inline-block">Chassisnummer:</span> {taxatie.vin_number || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Chassisnummer:</span> <strong className="font-mono tracking-wide">{taxatie.vin_number || '-'}</strong></p>
                 <p><span className="text-zinc-500 w-36 inline-block">Eerste toelating:</span> {taxatie.first_registration_date ? new Date(taxatie.first_registration_date).toLocaleDateString('nl-NL') : '-'}</p>
                 <p><span className="text-zinc-500 w-36 inline-block">Brandstof:</span> {taxatie.fuel_type || '-'}</p>
                 <p><span className="text-zinc-500 w-36 inline-block">Cilinderinhoud:</span> {taxatie.cylinder_capacity || '-'}</p>
-                <p><span className="text-zinc-500 w-36 inline-block">Vermogen:</span> {taxatie.power_kw || '-'}</p>
+                <p><span className="text-zinc-500 w-36 inline-block">Vermogen:</span> {taxatie.power_kw ? `${taxatie.power_kw} kW` : '-'}</p>
               </div>
             </div>
             <div>
@@ -603,15 +603,12 @@ export default function TaxatieProgramma() {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Bike className="w-5 h-5 text-red-600" />Voertuiggegevens</h2>
             <div className="grid sm:grid-cols-3 gap-4">
               {[
-                { k: 'brand', l: 'Merk *', p: 'BMW' },
-                { k: 'model', l: 'Model *', p: 'R1250GS' },
-                { k: 'year', l: 'Bouwjaar', p: '2023', t: 'number' },
+                { k: 'brand', l: 'Merk *', p: 'Vespa' },
+                { k: 'model', l: 'Model *', p: 'GTS 300 HPE' },
                 { k: 'mileage', l: 'Km-stand', p: '25000', t: 'number' },
                 { k: 'color', l: 'Kleur', p: 'Zwart' },
-                { k: 'vin_number', l: 'Chassisnummer (VIN)', p: 'WB10...' },
                 { k: 'fuel_type', l: 'Brandstof', p: 'Benzine' },
-                { k: 'cylinder_capacity', l: 'Cilinderinhoud', p: '1254 cc' },
-                { k: 'power_kw', l: 'Vermogen', p: '100 kW / 136 pk' },
+                { k: 'cylinder_capacity', l: 'Cilinderinhoud', p: '278 cc' },
               ].map(f => (
                 <div key={f.k}>
                   <label className="text-xs font-bold text-zinc-600 block mb-1">{f.l}</label>
@@ -619,6 +616,21 @@ export default function TaxatieProgramma() {
                     placeholder={f.p} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid={`field-${f.k}`} />
                 </div>
               ))}
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Chassisnummer (VIN)</label>
+                <input type="text" value={form.vin_number} onChange={e => updateField('vin_number', e.target.value.toUpperCase())}
+                  placeholder="ZAPMD310000034513" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm font-mono tracking-wide focus:border-red-500 focus:outline-none" data-testid="field-vin_number" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Bouwjaar (datum)</label>
+                <input type="date" value={form.bouwjaar} onChange={e => updateField('bouwjaar', e.target.value)}
+                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-bouwjaar" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Vermogen (kW)</label>
+                <input type="number" step="0.1" value={form.power_kw || ''} onChange={e => updateField('power_kw', Number(e.target.value))}
+                  placeholder="17.5" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-power_kw" />
+              </div>
               <div>
                 <label className="text-xs font-bold text-zinc-600 block mb-1">Datum eerste toelating</label>
                 <input type="date" value={form.first_registration_date} onChange={e => updateField('first_registration_date', e.target.value)}
@@ -831,13 +843,13 @@ export default function TaxatieProgramma() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-lg">{t.brand} {t.model} ({t.year})</h3>
+                        <h3 className="font-bold text-lg">{t.brand} {t.model}</h3>
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === 'definitief' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                           {t.status === 'definitief' ? 'Definitief' : 'Concept'}
                         </span>
                         {dmgCount > 0 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">{dmgCount} schade</span>}
                       </div>
-                      <p className="text-sm text-zinc-500">{t.customer_name || 'Geen klant'} · {(t.mileage || 0).toLocaleString('nl-NL')} km</p>
+                      <p className="text-sm text-zinc-500">{t.vin_number && <span className="font-mono">{t.vin_number}</span>}{t.vin_number && ' · '}{t.bouwjaar ? new Date(t.bouwjaar).toLocaleDateString('nl-NL') : ''}{(t.bouwjaar && t.mileage) ? ' · ' : ''}{t.mileage ? `${t.mileage.toLocaleString('nl-NL')} km` : ''}</p>
                       <p className="text-xs text-zinc-400">{t.taxatie_nummer}</p>
                     </div>
                     <div className="text-right flex-shrink-0">

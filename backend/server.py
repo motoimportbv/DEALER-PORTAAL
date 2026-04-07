@@ -9386,14 +9386,14 @@ class TaxatieCreate(BaseModel):
     # Voertuiggegevens
     brand: str = ""
     model: str = ""
-    year: int = 0
+    bouwjaar: str = ""
     mileage: int = 0
     color: str = ""
     vin_number: str = ""
     first_registration_date: str = ""
     fuel_type: str = "Benzine"
     cylinder_capacity: str = ""
-    power_kw: str = ""
+    power_kw: float = 0
     # BPM Berekening
     netto_catalogusprijs: float = 0
     consumentenprijs: float = 0
