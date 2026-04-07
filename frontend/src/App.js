@@ -67,6 +67,7 @@ import ParticulierAddListing from "./pages/particulier/ParticulierAddListing";
 import ParticulierSuccess from "./pages/particulier/ParticulierSuccess";
 import DealerGoogleMotors from "./pages/dealer/DealerGoogleMotors";
 import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
+import TaxatieProgramma from "./pages/admin/TaxatieProgramma";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 
@@ -247,6 +248,7 @@ function App() {
             <Route path="/admin/price-proposals" element={<AdminPriceProposals />} />
             <Route path="/admin/wanted-requests" element={<AdminWantedRequests />} />
             <Route path="/admin/google-motors" element={<AdminGoogleMotors />} />
+            <Route path="/admin/taxatie-programma" element={<TaxatieProgramma />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />
