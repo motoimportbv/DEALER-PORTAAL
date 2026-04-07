@@ -10,7 +10,7 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 - **Particulier Platform**: Private verkoop met Stripe abonnement
 - **Pakbon Rol**: Beperkte rol voor pakbon beheer
 - **Taxatie Facturen**: Exclusief voor motoimportbv@gmail.com
-- **Taxatie Programma**: Professionele motorfiets waardebepaling tool (exclusief motoimportbv@gmail.com)
+- **BPM Vermindering**: Professioneel BPM taxatieprogramma voor motorfietsen (exclusief motoimportbv@gmail.com)
 - **Google Motoren**: SEO-geoptimaliseerde publieke motoren pagina's met social media generatie
 
 ## Gebruikersrollen
@@ -26,37 +26,39 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 - **Database**: MongoDB
 - **Betalingen**: Stripe (emergentintegrations)
 - **Opslag**: Emergent Object Storage
-- **AI**: OpenAI GPT-4.1-mini (social media tekst), OpenAI TTS, Sora 2 (via Emergent LLM Key)
-- **Image Processing**: Pillow (social media cards + flyers)
+- **AI**: OpenAI GPT-4.1-mini, OpenAI TTS, Sora 2 (via Emergent LLM Key)
+- **Image Processing**: Pillow
 
 ## Wat is gebouwd
 
 ### Sessie 7 april 2026
-- **Taxatie Programma getest en afgerond**: Alle CRUD operaties (aanmaken, bekijken, bewerken, finaliseren, verwijderen) getest via testing agent. 100% backend tests passed (15/15), 95% frontend. Frontend access control fix toegevoegd (email-gating in component).
-
-### Sessie 30 maart 2026
-- **Google Motoren**: Dealers uploaden motoren voor Google indexering. Twee betaalopties: per motor OF onbeperkt (Stripe). Admin keurt goed/af. Publieke SEO pagina's. 100% getest.
-- **Social Media Post Generatie**: Bij goedkeuring genereert AI automatisch een pakkende Nederlandse tekst + Pillow maakt branded afbeelding.
-- **Dealer Promo Popup**: Eenmalige popup bij inloggen voor dealers over Google Motoren.
-- **Dealer Wervingsflyers**: A4 print-klaar + Instagram flyer gegenereerd met Pillow.
-- **Pakbon Updates**: Leverancier telefoon/adres velden toegevoegd aan pakbon.
-- **Admin Wachtwoord Reset**: Handmatige password reset button voor dealers.
-- **WhatsApp URL Fix**: Hardcoded naar motoimportbv.nl productie URL.
+- **BPM Vermindering Taxatie**: Volledig BPM-taxatieprogramma voor motorfietsen:
+  - Bruto BPM berekening op basis van netto catalogusprijs (9,6% <=€2133, 19,4%-€210 >€2133)
+  - Forfaitaire afschrijvingstabel (officieel Belastingdienst, 14 perioden)
+  - Koerslijst methode (afschrijving op basis van consumentenprijs vs koerslijstwaarde)
+  - Taxatierapport methode (afschrijving op basis van getaxeerde inruilwaarde)
+  - Schade-aftrek (31% van herstelkosten, Belastingdienst norm)
+  - Automatische selectie voordeligste methode
+  - Live BPM-berekening in formulier (realtime updates bij invoer)
+  - Printbaar PDF-rapport voor Belastingdienst met handtekeningen
+  - Technische inspectie (10 categorien, score 1-5)
+  - Links naar AutoTelex.nl en RDW
+  - 100% getest (backend + frontend) via testing agent
 
 ### Eerdere sessies
-- Particulier platform (registratie, Stripe, dashboard)
-- Dealer prive listings
-- Taxatie factuur module (PDF, BTW, auto-draft, maandelijkse herinnering)
-- Pakbon rol met beperkte toegang
+- Google Motoren (SEO, Stripe iDEAL, AI social media)
+- Dealer promo popup, wervingsflyers
+- Pakbon updates (leverancier telefoon/adres)
+- Admin wachtwoord reset, WhatsApp URL fix
+- Particulier platform, dealer prive listings
+- Taxatie factuur module
 - Foreign dealer prijs management
-- Voucher systeem
-- GitHub security fix (git history cleanup)
-- AI content generatie (Italiaanse audio, video clips)
+- Voucher systeem, GitHub security fix
 
 ## Prioritized Backlog
 
 ### P0 - Kritisch
-- Backend Refactoring: server.py opsplitsen (9600+ regels) - actief risico voor code-corruptie
+- Backend Refactoring: server.py opsplitsen (9600+ regels)
 
 ### P1 - Aankomend
 - WhatsApp notificaties implementeren
@@ -68,31 +70,18 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 - Kosten toevoegen aan voorstel opties
 - Bevestigingsdialoog voor opnieuw aanbieden verkochte motor
 - "Flyers Download" pagina voor dealers
-- Email flyer bezorging op productie (verificatie nodig - recurring issue)
+- Email flyer bezorging op productie (verificatie nodig)
 
-## Belangrijke API Endpoints
-
-### Taxatie Programma
-- `POST /api/taxatie-programma` - Taxatie aanmaken
+## BPM Vermindering API Endpoints
+- `POST /api/taxatie-programma` - BPM taxatie aanmaken
 - `GET /api/taxatie-programma` - Alle taxaties ophalen
-- `GET /api/taxatie-programma/{id}` - Taxatie detail
-- `PUT /api/taxatie-programma/{id}` - Taxatie bijwerken
+- `GET /api/taxatie-programma/{id}` - Detail
+- `PUT /api/taxatie-programma/{id}` - Bijwerken (herberekent BPM)
 - `POST /api/taxatie-programma/{id}/finalize` - Definitief maken
 - `DELETE /api/taxatie-programma/{id}` - Verwijderen
 
-### Google Motoren
-- `POST /api/google-motors/checkout` - Stripe checkout
-- `GET /api/google-motors/subscription` - Abonnement status
-- `POST /api/google-motors` - Motor aanmelden
-- `GET /api/google-motors/my` - Dealer's eigen motoren
-- `GET /api/google-motors/pending` - Admin: wachtende motoren
-- `POST /api/google-motors/{id}/approve` - Admin: goedkeuren + social media generatie
-- `GET /api/public/motors` - Publiek: goedgekeurde motoren
-
-## Database Schema
-- `taxatie_programma`: `{ id, taxatie_nummer, brand, model, year, mileage, kenteken, scores (10x), customer_data, valuations, status (concept/definitief), photos }`
-- `google_motors`: `{ id, dealer_id, brand, model, status, social_text, social_image_url }`
-- `google_motor_subscriptions`: `{ id, dealer_id, plan, amount, session_id, status, expires_at }`
+## BPM Database Schema
+- `taxatie_programma`: `{ id, taxatie_nummer, brand, model, year, mileage, kenteken, netto_catalogusprijs, consumentenprijs, koerslijst_waarde, taxatie_inruil_waarde, first_registration_date, has_damage, herstelkosten, bruto_bpm, forfaitair_percentage, forfaitair_bpm, koerslijst_percentage, koerslijst_bpm, taxatie_percentage, taxatie_bpm, schade_aftrek, beste_methode, netto_bpm, bpm_vermindering, scores (10x), status, photos }`
 
 ## Test Credentials (Preview)
 - Admin: motoimportbv@gmail.com / Admin2024!
