@@ -5,9 +5,9 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import {
-  ClipboardCheck, Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink,
+  Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink,
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
-  Calculator, TrendingDown, AlertTriangle, CheckCircle2, ArrowLeft, Shield
+  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -30,12 +30,42 @@ const INSPECTION_ITEMS = [
   { key: 'general', label: 'Algemene Staat', desc: 'Totaalindruk, netheid, completheid' },
 ];
 
+const DEFAULT_DAMAGE_ITEMS = [
+  { name: 'Kuipdelen / Stroomlijnkappen', checked: false, cost: 0 },
+  { name: 'Tank (deuken / krassen)', checked: false, cost: 0 },
+  { name: 'Lak / Spuitwerk', checked: false, cost: 0 },
+  { name: 'Uitlaat (roest / lek)', checked: false, cost: 0 },
+  { name: 'Motorblok (lekkage / geluid)', checked: false, cost: 0 },
+  { name: 'Frame / Chassis (scheuren / roest)', checked: false, cost: 0 },
+  { name: 'Voorvork (lekkage / krom)', checked: false, cost: 0 },
+  { name: 'Achterdemper (lek / versleten)', checked: false, cost: 0 },
+  { name: 'Remschijven / Remblokken', checked: false, cost: 0 },
+  { name: 'Banden (versleten / oud)', checked: false, cost: 0 },
+  { name: 'Ketting / Tandwielen', checked: false, cost: 0 },
+  { name: 'Koppeling (versleten)', checked: false, cost: 0 },
+  { name: 'Accu', checked: false, cost: 0 },
+  { name: 'Verlichting (koplamp / achterlicht)', checked: false, cost: 0 },
+  { name: 'Knipperlichten / Richtingaanwijzers', checked: false, cost: 0 },
+  { name: 'Spiegels', checked: false, cost: 0 },
+  { name: 'Dashboard / Instrumenten', checked: false, cost: 0 },
+  { name: 'Stuurlagers', checked: false, cost: 0 },
+  { name: 'Wiellagers', checked: false, cost: 0 },
+  { name: 'Zadel (gescheurd / versleten)', checked: false, cost: 0 },
+  { name: 'Windscherm', checked: false, cost: 0 },
+  { name: 'Voetsteunen / Schakelpedaal', checked: false, cost: 0 },
+  { name: 'Koelvloeistof systeem', checked: false, cost: 0 },
+  { name: 'Remvloeistof / Remleidingen', checked: false, cost: 0 },
+  { name: 'Corrosie / Roest algemeen', checked: false, cost: 0 },
+  { name: 'Overig', checked: false, cost: 0 },
+];
+
 const EMPTY_FORM = {
-  kenteken: '', brand: '', model: '', year: new Date().getFullYear(), mileage: 0, color: '',
+  brand: '', model: '', year: new Date().getFullYear(), mileage: 0, color: '',
   vin_number: '', first_registration_date: '', fuel_type: 'Benzine', cylinder_capacity: '', power_kw: '',
   netto_catalogusprijs: 0, consumentenprijs: 0,
   koerslijst_waarde: 0, taxatie_inruil_waarde: 0,
-  has_damage: false, damage_description: '', herstelkosten: 0,
+  damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })),
+  damage_notes: '',
   score_engine: 3, score_frame: 3, score_paint: 3, score_tires: 3, score_brakes: 3,
   score_electrics: 3, score_exhaust: 3, score_suspension: 3, score_chain_drive: 3, score_general: 3,
   notes_engine: '', notes_frame: '', notes_paint: '', notes_tires: '', notes_brakes: '',
@@ -44,7 +74,7 @@ const EMPTY_FORM = {
   photos: [], notes: '',
 };
 
-/* ── Local BPM calculator (mirrors backend) ── */
+/* ── Local BPM calculator ── */
 function calcForfaitairPct(months) {
   if (months < 1) return 0;
   if (months < 3) return 12 + (months - 1) * 4;
@@ -66,8 +96,7 @@ function calcBpmLocal(form) {
   const cat = form.netto_catalogusprijs || 0;
   const bruto = cat <= 0 ? 0 : cat <= 2133 ? cat * 0.096 : cat * 0.194 - 210;
 
-  let months = 0;
-  let forfPct = 0;
+  let months = 0, forfPct = 0;
   if (form.first_registration_date) {
     const reg = new Date(form.first_registration_date);
     const now = new Date();
@@ -88,11 +117,12 @@ function calcBpmLocal(form) {
   if (cons > 0 && taxVal > 0) taxPct = Math.max(0, Math.min(((cons - taxVal) / cons) * 100, 100));
   const taxBpm = bruto * (1 - taxPct / 100);
 
-  const schade = form.has_damage ? (form.herstelkosten || 0) * 0.31 : 0;
+  const items = form.damage_items || [];
+  const totalHerstel = items.filter(i => i.checked).reduce((s, i) => s + (i.cost || 0), 0);
+  const schade = totalHerstel * 0.31;
 
   const opts = { forfaitair: forfBpm, koerslijst: koersPct > 0 ? koersBpm : 999999, taxatierapport: taxPct > 0 ? taxBpm : 999999 };
-  let best = 'forfaitair';
-  let lowest = opts.forfaitair;
+  let best = 'forfaitair', lowest = opts.forfaitair;
   for (const [k, v] of Object.entries(opts)) { if (v < lowest) { lowest = v; best = k; } }
   if (lowest === 999999) { best = 'forfaitair'; lowest = forfBpm; }
 
@@ -102,8 +132,8 @@ function calcBpmLocal(form) {
     forfaitair_percentage: forfPct, forfaitair_bpm: forfBpm,
     koerslijst_percentage: koersPct, koerslijst_bpm: koersBpm,
     taxatie_percentage: taxPct, taxatie_bpm: taxBpm,
-    schade_aftrek: schade, beste_methode: best,
-    netto_bpm: netto, bpm_vermindering: bruto - netto,
+    herstelkosten: totalHerstel, schade_aftrek: schade,
+    beste_methode: best, netto_bpm: netto, bpm_vermindering: bruto - netto,
   };
 }
 
@@ -120,12 +150,11 @@ function ScoreSelector({ value, onChange, testId }) {
   );
 }
 
-/* ── BPM Summary card (live calculation) ── */
+/* ── BPM Summary card ── */
 function BpmSummary({ form }) {
   const bpm = calcBpmLocal(form);
   if (!form.netto_catalogusprijs) return null;
-  const methodeLabels = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
-
+  const ml = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
   return (
     <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-6 text-white" data-testid="bpm-summary">
       <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-4 flex items-center gap-2">
@@ -163,11 +192,63 @@ function BpmSummary({ form }) {
       </div>
       {bpm.schade_aftrek > 0 && (
         <div className="mt-3 bg-amber-600/20 border border-amber-500/30 rounded-lg p-2.5 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-          <span>Schade-aftrek (31% van herstelkosten): <strong className="text-amber-300">- {fmtEur(bpm.schade_aftrek)}</strong></span>
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+          <span>Schade-aftrek (31% van {fmtEur(bpm.herstelkosten)}): <strong className="text-amber-300">- {fmtEur(bpm.schade_aftrek)}</strong></span>
         </div>
       )}
-      <p className="text-[10px] text-zinc-500 mt-3">Voordeligste methode: <strong className="text-zinc-300">{methodeLabels[bpm.beste_methode]}</strong> | Leeftijd: {bpm.months_age} maanden</p>
+      <p className="text-[10px] text-zinc-500 mt-3">Methode: <strong className="text-zinc-300">{ml[bpm.beste_methode]}</strong> | Leeftijd: {bpm.months_age} mnd</p>
+    </div>
+  );
+}
+
+/* ── Damage checklist component ── */
+function DamageChecklist({ items, onChange }) {
+  const checkedItems = items.filter(i => i.checked);
+  const totalCost = checkedItems.reduce((s, i) => s + (i.cost || 0), 0);
+
+  const toggle = (idx) => {
+    const next = items.map((it, i) => i === idx ? { ...it, checked: !it.checked, cost: !it.checked ? it.cost : 0 } : it);
+    onChange(next);
+  };
+  const setCost = (idx, cost) => {
+    const next = items.map((it, i) => i === idx ? { ...it, cost } : it);
+    onChange(next);
+  };
+
+  return (
+    <div data-testid="damage-checklist">
+      <div className="grid sm:grid-cols-2 gap-2">
+        {items.map((item, idx) => (
+          <div key={idx} className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${item.checked ? 'bg-red-50 border-red-200' : 'bg-zinc-50 border-zinc-100'}`}>
+            <button type="button" onClick={() => toggle(idx)}
+              className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 transition-colors ${item.checked ? 'bg-red-600 text-white' : 'bg-white border border-zinc-300 text-transparent hover:border-zinc-400'}`}
+              data-testid={`damage-check-${idx}`}>
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <span className={`text-sm flex-1 min-w-0 truncate ${item.checked ? 'font-medium text-zinc-900' : 'text-zinc-500'}`}>{item.name}</span>
+            {item.checked && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="text-xs text-zinc-400">€</span>
+                <input type="number" value={item.cost || ''} onChange={e => setCost(idx, Number(e.target.value))}
+                  placeholder="0" className="w-20 border border-red-200 rounded px-2 py-1 text-sm text-right font-medium focus:border-red-500 focus:outline-none bg-white"
+                  data-testid={`damage-cost-${idx}`} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {checkedItems.length > 0 && (
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="font-bold text-zinc-700">{checkedItems.length} schade-item(s) aangevinkt</span>
+            <span className="font-black text-red-700">{fmtEur(totalCost)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-green-700 font-bold">BPM-aftrek (31%)</span>
+            <span className="text-green-700 font-black">- {fmtEur(totalCost * 0.31)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -176,7 +257,9 @@ function BpmSummary({ form }) {
 function BpmReport({ taxatie, onClose }) {
   const handlePrint = () => window.print();
   const avgScore = taxatie.average_score || 0;
-  const methodeLabels = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
+  const ml = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
+  const checkedDamage = (taxatie.damage_items || []).filter(d => d.checked);
+  const totalHerstel = checkedDamage.reduce((s, i) => s + (i.cost || 0), 0);
 
   return (
     <div className="fixed inset-0 z-50 bg-white overflow-auto print:relative" data-testid="bpm-report">
@@ -214,7 +297,6 @@ function BpmReport({ taxatie, onClose }) {
               <div className="space-y-1.5 text-sm">
                 <p><span className="text-zinc-500 w-36 inline-block">Merk / Model:</span> <strong>{taxatie.brand} {taxatie.model}</strong></p>
                 <p><span className="text-zinc-500 w-36 inline-block">Bouwjaar:</span> {taxatie.year}</p>
-                <p><span className="text-zinc-500 w-36 inline-block">Kenteken:</span> {taxatie.kenteken || '-'}</p>
                 <p><span className="text-zinc-500 w-36 inline-block">Km-stand:</span> {(taxatie.mileage || 0).toLocaleString('nl-NL')} km</p>
                 <p><span className="text-zinc-500 w-36 inline-block">Kleur:</span> {taxatie.color || '-'}</p>
                 <p><span className="text-zinc-500 w-36 inline-block">Chassisnummer:</span> {taxatie.vin_number || '-'}</p>
@@ -246,7 +328,6 @@ function BpmReport({ taxatie, onClose }) {
               <p><span className="text-zinc-500">Bruto BPM:</span> <strong>{fmtEur(taxatie.bruto_bpm)}</strong></p>
               <p><span className="text-zinc-500">Leeftijd:</span> <strong>{taxatie.months_age || 0} maanden</strong></p>
             </div>
-
             <table className="w-full text-sm border-collapse mb-4">
               <thead>
                 <tr className="border-b-2 border-zinc-300">
@@ -270,15 +351,45 @@ function BpmReport({ taxatie, onClose }) {
               </tbody>
             </table>
 
-            {(taxatie.schade_aftrek || 0) > 0 && (
-              <p className="text-sm mb-3"><span className="text-zinc-500">Schade-aftrek (31% van {fmtEur(taxatie.herstelkosten)}):</span> <strong className="text-green-700">- {fmtEur(taxatie.schade_aftrek)}</strong></p>
+            {/* Schade tabel in rapport */}
+            {checkedDamage.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-xs font-bold uppercase text-zinc-500 mb-2">Geconstateerde Schade</h4>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-zinc-200">
+                      <th className="text-left py-1.5 text-xs text-zinc-500">Onderdeel</th>
+                      <th className="text-right py-1.5 text-xs text-zinc-500">Herstelkosten</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {checkedDamage.map((d, i) => (
+                      <tr key={i} className="border-b border-zinc-100">
+                        <td className="py-1.5">{d.name}</td>
+                        <td className="py-1.5 text-right">{fmtEur(d.cost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-zinc-300">
+                      <td className="py-2 font-bold">Totaal herstelkosten</td>
+                      <td className="py-2 text-right font-bold">{fmtEur(totalHerstel)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-green-700 font-bold">BPM-aftrek (31%)</td>
+                      <td className="py-1 text-right text-green-700 font-bold">- {fmtEur(taxatie.schade_aftrek)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             )}
+            {taxatie.damage_notes && <p className="text-sm text-zinc-600 mb-4">Toelichting schade: {taxatie.damage_notes}</p>}
 
             <div className="border-t-2 border-zinc-400 pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-lg font-bold">Netto BPM te betalen</span>
-                  <p className="text-xs text-zinc-500">Via: {methodeLabels[taxatie.beste_methode] || '-'}</p>
+                  <p className="text-xs text-zinc-500">Via: {ml[taxatie.beste_methode] || '-'}</p>
                 </div>
                 <span className="text-3xl font-black text-red-600">{fmtEur(taxatie.netto_bpm)}</span>
               </div>
@@ -326,15 +437,6 @@ function BpmReport({ taxatie, onClose }) {
             </table>
           </div>
 
-          {/* Schade */}
-          {taxatie.has_damage && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Schade</h3>
-              <p className="text-sm">{taxatie.damage_description || 'Ja, zie opmerkingen'}</p>
-              {taxatie.herstelkosten > 0 && <p className="text-sm mt-1">Geschatte herstelkosten: <strong>{fmtEur(taxatie.herstelkosten)}</strong></p>}
-            </div>
-          )}
-
           {/* Foto's */}
           {taxatie.photos?.length > 0 && (
             <div>
@@ -372,7 +474,6 @@ function BpmReport({ taxatie, onClose }) {
           </div>
         </div>
       </div>
-
       <style>{`@media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .print\\:hidden { display: none !important; } }`}</style>
     </div>
   );
@@ -388,7 +489,7 @@ export default function TaxatieProgramma() {
   const [selectedTaxatie, setSelectedTaxatie] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) });
   const [searchTerm, setSearchTerm] = useState('');
 
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
@@ -436,12 +537,17 @@ export default function TaxatieProgramma() {
         await axios.post(`${API}/taxatie-programma`, form, { headers });
         toast.success('BPM taxatie aangemaakt');
       }
-      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); fetchTaxaties();
+      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); fetchTaxaties();
     } catch (e) { toast.error(e.response?.data?.detail || 'Fout bij opslaan'); }
     setSaving(false);
   };
 
-  const handleEdit = (t) => { setForm({ ...EMPTY_FORM, ...t }); setEditingId(t.id); setView('form'); };
+  const handleEdit = (t) => {
+    const items = t.damage_items?.length ? t.damage_items : DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d }));
+    setForm({ ...EMPTY_FORM, ...t, damage_items: items });
+    setEditingId(t.id);
+    setView('form');
+  };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Weet u zeker dat u deze taxatie wilt verwijderen?')) return;
@@ -454,14 +560,15 @@ export default function TaxatieProgramma() {
     catch { toast.error('Fout bij definitief maken'); }
   };
 
+  const resetForm = () => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); };
+
   const filtered = taxaties.filter(t => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
-    return `${t.brand} ${t.model} ${t.kenteken} ${t.customer_name}`.toLowerCase().includes(s);
+    return `${t.brand} ${t.model} ${t.customer_name}`.toLowerCase().includes(s);
   });
 
   if (selectedTaxatie) return <BpmReport taxatie={selectedTaxatie} onClose={() => setSelectedTaxatie(null)} />;
-
   if (loading) return <Layout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin" /></div></Layout>;
 
   /* ══ FORM VIEW ══ */
@@ -470,14 +577,13 @@ export default function TaxatieProgramma() {
     return (
       <Layout>
         <div className="space-y-6" data-testid="bpm-taxatie-form">
-          {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               <Shield className="w-7 h-7 text-red-600" />
               {editingId ? 'BPM Taxatie Bewerken' : 'Nieuwe BPM Taxatie'}
             </h1>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); }} data-testid="cancel-btn">Annuleren</Button>
+              <Button variant="outline" onClick={resetForm} data-testid="cancel-btn">Annuleren</Button>
               <Button onClick={() => window.open('https://www.autotelex.nl', '_blank')} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-btn">
                 <ExternalLink className="w-4 h-4 mr-2" />AutoTelex
               </Button>
@@ -490,7 +596,6 @@ export default function TaxatieProgramma() {
             </div>
           </div>
 
-          {/* Live BPM Summary */}
           <BpmSummary form={form} />
 
           {/* Voertuiggegevens */}
@@ -498,7 +603,6 @@ export default function TaxatieProgramma() {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Bike className="w-5 h-5 text-red-600" />Voertuiggegevens</h2>
             <div className="grid sm:grid-cols-3 gap-4">
               {[
-                { k: 'kenteken', l: 'Kenteken', p: 'XX-999-X' },
                 { k: 'brand', l: 'Merk *', p: 'BMW' },
                 { k: 'model', l: 'Model *', p: 'R1250GS' },
                 { k: 'year', l: 'Bouwjaar', p: '2023', t: 'number' },
@@ -527,7 +631,6 @@ export default function TaxatieProgramma() {
           <div className="bg-white rounded-2xl border-2 border-red-200 p-6">
             <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-red-700"><Calculator className="w-5 h-5" />BPM Berekening</h2>
             <p className="text-xs text-zinc-500 mb-4">Vul de prijzen in om de BPM-vermindering te berekenen. De voordeligste methode wordt automatisch gekozen.</p>
-
             <div className="grid sm:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="text-xs font-bold text-zinc-600 block mb-1">Netto catalogusprijs (excl. BPM) *</label>
@@ -542,7 +645,6 @@ export default function TaxatieProgramma() {
                 <p className="text-[10px] text-zinc-400 mt-1">Nodig voor koerslijst/taxatie methode</p>
               </div>
             </div>
-
             <div className="bg-zinc-50 rounded-xl p-4 mb-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 1: Forfaitaire Tabel (automatisch)</h3>
               <div className="flex items-center gap-4 text-sm">
@@ -551,7 +653,6 @@ export default function TaxatieProgramma() {
                 <p>BPM: <strong>{fmtEur(bpm.forfaitair_bpm)}</strong></p>
               </div>
             </div>
-
             <div className="bg-zinc-50 rounded-xl p-4 mb-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 2: Koerslijst</h3>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -565,7 +666,6 @@ export default function TaxatieProgramma() {
                 </div>
               </div>
             </div>
-
             <div className="bg-zinc-50 rounded-xl p-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 3: Taxatierapport</h3>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -581,27 +681,15 @@ export default function TaxatieProgramma() {
             </div>
           </div>
 
-          {/* Schade */}
-          <div className="bg-white rounded-2xl border p-6">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500" />Schade (extra BPM-aftrek)</h2>
-            <p className="text-xs text-zinc-500 mb-3">31% van de geschatte herstelkosten wordt afgetrokken van de BPM (Belastingdienst norm)</p>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <input type="checkbox" checked={form.has_damage} onChange={e => updateField('has_damage', e.target.checked)} className="w-4 h-4 accent-red-600" data-testid="has-damage-checkbox" />
-                <label className="text-sm font-bold">Schade geconstateerd</label>
-              </div>
-              {form.has_damage && (
-                <>
-                  <textarea value={form.damage_description} onChange={e => updateField('damage_description', e.target.value)}
-                    placeholder="Beschrijf de schade in detail..." rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="damage-description" />
-                  <div>
-                    <label className="text-xs font-bold text-zinc-600 block mb-1">Geschatte herstelkosten</label>
-                    <input type="number" value={form.herstelkosten || ''} onChange={e => updateField('herstelkosten', Number(e.target.value))}
-                      placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-herstelkosten" />
-                    {form.herstelkosten > 0 && <p className="text-xs text-green-600 mt-1 font-bold">BPM-aftrek: - {fmtEur(form.herstelkosten * 0.31)} (31%)</p>}
-                  </div>
-                </>
-              )}
+          {/* Schade Checklist */}
+          <div className="bg-white rounded-2xl border-2 border-amber-200 p-6">
+            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-amber-700"><Wrench className="w-5 h-5" />Schade & Herstelkosten</h2>
+            <p className="text-xs text-zinc-500 mb-4">Vink beschadigde onderdelen aan en vul de geschatte herstelkosten in. 31% wordt afgetrokken van de BPM (Belastingdienst norm).</p>
+            <DamageChecklist items={form.damage_items} onChange={items => updateField('damage_items', items)} />
+            <div className="mt-4">
+              <label className="text-xs font-bold text-zinc-600 block mb-1">Toelichting schade</label>
+              <textarea value={form.damage_notes} onChange={e => updateField('damage_notes', e.target.value)} placeholder="Extra toelichting bij de schade..."
+                rows={2} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="damage-notes" />
             </div>
           </div>
 
@@ -627,7 +715,7 @@ export default function TaxatieProgramma() {
           {/* Technische Inspectie */}
           <div className="bg-white rounded-2xl border p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-red-600" />Technische Inspectie</h2>
-            <p className="text-xs text-zinc-500 mb-4">Beoordeel elk onderdeel van 1 (slecht) tot 5 (uitstekend). Dit onderbouwt de taxatiewaarde.</p>
+            <p className="text-xs text-zinc-500 mb-4">Beoordeel elk onderdeel van 1 (slecht) tot 5 (uitstekend)</p>
             <div className="space-y-3">
               {INSPECTION_ITEMS.map(item => (
                 <div key={item.key} className="flex items-start gap-4 p-3 rounded-lg bg-zinc-50">
@@ -670,9 +758,8 @@ export default function TaxatieProgramma() {
               className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="notes" />
           </div>
 
-          {/* Save bar */}
           <div className="flex justify-end gap-3 pb-8">
-            <Button variant="outline" onClick={() => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM }); }}>Annuleren</Button>
+            <Button variant="outline" onClick={resetForm}>Annuleren</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-red-600 hover:bg-red-700 text-white" data-testid="save-bpm-btn-bottom">
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Opslaan
             </Button>
@@ -689,8 +776,7 @@ export default function TaxatieProgramma() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-              <Shield className="w-7 h-7 text-red-600" />
-              BPM Vermindering
+              <Shield className="w-7 h-7 text-red-600" />BPM Vermindering
             </h1>
             <p className="text-zinc-500 mt-1">Taxatieprogramma voor motorfiets BPM-berekening</p>
           </div>
@@ -701,20 +787,18 @@ export default function TaxatieProgramma() {
             <Button onClick={() => window.open('https://ovi.rdw.nl/', '_blank')} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50">
               <ExternalLink className="w-4 h-4 mr-2" />RDW
             </Button>
-            <Button onClick={() => { setForm({ ...EMPTY_FORM }); setEditingId(null); setView('form'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="new-bpm-taxatie-btn">
+            <Button onClick={() => { setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); setEditingId(null); setView('form'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="new-bpm-taxatie-btn">
               <Plus className="w-4 h-4 mr-2" />Nieuwe BPM Taxatie
             </Button>
           </div>
         </div>
 
-        {/* Zoeken */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Zoek op merk, model, kenteken of klant..."
+          <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Zoek op merk, model of klant..."
             className="w-full pl-10 pr-4 py-3 border border-zinc-300 rounded-xl text-sm focus:border-red-500 focus:outline-none" data-testid="search-bpm-taxatie" />
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border p-4 text-center">
             <p className="text-xs text-zinc-500 font-bold uppercase">Totaal</p>
@@ -730,45 +814,47 @@ export default function TaxatieProgramma() {
           </div>
         </div>
 
-        {/* Lijst */}
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border p-10 text-center text-zinc-400">
             <Shield className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Geen BPM taxaties gevonden</p>
-            <p className="text-xs mt-1">Maak een nieuwe BPM taxatie aan om te starten</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map(t => (
-              <div key={t.id} className="bg-white rounded-2xl border hover:border-zinc-300 transition-colors overflow-hidden" data-testid={`taxatie-${t.id}`}>
-                <div className="p-5 flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-zinc-100 flex items-center justify-center flex-shrink-0">
-                    {t.photos?.[0] ? <img src={t.photos[0]} alt="" className="w-full h-full object-cover rounded-xl" /> : <Bike className="w-8 h-8 text-zinc-300" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-lg">{t.brand} {t.model} ({t.year})</h3>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === 'definitief' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {t.status === 'definitief' ? 'Definitief' : 'Concept'}
-                      </span>
+            {filtered.map(t => {
+              const dmgCount = (t.damage_items || []).filter(d => d.checked).length;
+              return (
+                <div key={t.id} className="bg-white rounded-2xl border hover:border-zinc-300 transition-colors overflow-hidden" data-testid={`taxatie-${t.id}`}>
+                  <div className="p-5 flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-zinc-100 flex items-center justify-center flex-shrink-0">
+                      {t.photos?.[0] ? <img src={t.photos[0]} alt="" className="w-full h-full object-cover rounded-xl" /> : <Bike className="w-8 h-8 text-zinc-300" />}
                     </div>
-                    <p className="text-sm text-zinc-500">{t.kenteken && `${t.kenteken} · `}{t.customer_name || 'Geen klant'} · {(t.mileage || 0).toLocaleString('nl-NL')} km</p>
-                    <p className="text-xs text-zinc-400">{t.taxatie_nummer}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs text-zinc-400">BPM te betalen</p>
-                    <p className="text-xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(t.netto_bpm)}</p>
-                    <p className="text-xs text-green-600 font-bold">- {fmtEur(t.bpm_vermindering)} vermindering</p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <button onClick={() => setSelectedTaxatie(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Rapport bekijken" data-testid={`view-${t.id}`}><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => handleEdit(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Bewerken" data-testid={`edit-${t.id}`}><Edit2 className="w-4 h-4" /></button>
-                    {t.status === 'concept' && <button onClick={() => handleFinalize(t.id)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="Definitief maken" data-testid={`finalize-${t.id}`}><FileCheck className="w-4 h-4" /></button>}
-                    <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg hover:bg-red-100 text-red-500" title="Verwijderen" data-testid={`delete-${t.id}`}><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-lg">{t.brand} {t.model} ({t.year})</h3>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === 'definitief' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {t.status === 'definitief' ? 'Definitief' : 'Concept'}
+                        </span>
+                        {dmgCount > 0 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">{dmgCount} schade</span>}
+                      </div>
+                      <p className="text-sm text-zinc-500">{t.customer_name || 'Geen klant'} · {(t.mileage || 0).toLocaleString('nl-NL')} km</p>
+                      <p className="text-xs text-zinc-400">{t.taxatie_nummer}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs text-zinc-400">BPM te betalen</p>
+                      <p className="text-xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(t.netto_bpm)}</p>
+                      <p className="text-xs text-green-600 font-bold">- {fmtEur(t.bpm_vermindering)} vermindering</p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => setSelectedTaxatie(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Rapport" data-testid={`view-${t.id}`}><Eye className="w-4 h-4" /></button>
+                      <button onClick={() => handleEdit(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Bewerken" data-testid={`edit-${t.id}`}><Edit2 className="w-4 h-4" /></button>
+                      {t.status === 'concept' && <button onClick={() => handleFinalize(t.id)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="Definitief maken" data-testid={`finalize-${t.id}`}><FileCheck className="w-4 h-4" /></button>}
+                      <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg hover:bg-red-100 text-red-500" title="Verwijderen" data-testid={`delete-${t.id}`}><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

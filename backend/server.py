@@ -9340,8 +9340,10 @@ def calculate_bpm_result(data_dict: dict) -> dict:
     taxatie_bpm = round(bruto_bpm * (1 - taxatie_pct / 100), 2)
 
     # Schade aftrek (31% van herstelkosten)
-    herstelkosten = data_dict.get("herstelkosten", 0) or 0
-    schade_aftrek = round(herstelkosten * 0.31, 2) if data_dict.get("has_damage") else 0
+    damage_items = data_dict.get("damage_items", [])
+    total_herstelkosten = sum(item.get("cost", 0) for item in damage_items if item.get("checked"))
+    has_damage = total_herstelkosten > 0
+    schade_aftrek = round(total_herstelkosten * 0.31, 2) if has_damage else 0
 
     # Determine best method
     options = {
@@ -9367,15 +9369,21 @@ def calculate_bpm_result(data_dict: dict) -> dict:
         "koerslijst_bpm": koerslijst_bpm,
         "taxatie_percentage": round(taxatie_pct, 2),
         "taxatie_bpm": taxatie_bpm,
+        "has_damage": has_damage,
+        "herstelkosten": total_herstelkosten,
         "schade_aftrek": schade_aftrek,
         "beste_methode": beste_methode,
         "netto_bpm": netto_bpm,
         "bpm_vermindering": bpm_vermindering,
     }
 
+class DamageItem(BaseModel):
+    name: str = ""
+    checked: bool = False
+    cost: float = 0
+
 class TaxatieCreate(BaseModel):
     # Voertuiggegevens
-    kenteken: str = ""
     brand: str = ""
     model: str = ""
     year: int = 0
@@ -9392,10 +9400,9 @@ class TaxatieCreate(BaseModel):
     # Afschrijving methoden
     koerslijst_waarde: float = 0
     taxatie_inruil_waarde: float = 0
-    # Schade
-    has_damage: bool = False
-    damage_description: str = ""
-    herstelkosten: float = 0
+    # Schade checklist
+    damage_items: List[DamageItem] = []
+    damage_notes: str = ""
     # Technische inspectie scores (1-5)
     score_engine: int = 3
     score_frame: int = 3
