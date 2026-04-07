@@ -269,7 +269,7 @@ function TaxatieReport({ taxatie, onClose }) {
 }
 
 export default function TaxatieProgramma() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [taxaties, setTaxaties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('list'); // list, form, report
@@ -279,6 +279,10 @@ export default function TaxatieProgramma() {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [searchTerm, setSearchTerm] = useState('');
+
+  if (user?.email?.toLowerCase() !== 'motoimportbv@gmail.com') {
+    return <Layout><div className="flex items-center justify-center h-64 text-zinc-500">Geen toegang tot deze pagina.</div></Layout>;
+  }
 
   const headers = { Authorization: `Bearer ${token}` };
 
