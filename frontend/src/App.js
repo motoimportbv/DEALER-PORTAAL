@@ -70,6 +70,7 @@ import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
 import TaxatieProgramma from "./pages/admin/TaxatieProgramma";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
+import CustomerMotorView from "./pages/CustomerMotorView";
 
 // Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
@@ -220,6 +221,7 @@ function App() {
             <Route path="/particulier-verkopen" element={<ParticulierLandingPage />} />
             <Route path="/motoren" element={<PublicMotorListing />} />
             <Route path="/motor/:id/:slug?" element={<PublicMotorDetail />} />
+            <Route path="/klant/motor/:id" element={<CustomerMotorView />} />
             <Route path="/dealer-guide" element={<DealerGuide />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

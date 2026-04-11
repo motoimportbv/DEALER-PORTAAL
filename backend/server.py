@@ -3059,6 +3059,34 @@ async def get_motorcycle_public(motorcycle_id: str):
     
     return motorcycle
 
+@api_router.get("/motorcycles/{motorcycle_id}/customer-share")
+async def get_motorcycle_customer_share(motorcycle_id: str):
+    """Get motorcycle details WITHOUT any prices for sharing with customers"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+
+    # Remove ALL price-related fields
+    price_fields = [
+        "price", "starting_price", "purchase_price", "highest_bid",
+        "original_price", "original_currency", "price_override",
+        "price_override_amount", "price_override_active",
+        "supplier_price_reduced", "supplier_price_reduction",
+        "listing_fee_invoiced",
+    ]
+    for f in price_fields:
+        motorcycle.pop(f, None)
+
+    # Remove internal/sensitive fields
+    internal_fields = [
+        "visible_to_dealers", "visibility", "created_by",
+        "highest_bidder_id", "foreign_dealer_id", "seller_id",
+    ]
+    for f in internal_fields:
+        motorcycle.pop(f, None)
+
+    return motorcycle
+
 @api_router.get("/motorcycles/{motorcycle_id}")
 async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})

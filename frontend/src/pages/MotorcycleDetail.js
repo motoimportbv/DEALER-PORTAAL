@@ -31,7 +31,9 @@ import {
   MessageSquare,
   Send,
   ClipboardCheck,
-  Calculator
+  Calculator,
+  Share2,
+  Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -517,8 +519,42 @@ const MotorcycleDetail = () => {
                         data-testid="price-proposal-btn"
                       >
                         <MessageSquare className="w-5 h-5 mr-2" />
-                        💰 Prijsvoorstel
+                        Prijsvoorstel
                       </Button>
+                    )}
+                    
+                    {/* Deel met klant - voor ingelogde dealers */}
+                    {user && (user.role === 'dealer' || user.role === 'admin') && motorcycle && (
+                      <div className="mt-3 border-t pt-3">
+                        <p className="text-xs text-zinc-500 mb-2 font-bold uppercase tracking-wider">Deel met klant (zonder prijs)</p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1 h-10 border-green-300 text-green-700 hover:bg-green-50"
+                            onClick={() => {
+                              const shareUrl = `https://www.motoimportbv.nl/klant/motor/${motorcycle.id}`;
+                              const text = `Bekijk deze ${motorcycle.brand} ${motorcycle.model} (${motorcycle.year}):\n${shareUrl}`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                            }}
+                            data-testid="share-customer-whatsapp"
+                          >
+                            <Share2 className="w-4 h-4 mr-1.5" />WhatsApp
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="flex-1 h-10 border-blue-300 text-blue-700 hover:bg-blue-50"
+                            onClick={() => {
+                              const shareUrl = `https://www.motoimportbv.nl/klant/motor/${motorcycle.id}`;
+                              const subject = `${motorcycle.brand} ${motorcycle.model} (${motorcycle.year})`;
+                              const body = `Bekijk deze motor:\n\n${motorcycle.brand} ${motorcycle.model}\nBouwjaar: ${motorcycle.year}\nKm-stand: ${motorcycle.mileage?.toLocaleString('nl-NL')} km\nKleur: ${motorcycle.color}\n\n${shareUrl}`;
+                              window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                            }}
+                            data-testid="share-customer-email"
+                          >
+                            <Mail className="w-4 h-4 mr-1.5" />E-mail
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
