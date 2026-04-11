@@ -9,18 +9,15 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 - **Foreign Dealer**: Motoren aanmelden, prijs beheer
 - **Particulier Platform**: Private verkoop met Stripe abonnement
 - **Pakbon Rol**: Beperkte rol voor pakbon beheer
-- **Taxatie Facturen**: Exclusief voor motoimportbv@gmail.com
-- **BPM Vermindering**: Professioneel BPM taxatieprogramma met schade-checklist (exclusief motoimportbv@gmail.com)
+- **BPM Vermindering**: BPM taxatieprogramma met schade-checklist (exclusief motoimportbv@gmail.com)
 - **Google Motoren**: SEO-geoptimaliseerde publieke motoren pagina's
+- **Deel met Klant**: Motoren delen zonder prijzen via WhatsApp/Email
 
-## BPM Vermindering Tool (Actueel)
-- **Bruto BPM**: Berekend op basis van netto catalogusprijs (9,6% t/m €2.133, daarboven 19,4% - €210)
-- **3 afschrijvingsmethoden**: Forfaitaire tabel, Koerslijst, Taxatierapport (voordeligste automatisch gekozen)
-- **Schade-checklist**: 26 motorfiets-specifieke onderdelen aanvinken met individuele herstelkosten
-- **BPM-aftrek**: 31% van totale herstelkosten (Belastingdienst norm)
-- **Geen kentekenveld**: Voertuigen hebben nog geen kenteken (moeten gekeurd worden)
-- **Printbaar rapport**: PDF voor Belastingdienst met schade-tabel, BPM-vergelijking, handtekeningen
-- **Live berekening**: Realtime updates bij invoer
+## Deel met Klant Feature (Nieuw)
+- **Backend**: `GET /api/motorcycles/{id}/customer-share` - publiek endpoint, verwijdert alle prijsvelden
+- **Frontend**: `/klant/motor/{id}` - publieke pagina zonder prijzen, met foto galerij, specs, info banner
+- **Dealer knoppen**: WhatsApp + Email deel-knoppen op motordetailpagina (zichtbaar voor dealers/admins)
+- **Link format**: `https://www.motoimportbv.nl/klant/motor/{id}`
 
 ## Architectuur
 - Frontend: React + Tailwind + Shadcn/UI
@@ -43,8 +40,6 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 - MoneyMonk API integratie
 - Kosten bij voorstel opties
 - Flyers Download pagina
-- Email flyer bezorging productie
 
 ## Test Credentials
 - Admin: motoimportbv@gmail.com / Admin2024!
-- Dealer: zoektest@dealer.nl / Test2024!
