@@ -1,6 +1,7 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, Request, Query, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -23,12 +24,23 @@ import json
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 from twilio.rest import Client as TwilioClient
 
+# =============================================================================
+# REFACTORED MODULES (beschikbaar voor geleidelijke migratie)
+# Deze modules bevatten geëxtraheerde code die later kan worden gebruikt
+# om de bestaande code te vervangen. Voorlopig blijft de oude code actief.
+# =============================================================================
+# from config import PRODUCTION_BASE_URL, JWT_SECRET, ADMIN_EMAILS_FULL  # etc.
+# from database import db  # MongoDB connectie
+# from services import hash_password, send_email, get_chf_to_eur_rate  # etc.
+# from models import User, Motorcycle, Order  # etc.
+# =============================================================================
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # PRODUCTION URL - ALWAYS use this for customer-facing links
 # This ensures links work correctly regardless of environment variables
-PRODUCTION_BASE_URL = "https://www.motoimportbv.nl"
+PRODUCTION_BASE_URL = 'https://www.motoimportbv.nl'
 
 # Emergent Object Storage Configuration
 STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
@@ -115,7 +127,7 @@ GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 EMAIL_FOOTER_DEALER = """
     <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
         <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
-        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
     </div>
 """
@@ -125,7 +137,7 @@ EMAIL_FOOTER_SUPPLIER = """
     <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
         <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-        <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+        <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
         <p style="margin: 5px 0;">www.motoimportbv.nl</p>
     </div>
 """
@@ -226,6 +238,7 @@ def convert_chf_to_eur(chf_amount: float, rate: float, margin: float = 0) -> flo
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
+security_optional = HTTPBearer(auto_error=False)
 
 # Uploads directory
 UPLOAD_DIR = ROOT_DIR / "uploads"
@@ -280,6 +293,7 @@ class MotorcycleCreate(BaseModel):
     model: str
     year: int
     price: float  # Koop nu prijs
+    purchase_price: Optional[float] = None  # Inkoopprijs - alleen voor admin
     starting_price: Optional[float] = None  # Vanaf prijs voor bieden
     mileage: int = 0
     color: str = ""
@@ -301,6 +315,7 @@ class MotorcycleUpdate(BaseModel):
     model: Optional[str] = None
     year: Optional[int] = None
     price: Optional[float] = None
+    purchase_price: Optional[float] = None  # Inkoopprijs - alleen voor admin
     starting_price: Optional[float] = None
     mileage: Optional[int] = None
     color: Optional[str] = None
@@ -321,6 +336,7 @@ class Motorcycle(BaseModel):
     model: str
     year: int
     price: float  # Koop nu prijs
+    purchase_price: Optional[float] = None  # Inkoopprijs - alleen voor admin
     starting_price: Optional[float] = None  # Vanaf prijs
     mileage: int
     color: str
@@ -354,6 +370,10 @@ class Motorcycle(BaseModel):
     # Visibility settings
     visibility: str = "all"  # "all" = everyone, "selected" = specific dealers
     visible_to_dealers: List[str] = []  # List of dealer IDs if visibility = "selected"
+    # Supplier price reduction tracking
+    supplier_price_reduced: bool = False
+    supplier_price_reduction: float = 0.0
+    supplier_price_reduced_at: Optional[str] = None
 
 class BidCreate(BaseModel):
     motorcycle_id: str
@@ -413,6 +433,13 @@ class Order(BaseModel):
     payment_status: str = "unpaid"  # unpaid, pending, paid
     stripe_session_id: Optional[str] = None
     motorcycle_snapshot: Optional[dict] = None  # Snapshot of motorcycle data at time of order
+    # Transport tracking fields
+    transport_status: str = "pending"  # pending, picked_up, in_transit, delivered
+    transport_carrier: Optional[str] = None  # Transportbedrijf
+    transport_tracking_number: Optional[str] = None  # Trackingnummer
+    transport_estimated_delivery: Optional[str] = None  # Geschatte leverdatum
+    transport_notes: Optional[str] = None  # Transport notities
+    transport_updated_at: Optional[str] = None  # Laatste update
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class OrderWithMotorcycle(BaseModel):
@@ -441,6 +468,9 @@ class OrderWithMotorcycle(BaseModel):
     order_type: Optional[str] = None  # "price_proposal" if from accepted proposal
     discount_amount: float = 0.0  # Discount given (original_price - total_price)
     original_price: Optional[float] = None  # Original price before discount
+    pakbon_completed: bool = False
+    pakbon_completed_at: Optional[str] = None
+    pakbon_completed_by: Optional[str] = None
 
 class Notification(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -489,6 +519,9 @@ class PriceProposalCreate(BaseModel):
     motorcycle_id: str
     proposed_price: float
     reason: str = ""
+    request_inspection: bool = False
+    request_appraisal: bool = False
+    request_delivery: bool = False
 
 class PriceProposal(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -500,13 +533,77 @@ class PriceProposal(BaseModel):
     original_price: float
     proposed_price: float
     reason: str = ""
+    request_inspection: bool = False
+    request_appraisal: bool = False
+    request_delivery: bool = False
     status: str = "pending"  # pending, accepted, rejected, counter
     admin_response: str = ""
     counter_price: Optional[float] = None
+    include_inspection: bool = False  # Admin's decision
+    include_appraisal: bool = False   # Admin's decision
+    include_delivery: bool = False    # Admin's decision
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Optional[str] = None
 
 # ============ WANTED REQUEST MODELS (Motor Zoekertje) ============
+
+# ============ REVIEW MODELS ============
+
+class ReviewCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    text: str = Field(min_length=10, max_length=1000)
+    anonymous: bool = False
+
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    dealer_id: str
+    dealer_company: str
+    anonymous: bool = False
+    rating: int
+    text: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============ PRIVATE LISTING MODELS ============
+
+class PrivateListingCreate(BaseModel):
+    brand: str
+    model: str
+    year: int
+    mileage: int
+    price: float
+    description: str = ""
+    color: str = ""
+    phone: str = ""
+    email: str = ""
+    city: str = ""
+    name: str = ""
+    photos: List[str] = []
+
+class PrivateListing(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    user_email: str
+    user_phone: str = ""
+    city: str = ""
+    brand: str
+    model: str
+    year: int
+    mileage: int
+    price: float
+    description: str = ""
+    color: str = ""
+    photos: List[str] = []
+    is_active: bool = False
+    is_paid: bool = False
+    payment_session_id: str = ""
+    paid_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# ============ WANTED REQUEST CREATE ============
 
 class WantedRequestCreate(BaseModel):
     brand: str
@@ -719,9 +816,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def get_optional_user(credentials: HTTPAuthorizationCredentials = Depends(security_optional)):
+    """Get current user if token provided, otherwise return None"""
+    if not credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
+        return user
+    except:
+        return None
+
 async def require_admin(user: dict = Depends(get_current_user)):
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+async def require_pakbon(user: dict = Depends(get_current_user)):
+    if user["role"] not in ("admin", "pakbon"):
+        raise HTTPException(status_code=403, detail="Pakbon access required")
     return user
 
 async def require_approved_dealer(user: dict = Depends(get_current_user)):
@@ -779,6 +892,126 @@ async def send_admin_notification(subject: str, html_content: str, include_limit
             logger.info(f"Admin notification sent to {admin_email}")
         except Exception as e:
             logger.error(f"Failed to send admin notification to {admin_email}: {e}")
+
+async def send_price_reduction_emails(motorcycle_id: str, brand: str, model: str, year: int, old_price: float, new_price: float):
+    """Send email to dealers who viewed this motorcycle when price is reduced"""
+    try:
+        # Find unique dealers who viewed this motorcycle
+        viewed_dealer_ids = await db.activity_logs.distinct(
+            "dealer_id",
+            {"type": "motorcycle_view", "motorcycle_id": motorcycle_id}
+        )
+        
+        if not viewed_dealer_ids:
+            logger.info(f"No dealers have viewed motorcycle {motorcycle_id}, skipping price reduction emails")
+            return
+        
+        # Get dealer details - include email_preferences
+        dealers = await db.users.find(
+            {
+                "id": {"$in": viewed_dealer_ids},
+                "role": "dealer",
+                "is_approved": True,
+                "is_foreign_dealer": {"$ne": True}
+            },
+            {"_id": 0, "email": 1, "company_name": 1, "email_preferences": 1}
+        ).to_list(100)
+        
+        # Filter dealers who want to receive price alerts
+        dealers = [d for d in dealers if d.get("email_preferences", {}).get("receive_price_alerts", True)]
+        
+        if not dealers:
+            logger.info(f"No eligible dealers found for price reduction notification (after preference filter)")
+            return
+        
+        # Calculate price difference
+        price_diff = old_price - new_price
+        discount_percent = round((price_diff / old_price) * 100) if old_price > 0 else 0
+        
+        # Build motorcycle link
+        moto_link = f"{PRODUCTION_BASE_URL}/motorcycle/{motorcycle_id}"
+        
+        # Create email content
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🏷️ PRIJSVERLAGING</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Een motor die u eerder heeft bekeken is nu goedkoper!</p>
+                </div>
+                
+                <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="color: #1a1a1a; margin: 0 0 5px 0; font-size: 28px; font-weight: bold;">
+                            {brand} {model}
+                        </h2>
+                        <p style="color: #666; margin: 0; font-size: 16px;">Bouwjaar {year}</p>
+                    </div>
+                    
+                    <div style="background: #f8f8f8; border-radius: 10px; padding: 20px; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
+                            <div style="text-align: center;">
+                                <p style="color: #999; font-size: 12px; margin: 0 0 5px 0; text-transform: uppercase;">Was</p>
+                                <p style="color: #999; font-size: 24px; margin: 0; text-decoration: line-through;">€{old_price:,.0f}</p>
+                            </div>
+                            <div style="font-size: 30px;">→</div>
+                            <div style="text-align: center;">
+                                <p style="color: #16a34a; font-size: 12px; margin: 0 0 5px 0; text-transform: uppercase;">Nu</p>
+                                <p style="color: #16a34a; font-size: 32px; margin: 0; font-weight: bold;">€{new_price:,.0f}</p>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 15px;">
+                            <span style="background: #dcfce7; color: #16a34a; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px;">
+                                U bespaart €{price_diff:,.0f} ({discount_percent}% korting)
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="{moto_link}" style="display: inline-block; background: #dc2626; color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                            BEKIJK MOTOR →
+                        </a>
+                    </div>
+                    
+                    <p style="color: #999; font-size: 12px; text-align: center; margin-top: 25px;">
+                        U ontvangt deze email omdat u deze motor eerder heeft bekeken op Moto Import.
+                    </p>
+                </div>
+                
+                <div style="text-align: center; padding: 20px;">
+                    <p style="color: #666; font-size: 12px; margin: 0;">
+                        © {datetime.now().year} Moto Import BV | <a href="{PRODUCTION_BASE_URL}" style="color: #dc2626;">motoimportbv.nl</a>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send emails to all dealers who viewed this motorcycle
+        sent_count = 0
+        for dealer in dealers:
+            try:
+                await send_email(
+                    dealer["email"],
+                    f"🏷️ Prijsverlaging: {brand} {model} nu €{new_price:,.0f}",
+                    html_content
+                )
+                sent_count += 1
+                logger.info(f"Price reduction email sent to {dealer.get('company_name', dealer['email'])}")
+            except Exception as e:
+                logger.error(f"Failed to send price reduction email to {dealer['email']}: {e}")
+        
+        logger.info(f"Price reduction emails sent to {sent_count}/{len(dealers)} dealers for {brand} {model}")
+        
+    except Exception as e:
+        logger.error(f"Error in send_price_reduction_emails: {e}")
 
 # ============ EXCHANGE RATE ENDPOINTS ============
 
@@ -1038,7 +1271,7 @@ async def register_supplier(supplier_data: SupplierCreate):
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
-    user = await db.users.find_one({"email": credentials.email})
+    user = await db.users.find_one({"email": {"$regex": f"^{credentials.email}$", "$options": "i"}})
     if not user or not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -1063,12 +1296,15 @@ async def login(credentials: UserLogin):
         "user": {
             "id": user["id"],
             "email": user["email"],
-            "company_name": user["company_name"],
+            "company_name": user.get("company_name", user.get("name", "")),
+            "name": user.get("name", ""),
             "role": user["role"],
             "is_approved": is_approved,
             "terms_accepted": user.get("terms_accepted", False),
             "is_foreign_dealer": user.get("is_foreign_dealer", False),
-            "country": user.get("country", "")
+            "country": user.get("country", ""),
+            "phone": user.get("phone", ""),
+            "city": user.get("city", ""),
         }
     }
 
@@ -1117,6 +1353,20 @@ async def accept_terms(user: dict = Depends(get_current_user)):
         {"$set": {"terms_accepted": True, "terms_accepted_at": datetime.now(timezone.utc).isoformat()}}
     )
     return {"message": "Voorwaarden geaccepteerd", "terms_accepted": True}
+
+class EmailPreferences(BaseModel):
+    receive_price_alerts: bool = True
+    receive_order_updates: bool = True
+    receive_new_motorcycles: bool = True
+
+@api_router.put("/users/email-preferences")
+async def update_email_preferences(preferences: EmailPreferences, user: dict = Depends(get_current_user)):
+    """Update email notification preferences for the current user"""
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"email_preferences": preferences.model_dump()}}
+    )
+    return {"message": "Email voorkeuren opgeslagen", "email_preferences": preferences.model_dump()}
 
 @api_router.post("/auth/generate-permanent-link")
 async def generate_permanent_link(user: dict = Depends(get_current_user)):
@@ -1974,6 +2224,12 @@ async def get_foreign_listings(user: dict = Depends(get_current_user)):
         {"foreign_dealer_id": user["id"]},
         {"_id": 0}
     ).to_list(100)
+    
+    # Strip selling price - foreign dealers should only see their own price
+    for moto in motorcycles:
+        moto.pop("price", None)
+        moto.pop("purchase_price", None)
+    
     return motorcycles
 
 @api_router.get("/motorcycles/pending-foreign")
@@ -1984,6 +2240,257 @@ async def get_pending_foreign_listings(user: dict = Depends(require_admin)):
         {"_id": 0}
     ).to_list(100)
     return motorcycles
+
+
+
+@api_router.put("/motorcycles/foreign-listings/{motorcycle_id}/price")
+async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dict = Depends(get_current_user)):
+    """Foreign dealer updates the price of their motorcycle listing"""
+    if not user.get("is_foreign_dealer", False):
+        raise HTTPException(status_code=403, detail="Alleen voor buitenlandse leveranciers")
+    
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    if motorcycle.get("foreign_dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U bent niet de eigenaar van deze motor")
+    
+    new_price = data.get("price")
+    if not new_price or new_price <= 0:
+        raise HTTPException(status_code=400, detail="Ongeldige prijs")
+    
+    new_price = float(new_price)
+    old_price = float(motorcycle.get("original_price") or motorcycle.get("price", 0))
+    price_diff = old_price - new_price  # Positive = price reduction
+    
+    # Update original_price (dealer's price) and adjust selling price by the same amount
+    update_fields = {"original_price": new_price}
+    
+    current_selling_price = motorcycle.get("price", 0)
+    if current_selling_price and price_diff != 0:
+        new_selling_price = max(0, float(current_selling_price) - price_diff)
+        update_fields["price"] = new_selling_price
+        
+        # Also update price_override_amount if admin set a manual price
+        if motorcycle.get("price_override") and motorcycle.get("price_override_amount"):
+            new_override = max(0, float(motorcycle["price_override_amount"]) - price_diff)
+            update_fields["price_override_amount"] = new_override
+    
+    # Track supplier price reduction
+    if price_diff > 0:
+        update_fields["supplier_price_reduced"] = True
+        update_fields["supplier_price_reduction"] = price_diff
+        update_fields["supplier_price_reduced_at"] = datetime.now(timezone.utc).isoformat()
+    elif price_diff < 0:
+        # Price increase - clear reduction flag
+        update_fields["supplier_price_reduced"] = False
+        update_fields["supplier_price_reduction"] = 0
+    
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": update_fields}
+    )
+    
+    return {
+        "message": "Prijs bijgewerkt", 
+        "new_supplier_price": new_price,
+        "new_selling_price": update_fields.get("price", current_selling_price),
+        "price_difference": price_diff
+    }
+
+
+@api_router.post("/motorcycles/foreign-listings/{motorcycle_id}/mark-sold-elsewhere")
+async def mark_motorcycle_sold_elsewhere(motorcycle_id: str, user: dict = Depends(get_current_user)):
+    """Mark a motorcycle as sold elsewhere by the foreign dealer/supplier.
+    This will notify any dealer who has ordered this motorcycle."""
+    
+    # Check if user is foreign dealer
+    if not user.get("is_foreign_dealer", False):
+        raise HTTPException(status_code=403, detail="Alleen voor buitenlandse leveranciers")
+    
+    # Find the motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Verify ownership
+    if motorcycle.get("foreign_dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="U bent niet de eigenaar van deze motor")
+    
+    # Check if motorcycle is already marked as sold elsewhere
+    if motorcycle.get("sold_elsewhere"):
+        raise HTTPException(status_code=400, detail="Motor is al gemarkeerd als elders verkocht")
+    
+    # Find any orders for this motorcycle
+    orders = await db.orders.find(
+        {"motorcycle_id": motorcycle_id, "archived": {"$ne": True}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Mark motorcycle as sold elsewhere and unavailable
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {
+            "sold_elsewhere": True,
+            "sold_elsewhere_at": datetime.now(timezone.utc).isoformat(),
+            "is_available": False
+        }}
+    )
+    
+    # Get supplier info for the email
+    supplier = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    supplier_company = supplier.get("company_name", "Leverancier") if supplier else "Leverancier"
+    
+    # Find similar motorcycles to suggest
+    similar_motorcycles = await db.motorcycles.find(
+        {
+            "is_available": True,
+            "brand": motorcycle.get("brand"),
+            "id": {"$ne": motorcycle_id}
+        },
+        {"_id": 0}
+    ).to_list(3)
+    
+    # Notify each dealer who ordered this motorcycle
+    notified_dealers = []
+    for order in orders:
+        dealer = await db.users.find_one({"id": order["dealer_id"]}, {"_id": 0})
+        if dealer and dealer.get("email"):
+            # Send email notification
+            asyncio.create_task(send_sold_elsewhere_email(
+                dealer, 
+                motorcycle, 
+                supplier_company,
+                similar_motorcycles
+            ))
+            notified_dealers.append(dealer.get("company_name", dealer.get("email")))
+            
+            # Create in-app notification
+            notification = Notification(
+                user_id=dealer["id"],
+                type="motorcycle_sold_elsewhere",
+                title="Motor niet meer beschikbaar",
+                message=f"De {motorcycle['brand']} {motorcycle['model']} is helaas elders verkocht door de leverancier.",
+                motorcycle_id=motorcycle_id
+            ).model_dump()
+            await db.notifications.insert_one(notification)
+    
+    return {
+        "message": "Motor gemarkeerd als elders verkocht",
+        "notified_dealers": notified_dealers,
+        "orders_affected": len(orders)
+    }
+
+async def send_sold_elsewhere_email(dealer: dict, motorcycle: dict, supplier_company: str, similar_motorcycles: list):
+    """Send email to dealer when a motorcycle they ordered is sold elsewhere by supplier"""
+    try:
+        dealer_name = dealer.get("contact_person", dealer.get("company_name", "Dealer"))
+        dealer_email = dealer.get("email")
+        
+        if not dealer_email:
+            return
+        
+        # Format price
+        price = motorcycle.get("price", 0)
+        price_formatted = f"€{price:,.0f}".replace(",", ".")
+        
+        # Build similar motorcycles section
+        similar_html = ""
+        if similar_motorcycles:
+            similar_html = """
+            <div style="margin-top: 30px; padding: 20px; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                <h3 style="color: #166534; margin: 0 0 15px 0; font-size: 16px;">🔍 Vergelijkbare motoren beschikbaar:</h3>
+            """
+            for moto in similar_motorcycles:
+                moto_price = f"€{moto.get('price', 0):,.0f}".replace(",", ".")
+                similar_html += f"""
+                <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{moto.get('brand', '')} {moto.get('model', '')}</strong><br>
+                        <span style="color: #666; font-size: 14px;">{moto.get('year', '')} • {moto.get('mileage', 0):,} km</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="color: #dc2626; font-weight: bold; font-size: 18px;">{moto_price}</span>
+                    </div>
+                </div>
+                """
+            similar_html += """
+                <a href="https://www.motoimportbv.nl/dealer" 
+                   style="display: inline-block; margin-top: 10px; background: #166534; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                    Bekijk alle motoren →
+                </a>
+            </div>
+            """
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f5;">
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">⚠️ Motor Niet Meer Beschikbaar</h1>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 30px;">
+                    <p style="font-size: 16px; color: #374151;">Beste {dealer_name},</p>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Helaas moeten wij u mededelen dat de motor waarin u geïnteresseerd was, door de leverancier 
+                        <strong>{supplier_company}</strong> elders is verkocht.
+                    </p>
+                    
+                    <!-- Motorcycle info -->
+                    <div style="background: #fef2f2; border: 2px solid #fecaca; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin: 0 0 10px 0; color: #991b1b;">
+                            {motorcycle.get('brand', '')} {motorcycle.get('model', '')}
+                        </h3>
+                        <p style="margin: 0; color: #666;">
+                            {motorcycle.get('year', '')} • {motorcycle.get('mileage', 0):,} km • {motorcycle.get('color', '')}
+                        </p>
+                        <p style="margin: 10px 0 0 0; font-size: 20px; font-weight: bold; color: #dc2626;">
+                            {price_formatted}
+                        </p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        Onze excuses voor het ongemak. Dit kan soms gebeuren wanneer een leverancier de motor via 
+                        een ander kanaal verkoopt voordat de transactie bij ons is afgerond.
+                    </p>
+                    
+                    {similar_html}
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 20px;">
+                        Heeft u vragen? Neem gerust contact met ons op.
+                    </p>
+                    
+                    <p style="margin-top: 30px; color: #374151;">
+                        Met vriendelijke groet,<br>
+                        <strong>Team Moto Import B.V.</strong><br>
+                        <span style="color: #666;">📞 +31 6 24264861</span><br>
+                        <span style="color: #666;">✉️ motoimportbv@gmail.com</span>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        await send_email(
+            to_email=dealer_email,
+            subject=f"⚠️ Motor niet meer beschikbaar: {motorcycle.get('brand', '')} {motorcycle.get('model', '')}",
+            html_content=html_content
+        )
+        print(f"Sold elsewhere email sent to {dealer_email}")
+        
+    except Exception as e:
+        print(f"Failed to send sold elsewhere email: {e}")
+
 
 @api_router.post("/motorcycles/{motorcycle_id}/activate")
 async def activate_foreign_listing(motorcycle_id: str, price: float, starting_price: Optional[float] = None, user: dict = Depends(require_admin)):
@@ -2178,7 +2685,7 @@ async def send_pending_motorcycle_emails():
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                     <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                    <p style="margin: 5px 0;">Tel: +31 6 81792660</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
                     <p style="margin: 10px 0; font-size: 11px; color: #6b7280;">U ontvangt maximaal 3 emails per dag</p>
                 </div>
             </div>
@@ -2263,9 +2770,19 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
     chf_eur_rate = await get_chf_to_eur_rate()
     margin = await get_chf_eur_margin()
     
-    # Check if user is admin
+    # Check user role
     is_admin = user.get("role") == "admin"
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
     user_id = user.get("id")
+    
+    # SECURITY: Foreign dealers can ONLY see their own motorcycles
+    if is_foreign_dealer:
+        own_motorcycles = [m for m in motorcycles if m.get("foreign_dealer_id") == user_id]
+        # Strip selling price - foreign dealers only see their own price
+        for m in own_motorcycles:
+            m.pop("price", None)
+            m.pop("purchase_price", None)
+        return own_motorcycles
     
     # Filter motorcycles based on visibility (admin sees all)
     filtered_motorcycles = []
@@ -2318,6 +2835,7 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
             m.pop("price_override", None)
             m.pop("price_override_amount", None)
             m.pop("price_override_active", None)
+            m.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
             # Also hide visibility settings from dealers
             m.pop("visible_to_dealers", None)
         
@@ -2328,6 +2846,15 @@ async def get_motorcycles(user: dict = Depends(require_approved_dealer)):
 @api_router.get("/motorcycles/with-exchange-rate")
 async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approved_dealer)):
     """Get motorcycles with real-time CHF to EUR conversion for foreign listings"""
+    # SECURITY: Foreign dealers can only see their own motorcycles
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
+    if is_foreign_dealer:
+        own_motorcycles = await db.motorcycles.find(
+            {"foreign_dealer_id": user.get("id")}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(100)
+        return {"motorcycles": own_motorcycles, "exchange_rate": {"CHF_EUR": 0.95}, "margin_percent": 0}
+    
     # Sort by created_at descending (newest first)
     motorcycles = await db.motorcycles.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
@@ -2374,6 +2901,11 @@ async def get_motorcycles_with_exchange_rate(user: dict = Depends(require_approv
 
 @api_router.get("/motorcycles/available")
 async def get_available_motorcycles(user: dict = Depends(require_approved_dealer)):
+    # SECURITY: Foreign dealers cannot access available motorcycles list
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
+    if is_foreign_dealer:
+        raise HTTPException(status_code=403, detail="Leveranciers hebben geen toegang tot de catalogus")
+    
     # For dealers, exclude their own listings from the available motorcycles
     query = {"is_available": True}
     if user["role"] == "dealer":
@@ -2390,7 +2922,17 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
     is_admin = user.get("role") == "admin"
     
     # Process motorcycles - recalculate EUR prices for CHF motorcycles
+    filtered = []
+    user_id = user.get("id")
     for m in motorcycles:
+        # VISIBILITY CHECK: Skip motorcycles this dealer shouldn't see
+        if not is_admin:
+            vis = m.get("visibility", "all")
+            if vis == "selected":
+                visible_to = m.get("visible_to_dealers", [])
+                if user_id not in visible_to:
+                    continue
+        
         # Add default starting_price if missing
         if "starting_price" not in m or m["starting_price"] is None:
             m["starting_price"] = m.get("price", 0) * 0.8
@@ -2419,8 +2961,12 @@ async def get_available_motorcycles(user: dict = Depends(require_approved_dealer
             m.pop("price_override", None)
             m.pop("price_override_amount", None)
             m.pop("price_override_active", None)
+            m.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
+            m.pop("visible_to_dealers", None)  # Hide visibility settings
+        
+        filtered.append(m)
     
-    return motorcycles
+    return filtered
 
 @api_router.get("/motorcycles/my-listings")
 async def get_my_listings(user: dict = Depends(require_approved_dealer)):
@@ -2513,14 +3059,59 @@ async def get_motorcycle_public(motorcycle_id: str):
     
     return motorcycle
 
+@api_router.get("/motorcycles/{motorcycle_id}/customer-share")
+async def get_motorcycle_customer_share(motorcycle_id: str):
+    """Get motorcycle details WITHOUT any prices for sharing with customers"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+
+    # Remove ALL price-related fields
+    price_fields = [
+        "price", "starting_price", "purchase_price", "highest_bid",
+        "original_price", "original_currency", "price_override",
+        "price_override_amount", "price_override_active",
+        "supplier_price_reduced", "supplier_price_reduction",
+        "listing_fee_invoiced",
+    ]
+    for f in price_fields:
+        motorcycle.pop(f, None)
+
+    # Remove internal/sensitive fields
+    internal_fields = [
+        "visible_to_dealers", "visibility", "created_by",
+        "highest_bidder_id", "foreign_dealer_id", "seller_id",
+    ]
+    for f in internal_fields:
+        motorcycle.pop(f, None)
+
+    return motorcycle
+
 @api_router.get("/motorcycles/{motorcycle_id}")
 async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approved_dealer)):
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motorcycle not found")
     
-    # Track dealer view activity (only for non-admin users)
-    if user.get("role") != "admin":
+    # VISIBILITY CHECK: Dealers can only see motorcycles they have access to
+    if user.get("role") == "dealer":
+        vis = motorcycle.get("visibility", "all")
+        if vis == "selected":
+            visible_to = motorcycle.get("visible_to_dealers", [])
+            if user.get("id") not in visible_to:
+                raise HTTPException(status_code=403, detail="U heeft geen toegang tot deze motor")
+    
+    # SECURITY: Foreign dealers can only see their own motorcycles
+    is_foreign_dealer = user.get("is_foreign_dealer", False) or user.get("role") == "foreign_dealer"
+    if is_foreign_dealer:
+        if motorcycle.get("foreign_dealer_id") != user.get("id"):
+            raise HTTPException(status_code=403, detail="U heeft geen toegang tot deze motor")
+        # Strip selling price for foreign dealers
+        motorcycle.pop("price", None)
+        motorcycle.pop("purchase_price", None)
+    
+    # Track dealer view activity (only for Dutch dealers, not admins or foreign dealers)
+    if user.get("role") != "admin" and not is_foreign_dealer:
         try:
             # Log the view
             view_log = {
@@ -2590,6 +3181,7 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
         motorcycle.pop("price_override", None)
         motorcycle.pop("price_override_amount", None)
         motorcycle.pop("price_override_active", None)
+        motorcycle.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
     
     return motorcycle
 
@@ -2600,6 +3192,11 @@ async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: di
         raise HTTPException(status_code=404, detail="Motorcycle not found")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    # Track old price for price reduction notification
+    old_price = motorcycle.get("price", 0)
+    new_price = update_data.get("price")
+    price_reduced = new_price is not None and new_price < old_price
     
     # If admin manually sets price, mark it as overridden and save original price
     if "price" in update_data:
@@ -2628,6 +3225,19 @@ async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: di
         await db.motorcycles.update_one({"id": motorcycle_id}, {"$set": update_data})
     
     updated = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    
+    # Send price reduction email to dealers who viewed this motorcycle
+    if price_reduced and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
+        asyncio.create_task(send_price_reduction_emails(
+            motorcycle_id=motorcycle_id,
+            brand=motorcycle.get("brand", ""),
+            model=motorcycle.get("model", ""),
+            year=motorcycle.get("year", ""),
+            old_price=old_price,
+            new_price=new_price
+        ))
+        logger.info(f"Price reduction detected for {motorcycle.get('brand')} {motorcycle.get('model')}: €{old_price} -> €{new_price}")
+    
     return updated
 
 @api_router.delete("/motorcycles/{motorcycle_id}")
@@ -2685,21 +3295,18 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_approved_
 
 @api_router.get("/orders", response_model=List[OrderWithMotorcycle])
 async def get_orders(user: dict = Depends(require_approved_dealer)):
-    # Orders blijven 1 week zichtbaar
-    one_week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    
-    if user["role"] == "admin":
-        # Admin ziet alle orders van de laatste week (niet gearchiveerd)
+    if user["role"] in ("admin", "pakbon"):
+        # Admin/Pakbon ziet alle orders (inclusief gearchiveerd)
         orders = await db.orders.find(
-            {"created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
+            {}, 
             {"_id": 0}
-        ).to_list(1000)
+        ).sort("created_at", -1).to_list(10000)
     else:
-        # Dealers zien hun orders van de laatste week (niet gearchiveerd)
+        # Dealers zien hun orders (niet gearchiveerd)
         orders = await db.orders.find(
-            {"dealer_id": user["id"], "created_at": {"$gte": one_week_ago}, "archived": {"$ne": True}}, 
+            {"dealer_id": user["id"], "archived": {"$ne": True}}, 
             {"_id": 0}
-        ).to_list(1000)
+        ).sort("created_at", -1).to_list(10000)
     
     # Filter out orders without required fields and collect motorcycle IDs
     valid_orders = []
@@ -2801,6 +3408,117 @@ async def restore_order(order_id: str, user: dict = Depends(require_approved_dea
     
     return {"message": "Order restored successfully"}
 
+class TransportStatusUpdate(BaseModel):
+    transport_status: str  # pending, picked_up, in_transit, delivered
+    transport_carrier: Optional[str] = None
+    transport_tracking_number: Optional[str] = None
+    transport_estimated_delivery: Optional[str] = None
+    transport_notes: Optional[str] = None
+
+
+@api_router.put("/orders/{order_id}/pakbon-complete")
+async def complete_pakbon(order_id: str, user: dict = Depends(require_pakbon)):
+    """Mark a pakbon as completed"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "pakbon_completed": True,
+            "pakbon_completed_at": datetime.now(timezone.utc).isoformat(),
+            "pakbon_completed_by": user.get("email", "")
+        }}
+    )
+    return {"message": "Pakbon voltooid", "order_id": order_id}
+
+
+@api_router.put("/orders/{order_id}/transport")
+async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):
+    """Admin updates transport status for an order"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    # Valid transport statuses
+    valid_statuses = ["pending", "picked_up", "in_transit", "delivered"]
+    if data.transport_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Ongeldige transport status")
+    
+    update_data = {
+        "transport_status": data.transport_status,
+        "transport_updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if data.transport_carrier is not None:
+        update_data["transport_carrier"] = data.transport_carrier
+    if data.transport_tracking_number is not None:
+        update_data["transport_tracking_number"] = data.transport_tracking_number
+    if data.transport_estimated_delivery is not None:
+        update_data["transport_estimated_delivery"] = data.transport_estimated_delivery
+    if data.transport_notes is not None:
+        update_data["transport_notes"] = data.transport_notes
+    
+    await db.orders.update_one({"id": order_id}, {"$set": update_data})
+    
+    # Send email notification to dealer about transport update
+    dealer = await db.users.find_one({"id": order.get("dealer_id")}, {"_id": 0, "email": 1, "company_name": 1})
+    motorcycle = order.get("motorcycle_snapshot", {})
+    
+    status_labels = {
+        "pending": "Wachtend op transport",
+        "picked_up": "Opgehaald door transporteur",
+        "in_transit": "Onderweg",
+        "delivered": "Afgeleverd"
+    }
+    
+    status_label = status_labels.get(data.transport_status, data.transport_status)
+    
+    if dealer and dealer.get("email") and GMAIL_EMAIL and GMAIL_APP_PASSWORD:
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🚚 Transport Update</h1>
+                </div>
+                <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px;">
+                    <h2 style="color: #1a1a1a; margin: 0 0 10px 0;">{motorcycle.get('brand', '')} {motorcycle.get('model', '')}</h2>
+                    
+                    <div style="background: #f0f9ff; border: 2px solid #3b82f6; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <p style="color: #1d4ed8; font-size: 14px; margin: 0 0 5px 0; text-transform: uppercase;">Status</p>
+                        <p style="color: #1d4ed8; font-size: 24px; font-weight: bold; margin: 0;">{status_label}</p>
+                    </div>
+                    
+                    {f'<p><strong>Transporteur:</strong> {data.transport_carrier}</p>' if data.transport_carrier else ''}
+                    {f'<p><strong>Trackingnummer:</strong> {data.transport_tracking_number}</p>' if data.transport_tracking_number else ''}
+                    {f'<p><strong>Verwachte levering:</strong> {data.transport_estimated_delivery}</p>' if data.transport_estimated_delivery else ''}
+                    {f'<p><strong>Opmerking:</strong> {data.transport_notes}</p>' if data.transport_notes else ''}
+                    
+                    <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                        Heeft u vragen? Neem contact met ons op via Motoimportbv@gmail.com
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            await send_email(
+                dealer["email"],
+                f"🚚 Transport Update: {motorcycle.get('brand', '')} {motorcycle.get('model', '')} - {status_label}",
+                html_content
+            )
+            logger.info(f"Transport update email sent to {dealer['email']}")
+        except Exception as e:
+            logger.error(f"Failed to send transport email: {e}")
+    
+    return {"message": "Transport status bijgewerkt", "transport_status": data.transport_status}
+
 @api_router.get("/orders/archived", response_model=List[OrderWithMotorcycle])
 async def get_archived_orders(user: dict = Depends(require_approved_dealer)):
     """Get archived orders for the current dealer"""
@@ -2857,7 +3575,7 @@ async def check_voucher(code: str, user: dict = Depends(get_current_user)):
     
     voucher = await db.vouchers.find_one({
         "code": code.upper(),
-        "dealer_id": user["id"],
+        "$or": [{"dealer_id": user["id"]}, {"dealer_id": None}],
         "is_used": False
     }, {"_id": 0})
     
@@ -2993,6 +3711,39 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         order_dict["seller_id"] = seller_id
     
     await db.orders.insert_one(order_dict)
+    
+    # Auto-create concept taxatie invoice when dealer requests valuation
+    if data.needs_valuation:
+        last_inv = await db.taxatie_invoices.find_one(sort=[("invoice_number", -1)], projection={"_id": 0, "invoice_number": 1})
+        next_inv_num = (last_inv["invoice_number"] + 1) if last_inv else 1001
+        taxatie_concept = {
+            "id": str(uuid.uuid4()),
+            "invoice_number": next_inv_num,
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "customer_name": user.get("company_name", user.get("email", "")),
+            "customer_address": "",
+            "customer_city": "",
+            "customer_phone": user.get("phone", ""),
+            "customer_email": user.get("email", ""),
+            "motorcycle_brand": motorcycle.get("brand", ""),
+            "motorcycle_model": motorcycle.get("model", ""),
+            "motorcycle_year": str(motorcycle.get("year", "")),
+            "motorcycle_license_plate": "",
+            "motorcycle_vin": "",
+            "taxatie_value": 0,
+            "fee": TAXATIE_DEFAULT_FEE,
+            "btw_percentage": TAXATIE_BTW_PERCENTAGE,
+            "include_extra_fee": False,
+            "extra_fee": 60,
+            "notes": f"Automatisch aangemaakt bij bestelling. Order: {order_dict['id']}",
+            "bank_name": "S. Milone",
+            "bank_iban": "NL03SNSB8846497880",
+            "status": "concept",
+            "order_id": order_dict["id"],
+            "created_by": "system",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.taxatie_invoices.insert_one(taxatie_concept)
     
     # Mark motorcycle as unavailable
     await db.motorcycles.update_one(
@@ -3185,7 +3936,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
             <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
             <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-            <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+            <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
         </div>
     </div>
     """
@@ -3200,6 +3951,95 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     base_url = PRODUCTION_BASE_URL
     order_date = datetime.now(timezone.utc).strftime('%d-%m-%Y')
     order_time = datetime.now(timezone.utc).strftime('%H:%M')
+    
+    # Get supplier/source info for admin
+    supplier_info_html = ""
+    foreign_dealer = None
+    seller = None
+    
+    if foreign_dealer_id:
+        # Motor komt van buitenlandse leverancier
+        foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0})
+        if foreign_dealer:
+            country_names = {
+                "CH": "🇨🇭 Zwitserland", "DE": "🇩🇪 Duitsland", "AT": "🇦🇹 Oostenrijk",
+                "IT": "🇮🇹 Italië", "FR": "🇫🇷 Frankrijk", "BE": "🇧🇪 België"
+            }
+            country_display = country_names.get(foreign_dealer.get("country", ""), foreign_dealer.get("country", "Onbekend"))
+            supplier_info_html = f"""
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                <tr style="background: #f59e0b;">
+                    <td colspan="2" style="padding: 12px; color: white; font-weight: bold;">🌍 LEVERANCIER INFORMATIE</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #fcd34d; width: 30%;"><strong>Bedrijf</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d; font-weight: bold;">{foreign_dealer.get('company_name', 'N/A')}</td>
+                </tr>
+                <tr style="background: #fef9c3;">
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Land</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{country_display}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Contactpersoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{foreign_dealer.get('contact_person', 'N/A')}</td>
+                </tr>
+                <tr style="background: #fef9c3;">
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Email</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><a href="mailto:{foreign_dealer.get('email', '')}">{foreign_dealer.get('email', 'N/A')}</a></td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Telefoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{foreign_dealer.get('phone', 'N/A')}</td>
+                </tr>
+                <tr style="background: #fef9c3;">
+                    <td style="padding: 12px; border: 1px solid #fcd34d;"><strong>Adres</strong></td>
+                    <td style="padding: 12px; border: 1px solid #fcd34d;">{foreign_dealer.get('address', 'Niet opgegeven')}</td>
+                </tr>
+            </table>
+            """
+    elif is_dealer_listing:
+        # Motor komt van Nederlandse dealer
+        seller = await db.users.find_one({"id": seller_id}, {"_id": 0}) if seller_id else None
+        if seller:
+            supplier_info_html = f"""
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: #dbeafe; border-radius: 8px; border: 2px solid #3b82f6;">
+                <tr style="background: #3b82f6;">
+                    <td colspan="2" style="padding: 12px; color: white; font-weight: bold;">🏪 VERKOPENDE DEALER</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #93c5fd; width: 30%;"><strong>Bedrijf</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd; font-weight: bold;">{seller.get('company_name', 'N/A')}</td>
+                </tr>
+                <tr style="background: #eff6ff;">
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Contactpersoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;">{seller.get('contact_person', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Email</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><a href="mailto:{seller.get('email', '')}">{seller.get('email', 'N/A')}</a></td>
+                </tr>
+                <tr style="background: #eff6ff;">
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Telefoon</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;">{seller.get('phone', 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;"><strong>Adres</strong></td>
+                    <td style="padding: 12px; border: 1px solid #93c5fd;">{seller.get('address', '')} {seller.get('postal_code', '')} {seller.get('city', '')}</td>
+                </tr>
+            </table>
+            """
+    else:
+        # Motor is van Moto Import zelf
+        supplier_info_html = """
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: #dcfce7; border-radius: 8px; border: 2px solid #22c55e;">
+                <tr style="background: #22c55e;">
+                    <td style="padding: 12px; color: white; font-weight: bold;">✅ EIGEN VOORRAAD</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #86efac;">Deze motor komt uit de eigen voorraad van Moto Import B.V.</td>
+                </tr>
+            </table>
+            """
     
     admin_html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
@@ -3225,6 +4065,9 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                     <td style="padding: 12px; border: 1px solid #e4e4e7; color: #DC2626; font-weight: bold; font-size: 18px;">€{total_price:,.2f}</td>
                 </tr>
             </table>
+            
+            <!-- Supplier/Source Info -->
+            {supplier_info_html}
         </div>
         
         <!-- PAKBON -->
@@ -3253,7 +4096,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                         <td style="width: 50%; vertical-align: top;">
                             <p style="color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>AFZENDER</strong></p>
                             <p style="margin: 0; font-weight: bold; font-size: 16px;">Moto Import B.V.</p>
-                            <p style="margin: 10px 0 0 0; color: #52525b;">Tel: +31 6 81792660</p>
+                            <p style="margin: 10px 0 0 0; color: #52525b;">Tel: +31 6 24264861</p>
                             <p style="margin: 5px 0; color: #52525b;">Motoimportbv@gmail.com</p>
                             <p style="margin: 5px 0; color: #52525b;">www.motoimportbv.nl</p>
                         </td>
@@ -3270,6 +4113,18 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                         </td>
                     </tr>
                 </table>
+                
+                <!-- Herkomst Motor (alleen voor admin) -->
+                {f'''
+                <div style="background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: #92400e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;"><strong>🌍 HERKOMST MOTOR (ALLEEN VOOR ADMIN)</strong></p>
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: #78350f;">{foreign_dealer.get("company_name", "N/A") if foreign_dealer else (seller.get("company_name", "N/A") if seller else "Moto Import B.V. (eigen voorraad)")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">{foreign_dealer.get("contact_person", "") if foreign_dealer else (seller.get("contact_person", "") if seller else "")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">{foreign_dealer.get("address", "Adres niet opgegeven") if foreign_dealer else (f"{seller.get('address', '')} {seller.get('postal_code', '')} {seller.get('city', '')}" if seller else "")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">Tel: {foreign_dealer.get("phone", "N/A") if foreign_dealer else (seller.get("phone", "N/A") if seller else "+31 6 24264861")}</p>
+                    <p style="margin: 5px 0 0 0; color: #78350f; font-size: 13px;">Email: {foreign_dealer.get("email", "N/A") if foreign_dealer else (seller.get("email", "N/A") if seller else "Motoimportbv@gmail.com")}</p>
+                </div>
+                ''' if (foreign_dealer or seller) else ''}
                 
                 <!-- Motor Details Tabel -->
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -3338,6 +4193,119 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         logger.error(f"Failed to send admin notification email: {e}")
     
     return {"order_id": order.id, "message": "Bestelling geplaatst"}
+
+# ============ ADMIN: ORDER ON BEHALF OF DEALER ============
+
+class AdminOrderForDealer(BaseModel):
+    motorcycle_id: str
+    dealer_id: str
+    needs_delivery: bool = False
+    needs_inspection: bool = False
+    needs_valuation: bool = False
+
+@api_router.post("/admin/order-for-dealer")
+async def admin_order_for_dealer(data: AdminOrderForDealer, current_user: dict = Depends(require_admin)):
+    """Admin creates an order on behalf of a dealer"""
+    # Get the dealer
+    dealer = await db.users.find_one({"id": data.dealer_id, "role": "dealer", "is_approved": True}, {"_id": 0})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden of niet goedgekeurd")
+
+    # Get the motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    if not motorcycle.get("is_available"):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+
+    # Calculate total price (same logic as buy-now)
+    base_price = motorcycle.get("price", 0)
+    delivery_cost = 50 if data.needs_delivery else 0
+    total_price = base_price + delivery_cost
+
+    order = Order(
+        dealer_id=dealer["id"],
+        motorcycle_id=data.motorcycle_id,
+        dealer_email=dealer.get("email", ""),
+        dealer_company=dealer.get("company_name", dealer.get("name", "")),
+        status="confirmed",
+        needs_delivery=data.needs_delivery,
+        delivery_cost=delivery_cost,
+        total_price=total_price,
+        payment_status="unpaid",
+        motorcycle_snapshot={
+            "brand": motorcycle.get("brand", ""),
+            "model": motorcycle.get("model", ""),
+            "year": motorcycle.get("year", 0),
+            "price": base_price,
+            "mileage": motorcycle.get("mileage", 0),
+            "color": motorcycle.get("color", ""),
+            "needs_inspection": data.needs_inspection,
+            "needs_valuation": data.needs_valuation,
+            "inspection_cost": 125 if data.needs_inspection else 0,
+            "valuation_cost": 160 if data.needs_valuation else 0,
+        },
+        notes=f"Besteld door admin ({current_user['email']}) namens dealer",
+    )
+
+    order_dict = order.model_dump()
+    await db.orders.insert_one(order_dict)
+    order_dict.pop("_id", None)
+
+    # Mark motorcycle as unavailable
+    await db.motorcycles.update_one(
+        {"id": data.motorcycle_id},
+        {"$set": {"is_available": False}}
+    )
+
+    # Send confirmation email to dealer
+    dealer_company = dealer.get("company_name", dealer.get("name", ""))
+    delivery_text = "Ja (€50)" if data.needs_delivery else "Nee (ophalen)"
+    inspection_text = "Ja (€125)" if data.needs_inspection else "Nee"
+    valuation_text = "Ja (€160 excl. BTW)" if data.needs_valuation else "Nee"
+    motor_brand = motorcycle.get("brand", "")
+    motor_model = motorcycle.get("model", "")
+    motor_year = motorcycle.get("year", 0)
+    motor_mileage = motorcycle.get("mileage", 0)
+
+    dealer_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <div style="background: #DC2626; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Bestelling Bevestigd</h1>
+        </div>
+        <div style="padding: 20px;">
+            <p>Beste {dealer_company},</p>
+            <p>Er is een bestelling voor u geplaatst door Moto Import.</p>
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">{motor_brand} {motor_model} ({motor_year})</h3>
+                <p>Km-stand: {motor_mileage:,} km</p>
+                <p style="font-size: 24px; font-weight: bold; color: #DC2626;">€{total_price:,.2f}</p>
+                <p>Bezorging: {delivery_text}</p>
+                <p>Keuring: {inspection_text}</p>
+                <p>Taxatie: {valuation_text}</p>
+            </div>
+            <p style="color: #6b7280;">Wij nemen contact met u op voor de verdere afhandeling.</p>
+        </div>
+        <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+            <p><strong style="color: white;">Moto Import B.V.</strong></p>
+        </div>
+    </div>
+    """
+    try:
+        await send_email(dealer["email"], f"Bestelling Bevestigd - {motor_brand} {motor_model} - Moto Import", dealer_html)
+    except Exception as e:
+        logger.error(f"Failed to send dealer order email: {e}")
+
+    return {"order_id": order.id, "message": f"Bestelling geplaatst namens {dealer_company}"}
+
+@api_router.get("/admin/approved-dealers")
+async def get_approved_dealers(current_user: dict = Depends(require_admin)):
+    """Get list of approved dealers for dropdown"""
+    dealers = await db.users.find(
+        {"role": "dealer", "is_approved": True},
+        {"_id": 0, "id": 1, "email": 1, "company_name": 1, "name": 1, "phone": 1, "city": 1}
+    ).sort("company_name", 1).to_list(500)
+    return dealers
 
 # ============ PAYMENT ENDPOINTS ============
 
@@ -3610,7 +4578,7 @@ async def get_payment_status(session_id: str, user: dict = Depends(require_appro
                             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                                 <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                                <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
                             </div>
                         </div>
                         """
@@ -4510,7 +5478,10 @@ async def create_price_proposal(data: PriceProposalCreate, user: dict = Depends(
         dealer_email=user.get("email", ""),
         original_price=motorcycle.get("price", 0),
         proposed_price=data.proposed_price,
-        reason=data.reason
+        reason=data.reason,
+        request_inspection=data.request_inspection,
+        request_appraisal=data.request_appraisal,
+        request_delivery=data.request_delivery
     )
     
     await db.price_proposals.insert_one(proposal.model_dump())
@@ -4557,6 +5528,8 @@ async def create_price_proposal(data: PriceProposalCreate, user: dict = Depends(
                 </table>
                 
                 {f'<div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;"><strong>Toelichting dealer:</strong><br><em>"{data.reason}"</em></div>' if data.reason else ''}
+                
+                {'<div style="margin-top: 15px; padding: 15px; background: #dbeafe; border-radius: 8px; border: 1px solid #3b82f6;"><strong style="color: #1d4ed8;">📋 Gevraagde opties:</strong><ul style="margin: 10px 0 0 0; padding-left: 20px;">' + (''.join([f'<li>Keuringskosten</li>' if data.request_inspection else '', f'<li>Taxatiekosten</li>' if data.request_appraisal else '', f'<li>Bezorging</li>' if data.request_delivery else ''])) + '</ul></div>' if (data.request_inspection or data.request_appraisal or data.request_delivery) else ''}
                 
                 <div style="margin-top: 25px; text-align: center;">
                     <a href="https://www.motoimportbv.nl/admin/price-proposals" 
@@ -4610,7 +5583,16 @@ async def get_my_price_proposals(user: dict = Depends(get_current_user)):
 
 
 @api_router.put("/price-proposals/{proposal_id}/respond")
-async def respond_to_proposal(proposal_id: str, response: str, admin_message: str = "", counter_price: float = None, user: dict = Depends(require_admin)):
+async def respond_to_proposal(
+    proposal_id: str, 
+    response: str, 
+    admin_message: str = "", 
+    counter_price: float = None,
+    include_inspection: bool = False,
+    include_appraisal: bool = False,
+    include_delivery: bool = False,
+    user: dict = Depends(require_admin)
+):
     """Admin responds to a price proposal (accept/reject/counter)"""
     proposal = await db.price_proposals.find_one({"id": proposal_id}, {"_id": 0})
     if not proposal:
@@ -4631,13 +5613,25 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
     if response == "counter" and counter_price:
         update_data["counter_price"] = counter_price
     
+    # Store extra options for accepted proposals
+    if response == "accepted":
+        update_data["include_inspection"] = include_inspection
+        update_data["include_appraisal"] = include_appraisal
+        update_data["include_delivery"] = include_delivery
+    
     await db.price_proposals.update_one({"id": proposal_id}, {"$set": update_data})
     
     # Get motorcycle info
     motorcycle = await db.motorcycles.find_one({"id": proposal.get("motorcycle_id")}, {"_id": 0})
     
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
     # Get dealer info
     dealer = await db.users.find_one({"id": proposal.get("dealer_id")}, {"_id": 0, "password_hash": 0})
+    
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
     
     # If ACCEPTED: Create order, mark as sold, send pakbon
     if response == "accepted":
@@ -4656,7 +5650,7 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             "description": motorcycle.get("description"),
         }
         
-        # Create order with the accepted price
+        # Create order with the accepted price and extra options
         order_id = str(uuid.uuid4())
         order = {
             "id": order_id,
@@ -4671,11 +5665,14 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             "motorcycle_snapshot": motorcycle_snapshot,
             "status": "confirmed",
             "payment_status": "pending",
-            "needs_delivery": False,
+            "needs_delivery": include_delivery,
             "delivery_cost": 0,
             "deposit_amount": 0,
             "order_type": "price_proposal",
             "proposal_id": proposal_id,
+            "include_inspection": include_inspection,
+            "include_appraisal": include_appraisal,
+            "include_delivery": include_delivery,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.orders.insert_one(order)
@@ -4770,6 +5767,8 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
                 </tr>
             </table>
             
+            {'<h3 style="border-bottom: 2px solid #e4e4e7; padding-bottom: 10px;">📋 Extra Opties</h3><div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><ul style="margin: 0; padding-left: 20px;">' + (''.join([f'<li style="color: #16a34a;">✅ Keuringskosten inbegrepen</li>' if include_inspection else '', f'<li style="color: #16a34a;">✅ Taxatiekosten inbegrepen</li>' if include_appraisal else '', f'<li style="color: #16a34a;">✅ Bezorging inbegrepen</li>' if include_delivery else ''])) + '</ul></div>' if (include_inspection or include_appraisal or include_delivery) else ''}
+            
             {f'<div style="padding: 15px; background: #f0f9ff; border-left: 4px solid #3b82f6; margin-bottom: 20px;"><strong>Bericht van Moto Import:</strong><br>{admin_message}</div>' if admin_message else ''}
             
             <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -4784,7 +5783,7 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             <div style="text-align: center; padding: 20px; background: #f4f4f5; border-radius: 8px;">
                 <p style="margin: 0 0 10px 0; font-weight: bold;">Moto Import B.V.</p>
                 
-                <p style="margin: 5px 0; color: #666;">📞 +31 6 81792660 | ✉️ motoimportbv@gmail.com</p>
+                <p style="margin: 5px 0; color: #666;">📞 +31 6 24264861 | ✉️ motoimportbv@gmail.com</p>
                 <p style="margin: 5px 0; color: #666;">🌐 www.motoimportbv.nl</p>
             </div>
         </div>
@@ -4861,7 +5860,7 @@ async def respond_to_proposal(proposal_id: str, response: str, admin_message: st
             </div>
             
             <div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
-                <p>Moto Import B.V. | +31 6 81792660 | motoimportbv@gmail.com</p>
+                <p>Moto Import B.V. | +31 6 24264861 | motoimportbv@gmail.com</p>
             </div>
         </div>
         """
@@ -4893,6 +5892,43 @@ async def get_dealers(user: dict = Depends(require_admin)):
         {"_id": 0, "password_hash": 0}
     ).to_list(1000)
     return dealers
+
+@api_router.post("/dealers/{dealer_id}/reset-password")
+async def reset_dealer_password(dealer_id: str, body: dict = Body(...), user: dict = Depends(require_admin)):
+    """Admin: reset a dealer's password"""
+    new_password = body.get("new_password", "")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minimaal 6 tekens zijn")
+    
+    dealer = await db.users.find_one({"id": dealer_id})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    
+    hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    await db.users.update_one({"id": dealer_id}, {"$set": {"password_hash": hashed}})
+    
+    # Send email to dealer with new password
+    try:
+        html = f"""
+        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+            <div style="background:#dc2626;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;">Wachtwoord Gereset</h1>
+            </div>
+            <div style="padding:30px;background:white;border:1px solid #eee;">
+                <p>Uw wachtwoord voor Moto Import is gereset.</p>
+                <p><strong>Nieuw wachtwoord:</strong> {new_password}</p>
+                <p>U kunt hiermee inloggen op <a href="{PRODUCTION_BASE_URL}/login">{PRODUCTION_BASE_URL}/login</a></p>
+                <p style="margin-top:20px;color:#666;font-size:12px;">Wijzig uw wachtwoord na het inloggen.</p>
+            </div>
+        </div>
+        """
+        await send_email(dealer["email"], "Moto Import - Wachtwoord gereset", html)
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+    
+    return {"status": "ok", "message": f"Wachtwoord gereset voor {dealer['email']}"}
+
+
 
 @api_router.get("/dealers/pending")
 async def get_pending_dealers(user: dict = Depends(require_admin)):
@@ -4947,7 +5983,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
                 <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                     <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                     <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                    <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                    <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
                 </div>
             </div>
             """
@@ -5018,7 +6054,7 @@ async def approve_dealer(request: Request, dealer_id: str, user: dict = Depends(
             <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
                 <p style="margin: 5px 0;"><strong style="color: white;">Moto Import B.V.</strong></p>
                 <p style="margin: 5px 0;">www.motoimportbv.nl</p>
-                <p style="margin: 5px 0;">Tel: +31 6 81792660 | Email: Motoimportbv@gmail.com</p>
+                <p style="margin: 5px 0;">Tel: +31 6 24264861 | Email: Motoimportbv@gmail.com</p>
             </div>
         </div>
         """
@@ -5413,7 +6449,620 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
     }
 
 
-# ============ AI WELCOME MESSAGE ENDPOINTS ============
+@api_router.get("/admin/analytics/conversion")
+async def get_conversion_analytics(user: dict = Depends(require_admin)):
+    """Get detailed conversion analytics - views to purchases"""
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    week_ago = (now - timedelta(days=7)).isoformat()
+    month_ago = (now - timedelta(days=30)).isoformat()
+    
+    # Get all orders from last 30 days
+    orders = await db.orders.find(
+        {"created_at": {"$gte": month_ago}},
+        {"_id": 0, "motorcycle_id": 1, "dealer_id": 1, "created_at": 1, "total_price": 1}
+    ).to_list(1000)
+    
+    # Get all views from last 30 days
+    views = await db.activity_logs.find(
+        {"type": "motorcycle_view", "timestamp": {"$gte": month_ago}},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    # Calculate conversion rate
+    unique_viewed_motorcycles = set(v.get("motorcycle_id") for v in views if v.get("motorcycle_id"))
+    purchased_motorcycles = set(o.get("motorcycle_id") for o in orders if o.get("motorcycle_id"))
+    
+    # Motorcycles that were viewed AND then purchased
+    viewed_and_purchased = unique_viewed_motorcycles.intersection(purchased_motorcycles)
+    
+    conversion_rate = (len(viewed_and_purchased) / len(unique_viewed_motorcycles) * 100) if unique_viewed_motorcycles else 0
+    
+    # Views per purchase (how many views before a motorcycle sells)
+    views_per_purchase = {}
+    for order in orders:
+        moto_id = order.get("motorcycle_id")
+        if moto_id:
+            view_count = sum(1 for v in views if v.get("motorcycle_id") == moto_id)
+            views_per_purchase[moto_id] = view_count
+    
+    avg_views_before_sale = sum(views_per_purchase.values()) / len(views_per_purchase) if views_per_purchase else 0
+    
+    # Top converting dealers (most purchases relative to views)
+    dealer_stats = {}
+    for view in views:
+        dealer_id = view.get("dealer_id")
+        if dealer_id:
+            if dealer_id not in dealer_stats:
+                dealer_stats[dealer_id] = {"views": 0, "purchases": 0, "name": view.get("dealer_name", "Onbekend")}
+            dealer_stats[dealer_id]["views"] += 1
+    
+    for order in orders:
+        dealer_id = order.get("dealer_id")
+        if dealer_id and dealer_id in dealer_stats:
+            dealer_stats[dealer_id]["purchases"] += 1
+    
+    # Calculate conversion per dealer
+    dealer_conversions = []
+    for dealer_id, stats in dealer_stats.items():
+        if stats["views"] >= 5:  # Only include dealers with significant activity
+            conversion = (stats["purchases"] / stats["views"] * 100) if stats["views"] > 0 else 0
+            dealer_conversions.append({
+                "dealer_id": dealer_id,
+                "dealer_name": stats["name"],
+                "views": stats["views"],
+                "purchases": stats["purchases"],
+                "conversion_rate": round(conversion, 1)
+            })
+    
+    dealer_conversions.sort(key=lambda x: x["conversion_rate"], reverse=True)
+    
+    # Brand popularity analysis
+    brand_views = {}
+    for view in views:
+        brand = view.get("motorcycle_brand", "Onbekend")
+        if brand:
+            brand_views[brand] = brand_views.get(brand, 0) + 1
+    
+    brand_purchases = {}
+    for order in orders:
+        # Get motorcycle info
+        moto = await db.motorcycles.find_one({"id": order.get("motorcycle_id")}, {"brand": 1, "_id": 0})
+        if moto:
+            brand = moto.get("brand", "Onbekend")
+            brand_purchases[brand] = brand_purchases.get(brand, 0) + 1
+    
+    brand_stats = []
+    for brand, view_count in brand_views.items():
+        purchase_count = brand_purchases.get(brand, 0)
+        conversion = (purchase_count / view_count * 100) if view_count > 0 else 0
+        brand_stats.append({
+            "brand": brand,
+            "views": view_count,
+            "purchases": purchase_count,
+            "conversion_rate": round(conversion, 1)
+        })
+    
+    brand_stats.sort(key=lambda x: x["views"], reverse=True)
+    
+    # Price range analysis
+    price_ranges = [
+        {"label": "< €5.000", "min": 0, "max": 5000},
+        {"label": "€5.000 - €10.000", "min": 5000, "max": 10000},
+        {"label": "€10.000 - €15.000", "min": 10000, "max": 15000},
+        {"label": "€15.000 - €20.000", "min": 15000, "max": 20000},
+        {"label": "> €20.000", "min": 20000, "max": 999999}
+    ]
+    
+    price_stats = []
+    for pr in price_ranges:
+        range_orders = [o for o in orders if pr["min"] <= (o.get("total_price") or 0) < pr["max"]]
+        range_views = [v for v in views if pr["min"] <= (v.get("motorcycle_price") or 0) < pr["max"]]
+        price_stats.append({
+            "range": pr["label"],
+            "views": len(range_views),
+            "purchases": len(range_orders),
+            "revenue": sum(o.get("total_price", 0) for o in range_orders)
+        })
+    
+    return {
+        "summary": {
+            "total_views_30d": len(views),
+            "total_orders_30d": len(orders),
+            "unique_motorcycles_viewed": len(unique_viewed_motorcycles),
+            "motorcycles_sold": len(purchased_motorcycles),
+            "conversion_rate": round(conversion_rate, 1),
+            "avg_views_before_sale": round(avg_views_before_sale, 1),
+            "total_revenue_30d": sum(o.get("total_price", 0) for o in orders)
+        },
+        "top_converting_dealers": dealer_conversions[:10],
+        "brand_performance": brand_stats[:10],
+        "price_range_performance": price_stats
+    }
+
+
+@api_router.get("/admin/analytics/dealer/{dealer_id}")
+async def get_dealer_analytics(dealer_id: str, user: dict = Depends(require_admin)):
+    """Get detailed analytics for a specific dealer"""
+    from datetime import timedelta
+    
+    dealer = await db.users.find_one({"id": dealer_id}, {"_id": 0, "email": 1, "company_name": 1, "contact_person": 1})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    now = datetime.now(timezone.utc)
+    month_ago = (now - timedelta(days=30)).isoformat()
+    
+    # Dealer's views
+    views = await db.activity_logs.find(
+        {"type": "motorcycle_view", "dealer_id": dealer_id, "timestamp": {"$gte": month_ago}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Dealer's orders
+    orders = await db.orders.find(
+        {"dealer_id": dealer_id, "created_at": {"$gte": month_ago}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Most viewed brands by this dealer
+    brand_views = {}
+    for view in views:
+        brand = view.get("motorcycle_brand", "Onbekend")
+        brand_views[brand] = brand_views.get(brand, 0) + 1
+    
+    top_brands = sorted(brand_views.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    # Activity timeline (views per day)
+    daily_activity = {}
+    for view in views:
+        day = view.get("timestamp", "")[:10]  # Get date part
+        daily_activity[day] = daily_activity.get(day, 0) + 1
+    
+    return {
+        "dealer": dealer,
+        "stats": {
+            "total_views_30d": len(views),
+            "total_orders_30d": len(orders),
+            "total_spent_30d": sum(o.get("total_price", 0) for o in orders),
+            "conversion_rate": round((len(orders) / len(views) * 100) if views else 0, 1)
+        },
+        "top_brands": [{"brand": b, "views": c} for b, c in top_brands],
+        "daily_activity": daily_activity,
+        "recent_orders": orders[:5]
+    }
+
+
+# ============ MARKETING FILES MIGRATION ============
+
+OBJ_STORAGE_KEY = os.environ.get("OBJECT_STORAGE_KEY", "")
+
+def _cloud_url(path):
+    return f"https://integrations.emergentagent.com/objstore/api/v1/storage/objects/moto-import/marketing/{path}?key={OBJ_STORAGE_KEY}"
+
+# Hardcoded cloud URLs for marketing files (migrated to Emergent Object Storage)
+MARKETING_FILES_CLOUD = {
+    "Dealer_Contacten.csv": {"size_kb": 0.1, "cloud_url": _cloud_url("Dealer_Contacten.csv")},
+    "Duitse_Motorhaendler.csv": {"size_kb": 2.7, "cloud_url": _cloud_url("Duitse_Motorhaendler.csv")},
+    "Email_Templates_4_Talen.md": {"size_kb": 5.7, "cloud_url": _cloud_url("Email_Templates_4_Talen.md")},
+    "Email_Templates_Kopieerbaar.txt": {"size_kb": 5.6, "cloud_url": _cloud_url("Email_Templates_Kopieerbaar.txt")},
+    "MotoImport_EmailCampagne.md": {"size_kb": 4.1, "cloud_url": _cloud_url("MotoImport_EmailCampagne.md")},
+    "MotoImport_SocialMedia.md": {"size_kb": 4.7, "cloud_url": _cloud_url("MotoImport_SocialMedia.md")},
+    "MotoImport_Storyboard.md": {"size_kb": 14.5, "cloud_url": _cloud_url("MotoImport_Storyboard.md")},
+    "MotoImport_VideoScript.md": {"size_kb": 3.6, "cloud_url": _cloud_url("MotoImport_VideoScript.md")},
+    "Moto_Import_Dealer_Flyer_2025_DE.pdf": {"size_kb": 1721.0, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_2025_DE.pdf")},
+    "Moto_Import_Dealer_Flyer_2025_FR.pdf": {"size_kb": 1721.0, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_2025_FR.pdf")},
+    "Moto_Import_Dealer_Flyer_2025_IT.pdf": {"size_kb": 1721.0, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_2025_IT.pdf")},
+    "Moto_Import_Dealer_Flyer_2025_NL.pdf": {"size_kb": 1721.0, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_2025_NL.pdf")},
+    "Moto_Import_Dealer_Flyer_DE.pdf": {"size_kb": 3.3, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_DE.pdf")},
+    "Moto_Import_Dealer_Flyer_FR.pdf": {"size_kb": 3.3, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_FR.pdf")},
+    "Moto_Import_Dealer_Flyer_IT.pdf": {"size_kb": 3.3, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_IT.pdf")},
+    "Moto_Import_Dealer_Flyer_NL.pdf": {"size_kb": 3.2, "cloud_url": _cloud_url("Moto_Import_Dealer_Flyer_NL.pdf")},
+    "Moto_Import_Dealer_Info.pdf": {"size_kb": 2.4, "cloud_url": _cloud_url("Moto_Import_Dealer_Info.pdf")},
+    "Moto_Import_Dealer_Info_DE.pdf": {"size_kb": 2.4, "cloud_url": _cloud_url("Moto_Import_Dealer_Info_DE.pdf")},
+    "Moto_Import_Dealer_Info_FR.pdf": {"size_kb": 2.4, "cloud_url": _cloud_url("Moto_Import_Dealer_Info_FR.pdf")},
+    "Moto_Import_Dealer_Info_IT.pdf": {"size_kb": 2.4, "cloud_url": _cloud_url("Moto_Import_Dealer_Info_IT.pdf")},
+    "Moto_Import_Supplier_Flyer_DE.pdf": {"size_kb": 2838.5, "cloud_url": _cloud_url("Moto_Import_Supplier_Flyer_DE.pdf")},
+    "Moto_Import_Supplier_Flyer_FR.pdf": {"size_kb": 2838.5, "cloud_url": _cloud_url("Moto_Import_Supplier_Flyer_FR.pdf")},
+    "Moto_Import_Supplier_Flyer_IT.pdf": {"size_kb": 2838.5, "cloud_url": _cloud_url("Moto_Import_Supplier_Flyer_IT.pdf")},
+    "Moto_Import_Supplier_Flyer_NL.pdf": {"size_kb": 2838.4, "cloud_url": _cloud_url("Moto_Import_Supplier_Flyer_NL.pdf")},
+    "Motorzaken_Benelux_Frankrijk.csv": {"size_kb": 2.8, "cloud_url": _cloud_url("Motorzaken_Benelux_Frankrijk.csv")},
+    "Motorzaken_Nederland.csv": {"size_kb": 2.8, "cloud_url": _cloud_url("Motorzaken_Nederland.csv")},
+    "Motorzaken_Noord_Italie.csv": {"size_kb": 6.9, "cloud_url": _cloud_url("Motorzaken_Noord_Italie.csv")},
+    "Motorzaken_Zwitserland.csv": {"size_kb": 2.3, "cloud_url": _cloud_url("Motorzaken_Zwitserland.csv")},
+    "Oostenrijkse_Motorhaendler.csv": {"size_kb": 2.7, "cloud_url": _cloud_url("Oostenrijkse_Motorhaendler.csv")},
+    "Zwitserse_Motorhaendler.csv": {"size_kb": 4.6, "cloud_url": _cloud_url("Zwitserse_Motorhaendler.csv")},
+    "flyer_hero.png": {"size_kb": 1139.4, "cloud_url": _cloud_url("flyer_hero.png")},
+    "portal_hero.png": {"size_kb": 1620.0, "cloud_url": _cloud_url("portal_hero.png")},
+}
+
+@api_router.get("/admin/marketing-files")
+async def get_marketing_files(user: dict = Depends(require_admin)):
+    """Get all marketing files - uses hardcoded cloud URLs for production compatibility"""
+    
+    # Use hardcoded cloud files as primary source
+    files = []
+    for filename, data in MARKETING_FILES_CLOUD.items():
+        files.append({
+            "filename": filename,
+            "size_kb": data["size_kb"],
+            "cloud_url": data["cloud_url"],
+            "migrated": True,
+            "migrated_at": "2026-02-27T19:59:00+00:00"
+        })
+    
+    # Sort by filename
+    files.sort(key=lambda x: x["filename"])
+    
+    return {
+        "files": files,
+        "total_files": len(files),
+        "migrated_count": len(files),
+        "total_size_mb": round(sum(f["size_kb"] for f in files) / 1024, 2)
+    }
+
+
+@api_router.get("/admin/marketing-files/download/{filename}")
+async def download_marketing_file(filename: str, token: str = None, user: dict = Depends(get_optional_user)):
+    """Download a marketing file from cloud storage"""
+    from fastapi.responses import Response
+    import requests
+    
+    # Verify user is admin (either from header or query param)
+    if not user:
+        if token:
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0})
+            except Exception as e:
+                logger.error(f"Token decode error: {e}")
+                pass
+    
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Alleen voor administrators")
+    
+    # Check if file exists in our list
+    if filename not in MARKETING_FILES_CLOUD:
+        raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+    
+    file_info = MARKETING_FILES_CLOUD[filename]
+    storage_path = f"moto-import/marketing/{filename}"
+    
+    # Get storage key
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Cloud storage niet beschikbaar")
+    
+    try:
+        # Fetch file from cloud storage with proper header
+        resp = requests.get(
+            f"{STORAGE_URL}/objects/{storage_path}",
+            headers={"X-Storage-Key": key},
+            timeout=60
+        )
+        resp.raise_for_status()
+        
+        # Determine content type
+        ext = filename.split('.')[-1].lower()
+        content_types = {
+            'pdf': 'application/pdf',
+            'csv': 'text/csv',
+            'md': 'text/markdown',
+            'txt': 'text/plain',
+            'png': 'image/png'
+        }
+        content_type = content_types.get(ext, 'application/octet-stream')
+        
+        return Response(
+            content=resp.content,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to download {filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"Download mislukt: {str(e)}")
+
+
+class EmailFlyerRequest(BaseModel):
+    filename: str
+    recipient_email: str
+    recipient_name: str = "Geachte heer/mevrouw"
+    custom_message: str = ""
+
+@api_router.post("/admin/marketing-files/send-email")
+async def send_flyer_email(request: EmailFlyerRequest, user: dict = Depends(require_admin)):
+    """Send a marketing flyer via email to a specified address"""
+    import requests as req
+    import base64
+    
+    # Check if file exists
+    if request.filename not in MARKETING_FILES_CLOUD:
+        raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+    
+    file_info = MARKETING_FILES_CLOUD[request.filename]
+    storage_path = f"moto-import/marketing/{request.filename}"
+    
+    # Get storage key and download file
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Cloud storage niet beschikbaar")
+    
+    try:
+        # Fetch file from cloud
+        resp = req.get(
+            f"{STORAGE_URL}/objects/{storage_path}",
+            headers={"X-Storage-Key": key},
+            timeout=60
+        )
+        resp.raise_for_status()
+        file_content = resp.content
+        file_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # Determine language from filename for email text
+        lang = "nl"
+        if "_DE" in request.filename or "_DE." in request.filename:
+            lang = "de"
+        elif "_FR" in request.filename or "_FR." in request.filename:
+            lang = "fr"
+        elif "_IT" in request.filename or "_IT." in request.filename:
+            lang = "it"
+        
+        # Email texts per language
+        email_texts = {
+            "nl": {
+                "subject": "Moto Import - Dealer Informatie",
+                "greeting": f"Beste {request.recipient_name},",
+                "intro": "Hierbij ontvangt u onze dealer flyer met informatie over samenwerking met Moto Import B.V.",
+                "cta": "Heeft u interesse of vragen? Neem gerust contact met ons op!",
+                "closing": "Met vriendelijke groet,"
+            },
+            "de": {
+                "subject": "Moto Import - Händler Information",
+                "greeting": f"Sehr geehrte(r) {request.recipient_name},",
+                "intro": "Anbei erhalten Sie unseren Händler-Flyer mit Informationen zur Zusammenarbeit mit Moto Import B.V.",
+                "cta": "Haben Sie Interesse oder Fragen? Kontaktieren Sie uns gerne!",
+                "closing": "Mit freundlichen Grüßen,"
+            },
+            "fr": {
+                "subject": "Moto Import - Information Concessionnaire",
+                "greeting": f"Cher/Chère {request.recipient_name},",
+                "intro": "Veuillez trouver ci-joint notre flyer concessionnaire avec des informations sur la collaboration avec Moto Import B.V.",
+                "cta": "Vous avez des questions ou êtes intéressé? N'hésitez pas à nous contacter!",
+                "closing": "Cordialement,"
+            },
+            "it": {
+                "subject": "Moto Import - Informazioni Concessionario",
+                "greeting": f"Gentile {request.recipient_name},",
+                "intro": "In allegato troverà il nostro flyer per concessionari con informazioni sulla collaborazione con Moto Import B.V.",
+                "cta": "Ha domande o è interessato? Non esiti a contattarci!",
+                "closing": "Cordiali saluti,"
+            }
+        }
+        
+        texts = email_texts.get(lang, email_texts["nl"])
+        
+        # Custom message if provided
+        custom_section = ""
+        if request.custom_message:
+            custom_section = f"""
+            <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #0369a1;">{request.custom_message}</p>
+            </div>
+            """
+        
+        # Build email HTML
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f5;">
+            <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">MOTO IMPORT B.V.</h1>
+                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Premium Motorcycles</p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 30px;">
+                    <p style="font-size: 16px; color: #374151;">{texts['greeting']}</p>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        {texts['intro']}
+                    </p>
+                    
+                    {custom_section}
+                    
+                    <div style="background: #fef2f2; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #991b1b; font-weight: bold;">📎 Bijlage / Attachment</p>
+                        <p style="margin: 0; color: #666;">{request.filename}</p>
+                    </div>
+                    
+                    <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                        {texts['cta']}
+                    </p>
+                    
+                    <p style="margin-top: 30px; color: #374151;">
+                        {texts['closing']}<br>
+                        <strong>Team Moto Import B.V.</strong><br>
+                        <span style="color: #666;">📞 +31 6 24264861</span><br>
+                        <span style="color: #666;">✉️ motoimportbv@gmail.com</span><br>
+                        <span style="color: #666;">🌐 www.motoimportbv.nl</span>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Send email with attachment using Gmail
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+        
+        gmail_user = os.environ.get("GMAIL_EMAIL", os.environ.get("GMAIL_USER", "motoimportbv@gmail.com"))
+        gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
+        
+        if not gmail_password:
+            raise HTTPException(status_code=500, detail="Email configuratie ontbreekt")
+        
+        msg = MIMEMultipart()
+        msg['From'] = f"Moto Import B.V. <{gmail_user}>"
+        msg['To'] = request.recipient_email
+        msg['Subject'] = texts['subject']
+        
+        # Attach HTML body
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        # Attach the PDF/file
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(file_content)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{request.filename}"')
+        msg.attach(part)
+        
+        # Send email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(gmail_user, gmail_password)
+            server.send_message(msg)
+        
+        logger.info(f"Flyer email sent to {request.recipient_email}: {request.filename}")
+        
+        return {
+            "success": True,
+            "message": f"Email verzonden naar {request.recipient_email}",
+            "filename": request.filename,
+            "language": lang
+        }
+        
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTP error sending flyer: {e}")
+        raise HTTPException(status_code=500, detail=f"Email verzenden mislukt: {str(e)}")
+    except Exception as e:
+        logger.error(f"Failed to send flyer email: {e}")
+        raise HTTPException(status_code=500, detail=f"Fout: {str(e)}")
+
+
+
+
+@api_router.post("/admin/marketing-files/migrate")
+async def migrate_marketing_files(user: dict = Depends(require_admin)):
+    """Migrate all marketing files to Emergent Object Storage"""
+    import glob
+    import requests
+    
+    # Initialize storage
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Cloud storage niet beschikbaar. Controleer EMERGENT_LLM_KEY.")
+    
+    upload_dir = ROOT_DIR / "uploads"
+    marketing_patterns = ["*.pdf", "*.csv", "*.md", "*.txt", "*.png"]
+    
+    migrated = []
+    failed = []
+    skipped = []
+    
+    for pattern in marketing_patterns:
+        for filepath in glob.glob(str(upload_dir / pattern)):
+            filename = os.path.basename(filepath)
+            
+            # Check if already migrated
+            existing = await db.marketing_files.find_one({"filename": filename})
+            if existing:
+                skipped.append(filename)
+                continue
+            
+            try:
+                # Read file
+                with open(filepath, 'rb') as f:
+                    content = f.read()
+                
+                # Determine content type
+                ext = filename.split('.')[-1].lower()
+                content_types = {
+                    'pdf': 'application/pdf',
+                    'csv': 'text/csv',
+                    'md': 'text/markdown',
+                    'txt': 'text/plain',
+                    'png': 'image/png',
+                    'jpg': 'image/jpeg'
+                }
+                content_type = content_types.get(ext, 'application/octet-stream')
+                
+                # Upload to cloud storage
+                storage_path = f"{APP_NAME}/marketing/{filename}"
+                resp = requests.put(
+                    f"{STORAGE_URL}/objects/{storage_path}",
+                    headers={"X-Storage-Key": key, "Content-Type": content_type},
+                    data=content,
+                    timeout=60
+                )
+                resp.raise_for_status()
+                result = resp.json()
+                
+                # Save record to database
+                await db.marketing_files.insert_one({
+                    "filename": filename,
+                    "storage_path": storage_path,
+                    "cloud_url": result.get("url", f"{STORAGE_URL}/objects/{storage_path}?key={key}"),
+                    "content_type": content_type,
+                    "size_bytes": len(content),
+                    "migrated_at": datetime.now(timezone.utc).isoformat(),
+                    "migrated_by": user["email"]
+                })
+                
+                migrated.append(filename)
+                logger.info(f"Migrated marketing file: {filename}")
+                
+            except Exception as e:
+                logger.error(f"Failed to migrate {filename}: {e}")
+                failed.append({"filename": filename, "error": str(e)})
+    
+    return {
+        "message": f"Migratie voltooid: {len(migrated)} bestanden gemigreerd",
+        "migrated": migrated,
+        "skipped": skipped,
+        "failed": failed,
+        "summary": {
+            "total_migrated": len(migrated),
+            "total_skipped": len(skipped),
+            "total_failed": len(failed)
+        }
+    }
+
+
+@api_router.get("/admin/marketing-files/{filename}/download")
+async def download_marketing_file(filename: str, user: dict = Depends(require_admin)):
+    """Get download URL for a marketing file (prefers cloud, fallback to local)"""
+    from fastapi.responses import FileResponse
+    
+    # Check if file exists in cloud
+    cloud_record = await db.marketing_files.find_one({"filename": filename}, {"_id": 0})
+    
+    if cloud_record and cloud_record.get("cloud_url"):
+        return {"url": cloud_record["cloud_url"], "source": "cloud"}
+    
+    # Fallback to local file
+    local_path = ROOT_DIR / "uploads" / filename
+    if local_path.exists():
+        return FileResponse(
+            path=str(local_path),
+            filename=filename,
+            media_type="application/octet-stream"
+        )
+    
+    raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+
+
+
 
 async def generate_welcome_message(dealer_name: str, new_motorcycles: list) -> str:
     """Generate a personalized welcome message using GPT-5.2"""
@@ -6312,7 +7961,7 @@ ABOUT_US_HTML = """
         <li>✓ Persoonlijke service</li>
     </ul>
     <p style="color: #666; font-size: 14px; margin-bottom: 0;">
-        <strong>Contact:</strong> +31 6 81792660 | info@motoimportbv.nl<br>
+        <strong>Contact:</strong> +31 6 24264861 | info@motoimportbv.nl<br>
         <strong>Adres:</strong> Horsterhoekweg 11, 7433 SV Schalkhaar, Nederland
     </p>
 </div>
@@ -6387,7 +8036,7 @@ async def send_bulk_email(data: BulkEmailRequest, user: dict = Depends(require_a
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
             <p><strong>Moto Import BV</strong></p>
             <p>Horsterhoekweg 11, 7433 SV Schalkhaar</p>
-            <p>Tel: +31 6 81792660 | www.motoimportbv.nl</p>
+            <p>Tel: +31 6 24264861 | www.motoimportbv.nl</p>
         </div>
     </body>
     </html>
@@ -6797,6 +8446,1237 @@ async def delete_license_plate_document(plate_id: str, user: dict = Depends(requ
     
     return {"message": "Document verwijderd"}
 
+# ============ PRIVATE LISTINGS (PARTICULIEREN) ENDPOINTS ============
+
+PRIVATE_LISTING_PRICE = 4.95  # EUR per week
+DEALER_CONTACT_FEE = 175.00  # EUR one-time fee when dealer BUYS a motorcycle from a private seller
+ALLOWED_ADMIN_EMAIL_TAXATIE = "motoimportbv@gmail.com"  # Only this admin may create taxatie invoices
+TAXATIE_DEFAULT_FEE = 160.00  # EUR default taxatie fee (ex BTW)
+TAXATIE_BTW_PERCENTAGE = 21  # BTW percentage
+ALLOWED_ADMIN_EMAIL_PRIVATE = "motoimportbv@gmail.com"  # Only this admin may see private listings
+
+@api_router.post("/private-listings/register")
+async def register_private_seller(data: dict = Body(...)):
+    """Register a new private seller account"""
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    city = data.get("city", "").strip()
+    
+    if not email or not password or not name:
+        raise HTTPException(status_code=400, detail="Naam, email en wachtwoord zijn verplicht")
+    
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Dit emailadres is al in gebruik")
+    
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    user_id = str(uuid.uuid4())
+    user_doc = {
+        "id": user_id,
+        "email": email,
+        "name": name,
+        "phone": phone,
+        "city": city,
+        "password_hash": hashed,
+        "role": "particulier",
+        "is_approved": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(user_doc)
+    
+    token = create_token(user_id, email, "particulier")
+    return {"token": token, "user": {"id": user_id, "email": email, "name": name, "role": "particulier", "phone": phone, "city": city}}
+
+@api_router.post("/private-listings")
+async def create_private_listing(data: PrivateListingCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new private motorcycle listing (requires payment)"""
+    if current_user.get("role") != "particulier":
+        raise HTTPException(status_code=403, detail="Alleen particulieren kunnen hier adverteren")
+    
+    listing = PrivateListing(
+        user_id=current_user["id"],
+        user_name=current_user.get("name", data.name or "Particulier"),
+        user_email=current_user.get("email", data.email),
+        user_phone=data.phone or current_user.get("phone", ""),
+        city=data.city or current_user.get("city", ""),
+        brand=data.brand,
+        model=data.model,
+        year=data.year,
+        mileage=data.mileage,
+        price=data.price,
+        description=data.description,
+        color=data.color,
+        photos=data.photos,
+        is_active=False,
+        is_paid=False,
+    )
+    await db.private_listings.insert_one(listing.model_dump())
+    return {"listing_id": listing.id, "message": "Advertentie aangemaakt. Betaal om te activeren."}
+
+@api_router.post("/private-listings/{listing_id}/checkout")
+async def create_private_listing_checkout(listing_id: str, request: Request, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create Stripe checkout for a private listing"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+    
+    listing = await db.private_listings.find_one({"id": listing_id, "user_id": current_user["id"]}, {"_id": 0})
+    if not listing:
+        raise HTTPException(status_code=404, detail="Advertentie niet gevonden")
+    if listing.get("is_paid"):
+        raise HTTPException(status_code=400, detail="Deze advertentie is al betaald")
+    
+    origin_url = body.get("origin_url", str(request.base_url).rstrip("/"))
+    success_url = f"{origin_url}/particulier/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/particulier"
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    checkout_req = CheckoutSessionRequest(
+        amount=PRIVATE_LISTING_PRICE,
+        currency="eur",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "listing_id": listing_id,
+            "user_id": current_user["id"],
+            "type": "private_listing",
+        },
+        payment_methods=["card", "ideal"],
+    )
+    session = await stripe_checkout.create_checkout_session(checkout_req)
+    
+    # Store payment transaction
+    await db.payment_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "session_id": session.session_id,
+        "listing_id": listing_id,
+        "user_id": current_user["id"],
+        "amount": PRIVATE_LISTING_PRICE,
+        "currency": "eur",
+        "status": "pending",
+        "payment_status": "initiated",
+        "type": "private_listing",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    # Link session to listing
+    await db.private_listings.update_one(
+        {"id": listing_id},
+        {"$set": {"payment_session_id": session.session_id}}
+    )
+    
+    return {"checkout_url": session.url, "session_id": session.session_id}
+
+@api_router.get("/private-listings/checkout-status/{session_id}")
+async def check_private_listing_payment(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Check payment status and activate listing if paid"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+    
+    status = await stripe_checkout.get_checkout_status(session_id)
+    
+    # Update payment transaction
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {"status": status.status, "payment_status": status.payment_status}}
+    )
+    
+    # Activate listing if paid
+    if status.payment_status == "paid":
+        listing = await db.private_listings.find_one({"payment_session_id": session_id}, {"_id": 0})
+        if listing and not listing.get("is_paid"):
+            expires = datetime.now(timezone.utc) + timedelta(days=7)
+            await db.private_listings.update_one(
+                {"payment_session_id": session_id},
+                {"$set": {
+                    "is_active": True,
+                    "is_paid": True,
+                    "paid_at": datetime.now(timezone.utc).isoformat(),
+                    "expires_at": expires.isoformat(),
+                }}
+            )
+    
+    return {"status": status.status, "payment_status": status.payment_status}
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks"""
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    body = await request.body()
+    sig = request.headers.get("Stripe-Signature", "")
+    
+    try:
+        event = await stripe_checkout.handle_webhook(body, sig)
+        if event.payment_status == "paid" and event.metadata.get("type") == "private_listing":
+            listing_id = event.metadata.get("listing_id")
+            if listing_id:
+                listing = await db.private_listings.find_one({"id": listing_id}, {"_id": 0})
+                if listing and not listing.get("is_paid"):
+                    expires = datetime.now(timezone.utc) + timedelta(days=7)
+                    await db.private_listings.update_one(
+                        {"id": listing_id},
+                        {"$set": {
+                            "is_active": True, "is_paid": True,
+                            "paid_at": datetime.now(timezone.utc).isoformat(),
+                            "expires_at": expires.isoformat(),
+                        }}
+                    )
+                await db.payment_transactions.update_one(
+                    {"session_id": event.session_id},
+                    {"$set": {"status": "completed", "payment_status": "paid"}}
+                )
+        # Handle dealer private purchase payment
+        elif event.payment_status == "paid" and event.metadata.get("type") == "dealer_private_purchase":
+            listing_id = event.metadata.get("listing_id")
+            dealer_id = event.metadata.get("dealer_id")
+            if listing_id and dealer_id:
+                existing = await db.private_listing_purchases.find_one({"dealer_id": dealer_id, "listing_id": listing_id})
+                if not existing:
+                    await db.private_listing_purchases.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "dealer_id": dealer_id,
+                        "listing_id": listing_id,
+                        "paid_at": datetime.now(timezone.utc).isoformat(),
+                        "session_id": event.session_id,
+                    })
+                    # Mark listing as sold
+                    await db.private_listings.update_one(
+                        {"id": listing_id},
+                        {"$set": {"status": "sold", "sold_to_dealer": dealer_id, "sold_at": datetime.now(timezone.utc).isoformat()}}
+                    )
+                await db.payment_transactions.update_one(
+                    {"session_id": event.session_id},
+                    {"$set": {"status": "completed", "payment_status": "paid"}}
+                )
+        # Handle Google Motor subscription payment
+        elif event.payment_status == "paid" and event.metadata.get("type") == "google_motor_subscription":
+            plan = event.metadata.get("plan")
+            dealer_id = event.metadata.get("dealer_id")
+            sub = await db.google_motor_subscriptions.find_one({"session_id": event.session_id})
+            if sub and sub.get("status") != "active":
+                update = {"status": "active", "paid_at": datetime.now(timezone.utc).isoformat()}
+                if plan == "monthly":
+                    update["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+                await db.google_motor_subscriptions.update_one({"session_id": event.session_id}, {"$set": update})
+                logger.info(f"Google motor subscription activated: {plan} for dealer {dealer_id}")
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return {"status": "error"}
+
+@api_router.get("/private-listings/my")
+async def get_my_private_listings(current_user: dict = Depends(get_current_user)):
+    """Get listings for current private seller"""
+    listings = await db.private_listings.find(
+        {"user_id": current_user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return listings
+
+@api_router.get("/private-listings/active")
+async def get_active_private_listings(current_user: dict = Depends(get_current_user)):
+    """Get all active private listings for dealers and the allowed admin"""
+    role = current_user.get("role")
+    email = current_user.get("email", "").lower()
+    
+    # Only dealers and the specific admin are allowed
+    if role == "admin" and email != ALLOWED_ADMIN_EMAIL_PRIVATE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    if role not in ["dealer", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen dealers")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    listings = await db.private_listings.find(
+        {"is_active": True, "is_paid": True, "expires_at": {"$gt": now}}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Check which listings this dealer has already purchased
+    dealer_id = current_user["id"]
+    purchases = await db.private_listing_purchases.find(
+        {"dealer_id": dealer_id}, {"_id": 0}
+    ).to_list(500)
+    purchased_ids = {p["listing_id"] for p in purchases}
+    
+    for listing in listings:
+        listing["is_purchased"] = listing["id"] in purchased_ids
+    
+    return listings
+
+@api_router.post("/private-listings/{listing_id}/dealer-checkout")
+async def create_dealer_purchase_checkout(listing_id: str, request: Request, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create Stripe checkout for a dealer to BUY a motorcycle from a private seller (EUR 175)"""
+    role = current_user.get("role")
+    email = current_user.get("email", "").lower()
+    if role == "admin" and email != ALLOWED_ADMIN_EMAIL_PRIVATE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    if role not in ["dealer", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen dealers")
+    
+    listing = await db.private_listings.find_one({"id": listing_id, "is_active": True, "is_paid": True}, {"_id": 0})
+    if not listing:
+        raise HTTPException(status_code=404, detail="Advertentie niet gevonden of niet meer actief")
+    
+    # Check if dealer already purchased
+    existing = await db.private_listing_purchases.find_one({"dealer_id": current_user["id"], "listing_id": listing_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="U heeft deze motor al gekocht")
+    
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+    
+    origin_url = body.get("origin_url", str(request.base_url).rstrip("/"))
+    success_url = f"{origin_url}/dealer?private_purchase=success&listing_id={listing_id}"
+    cancel_url = f"{origin_url}/dealer?tab=particulier"
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    checkout_req = CheckoutSessionRequest(
+        amount=DEALER_CONTACT_FEE,
+        currency="eur",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "listing_id": listing_id,
+            "dealer_id": current_user["id"],
+            "type": "dealer_private_purchase",
+        },
+        payment_methods=["card", "ideal"],
+    )
+    session = await stripe_checkout.create_checkout_session(checkout_req)
+    
+    # Store payment transaction
+    await db.payment_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "session_id": session.session_id,
+        "listing_id": listing_id,
+        "dealer_id": current_user["id"],
+        "amount": DEALER_CONTACT_FEE,
+        "currency": "eur",
+        "status": "pending",
+        "payment_status": "initiated",
+        "type": "dealer_private_purchase",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    return {"checkout_url": session.url, "session_id": session.session_id}
+
+@api_router.post("/private-listings/dealer-purchase-confirm")
+async def confirm_dealer_purchase(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Confirm dealer purchase after successful Stripe payment"""
+    listing_id = body.get("listing_id", "")
+    
+    if not listing_id:
+        raise HTTPException(status_code=400, detail="listing_id is verplicht")
+    
+    existing = await db.private_listing_purchases.find_one({"dealer_id": current_user["id"], "listing_id": listing_id})
+    if existing:
+        return {"status": "already_purchased"}
+    
+    tx = await db.payment_transactions.find_one({
+        "listing_id": listing_id,
+        "dealer_id": current_user["id"],
+        "type": "dealer_private_purchase",
+    }, {"_id": 0})
+    
+    if not tx:
+        raise HTTPException(status_code=404, detail="Geen betaling gevonden")
+    
+    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    api_key = os.environ.get("STRIPE_API_KEY")
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+    status = await stripe_checkout.get_checkout_status(tx["session_id"])
+    
+    if status.payment_status == "paid":
+        await db.private_listing_purchases.insert_one({
+            "id": str(uuid.uuid4()),
+            "dealer_id": current_user["id"],
+            "listing_id": listing_id,
+            "paid_at": datetime.now(timezone.utc).isoformat(),
+            "session_id": tx["session_id"],
+        })
+        await db.payment_transactions.update_one(
+            {"session_id": tx["session_id"]},
+            {"$set": {"status": "completed", "payment_status": "paid"}}
+        )
+        # Mark listing as sold
+        await db.private_listings.update_one(
+            {"id": listing_id},
+            {"$set": {"status": "sold", "sold_to_dealer": current_user["id"], "sold_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "purchased"}
+    
+    return {"status": "pending", "payment_status": status.payment_status}
+
+# ============ REVIEWS ENDPOINTS ============
+
+@api_router.get("/reviews")
+async def get_reviews():
+    """Get all reviews - public endpoint"""
+    reviews = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    # Hide dealer info for anonymous reviews
+    for r in reviews:
+        if r.get("anonymous"):
+            r["dealer_company"] = "Anoniem"
+    return reviews
+
+@api_router.post("/reviews")
+async def create_review(review_data: ReviewCreate, current_user: dict = Depends(get_current_user)):
+    """Create a review - only dealers can post"""
+    if current_user.get("role") not in ["dealer"]:
+        raise HTTPException(status_code=403, detail="Alleen dealers kunnen reviews plaatsen")
+    
+    # Check if dealer already has a review
+    existing = await db.reviews.find_one({"dealer_id": current_user["id"]}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="U heeft al een review geplaatst")
+    
+    review = Review(
+        dealer_id=current_user["id"],
+        dealer_company=current_user.get("company_name", "Dealer"),
+        anonymous=review_data.anonymous,
+        rating=review_data.rating,
+        text=review_data.text,
+    )
+    await db.reviews.insert_one(review.model_dump())
+    return {"message": "Review geplaatst", "review_id": review.id}
+
+# --- Promo video endpoint (serves from cloud storage with Range support) ---
+@api_router.get("/promo/video/{filename}")
+async def get_promo_video(filename: str, request: Request):
+    """Serve promo videos with Range request support for mobile browsers"""
+    allowed = [
+        "moto_import_reclame_it.webm", "moto_import_reclame_de.webm",
+        "moto_import_reclame_it.mp4", "moto_import_reclame_de.mp4",
+        "moto_import_reclame_fr.webm", "moto_import_reclame_fr.mp4",
+    ]
+    if filename not in allowed:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    media_type = "video/webm" if filename.endswith(".webm") else "video/mp4"
+    
+    # Try local file first
+    local_path = UPLOAD_DIR / filename
+    if not local_path.exists():
+        # Download from cloud storage to local cache
+        try:
+            data, _ = get_object(f"{APP_NAME}/promo/{filename}")
+            with open(local_path, 'wb') as f:
+                f.write(data)
+            logger.info(f"Cached promo video from cloud: {filename}")
+        except Exception as e:
+            logger.error(f"Failed to get promo video {filename}: {e}")
+            raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Serve with Range support
+    file_size = local_path.stat().st_size
+    range_header = request.headers.get("range")
+    
+    if range_header:
+        # Parse range header: "bytes=0-1023"
+        range_str = range_header.replace("bytes=", "")
+        parts = range_str.split("-")
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if parts[1] else file_size - 1
+        end = min(end, file_size - 1)
+        content_length = end - start + 1
+        
+        with open(local_path, 'rb') as f:
+            f.seek(start)
+            data = f.read(content_length)
+        
+        return Response(
+            content=data,
+            status_code=206,
+            media_type=media_type,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(content_length),
+            }
+        )
+    
+    # No range request - return full file
+    return FileResponse(str(local_path), media_type=media_type, headers={"Accept-Ranges": "bytes"})
+
+# ==================== TAXATIE INVOICES ====================
+TAXATIE_BANK_NAME = "S. Milone"
+TAXATIE_BANK_IBAN = "NL03SNSB8846497880"
+
+@api_router.post("/taxatie/invoices")
+async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create a taxatie invoice - only for motoimportbv@gmail.com"""
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    last = await db.taxatie_invoices.find_one(sort=[("invoice_number", -1)], projection={"_id": 0, "invoice_number": 1})
+    next_num = (last["invoice_number"] + 1) if last else 1001
+    
+    invoice = {
+        "id": str(uuid.uuid4()),
+        "invoice_number": next_num,
+        "date": body.get("date", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+        "customer_name": body.get("customer_name", ""),
+        "customer_address": body.get("customer_address", ""),
+        "customer_city": body.get("customer_city", ""),
+        "customer_phone": body.get("customer_phone", ""),
+        "customer_email": body.get("customer_email", ""),
+        "motorcycle_brand": body.get("motorcycle_brand", ""),
+        "motorcycle_model": body.get("motorcycle_model", ""),
+        "motorcycle_year": body.get("motorcycle_year", ""),
+        "motorcycle_license_plate": body.get("motorcycle_license_plate", ""),
+        "motorcycle_vin": body.get("motorcycle_vin", ""),
+        "taxatie_value": body.get("taxatie_value", 0),
+        "fee": body.get("fee", TAXATIE_DEFAULT_FEE),
+        "btw_percentage": TAXATIE_BTW_PERCENTAGE,
+        "include_extra_fee": body.get("include_extra_fee", False),
+        "extra_fee": body.get("extra_fee", 60),
+        "notes": body.get("notes", ""),
+        "bank_name": TAXATIE_BANK_NAME,
+        "bank_iban": TAXATIE_BANK_IBAN,
+        "status": "open",
+        "created_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    await db.taxatie_invoices.insert_one(invoice)
+    del invoice["_id"]
+    return invoice
+
+@api_router.get("/taxatie/invoices")
+async def list_taxatie_invoices(current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    invoices = await db.taxatie_invoices.find({}, {"_id": 0}).sort("invoice_number", -1).to_list(500)
+    return invoices
+
+@api_router.get("/taxatie/invoices/{invoice_id}")
+async def get_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    invoice = await db.taxatie_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    return invoice
+
+@api_router.put("/taxatie/invoices/{invoice_id}")
+async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    update_fields = {}
+    for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
+        if field in body:
+            update_fields[field] = body[field]
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Geen velden om bij te werken")
+    result = await db.taxatie_invoices.update_one({"id": invoice_id}, {"$set": update_fields})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    return {"status": "updated"}
+
+@api_router.delete("/taxatie/invoices/{invoice_id}")
+async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.taxatie_invoices.delete_one({"id": invoice_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    return {"status": "deleted"}
+
+# ============ GOOGLE MOTOREN (DEALER SEO LISTINGS) ============
+
+GOOGLE_MOTOR_PRICE_PER_MOTOR = 2.95  # EUR per week per motor
+GOOGLE_MOTOR_MONTHLY_PRICE = 45.00  # EUR per month unlimited
+ALLOWED_ADMIN_EMAIL_GOOGLE = "motoimportbv@gmail.com"
+
+class GoogleMotorCreate(BaseModel):
+    brand: str
+    model: str
+    year: int
+    price: float
+    mileage: int = 0
+    description: str = ""
+    images: List[str] = []
+    color: str = ""
+    condition: str = ""
+
+@api_router.post("/google-motors/checkout")
+async def create_google_motor_checkout(request: Request, body: dict = Body(...), current_user: dict = Depends(require_approved_dealer)):
+    """Create Stripe checkout for Google Motors subscription"""
+    plan = body.get("plan")  # "per_motor" or "monthly"
+    origin_url = body.get("origin_url", str(request.base_url).rstrip("/"))
+    
+    if plan not in ["per_motor", "monthly"]:
+        raise HTTPException(status_code=400, detail="Ongeldig plan")
+    
+    amount = GOOGLE_MOTOR_PRICE_PER_MOTOR if plan == "per_motor" else GOOGLE_MOTOR_MONTHLY_PRICE
+    
+    api_key = os.environ.get("STRIPE_API_KEY")
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    
+    success_url = f"{origin_url}/dealer/google-motors?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin_url}/dealer/google-motors?payment=cancelled"
+    
+    checkout_req = CheckoutSessionRequest(
+        amount=amount,
+        currency="eur",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "type": "google_motor_subscription",
+            "plan": plan,
+            "dealer_id": current_user["id"],
+            "dealer_email": current_user.get("email", ""),
+        },
+        payment_methods=["ideal"],
+    )
+    session = await stripe_checkout.create_checkout_session(checkout_req)
+    
+    sub_id = str(uuid.uuid4())
+    await db.google_motor_subscriptions.insert_one({
+        "id": sub_id,
+        "dealer_id": current_user["id"],
+        "dealer_email": current_user.get("email", ""),
+        "plan": plan,
+        "amount": amount,
+        "session_id": session.session_id,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    return {"checkout_url": session.url, "session_id": session.session_id, "subscription_id": sub_id}
+
+@api_router.get("/google-motors/subscription")
+async def get_google_motor_subscription(current_user: dict = Depends(require_approved_dealer)):
+    """Get current subscription status for dealer"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Check active monthly subscription
+    monthly = await db.google_motor_subscriptions.find_one(
+        {"dealer_id": current_user["id"], "plan": "monthly", "status": "active", "expires_at": {"$gt": now}},
+        {"_id": 0}
+    )
+    
+    # Count active per-motor credits
+    per_motor_credits = await db.google_motor_subscriptions.count_documents(
+        {"dealer_id": current_user["id"], "plan": "per_motor", "status": "active", "used": {"$ne": True}}
+    )
+    
+    # Count total active motors
+    active_motors = await db.google_motors.count_documents(
+        {"dealer_id": current_user["id"], "status": {"$in": ["pending", "approved"]}}
+    )
+    
+    return {
+        "has_monthly": monthly is not None,
+        "monthly_expires": monthly.get("expires_at") if monthly else None,
+        "per_motor_credits": per_motor_credits,
+        "active_motors": active_motors,
+    }
+
+@api_router.get("/google-motors/check-payment/{session_id}")
+async def check_google_motor_payment(session_id: str, current_user: dict = Depends(require_approved_dealer)):
+    """Check payment status for Google Motors subscription"""
+    sub = await db.google_motor_subscriptions.find_one(
+        {"session_id": session_id, "dealer_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not sub:
+        raise HTTPException(status_code=404, detail="Abonnement niet gevonden")
+    
+    if sub.get("status") == "active":
+        return {"status": "active", "plan": sub["plan"]}
+    
+    # Check with Stripe
+    api_key = os.environ.get("STRIPE_API_KEY")
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+    status = await stripe_checkout.get_checkout_status(session_id)
+    
+    if status.payment_status == "paid" and sub.get("status") != "active":
+        update = {"status": "active", "paid_at": datetime.now(timezone.utc).isoformat()}
+        if sub["plan"] == "monthly":
+            update["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        await db.google_motor_subscriptions.update_one({"session_id": session_id}, {"$set": update})
+        return {"status": "active", "plan": sub["plan"]}
+    
+    return {"status": sub.get("status", "pending"), "plan": sub["plan"]}
+
+@api_router.post("/google-motors")
+async def create_google_motor(data: GoogleMotorCreate, current_user: dict = Depends(require_approved_dealer)):
+    """Create a new Google Motor listing"""
+    now = datetime.now(timezone.utc)
+    dealer_id = current_user["id"]
+    
+    # Check if dealer has active subscription
+    has_monthly = await db.google_motor_subscriptions.find_one(
+        {"dealer_id": dealer_id, "plan": "monthly", "status": "active", "expires_at": {"$gt": now.isoformat()}}
+    )
+    
+    has_credit = None
+    if not has_monthly:
+        has_credit = await db.google_motor_subscriptions.find_one(
+            {"dealer_id": dealer_id, "plan": "per_motor", "status": "active", "used": {"$ne": True}}
+        )
+        if not has_credit:
+            raise HTTPException(status_code=402, detail="Geen actief abonnement. Koop eerst een abonnement.")
+    
+    motor_id = str(uuid.uuid4())
+    expires_at = (now + timedelta(days=7)).isoformat() if not has_monthly else has_monthly.get("expires_at", (now + timedelta(days=30)).isoformat())
+    
+    motor = {
+        "id": motor_id,
+        "dealer_id": dealer_id,
+        "dealer_email": current_user.get("email", ""),
+        "dealer_company": current_user.get("company_name", ""),
+        "dealer_phone": current_user.get("phone", ""),
+        "dealer_city": current_user.get("city", ""),
+        "dealer_contact_person": current_user.get("contact_person", ""),
+        "brand": data.brand,
+        "model": data.model,
+        "year": data.year,
+        "price": data.price,
+        "mileage": data.mileage,
+        "description": data.description,
+        "images": data.images,
+        "color": data.color,
+        "condition": data.condition,
+        "status": "pending",
+        "plan": "monthly" if has_monthly else "per_motor",
+        "expires_at": expires_at,
+        "created_at": now.isoformat(),
+    }
+    
+    await db.google_motors.insert_one(motor)
+    
+    # Use up a per-motor credit if applicable
+    if has_credit and not has_monthly:
+        await db.google_motor_subscriptions.update_one(
+            {"id": has_credit["id"]}, {"$set": {"used": True, "motor_id": motor_id}}
+        )
+    
+    # Notify admin
+    try:
+        html = f"""
+        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+            <div style="background:#dc2626;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;">Nieuwe Google Motor</h1>
+            </div>
+            <div style="padding:30px;background:white;border:1px solid #eee;">
+                <p>Er is een nieuwe motor aangemeld voor Google:</p>
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="padding:8px;font-weight:bold;">Dealer:</td><td>{current_user.get('company_name','')}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Motor:</td><td>{data.brand} {data.model} ({data.year})</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Prijs:</td><td>&euro;{data.price:,.0f}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Plan:</td><td>{'Maandelijks' if has_monthly else 'Per motor'}</td></tr>
+                </table>
+                <p style="margin-top:20px;">Ga naar het admin panel om deze motor goed te keuren.</p>
+            </div>
+        </div>
+        """
+        await send_email(ALLOWED_ADMIN_EMAIL_GOOGLE, f"Nieuwe Google Motor: {data.brand} {data.model}", html)
+    except Exception as e:
+        logger.error(f"Failed to send Google motor notification: {e}")
+    
+    motor.pop("_id", None)
+    return motor
+
+@api_router.get("/google-motors/my")
+async def get_my_google_motors(current_user: dict = Depends(require_approved_dealer)):
+    motors = await db.google_motors.find({"dealer_id": current_user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return motors
+
+@api_router.delete("/google-motors/{motor_id}")
+async def delete_google_motor(motor_id: str, current_user: dict = Depends(require_approved_dealer)):
+    result = await db.google_motors.delete_one({"id": motor_id, "dealer_id": current_user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    return {"status": "deleted"}
+
+@api_router.get("/google-motors/pending")
+async def get_pending_google_motors(current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    motors = await db.google_motors.find({"status": "pending"}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return motors
+
+@api_router.get("/google-motors/all")
+async def get_all_google_motors(current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    motors = await db.google_motors.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return motors
+
+@api_router.post("/google-motors/{motor_id}/approve")
+async def approve_google_motor(motor_id: str, request: Request, current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.google_motors.update_one(
+        {"id": motor_id, "status": "pending"},
+        {"$set": {"status": "approved", "approved_at": datetime.now(timezone.utc).isoformat(), "approved_by": current_user["email"]}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden of al verwerkt")
+    
+    motor = await db.google_motors.find_one({"id": motor_id}, {"_id": 0})
+    if motor:
+        import asyncio
+        asyncio.create_task(generate_social_media_content(motor_id, motor, request))
+        try:
+            motor_url = f"{PRODUCTION_BASE_URL}/motor/{motor_id}"
+            html = f"""<div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+                <div style="background:#16a34a;padding:20px;text-align:center;border-radius:8px 8px 0 0;"><h1 style="color:white;margin:0;">Motor Goedgekeurd!</h1></div>
+                <div style="padding:30px;background:white;border:1px solid #eee;">
+                    <p>Goed nieuws! Uw motor is goedgekeurd en staat nu live op Google:</p>
+                    <p style="font-size:18px;font-weight:bold;">{motor['brand']} {motor['model']} ({motor['year']}) - &euro;{motor['price']:,.0f}</p>
+                    <p>De motor is nu zichtbaar voor iedereen op internet.</p>
+                    <p style="margin-top:15px;">We hebben ook een <strong>social media post</strong> voor u gegenereerd! Ga naar uw Google Motoren pagina om de tekst en afbeelding te delen op Facebook en Instagram.</p>
+                    <a href="{motor_url}" style="display:inline-block;background:#dc2626;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:10px;">Bekijk op Google</a>
+                </div></div>"""
+            await send_email(motor["dealer_email"], f"Motor goedgekeurd: {motor['brand']} {motor['model']}", html)
+        except Exception as e:
+            logger.error(f"Failed to send approval email: {e}")
+    return {"status": "approved"}
+
+@api_router.post("/google-motors/{motor_id}/reject")
+async def reject_google_motor(motor_id: str, body: dict = Body({}), current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_GOOGLE:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    reason = body.get("reason", "")
+    result = await db.google_motors.update_one(
+        {"id": motor_id, "status": "pending"},
+        {"$set": {"status": "rejected", "rejected_at": datetime.now(timezone.utc).isoformat(), "reject_reason": reason}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden of al verwerkt")
+    return {"status": "rejected"}
+
+@api_router.get("/google-motors/social-image/{motor_id}")
+async def get_social_image(motor_id: str):
+    import base64
+    motor = await db.google_motors.find_one({"id": motor_id}, {"_id": 0, "social_image_data": 1})
+    if not motor or not motor.get("social_image_data"):
+        raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
+    image_data = base64.b64decode(motor["social_image_data"])
+    return Response(content=image_data, media_type="image/jpeg", headers={
+        "Content-Disposition": f"inline; filename=moto-import-{motor_id}.jpg",
+        "Cache-Control": "public, max-age=86400",
+    })
+
+# ============ PUBLIC SEO ENDPOINTS (NO AUTH) ============
+
+@api_router.get("/public/motors")
+async def get_public_motors(brand: str = None, sort_by: str = "newest"):
+    """Public endpoint: get all approved Google Motors for SEO"""
+    now = datetime.now(timezone.utc).isoformat()
+    query = {"status": "approved", "expires_at": {"$gt": now}}
+    if brand:
+        query["brand"] = brand
+    
+    sort_field = "created_at"
+    sort_dir = -1
+    if sort_by == "price_low":
+        sort_field = "price"
+        sort_dir = 1
+    elif sort_by == "price_high":
+        sort_field = "price"
+        sort_dir = -1
+    
+    motors = await db.google_motors.find(query, {
+        "_id": 0, "id": 1, "brand": 1, "model": 1, "year": 1, "price": 1,
+        "mileage": 1, "images": 1, "color": 1, "condition": 1, "description": 1,
+        "dealer_company": 1, "dealer_city": 1, "created_at": 1,
+    }).sort(sort_field, sort_dir).to_list(500)
+    return motors
+
+@api_router.get("/public/motors/brands")
+async def get_public_motor_brands():
+    """Public endpoint: get distinct brands from approved motors"""
+    now = datetime.now(timezone.utc).isoformat()
+    brands = await db.google_motors.distinct("brand", {"status": "approved", "expires_at": {"$gt": now}})
+    return sorted(brands)
+
+@api_router.get("/public/motors/{motor_id}")
+async def get_public_motor_detail(motor_id: str):
+    """Public endpoint: get single motor detail for SEO"""
+    now = datetime.now(timezone.utc).isoformat()
+    motor = await db.google_motors.find_one(
+        {"id": motor_id, "status": "approved", "expires_at": {"$gt": now}},
+        {"_id": 0}
+    )
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    # Return all dealer info for public display
+    return {
+        "id": motor["id"],
+        "brand": motor["brand"],
+        "model": motor["model"],
+        "year": motor["year"],
+        "price": motor["price"],
+        "mileage": motor.get("mileage", 0),
+        "description": motor.get("description", ""),
+        "images": motor.get("images", []),
+        "color": motor.get("color", ""),
+        "condition": motor.get("condition", ""),
+        "dealer_company": motor.get("dealer_company", ""),
+        "dealer_email": motor.get("dealer_email", ""),
+        "dealer_phone": motor.get("dealer_phone", ""),
+        "dealer_city": motor.get("dealer_city", ""),
+        "dealer_contact_person": motor.get("dealer_contact_person", ""),
+        "created_at": motor.get("created_at", ""),
+    }
+
+@api_router.post("/public/motors/{motor_id}/interest")
+async def express_interest_public_motor(motor_id: str, body: dict = Body(...)):
+    """Public: someone expresses interest in a motor, notify admin"""
+    motor = await db.google_motors.find_one({"id": motor_id, "status": "approved"}, {"_id": 0})
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    name = body.get("name", "Onbekend")
+    email = body.get("email", "")
+    phone = body.get("phone", "")
+    message = body.get("message", "")
+    
+    if not email and not phone:
+        raise HTTPException(status_code=400, detail="Email of telefoonnummer is verplicht")
+    
+    # Store lead
+    lead_id = str(uuid.uuid4())
+    await db.google_motor_leads.insert_one({
+        "id": lead_id,
+        "motor_id": motor_id,
+        "motor_brand": motor["brand"],
+        "motor_model": motor["model"],
+        "dealer_id": motor["dealer_id"],
+        "dealer_email": motor["dealer_email"],
+        "visitor_name": name,
+        "visitor_email": email,
+        "visitor_phone": phone,
+        "message": message,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    # Notify admin (motoimportbv@gmail.com)
+    try:
+        html = f"""
+        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">
+            <div style="background:#dc2626;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:white;margin:0;">Nieuwe Interesse - Google Motor</h1>
+            </div>
+            <div style="padding:30px;background:white;border:1px solid #eee;">
+                <p>Iemand heeft interesse getoond in een motor op Google:</p>
+                <table style="width:100%;border-collapse:collapse;margin:15px 0;">
+                    <tr><td style="padding:8px;font-weight:bold;width:120px;">Motor:</td><td>{motor['brand']} {motor['model']} ({motor['year']})</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Dealer:</td><td>{motor.get('dealer_company','')}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Naam:</td><td>{name}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Email:</td><td>{email}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Telefoon:</td><td>{phone}</td></tr>
+                    <tr><td style="padding:8px;font-weight:bold;">Bericht:</td><td>{message}</td></tr>
+                </table>
+            </div>
+        </div>
+        """
+        await send_email(ALLOWED_ADMIN_EMAIL_GOOGLE, f"Interesse: {motor['brand']} {motor['model']} - {name}", html)
+    except Exception as e:
+        logger.error(f"Failed to send interest email: {e}")
+    
+    return {"status": "ok", "message": "Uw interesse is verstuurd!"}
+
+
+
+
+
+# ============ BPM VERMINDERING TAXATIE (MOTORFIETSEN) ============
+
+def calculate_forfaitair_percentage(months: int) -> float:
+    """Forfaitaire afschrijvingstabel Belastingdienst voor motorfietsen"""
+    if months < 1:
+        return 0.0
+    elif months < 3:
+        return 12.0 + (months - 1) * 4.0
+    elif months < 5:
+        return 20.0 + (months - 3) * 3.5
+    elif months < 9:
+        return 27.0 + (months - 5) * 1.5
+    elif months < 18:
+        return 33.0 + (months - 9) * 1.0
+    elif months < 30:
+        return 42.0 + (months - 18) * 0.75
+    elif months < 42:
+        return 51.0 + (months - 30) * 0.5
+    elif months < 54:
+        return 57.0 + (months - 42) * 0.42
+    elif months < 66:
+        return 62.0 + (months - 54) * 0.42
+    elif months < 78:
+        return 67.0 + (months - 66) * 0.42
+    elif months < 90:
+        return 72.0 + (months - 78) * 0.25
+    elif months < 102:
+        return 75.0 + (months - 90) * 0.25
+    elif months < 114:
+        return 78.0 + (months - 102) * 0.25
+    else:
+        return min(81.0 + (months - 114) * 0.19, 100.0)
+
+def calculate_bruto_bpm(netto_catalogusprijs: float) -> float:
+    """BPM tarief motorfiets (2025/2026)"""
+    if netto_catalogusprijs <= 0:
+        return 0.0
+    if netto_catalogusprijs <= 2133:
+        return round(netto_catalogusprijs * 0.096, 2)
+    return round(netto_catalogusprijs * 0.194 - 210, 2)
+
+def calculate_bpm_result(data_dict: dict) -> dict:
+    """Calculate all BPM values from form data"""
+    netto_cat = data_dict.get("netto_catalogusprijs", 0) or 0
+    bruto_bpm = calculate_bruto_bpm(netto_cat)
+
+    # Forfaitair
+    first_reg = data_dict.get("first_registration_date", "")
+    forfaitair_pct = 0.0
+    months_age = 0
+    if first_reg:
+        try:
+            reg_date = datetime.fromisoformat(first_reg)
+            now = datetime.now(timezone.utc)
+            months_age = (now.year - reg_date.year) * 12 + (now.month - reg_date.month)
+            if months_age < 0:
+                months_age = 0
+            forfaitair_pct = calculate_forfaitair_percentage(months_age)
+        except Exception:
+            pass
+    forfaitair_bpm = round(bruto_bpm * (1 - forfaitair_pct / 100), 2)
+
+    # Koerslijst
+    koerslijst_waarde = data_dict.get("koerslijst_waarde", 0) or 0
+    consumentenprijs = data_dict.get("consumentenprijs", 0) or 0
+    koerslijst_pct = 0.0
+    if consumentenprijs > 0 and koerslijst_waarde > 0:
+        koerslijst_pct = round(((consumentenprijs - koerslijst_waarde) / consumentenprijs) * 100, 2)
+        koerslijst_pct = max(0, min(koerslijst_pct, 100))
+    koerslijst_bpm = round(bruto_bpm * (1 - koerslijst_pct / 100), 2)
+
+    # Taxatierapport
+    taxatie_waarde = data_dict.get("taxatie_inruil_waarde", 0) or 0
+    taxatie_pct = 0.0
+    if consumentenprijs > 0 and taxatie_waarde > 0:
+        taxatie_pct = round(((consumentenprijs - taxatie_waarde) / consumentenprijs) * 100, 2)
+        taxatie_pct = max(0, min(taxatie_pct, 100))
+    taxatie_bpm = round(bruto_bpm * (1 - taxatie_pct / 100), 2)
+
+    # Schade aftrek (31% van herstelkosten)
+    damage_items = data_dict.get("damage_items", [])
+    total_herstelkosten = sum(item.get("cost", 0) for item in damage_items if item.get("checked"))
+    has_damage = total_herstelkosten > 0
+    schade_aftrek = round(total_herstelkosten * 0.31, 2) if has_damage else 0
+
+    # Determine best method
+    options = {
+        "forfaitair": forfaitair_bpm,
+        "koerslijst": koerslijst_bpm if koerslijst_pct > 0 else 999999,
+        "taxatierapport": taxatie_bpm if taxatie_pct > 0 else 999999,
+    }
+    beste_methode = min(options, key=options.get)
+    laagste_bpm = options[beste_methode]
+    if laagste_bpm == 999999:
+        beste_methode = "forfaitair"
+        laagste_bpm = forfaitair_bpm
+
+    netto_bpm = max(0, round(laagste_bpm - schade_aftrek, 2))
+    bpm_vermindering = round(bruto_bpm - netto_bpm, 2)
+
+    return {
+        "bruto_bpm": bruto_bpm,
+        "months_age": months_age,
+        "forfaitair_percentage": round(forfaitair_pct, 2),
+        "forfaitair_bpm": forfaitair_bpm,
+        "koerslijst_percentage": round(koerslijst_pct, 2),
+        "koerslijst_bpm": koerslijst_bpm,
+        "taxatie_percentage": round(taxatie_pct, 2),
+        "taxatie_bpm": taxatie_bpm,
+        "has_damage": has_damage,
+        "herstelkosten": total_herstelkosten,
+        "schade_aftrek": schade_aftrek,
+        "beste_methode": beste_methode,
+        "netto_bpm": netto_bpm,
+        "bpm_vermindering": bpm_vermindering,
+    }
+
+class DamageItem(BaseModel):
+    name: str = ""
+    checked: bool = False
+    cost: float = 0
+
+class TaxatieCreate(BaseModel):
+    # Voertuiggegevens
+    brand: str = ""
+    model: str = ""
+    bouwjaar: str = ""
+    mileage: int = 0
+    color: str = ""
+    vin_number: str = ""
+    first_registration_date: str = ""
+    fuel_type: str = "Benzine"
+    cylinder_capacity: str = ""
+    power_kw: float = 0
+    # BPM Berekening
+    netto_catalogusprijs: float = 0
+    consumentenprijs: float = 0
+    # Afschrijving methoden
+    koerslijst_waarde: float = 0
+    taxatie_inruil_waarde: float = 0
+    # Schade checklist
+    damage_items: List[DamageItem] = []
+    damage_notes: str = ""
+    # Technische inspectie scores (1-5)
+    score_engine: int = 3
+    score_frame: int = 3
+    score_paint: int = 3
+    score_tires: int = 3
+    score_brakes: int = 3
+    score_electrics: int = 3
+    score_exhaust: int = 3
+    score_suspension: int = 3
+    score_chain_drive: int = 3
+    score_general: int = 3
+    # Opmerkingen per onderdeel
+    notes_engine: str = ""
+    notes_frame: str = ""
+    notes_paint: str = ""
+    notes_tires: str = ""
+    notes_brakes: str = ""
+    notes_electrics: str = ""
+    notes_general: str = ""
+    # Klant
+    customer_name: str = ""
+    customer_phone: str = ""
+    customer_email: str = ""
+    customer_address: str = ""
+    # Foto's & opmerkingen
+    photos: List[str] = []
+    notes: str = ""
+
+@api_router.post("/taxatie-programma")
+async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    taxatie_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+
+    data_dict = data.dict()
+    bpm = calculate_bpm_result(data_dict)
+
+    scores = [data.score_engine, data.score_frame, data.score_paint, data.score_tires,
+              data.score_brakes, data.score_electrics, data.score_exhaust,
+              data.score_suspension, data.score_chain_drive, data.score_general]
+    avg_score = round(sum(scores) / len(scores), 1)
+    condition_label = "Slecht"
+    if avg_score >= 4.5: condition_label = "Uitstekend"
+    elif avg_score >= 3.5: condition_label = "Goed"
+    elif avg_score >= 2.5: condition_label = "Redelijk"
+    elif avg_score >= 1.5: condition_label = "Matig"
+
+    doc = {
+        "id": taxatie_id,
+        "taxatie_nummer": f"BPM-{now.strftime('%Y%m%d')}-{taxatie_id[:4].upper()}",
+        **data_dict,
+        **bpm,
+        "average_score": avg_score,
+        "condition_label": condition_label,
+        "status": "concept",
+        "created_at": now.isoformat(),
+        "created_by": current_user["email"],
+    }
+
+    await db.taxatie_programma.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/taxatie-programma")
+async def get_taxaties(current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    return await db.taxatie_programma.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+@api_router.get("/taxatie-programma/{taxatie_id}")
+async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return doc
+
+@api_router.put("/taxatie-programma/{taxatie_id}")
+async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    data_dict = data.dict()
+    bpm = calculate_bpm_result(data_dict)
+
+    scores = [data.score_engine, data.score_frame, data.score_paint, data.score_tires,
+              data.score_brakes, data.score_electrics, data.score_exhaust,
+              data.score_suspension, data.score_chain_drive, data.score_general]
+    avg_score = round(sum(scores) / len(scores), 1)
+    condition_label = "Slecht"
+    if avg_score >= 4.5: condition_label = "Uitstekend"
+    elif avg_score >= 3.5: condition_label = "Goed"
+    elif avg_score >= 2.5: condition_label = "Redelijk"
+    elif avg_score >= 1.5: condition_label = "Matig"
+
+    update = {
+        **data_dict,
+        **bpm,
+        "average_score": avg_score,
+        "condition_label": condition_label,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    result = await db.taxatie_programma.update_one({"id": taxatie_id}, {"$set": update})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+
+@api_router.post("/taxatie-programma/{taxatie_id}/finalize")
+async def finalize_taxatie(taxatie_id: str, current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.taxatie_programma.update_one(
+        {"id": taxatie_id},
+        {"$set": {"status": "definitief", "finalized_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return {"status": "definitief"}
+
+@api_router.delete("/taxatie-programma/{taxatie_id}")
+async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_admin)):
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.taxatie_programma.delete_one({"id": taxatie_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return {"status": "deleted"}
+
+
 # Include the router
 app.include_router(api_router)
 
@@ -6849,6 +9729,15 @@ async def startup_db_client():
     
     # Start background task for expiring wanted requests
     asyncio.create_task(expire_wanted_requests())
+    
+    # Start background task for monthly taxatie invoice reminder
+    asyncio.create_task(monthly_taxatie_reminder())
+
+    # Migrate pakbon role for Ellen
+    await db.users.update_many(
+        {"email": {"$regex": "^ellenmilone@gmail\\.com$", "$options": "i"}},
+        {"$set": {"role": "pakbon"}}
+    )
 
 async def auto_delete_expired_motorcycles():
     """Background task to delete motorcycles that have expired (not sold within time limit)"""
@@ -6906,6 +9795,80 @@ async def auto_delete_expired_motorcycles():
         
         # Check every 5 minutes
         await asyncio.sleep(300)
+
+async def monthly_taxatie_reminder():
+    """Background task: sends monthly email on the 1st with pending taxatie invoices"""
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            # Only run on the 1st of the month between 8:00-8:05 UTC
+            if now.day == 1 and now.hour == 8 and now.minute < 5:
+                # Check if reminder was already sent this month
+                month_key = now.strftime("%Y-%m")
+                already_sent = await db.system_tasks.find_one({"task": "taxatie_reminder", "month": month_key})
+                
+                if not already_sent:
+                    # Count pending concept/open invoices
+                    pending = await db.taxatie_invoices.find(
+                        {"status": {"$in": ["concept", "open"]}}, {"_id": 0}
+                    ).to_list(500)
+                    
+                    if pending:
+                        concept_count = sum(1 for p in pending if p.get("status") == "concept")
+                        open_count = sum(1 for p in pending if p.get("status") == "open")
+                        
+                        invoice_rows = ""
+                        for inv in pending[:20]:
+                            status_color = "#d97706" if inv["status"] == "open" else "#6b7280"
+                            status_label = "Open" if inv["status"] == "open" else "Concept"
+                            invoice_rows += f"""
+                            <tr>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">#{inv.get('invoice_number', '-')}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{inv.get('customer_name', '-')}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{inv.get('motorcycle_brand', '')} {inv.get('motorcycle_model', '')}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #eee; color: {status_color}; font-weight: bold;">{status_label}</td>
+                            </tr>"""
+                        
+                        html_content = f"""
+                        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+                            <div style="background: #dc2626; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                                <h1 style="color: white; margin: 0;">Taxatie Facturen Herinnering</h1>
+                            </div>
+                            <div style="padding: 30px; background: white; border: 1px solid #eee;">
+                                <p>Beste,</p>
+                                <p>Er staan <strong>{len(pending)}</strong> taxatie facturen open die nog verstuurd moeten worden:</p>
+                                <ul>
+                                    <li><strong>{concept_count}</strong> concept facturen (automatisch aangemaakt bij bestellingen)</li>
+                                    <li><strong>{open_count}</strong> open facturen</li>
+                                </ul>
+                                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                                    <thead>
+                                        <tr style="background: #f3f4f6;">
+                                            <th style="padding: 8px 12px; text-align: left;">Nr.</th>
+                                            <th style="padding: 8px 12px; text-align: left;">Klant</th>
+                                            <th style="padding: 8px 12px; text-align: left;">Motor</th>
+                                            <th style="padding: 8px 12px; text-align: left;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>{invoice_rows}</tbody>
+                                </table>
+                                <p>Ga naar het admin panel om de facturen te bekijken en te versturen.</p>
+                                <p style="color: #666; font-size: 12px; margin-top: 20px;">Dit is een automatisch maandelijks bericht van het Moto Import systeem.</p>
+                            </div>
+                        </div>
+                        """
+                        await send_email(ALLOWED_ADMIN_EMAIL_TAXATIE, f"Taxatie Facturen: {len(pending)} openstaand", html_content)
+                        logger.info(f"Sent monthly taxatie reminder with {len(pending)} pending invoices")
+                    
+                    # Mark as sent
+                    await db.system_tasks.insert_one({"task": "taxatie_reminder", "month": month_key, "sent_at": now.isoformat()})
+        
+        except Exception as e:
+            logger.error(f"Error in monthly_taxatie_reminder: {e}")
+        
+        # Check every 5 minutes
+        await asyncio.sleep(300)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -3,86 +3,50 @@
 
 from models.schemas import (
     # User models
-    UserCreate,
-    SupplierCreate,
-    UserLogin,
-    User,
-    
+    UserCreate, SupplierCreate, UserLogin, User,
     # Motorcycle models
-    MotorcycleCreate,
-    MotorcycleUpdate,
-    Motorcycle,
-    BulkMotorcycleItem,
-    BulkMotorcycleCreate,
-    
+    MotorcycleCreate, MotorcycleUpdate, Motorcycle,
+    BulkMotorcycleItem, BulkMotorcycleCreate,
     # Bid models
-    BidCreate,
-    Bid,
-    
+    BidCreate, Bid,
     # License plate models
-    LicensePlateCreate,
-    LicensePlate,
-    
+    LicensePlateCreate, LicensePlate,
     # Order models
-    OrderCreate,
-    Order,
-    OrderWithMotorcycle,
-    BuyNowRequest,
-    
+    OrderCreate, Order, OrderWithMotorcycle, BuyNowRequest,
+    TransportStatusUpdate, AdminOrderForDealer,
     # Notification models
     Notification,
-    
     # Chat models
-    ChatMessage,
-    ChatMessageCreate,
-    
+    ChatMessage, ChatMessageCreate,
     # Push notification models
     PushSubscription,
-    
     # Voucher models
     Voucher,
-    
     # Price proposal models
-    PriceProposalCreate,
-    PriceProposal,
-    
+    PriceProposalCreate, PriceProposal,
+    # Review models
+    ReviewCreate, Review,
+    # Private listing models
+    PrivateListingCreate, PrivateListing,
     # Wanted request models
-    WantedRequestCreate,
-    WantedRequestApprove,
-    WantedRequest,
-    
+    WantedRequestCreate, WantedRequestApprove, WantedRequest,
     # Parts models
-    PartCategory,
-    PartCategoryCreate,
-    Part,
-    PartCreate,
-    PartUpdate,
-    PartOrderItem,
-    PartOrderCreate,
-    PartOrder,
-    
+    PartCategory, PartCategoryCreate, Part, PartCreate, PartUpdate,
+    PartOrderItem, PartOrderCreate, PartOrder,
     # Auth request models
-    NotificationAutoLogin,
-    PermanentLoginRequest,
-    ShortCodeLoginRequest,
-    PasswordResetRequest,
-    PasswordResetConfirm,
-    ChangePasswordRequest,
-    
+    NotificationAutoLogin, EmailPreferences,
+    PermanentLoginRequest, ShortCodeLoginRequest,
+    PasswordResetRequest, PasswordResetConfirm, ChangePasswordRequest,
     # Admin request models
-    CreateAdminRequest,
-    ResetPasswordRequest,
-    DealerPhoneUpdate,
-    
+    CreateAdminRequest, ResetPasswordRequest, DealerPhoneUpdate,
     # SMS request models
-    SMSRequest,
-    BulkSMSRequest,
-    SelectedSMSRequest,
-    
+    SMSRequest, BulkSMSRequest, SelectedSMSRequest,
     # Email request models
-    BulkEmailRequest,
-    BulkEmailResponse,
-    
+    BulkEmailRequest, BulkEmailResponse, EmailFlyerRequest,
     # Payment models
     PaymentRequest,
+    # Google Motors models
+    GoogleMotorCreate,
+    # Taxatie models
+    DamageItem, TaxatieCreate,
 )
