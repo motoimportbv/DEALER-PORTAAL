@@ -136,6 +136,10 @@ const MotorcycleForm = () => {
   const [fetching, setFetching] = useState(isEditing);
   const fileInputRef = useRef(null);
   
+  // CHF supplier price editing
+  const [supplierChfPrice, setSupplierChfPrice] = useState('');
+  const [savingSupplierPrice, setSavingSupplierPrice] = useState(false);
+  
   // Dealers for visibility selection
   const [dealers, setDealers] = useState([]);
   const [loadingDealers, setLoadingDealers] = useState(false);
@@ -230,6 +234,10 @@ const MotorcycleForm = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFormData(response.data);
+      // Set supplier CHF price if this is a CHF motorcycle
+      if (response.data.original_currency === 'CHF' && response.data.original_price) {
+        setSupplierChfPrice(response.data.original_price.toString());
+      }
     } catch (error) {
       toast.error('Kon motor niet laden');
       navigate('/admin/motorcycles');
@@ -244,6 +252,26 @@ const MotorcycleForm = () => {
       setFormData(prev => ({ ...prev, brand: value, model: '' }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleSaveSupplierChfPrice = async () => {
+    if (!supplierChfPrice || parseFloat(supplierChfPrice) <= 0) return;
+    setSavingSupplierPrice(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `${API}/motorcycles/foreign-listings/${id}/price`,
+        { price: parseFloat(supplierChfPrice) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`CHF prijs bijgewerkt → nieuwe verkoopprijs: €${response.data.new_selling_price?.toLocaleString('nl-NL')}`);
+      // Refresh motorcycle data to show updated EUR price
+      await fetchMotorcycle();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kon CHF prijs niet bijwerken');
+    } finally {
+      setSavingSupplierPrice(false);
     }
   };
 
@@ -524,6 +552,54 @@ const MotorcycleForm = () => {
                     )}
                   </div>
                 </div>
+
+                {/* CHF Supplier Price Editor - only shown when editing a CHF motorcycle */}
+                {isEditing && formData.original_currency === 'CHF' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3" data-testid="chf-supplier-price-editor">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🇨🇭</span>
+                      <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-amber-700">
+                        Leveranciersprijs (CHF)
+                      </Label>
+                    </div>
+                    <p className="text-xs text-amber-600">
+                      Pas de CHF inkoopprijs van de leverancier aan. De EUR verkoopprijs wordt automatisch herberekend op basis van de live wisselkoers.
+                    </p>
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <Input
+                          type="number"
+                          value={supplierChfPrice}
+                          onChange={(e) => setSupplierChfPrice(e.target.value)}
+                          placeholder="CHF prijs"
+                          min="0"
+                          step="100"
+                          data-testid="supplier-chf-price-input"
+                          className="border-amber-300 focus:border-amber-500"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleSaveSupplierChfPrice}
+                        disabled={savingSupplierPrice || !supplierChfPrice || parseFloat(supplierChfPrice) <= 0}
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                        data-testid="save-supplier-chf-price-btn"
+                      >
+                        {savingSupplierPrice ? 'Opslaan...' : 'CHF Prijs Opslaan'}
+                      </Button>
+                    </div>
+                    {supplierChfPrice && exchangeRate && (
+                      <p className="text-xs text-amber-600">
+                        CHF {Number(supplierChfPrice).toLocaleString('nl-NL')} ≈ €{Math.round(Number(supplierChfPrice) * exchangeRate).toLocaleString('nl-NL')} EUR (koers: {exchangeRate.toFixed(4)})
+                      </p>
+                    )}
+                    {formData.original_price && (
+                      <p className="text-xs text-zinc-500">
+                        Huidige leveranciersprijs: CHF {Number(formData.original_price).toLocaleString('nl-NL')}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

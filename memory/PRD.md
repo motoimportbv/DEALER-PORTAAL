@@ -13,6 +13,7 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 - **Google Motoren**: SEO-geoptimaliseerde publieke motoren pagina's
 - **Deel met Klant**: Motoren delen zonder prijzen via WhatsApp/Email
 - **Bestel namens Dealer**: Admin kan bestellen namens een dealer
+- **CHF Prijsaanpassing**: Admin kan leveranciersprijs in CHF aanpassen met automatische EUR herberekening
 
 ## Architectuur (NA REFACTORING - 12 april 2026)
 - Frontend: React + Tailwind + Shadcn/UI
@@ -41,7 +42,7 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 └── routers/               # 18 modulaire router bestanden
     ├── auth.py            # Authenticatie
     ├── dealers.py         # Dealer beheer
-    ├── motorcycles.py     # Motorfiets CRUD
+    ├── motorcycles.py     # Motorfiets CRUD + CHF prijsaanpassing
     ├── orders.py          # Bestellingen
     ├── payments.py        # Stripe betalingen
     ├── uploads.py         # Afbeelding uploads
@@ -64,6 +65,7 @@ Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer man
 
 ### P0
 - (DONE) Backend Refactoring: server.py opgesplitst van 9.875 naar 170 regels
+- (DONE) CHF Prijsaanpassing: Admin kan CHF leveranciersprijs aanpassen met EUR herberekening
 
 ### P1
 - WhatsApp notificaties

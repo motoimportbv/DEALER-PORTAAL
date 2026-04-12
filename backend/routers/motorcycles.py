@@ -578,36 +578,57 @@ async def get_pending_foreign_listings(user: dict = Depends(require_admin)):
 
 @router.put("/motorcycles/foreign-listings/{motorcycle_id}/price")
 async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dict = Depends(get_current_user)):
-    """Foreign dealer updates the price of their motorcycle listing"""
-    if not user.get("is_foreign_dealer", False):
-        raise HTTPException(status_code=403, detail="Alleen voor buitenlandse leveranciers")
+    """Foreign dealer OR admin updates the supplier price of a motorcycle listing.
+    Price is expected in the original currency (CHF for Swiss suppliers).
+    The EUR selling price is recalculated using the live exchange rate."""
+    is_admin = user.get("role") == "admin"
+    is_foreign = user.get("is_foreign_dealer", False)
+    
+    if not is_admin and not is_foreign:
+        raise HTTPException(status_code=403, detail="Geen toegang")
     
     motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
     if not motorcycle:
         raise HTTPException(status_code=404, detail="Motor niet gevonden")
     
-    if motorcycle.get("foreign_dealer_id") != user["id"]:
+    # Foreign dealers can only edit their own listings
+    if is_foreign and motorcycle.get("foreign_dealer_id") != user["id"]:
         raise HTTPException(status_code=403, detail="U bent niet de eigenaar van deze motor")
     
     new_price = data.get("price")
-    if not new_price or new_price <= 0:
+    if not new_price or float(new_price) <= 0:
         raise HTTPException(status_code=400, detail="Ongeldige prijs")
     
     new_price = float(new_price)
     old_price = float(motorcycle.get("original_price") or motorcycle.get("price", 0))
     price_diff = old_price - new_price  # Positive = price reduction
+    original_currency = motorcycle.get("original_currency", "EUR")
     
-    # Update original_price (dealer's price) and adjust selling price by the same amount
     update_fields = {"original_price": new_price}
     
-    current_selling_price = motorcycle.get("price", 0)
+    current_selling_price = float(motorcycle.get("price", 0))
     if current_selling_price and price_diff != 0:
-        new_selling_price = max(0, float(current_selling_price) - price_diff)
-        update_fields["price"] = new_selling_price
+        # Convert the price difference to EUR if original currency is CHF
+        if original_currency == "CHF":
+            try:
+                rate = await get_chf_to_eur_rate()
+                margin = await get_chf_eur_margin()
+                price_diff_eur = convert_chf_to_eur(abs(price_diff), rate, margin)
+                if price_diff > 0:
+                    new_selling_price = max(0, current_selling_price - price_diff_eur)
+                else:
+                    new_selling_price = current_selling_price + price_diff_eur
+                logger.info(f"CHF price change: {price_diff} CHF = {price_diff_eur} EUR (rate: {rate})")
+            except Exception as e:
+                logger.error(f"Failed CHF->EUR conversion: {e}")
+                new_selling_price = max(0, current_selling_price - price_diff)
+        else:
+            new_selling_price = max(0, current_selling_price - price_diff)
         
-        # Also update price_override_amount if admin set a manual price
+        update_fields["price"] = round(new_selling_price, 0)
+        
         if motorcycle.get("price_override") and motorcycle.get("price_override_amount"):
-            new_override = max(0, float(motorcycle["price_override_amount"]) - price_diff)
+            new_override = max(0, float(motorcycle["price_override_amount"]) - (current_selling_price - new_selling_price))
             update_fields["price_override_amount"] = new_override
     
     # Track supplier price reduction
@@ -616,7 +637,6 @@ async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dic
         update_fields["supplier_price_reduction"] = price_diff
         update_fields["supplier_price_reduced_at"] = datetime.now(timezone.utc).isoformat()
     elif price_diff < 0:
-        # Price increase - clear reduction flag
         update_fields["supplier_price_reduced"] = False
         update_fields["supplier_price_reduction"] = 0
     
@@ -626,8 +646,9 @@ async def update_foreign_listing_price(motorcycle_id: str, data: dict, user: dic
     )
     
     return {
-        "message": "Prijs bijgewerkt", 
+        "message": "Prijs bijgewerkt",
         "new_supplier_price": new_price,
+        "currency": original_currency,
         "new_selling_price": update_fields.get("price", current_selling_price),
         "price_difference": price_diff
     }
