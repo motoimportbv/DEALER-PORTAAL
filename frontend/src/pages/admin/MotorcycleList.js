@@ -17,7 +17,12 @@ import {
   Share2,
   Search,
   X,
-  RotateCcw
+  RotateCcw,
+  ShoppingCart,
+  Loader2,
+  Truck,
+  ClipboardCheck,
+  Calculator
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -46,10 +51,18 @@ const MotorcycleList = () => {
   const [motorcycles, setMotorcycles] = useState([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [availabilityFilter, setAvailabilityFilter] = useState('all'); // 'all', 'available', 'unavailable'
+  const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsappData, setWhatsappData] = useState(null);
+  // Order on behalf of dealer
+  const [showOrderDialog, setShowOrderDialog] = useState(false);
+  const [orderMotorcycle, setOrderMotorcycle] = useState(null);
+  const [dealers, setDealers] = useState([]);
+  const [selectedDealerId, setSelectedDealerId] = useState('');
+  const [dealerSearch, setDealerSearch] = useState('');
+  const [orderOptions, setOrderOptions] = useState({ delivery: false, inspection: false, valuation: false });
+  const [orderLoading, setOrderLoading] = useState(false);
 
   useEffect(() => {
     fetchMotorcycles();
@@ -140,6 +153,45 @@ const MotorcycleList = () => {
       toast.error('Kon motor niet herplaatsen');
     }
   };
+
+  // ── Bestel namens dealer ──
+  const openOrderDialog = async (motorcycle) => {
+    setOrderMotorcycle(motorcycle);
+    setSelectedDealerId('');
+    setDealerSearch('');
+    setOrderOptions({ delivery: false, inspection: false, valuation: false });
+    setShowOrderDialog(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/admin/approved-dealers`, { headers: { Authorization: `Bearer ${token}` } });
+      setDealers(res.data);
+    } catch { toast.error('Kon dealers niet laden'); }
+  };
+
+  const handleOrderForDealer = async () => {
+    if (!selectedDealerId) { toast.error('Selecteer een dealer'); return; }
+    setOrderLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/admin/order-for-dealer`, {
+        motorcycle_id: orderMotorcycle.id,
+        dealer_id: selectedDealerId,
+        needs_delivery: orderOptions.delivery,
+        needs_inspection: orderOptions.inspection,
+        needs_valuation: orderOptions.valuation,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(res.data.message);
+      setShowOrderDialog(false);
+      fetchMotorcycles();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Fout bij bestellen'); }
+    setOrderLoading(false);
+  };
+
+  const filteredDealers = dealers.filter(d => {
+    if (!dealerSearch) return true;
+    const s = dealerSearch.toLowerCase();
+    return (d.company_name || '').toLowerCase().includes(s) || (d.name || '').toLowerCase().includes(s) || (d.email || '').toLowerCase().includes(s);
+  });
 
   const getConditionBadge = (condition) => {
     const styles = {
@@ -380,6 +432,19 @@ const MotorcycleList = () => {
                         <RotateCcw className="w-4 h-4" />
                       </Button>
                     )}
+                    {/* Order on behalf of dealer */}
+                    {motorcycle.is_available && (
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        onClick={() => openOrderDialog(motorcycle)}
+                        data-testid={`order-for-dealer-btn-${motorcycle.id}`}
+                        title="Bestel namens dealer"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Link to={`/admin/motorcycles/${motorcycle.id}/edit`}>
                       <Button variant="outline" size="icon" data-testid={`edit-btn-${motorcycle.id}`}>
                         <Pencil className="w-4 h-4" />
@@ -463,6 +528,112 @@ const MotorcycleList = () => {
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bestel namens dealer dialog */}
+      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5 text-white" />
+              </div>
+              Bestel namens dealer
+            </DialogTitle>
+            <DialogDescription>
+              {orderMotorcycle && `${orderMotorcycle.brand} ${orderMotorcycle.model} (${orderMotorcycle.year}) - ${formatPrice(orderMotorcycle.price)}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Dealer zoeken */}
+            <div>
+              <label className="text-sm font-bold text-zinc-700 block mb-1">Dealer selecteren *</label>
+              <input
+                type="text"
+                value={dealerSearch}
+                onChange={e => setDealerSearch(e.target.value)}
+                placeholder="Zoek dealer op naam of email..."
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:outline-none mb-2"
+                data-testid="dealer-search-input"
+              />
+              <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+                {filteredDealers.length === 0 ? (
+                  <p className="text-sm text-zinc-400 p-3 text-center">Geen dealers gevonden</p>
+                ) : filteredDealers.map(d => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setSelectedDealerId(d.id)}
+                    className={`w-full text-left px-3 py-2.5 text-sm flex items-center justify-between transition-colors ${selectedDealerId === d.id ? 'bg-amber-50 border-l-4 border-amber-500' : 'hover:bg-zinc-50'}`}
+                    data-testid={`dealer-option-${d.id}`}
+                  >
+                    <div>
+                      <p className="font-bold">{d.company_name || d.name}</p>
+                      <p className="text-xs text-zinc-500">{d.email}</p>
+                    </div>
+                    {selectedDealerId === d.id && <div className="w-2.5 h-2.5 bg-amber-500 rounded-full" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Opties */}
+            <div>
+              <label className="text-sm font-bold text-zinc-700 block mb-2">Opties</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer hover:bg-zinc-50">
+                  <input type="checkbox" checked={orderOptions.delivery} onChange={e => setOrderOptions(o => ({ ...o, delivery: e.target.checked }))} className="w-4 h-4 accent-amber-600" data-testid="option-delivery" />
+                  <Truck className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm flex-1">Bezorging</span>
+                  <span className="text-sm font-bold text-zinc-600">+ €50</span>
+                </label>
+                <label className="flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer hover:bg-zinc-50">
+                  <input type="checkbox" checked={orderOptions.inspection} onChange={e => setOrderOptions(o => ({ ...o, inspection: e.target.checked }))} className="w-4 h-4 accent-amber-600" data-testid="option-inspection" />
+                  <ClipboardCheck className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm flex-1">Keuring</span>
+                  <span className="text-sm font-bold text-zinc-600">+ €125</span>
+                </label>
+                <label className="flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer hover:bg-zinc-50">
+                  <input type="checkbox" checked={orderOptions.valuation} onChange={e => setOrderOptions(o => ({ ...o, valuation: e.target.checked }))} className="w-4 h-4 accent-amber-600" data-testid="option-valuation" />
+                  <Calculator className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm flex-1">Taxatie</span>
+                  <span className="text-sm font-bold text-zinc-600">+ €160 excl. BTW</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Totaal */}
+            {orderMotorcycle && (
+              <div className="bg-zinc-900 text-white rounded-xl p-4">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Motorprijs</span>
+                  <span>{formatPrice(orderMotorcycle.price)}</span>
+                </div>
+                {orderOptions.delivery && <div className="flex justify-between text-sm mb-1"><span>Bezorging</span><span>€50,00</span></div>}
+                {orderOptions.inspection && <div className="flex justify-between text-sm mb-1"><span>Keuring</span><span>€125,00</span></div>}
+                {orderOptions.valuation && <div className="flex justify-between text-sm mb-1"><span>Taxatie</span><span>€160,00</span></div>}
+                <div className="border-t border-white/20 mt-2 pt-2 flex justify-between font-bold">
+                  <span>Totaal</span>
+                  <span className="text-lg">{formatPrice((orderMotorcycle.price || 0) + (orderOptions.delivery ? 50 : 0) + (orderOptions.inspection ? 125 : 0) + (orderOptions.valuation ? 160 : 0))}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowOrderDialog(false)}>Annuleren</Button>
+              <Button 
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white" 
+                onClick={handleOrderForDealer}
+                disabled={!selectedDealerId || orderLoading}
+                data-testid="confirm-order-for-dealer"
+              >
+                {orderLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
+                Bestelling Plaatsen
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>

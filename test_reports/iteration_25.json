@@ -1,0 +1,67 @@
+{
+  "summary": "Comprehensive testing of Admin Order-for-Dealer feature (iteration 25). Backend: 11/11 tests passed - all endpoints working correctly. Frontend: All UI elements verified - shopping cart button, dealer dialog, options checkboxes, price calculation, and order placement with success toast.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: GET /api/admin/approved-dealers returns list of approved dealers",
+    "Backend: approved-dealers includes required fields (id, email, company_name, name, phone, city)",
+    "Backend: approved-dealers requires admin authentication (401 without auth)",
+    "Backend: POST /api/admin/order-for-dealer creates order successfully",
+    "Backend: order-for-dealer marks motorcycle as unavailable after order",
+    "Backend: order-for-dealer returns order_id and message with dealer company name",
+    "Backend: order-for-dealer returns 404 for non-existent dealer",
+    "Backend: order-for-dealer returns 404 for non-existent motorcycle",
+    "Backend: order-for-dealer returns 400 if motorcycle is not available",
+    "Backend: order-for-dealer requires admin auth (401/403 without auth)",
+    "Backend: Motorcycle availability can be reset via PUT /api/motorcycles/{id}",
+    "Frontend: Admin motorcycle list shows shopping cart icon for available motorcycles",
+    "Frontend: Shopping cart icon NOT shown for unavailable motorcycles",
+    "Frontend: Clicking shopping cart opens 'Bestel namens dealer' dialog",
+    "Frontend: Dialog shows motorcycle info (brand, model, year, price)",
+    "Frontend: Dialog shows dealer search/filter input",
+    "Frontend: Dialog shows list of all approved dealers (4 dealers found)",
+    "Frontend: Dealer selection works with visual indicator (orange dot)",
+    "Frontend: Dialog shows delivery checkbox with price (+€50)",
+    "Frontend: Dialog shows inspection checkbox with price (+€125)",
+    "Frontend: Dialog shows valuation checkbox with price (+€160 excl. BTW)",
+    "Frontend: Total price calculation updates dynamically",
+    "Frontend: Placing order shows success toast with dealer company name",
+    "Frontend: Dialog closes after successful order",
+    "Frontend: Motorcycle marked as unavailable after order (badge shown)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_admin_order_for_dealer.py",
+    "/app/test_reports/pytest/pytest_admin_order_for_dealer.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminOrderForDealer model correctly includes all required fields (motorcycle_id, dealer_id, needs_delivery, needs_inspection, needs_valuation)",
+    "Order creation includes motorcycle_snapshot with inspection/valuation costs for historical reference",
+    "Dealer email notification sent after order placement",
+    "Frontend correctly calculates total: base_price + delivery(50) + inspection(125) + valuation(160)",
+    "data-testid attributes properly implemented for all interactive elements"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_admin_order_for_dealer.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 passed)",
+    "frontend": "100% - All UI elements and flows working correctly"
+  },
+  "test_credentials": {
+    "admin": "motoimportbv@gmail.com / Admin2024!",
+    "test_motor_id": "46458f02-3fef-4782-9806-253ca7d2c3e4 (Yamaha MT-09 2024)"
+  },
+  "seed_data_creation": "No seed data created - used existing motorcycles and dealers",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Admin Order-for-Dealer feature fully tested. Key endpoints: GET /api/admin/approved-dealers (returns approved dealers), POST /api/admin/order-for-dealer (creates order). Frontend: Shopping cart button on available motorcycles in /admin/motorcycles opens 'Bestel namens dealer' dialog. Test motorcycle (Yamaha MT-09 46458f02-3fef-4782-9806-253ca7d2c3e4) has been reset to is_available=true after testing.",
+  "rca_of_the_issue": null
+}

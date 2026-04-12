@@ -4194,6 +4194,119 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     
     return {"order_id": order.id, "message": "Bestelling geplaatst"}
 
+# ============ ADMIN: ORDER ON BEHALF OF DEALER ============
+
+class AdminOrderForDealer(BaseModel):
+    motorcycle_id: str
+    dealer_id: str
+    needs_delivery: bool = False
+    needs_inspection: bool = False
+    needs_valuation: bool = False
+
+@api_router.post("/admin/order-for-dealer")
+async def admin_order_for_dealer(data: AdminOrderForDealer, current_user: dict = Depends(require_admin)):
+    """Admin creates an order on behalf of a dealer"""
+    # Get the dealer
+    dealer = await db.users.find_one({"id": data.dealer_id, "role": "dealer", "is_approved": True}, {"_id": 0})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden of niet goedgekeurd")
+
+    # Get the motorcycle
+    motorcycle = await db.motorcycles.find_one({"id": data.motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    if not motorcycle.get("is_available"):
+        raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
+
+    # Calculate total price (same logic as buy-now)
+    base_price = motorcycle.get("price", 0)
+    delivery_cost = 50 if data.needs_delivery else 0
+    total_price = base_price + delivery_cost
+
+    order = Order(
+        dealer_id=dealer["id"],
+        motorcycle_id=data.motorcycle_id,
+        dealer_email=dealer.get("email", ""),
+        dealer_company=dealer.get("company_name", dealer.get("name", "")),
+        status="confirmed",
+        needs_delivery=data.needs_delivery,
+        delivery_cost=delivery_cost,
+        total_price=total_price,
+        payment_status="unpaid",
+        motorcycle_snapshot={
+            "brand": motorcycle.get("brand", ""),
+            "model": motorcycle.get("model", ""),
+            "year": motorcycle.get("year", 0),
+            "price": base_price,
+            "mileage": motorcycle.get("mileage", 0),
+            "color": motorcycle.get("color", ""),
+            "needs_inspection": data.needs_inspection,
+            "needs_valuation": data.needs_valuation,
+            "inspection_cost": 125 if data.needs_inspection else 0,
+            "valuation_cost": 160 if data.needs_valuation else 0,
+        },
+        notes=f"Besteld door admin ({current_user['email']}) namens dealer",
+    )
+
+    order_dict = order.model_dump()
+    await db.orders.insert_one(order_dict)
+    order_dict.pop("_id", None)
+
+    # Mark motorcycle as unavailable
+    await db.motorcycles.update_one(
+        {"id": data.motorcycle_id},
+        {"$set": {"is_available": False}}
+    )
+
+    # Send confirmation email to dealer
+    dealer_company = dealer.get("company_name", dealer.get("name", ""))
+    delivery_text = "Ja (€50)" if data.needs_delivery else "Nee (ophalen)"
+    inspection_text = "Ja (€125)" if data.needs_inspection else "Nee"
+    valuation_text = "Ja (€160 excl. BTW)" if data.needs_valuation else "Nee"
+    motor_brand = motorcycle.get("brand", "")
+    motor_model = motorcycle.get("model", "")
+    motor_year = motorcycle.get("year", 0)
+    motor_mileage = motorcycle.get("mileage", 0)
+
+    dealer_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <div style="background: #DC2626; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Bestelling Bevestigd</h1>
+        </div>
+        <div style="padding: 20px;">
+            <p>Beste {dealer_company},</p>
+            <p>Er is een bestelling voor u geplaatst door Moto Import.</p>
+            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">{motor_brand} {motor_model} ({motor_year})</h3>
+                <p>Km-stand: {motor_mileage:,} km</p>
+                <p style="font-size: 24px; font-weight: bold; color: #DC2626;">€{total_price:,.2f}</p>
+                <p>Bezorging: {delivery_text}</p>
+                <p>Keuring: {inspection_text}</p>
+                <p>Taxatie: {valuation_text}</p>
+            </div>
+            <p style="color: #6b7280;">Wij nemen contact met u op voor de verdere afhandeling.</p>
+        </div>
+        <div style="background: #18181b; padding: 20px; text-align: center; color: #a1a1aa; font-size: 12px;">
+            <p><strong style="color: white;">Moto Import B.V.</strong></p>
+        </div>
+    </div>
+    """
+    try:
+        await send_email(dealer["email"], f"Bestelling Bevestigd - {motor_brand} {motor_model} - Moto Import", dealer_html)
+    except Exception as e:
+        logger.error(f"Failed to send dealer order email: {e}")
+
+    return {"order_id": order.id, "message": f"Bestelling geplaatst namens {dealer_company}"}
+
+@api_router.get("/admin/approved-dealers")
+async def get_approved_dealers(current_user: dict = Depends(require_admin)):
+    """Get list of approved dealers for dropdown"""
+    dealers = await db.users.find(
+        {"role": "dealer", "is_approved": True},
+        {"_id": 0, "id": 1, "email": 1, "company_name": 1, "name": 1, "phone": 1, "city": 1}
+    ).sort("company_name", 1).to_list(500)
+    return dealers
+
 # ============ PAYMENT ENDPOINTS ============
 
 class PaymentRequest(BaseModel):
