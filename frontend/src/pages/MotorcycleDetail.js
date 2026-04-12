@@ -558,6 +558,40 @@ const MotorcycleDetail = () => {
                     )}
                   </div>
                 )}
+
+                {/* Deel met klant - ALTIJD zichtbaar, ook bij verkochte motoren */}
+                {user && (user.role === 'dealer' || user.role === 'admin') && motorcycle && !motorcycle.is_available && (
+                  <div className="mt-4 border-t pt-4">
+                    <p className="text-xs text-zinc-500 mb-2 font-bold uppercase tracking-wider">Deel met klant (zonder prijs)</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-10 border-green-300 text-green-700 hover:bg-green-50"
+                        onClick={() => {
+                          const shareUrl = `https://www.motoimportbv.nl/klant/motor/${motorcycle.id}`;
+                          const text = `Bekijk deze ${motorcycle.brand} ${motorcycle.model} (${motorcycle.year}):\n${shareUrl}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        data-testid="share-customer-whatsapp-sold"
+                      >
+                        <Share2 className="w-4 h-4 mr-1.5" />WhatsApp
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-10 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          const shareUrl = `https://www.motoimportbv.nl/klant/motor/${motorcycle.id}`;
+                          const subject = `${motorcycle.brand} ${motorcycle.model} (${motorcycle.year})`;
+                          const body = `Bekijk deze motor:\n\n${motorcycle.brand} ${motorcycle.model}\nBouwjaar: ${motorcycle.year}\nKm-stand: ${motorcycle.mileage?.toLocaleString('nl-NL')} km\nKleur: ${motorcycle.color}\n\n${shareUrl}`;
+                          window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                        }}
+                        data-testid="share-customer-email-sold"
+                      >
+                        <Mail className="w-4 h-4 mr-1.5" />E-mail
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
