@@ -1085,10 +1085,9 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
         '8b.3.date03.y_C': '2026',
         '8b.4_A7': str(int(bruto_bpm)),
         
-        # Page 5: Afschrijvingsmethode
+        # Page 5: Afschrijvingsmethode + Taxatierapport + Berekening
         '1.1.VIN._C7.5': doc_kenmerk,
-        '8c.3._AD33': f"{afschr_pct:.3f}".replace('.', ','),
-        '8d.0_A7': str(int(berekende_bpm)),
+        '8d.0_A7': str(te_betalen),
         '8e._A7': str(te_betalen),
         
         # Page 6: Ondertekening
@@ -1105,13 +1104,64 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
         'B.A.date01.d_F': reg_day,
         'B.A.date01.m_F': reg_month,
         'B.A.date01.y_F': reg_year,
+    }
+    
+    # Fill method-specific fields on page 5
+    if herstelkosten > 0:
+        # TAXATIERAPPORT methode (8c.2.*)
+        consumentenprijs = doc_data.get("consumentenprijs", 0) or 0
+        koerslijst_waarde = doc_data.get("koerslijst_waarde", 0) or 0
         
-        # Page 20-21: Bijlage D - Forfaitaire tabel (methode 3)
+        # Historische nieuwprijs = consumentenprijs (or netto_cat + bruto_bpm)
+        hist_nieuwprijs = consumentenprijs if consumentenprijs > 0 else int(netto_cat + bruto_bpm)
+        
+        # Handelsinkoopwaarde onbeschadigd = koerslijst_waarde or estimate
+        handelswaarde_onbesch = koerslijst_waarde if koerslijst_waarde > 0 else 0
+        
+        # Waardeverminderingspercentage = (herstelkosten / hist_nieuwprijs) * 100
+        if hist_nieuwprijs > 0:
+            waardevermin_pct = round((herstelkosten / hist_nieuwprijs) * 100, 2)
+        else:
+            waardevermin_pct = 0
+        
+        # Overig waardeverminderingsbedrag = schade_aftrek (31% van herstelkosten)
+        overig_vermin = int(schade_aftrek)
+        
+        # Handelsinkoopwaarde beschadigd
+        handelswaarde_besch = max(0, handelswaarde_onbesch - int(herstelkosten * waardevermin_pct / 100) - overig_vermin) if handelswaarde_onbesch > 0 else 0
+        
+        field_map.update({
+            # Taxatierapport gegevens
+            '8c.2.1': 'Sandro Milone',
+            '8c.2.2': 'Schalkhaar',
+            '8c.2.3': 'Motoimport',
+            '8c.2.4.date06.d': f"{now.day:02d}",
+            '8c.2.4.date06.m': f"{now.month:02d}",
+            '8c.2.4.date06.y': str(now.year),
+            '8c.2.6_A7': str(hist_nieuwprijs),
+            '8c.2.7_A7': str(handelswaarde_onbesch) if handelswaarde_onbesch > 0 else '',
+            '8c.2.8_A7': str(int(herstelkosten)),
+            '8c.2.9_AD3': f"{waardevermin_pct:.2f}".replace('.', ','),
+            '8c.2.10_A7': str(overig_vermin),
+            '8c.2.11_A7': str(handelswaarde_besch) if handelswaarde_besch > 0 else '',
+            '8c.2.13_A7': '',
+            
+            # Forfaitaire ook invullen als referentie
+            '8c.3._AD33': f"{afschr_pct:.3f}".replace('.', ','),
+        })
+    else:
+        # Alleen forfaitaire methode
+        field_map.update({
+            '8c.3._AD33': f"{afschr_pct:.3f}".replace('.', ','),
+        })
+    
+    # Bijlage D - Forfaitaire tabel (methode 3) - altijd invullen als referentie
+    field_map.update({
         'B.D.3.0_A7': str(int(bruto_bpm)),
         'B.D.3.1_AD33': f"{afschr_pct:.3f}".replace('.', ','),
         'B.D.3.2_A7': str(int(afschr_bedrag)),
         'B.D.3.3_A7': str(int(berekende_bpm)),
-    }
+    })
     
     # Open and fill the PDF
     pdf_doc = fitz.open(blank_form)
