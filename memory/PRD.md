@@ -4,47 +4,45 @@
 Een uitgebreid platform voor het motorhandelnetwerk "Moto Import" met dealer management, bestellingen, voorstellen, en diverse integraties.
 
 ## Kernfuncties
+- **BPM Vermindering Tool**: Volledige BPM taxatie met AutoTelex integratie, snel schadebedrag, slider, gewenste rest-BPM terugrekenen, PDF export conform Belastingdienst format
 - **Dealer Platform**: Dashboard, bestellingen, voorstellen, motor verkoop, zoekertjes
 - **Admin Platform**: Motorcycles beheer, orders, dealers, marketing, taxatie
-- **Foreign Dealer**: Motoren aanmelden, prijs beheer
-- **Particulier Platform**: Private verkoop met Stripe abonnement
-- **Pakbon Rol**: Beperkte rol voor pakbon beheer
-- **BPM Vermindering**: BPM taxatieprogramma met schade-checklist, snel aanpassen tools, en AutoTelex integratie
-- **Google Motoren**: SEO-geoptimaliseerde publieke motoren pagina's
-- **Deel met Klant**: Motoren delen zonder prijzen via WhatsApp/Email
+- **Foreign Dealer**: Motoren aanmelden, CHF prijsaanpassing
+- **Klant Deellinks**: Motoren delen zonder prijzen
 - **Bestel namens Dealer**: Admin kan bestellen namens een dealer
-- **CHF Prijsaanpassing**: Admin kan leveranciersprijs in CHF aanpassen
 
 ## Architectuur
 - Frontend: React + Tailwind + Shadcn/UI
 - Backend: FastAPI (Python) - Modulaire structuur (18 router bestanden)
 - Database: MongoDB
-- Betalingen: Stripe (emergentintegrations)
-- Opslag: Emergent Object Storage
-- AI: OpenAI GPT-4.1-mini, TTS, Sora 2
-- AutoTelex PRO: Credentials opgeslagen (API-sleutel nog nodig voor automatische integratie)
+- PDF: ReportLab (BPM Import Rapport generatie)
+
+## BPM Berekening Formule (conform Belastingdienst)
+1. Netto catalogusprijs → Bruto BPM: als ≤€2.133: ×9,6%, anders: ×19,4% - €210
+2. Afschrijving: forfaitaire tabel / koerslijst / taxatierapport (voordeligste)
+3. Optioneel: -31% van herstelkosten (schade-aftrek)
+4. Te betalen BPM = BPM na afschrijving - schade-aftrek
 
 ## Prioritized Backlog
 
 ### P0 - Afgerond
-- Backend Refactoring: server.py opgesplitst (9.875 → 170 regels)
-- CHF Prijsaanpassing: Admin kan CHF leveranciersprijs aanpassen
-- BPM Berekening Vereenvoudigd: Snel schadebedrag, slider, gewenste rest-BPM
-- AutoTelex Gegevens Overnemen: Snelle invoersectie + "Open AutoTelex PRO" knop
+- Backend Refactoring (9.875 → 170 regels)
+- CHF Prijsaanpassing
+- BPM Snel Aanpassen (slider, presets, terugrekenen)
+- AutoTelex Gegevens Overnemen sectie
+- BPM Import Rapport PDF Export
 
 ### P1
-- AutoTelex API integratie (wacht op API-sleutel van AutoTelex helpdesk)
+- AutoTelex API integratie (wacht op API-sleutel)
 - WhatsApp notificaties
 - Franse promotievideo
-- Emergent LLM Key budget limiet herinnering
 
 ### P2
-- MoneyMonk API integratie (vereist API key van gebruiker)
+- MoneyMonk API integratie
 - Kosten bij voorstel opties
-- Voorstelopties voorinvullen
 - Flyers Download pagina voor dealers
 
 ## Test Credentials
 - Admin: motoimportbv@gmail.com / Admin2024!
 - Dealer: zoektest@dealer.nl / Test2024!
-- AutoTelex PRO: motoimportbv@gmail.com / Motoimport2025! (portal login, API-sleutel nog niet beschikbaar)
+- AutoTelex PRO: motoimportbv@gmail.com / Motoimport2025!

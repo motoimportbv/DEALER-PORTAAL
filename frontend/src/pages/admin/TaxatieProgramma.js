@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import {
-  Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink,
+  Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink, Download,
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
   Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check
 } from 'lucide-react';
@@ -270,7 +270,27 @@ function BpmReport({ taxatie, onClose }) {
     <div className="fixed inset-0 z-50 bg-white overflow-auto print:relative" data-testid="bpm-report">
       <div className="print:hidden sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center justify-between">
         <Button variant="ghost" onClick={onClose} data-testid="close-report-btn"><ArrowLeft className="w-4 h-4 mr-2" />Terug</Button>
-        <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen / PDF</Button>
+        <div className="flex gap-2">
+          <Button onClick={async () => {
+            try {
+              const token = localStorage.getItem('token');
+              const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/pdf`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (!res.ok) throw new Error('PDF generatie mislukt');
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `BPM_Rapport_${taxatie.brand}_${taxatie.model}.pdf`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch (e) { alert('Fout bij PDF download: ' + e.message); }
+          }} variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" data-testid="download-pdf-btn">
+            <Download className="w-4 h-4 mr-2" />Download PDF
+          </Button>
+          <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen / PDF</Button>
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">

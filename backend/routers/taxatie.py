@@ -581,7 +581,9 @@ def calculate_bpm_result(data_dict: dict) -> dict:
 
     # Schade aftrek (31% van herstelkosten)
     damage_items = data_dict.get("damage_items", [])
-    total_herstelkosten = sum(item.get("cost", 0) for item in damage_items if item.get("checked"))
+    checklist_total = sum(item.get("cost", 0) for item in damage_items if item.get("checked"))
+    manual_damage = data_dict.get("manual_damage_amount")
+    total_herstelkosten = manual_damage if manual_damage is not None else checklist_total
     has_damage = total_herstelkosten > 0
     schade_aftrek = round(total_herstelkosten * 0.31, 2) if has_damage else 0
 
@@ -720,5 +722,277 @@ async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_a
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return {"status": "deleted"}
+
+
+@router.get("/taxatie-programma/{taxatie_id}/pdf")
+async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(require_admin)):
+    """Generate a BPM Import Rapport PDF matching Belastingdienst format"""
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    import io
+    
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=15*mm, bottomMargin=15*mm)
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('Title2', parent=styles['Title'], fontSize=16, spaceAfter=4*mm, textColor=colors.HexColor('#1a1a1a'))
+    subtitle_style = ParagraphStyle('Subtitle2', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#555555'), spaceAfter=6*mm)
+    section_style = ParagraphStyle('Section2', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#dc2626'), spaceBefore=6*mm, spaceAfter=3*mm, borderPadding=2)
+    normal = ParagraphStyle('Normal2', parent=styles['Normal'], fontSize=9, leading=13)
+    bold_style = ParagraphStyle('Bold2', parent=normal, fontName='Helvetica-Bold')
+    small_style = ParagraphStyle('Small2', parent=normal, fontSize=8, textColor=colors.HexColor('#666666'))
+    right_bold = ParagraphStyle('RightBold', parent=bold_style, alignment=TA_RIGHT)
+    
+    elements = []
+    
+    def fmt_eur(val):
+        if val is None: return "-"
+        return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    
+    def fmt_pct(val):
+        if val is None: return "-"
+        return f"{val:.3f}%".replace(".", ",")
+    
+    # Header
+    elements.append(Paragraph("BPM Import Rapport", title_style))
+    elements.append(Paragraph(f"Moto Import B.V. | Rapportnummer: {doc.get('taxatie_nummer', '-')}", subtitle_style))
+    
+    # 1. Voertuiggegevens
+    elements.append(Paragraph("1. Voertuiggegevens", section_style))
+    
+    vin = doc.get("vin_number", "-")
+    bouwjaar = doc.get("bouwjaar", "-")
+    first_reg = doc.get("first_registration_date", "-")
+    if first_reg and len(first_reg) >= 10:
+        try:
+            d = datetime.fromisoformat(first_reg)
+            first_reg = d.strftime("%d-%m-%Y")
+        except: pass
+    if bouwjaar and len(bouwjaar) >= 10:
+        try:
+            d = datetime.fromisoformat(bouwjaar)
+            bouwjaar = d.strftime("%d-%m-%Y")
+        except: pass
+    
+    vehicle_data = [
+        ["Merk", doc.get("brand", "-"), "Model", doc.get("model", "-")],
+        ["Chassisnummer (VIN)", vin, "Brandstof", doc.get("fuel_type", "Benzine")],
+        ["Datum 1e toelating", first_reg, "Bouwjaar", bouwjaar],
+        ["Km-stand", str(doc.get("mileage", 0)), "Vermogen", f"{doc.get('power_kw', '-')} kW"],
+        ["Cilinderinhoud", doc.get("cylinder_capacity", "-"), "Kleur", doc.get("color", "-")],
+    ]
+    
+    t = Table(vehicle_data, colWidths=[35*mm, 50*mm, 35*mm, 50*mm])
+    t.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f5f5f5')),
+        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#f5f5f5')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e5e5')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 4*mm))
+    
+    # 2. Bruto BPM Berekening
+    elements.append(Paragraph("2. Bruto BPM Berekening", section_style))
+    
+    netto_cat = doc.get("netto_catalogusprijs", 0) or 0
+    bruto_bpm = doc.get("bruto_bpm", 0) or 0
+    
+    if netto_cat > 2133:
+        bpm_pct = "19,4%"
+        brandstof_toeslag = round(netto_cat * 0.194, 2)
+        energie_label = -210
+    else:
+        bpm_pct = "9,6%"
+        brandstof_toeslag = round(netto_cat * 0.096, 2)
+        energie_label = 0
+    
+    bpm_data = [
+        [Paragraph("<b>Omschrijving</b>", normal), Paragraph("<b>Bedrag</b>", right_bold)],
+        ["Netto catalogusprijs (basisuitvoering)", f"€ {fmt_eur(netto_cat)}"],
+        ["Accessoires en opties", "€ 0,00"],
+        [f"BPM-percentage ({bpm_pct})", f"€ {fmt_eur(brandstof_toeslag)}"],
+        ["Energielabeltoeslag", f"€ {fmt_eur(energie_label)}"],
+        [Paragraph("<b>Bruto BPM</b>", bold_style), Paragraph(f"<b>€ {fmt_eur(bruto_bpm)}</b>", right_bold)],
+    ]
+    
+    t = Table(bpm_data, colWidths=[120*mm, 50*mm])
+    t.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e5e5')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc2626')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#fef2f2')),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 4*mm))
+    
+    # 3. Afschrijving / Vermindering
+    elements.append(Paragraph("3. Afschrijvingsmethode (voordeligste)", section_style))
+    
+    beste = doc.get("beste_methode", "forfaitair")
+    methode_labels = {"forfaitair": "Forfaitaire afschrijvingstabel", "koerslijst": "Koerslijstmethode", "taxatierapport": "Taxatierapport"}
+    
+    afschr_data = [
+        [Paragraph("<b>Methode</b>", normal), Paragraph("<b>Afschrijving</b>", normal), Paragraph("<b>Rest BPM</b>", right_bold)],
+        [
+            f"{'>>> ' if beste == 'forfaitair' else ''}Forfaitaire tabel ({doc.get('months_age', 0)} mnd)",
+            fmt_pct(doc.get("forfaitair_percentage", 0)),
+            f"€ {fmt_eur(doc.get('forfaitair_bpm', 0))}"
+        ],
+    ]
+    if doc.get("koerslijst_percentage", 0) > 0:
+        afschr_data.append([
+            f"{'>>> ' if beste == 'koerslijst' else ''}Koerslijstmethode",
+            fmt_pct(doc.get("koerslijst_percentage", 0)),
+            f"€ {fmt_eur(doc.get('koerslijst_bpm', 0))}"
+        ])
+    if doc.get("taxatie_percentage", 0) > 0:
+        afschr_data.append([
+            f"{'>>> ' if beste == 'taxatierapport' else ''}Taxatierapport",
+            fmt_pct(doc.get("taxatie_percentage", 0)),
+            f"€ {fmt_eur(doc.get('taxatie_bpm', 0))}"
+        ])
+    
+    t = Table(afschr_data, colWidths=[90*mm, 40*mm, 40*mm])
+    ts = [
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e5e5')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#18181b')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]
+    # Highlight the best method row
+    for i, row in enumerate(afschr_data[1:], 1):
+        if row[0].startswith(">>>"):
+            ts.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#dcfce7')))
+            ts.append(('FONTNAME', (0, i), (-1, i), 'Helvetica-Bold'))
+    t.setStyle(TableStyle(ts))
+    # Clean up >>> markers
+    for i, row in enumerate(afschr_data):
+        if isinstance(row[0], str):
+            afschr_data[i][0] = row[0].replace(">>> ", "")
+    
+    elements.append(t)
+    elements.append(Spacer(1, 2*mm))
+    elements.append(Paragraph(f"Gekozen methode: <b>{methode_labels.get(beste, beste)}</b> ({fmt_pct(doc.get(f'{beste}_percentage' if beste != 'taxatierapport' else 'taxatie_percentage', 0))} afschrijving)", small_style))
+    elements.append(Spacer(1, 4*mm))
+    
+    # 4. Schade en Herstelkosten
+    herstelkosten = doc.get("herstelkosten", 0) or 0
+    schade_aftrek = doc.get("schade_aftrek", 0) or 0
+    
+    if herstelkosten > 0:
+        elements.append(Paragraph("4. Schade & Herstelkosten (31% aftrek)", section_style))
+        
+        damage_rows = [[Paragraph("<b>Onderdeel</b>", normal), Paragraph("<b>Kosten</b>", right_bold)]]
+        damage_items = doc.get("damage_items", [])
+        checked_items = [i for i in damage_items if i.get("checked")]
+        
+        if checked_items:
+            for item in checked_items:
+                damage_rows.append([item.get("name", "-"), f"€ {fmt_eur(item.get('cost', 0))}"])
+        
+        damage_rows.append([Paragraph("<b>Totaal herstelkosten</b>", bold_style), Paragraph(f"<b>€ {fmt_eur(herstelkosten)}</b>", right_bold)])
+        damage_rows.append([Paragraph("<b>BPM-aftrek (31%)</b>", bold_style), Paragraph(f"<b>- € {fmt_eur(schade_aftrek)}</b>", right_bold)])
+        
+        t = Table(damage_rows, colWidths=[120*mm, 50*mm])
+        t.setStyle(TableStyle([
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e5e5')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#d97706')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('BACKGROUND', (0, -2), (-1, -1), colors.HexColor('#fef3c7')),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        elements.append(t)
+        
+        if doc.get("damage_notes"):
+            elements.append(Spacer(1, 2*mm))
+            elements.append(Paragraph(f"Toelichting: {doc['damage_notes']}", small_style))
+        elements.append(Spacer(1, 4*mm))
+    
+    # 5. Eindberekening
+    section_num = "5" if herstelkosten > 0 else "4"
+    elements.append(Paragraph(f"{section_num}. Eindberekening - Te betalen BPM", section_style))
+    
+    laagste_label = methode_labels.get(beste, beste)
+    laagste_bpm_val = doc.get(f"{beste}_bpm" if beste != "taxatierapport" else "taxatie_bpm", 0)
+    netto_bpm = doc.get("netto_bpm", 0) or 0
+    
+    final_data = [
+        [Paragraph("<b>Omschrijving</b>", normal), Paragraph("<b>Bedrag</b>", right_bold)],
+        ["Bruto BPM", f"€ {fmt_eur(bruto_bpm)}"],
+        [f"Afschrijving ({laagste_label})", f"- € {fmt_eur(bruto_bpm - laagste_bpm_val)}"],
+        ["BPM na afschrijving", f"€ {fmt_eur(laagste_bpm_val)}"],
+    ]
+    if herstelkosten > 0:
+        final_data.append(["Schade-aftrek (31% van herstelkosten)", f"- € {fmt_eur(schade_aftrek)}"])
+    final_data.append([
+        Paragraph("<b>Te betalen BPM</b>", ParagraphStyle('FinalBold', parent=bold_style, fontSize=11)),
+        Paragraph(f"<b>€ {fmt_eur(netto_bpm)}</b>", ParagraphStyle('FinalRight', parent=right_bold, fontSize=11))
+    ])
+    
+    t = Table(final_data, colWidths=[120*mm, 50*mm])
+    t.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -2), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e5e5e5')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#16a34a')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#dcfce7')),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 6*mm))
+    
+    # Footer
+    now = datetime.now(timezone.utc)
+    elements.append(Paragraph(f"Opgesteld door: Moto Import B.V. | Datum: {now.strftime('%d-%m-%Y')} | {doc.get('taxatie_nummer', '')}", small_style))
+    elements.append(Paragraph("Dit rapport is opgesteld conform de richtlijnen van de Belastingdienst voor BPM-aangifte bij import van motorfietsen.", small_style))
+    
+    pdf.build(elements)
+    buffer.seek(0)
+    
+    filename = f"BPM_Rapport_{doc.get('brand', 'Motor')}_{doc.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
+    return Response(
+        content=buffer.read(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
