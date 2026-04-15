@@ -1008,11 +1008,20 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
     if not doc_data:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     
-    blank_form = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'bpm_form_blank.pdf')
+    blank_form = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf')
     if not os.path.exists(blank_form):
+        # Fallback: try relative to config ROOT_DIR
+        from config import ROOT_DIR
+        blank_form = os.path.join(str(ROOT_DIR), 'uploads', 'bpm_form_blank.pdf')
+    if not os.path.exists(blank_form):
+        logger.error(f"BPM form template not found at: {blank_form}")
         raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden")
     
-    import fitz
+    try:
+        import fitz
+    except ImportError:
+        logger.error("PyMuPDF (fitz) not installed")
+        raise HTTPException(status_code=500, detail="PDF bibliotheek niet beschikbaar")
     
     now = datetime.now(timezone.utc)
     vin = doc_data.get("vin_number", "")
@@ -1164,23 +1173,30 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
     })
     
     # Open and fill the PDF
-    pdf_doc = fitz.open(blank_form)
-    
-    for page_num in range(len(pdf_doc)):
-        page = pdf_doc[page_num]
-        for widget in page.widgets():
-            fname = widget.field_name or ''
-            if fname in field_map and field_map[fname]:
-                widget.field_value = field_map[fname]
-                widget.update()
-    
-    # Save to bytes
-    pdf_bytes = pdf_doc.tobytes()
-    pdf_doc.close()
-    
-    filename = f"Aangifte_BPM_{doc_data.get('brand', 'Motor')}_{doc_data.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+    try:
+        pdf_doc = fitz.open(blank_form)
+        
+        for page_num in range(len(pdf_doc)):
+            page = pdf_doc[page_num]
+            for widget in page.widgets():
+                fname = widget.field_name or ''
+                if fname in field_map and field_map[fname]:
+                    try:
+                        widget.field_value = str(field_map[fname])
+                        widget.update()
+                    except Exception as we:
+                        logger.warning(f"Could not set field '{fname}': {we}")
+        
+        # Save to bytes
+        pdf_bytes = pdf_doc.tobytes()
+        pdf_doc.close()
+        
+        filename = f"Aangifte_BPM_{doc_data.get('brand', 'Motor')}_{doc_data.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        logger.error(f"Failed to generate Belastingdienst PDF: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PDF generatie mislukt: {str(e)}")

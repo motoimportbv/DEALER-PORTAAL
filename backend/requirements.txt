@@ -23,11 +23,13 @@ emergentintegrations==0.1.0
 fastapi==0.110.1
 fastuuid==0.14.0
 filelock==3.20.3
+fillpdf==0.7.3
 flake8==7.3.0
 fonttools==4.61.1
 fpdf2==2.8.5
 frozenlist==1.8.0
 fsspec==2026.1.0
+git-filter-repo==2.47.0
 google-ai-generativelanguage==0.6.15
 google-api-core==2.29.0
 google-api-python-client==2.188.0
@@ -72,6 +74,9 @@ packaging==25.0
 pandas==2.3.3
 passlib==1.7.4
 pathspec==1.0.3
+pdf2image==1.17.0
+pdfrw==0.4
+pdfrw2==0.5.0
 pillow==12.1.0
 platformdirs==4.5.1
 pluggy==1.6.0
@@ -89,7 +94,9 @@ pyflakes==3.4.0
 Pygments==2.19.2
 PyJWT==2.10.1
 pymongo==4.5.0
+PyMuPDF==1.27.2.2
 pyparsing==3.3.1
+PyPDF2==3.0.1
 pytest==9.0.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
@@ -99,6 +106,7 @@ pytokens==0.3.0
 pytz==2025.2
 pywebpush==2.3.0
 PyYAML==6.0.3
+qrcode==8.2
 referencing==0.37.0
 regex==2026.1.15
 reportlab==4.4.10
