@@ -647,6 +647,8 @@ class DamageItem(BaseModel):
     name: str = ""
     checked: bool = False
     cost: float = 0
+    hours: float = 0
+    material_cost: float = 0
 
 class TaxatieCreate(BaseModel):
     brand: str = ""

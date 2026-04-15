@@ -4,31 +4,26 @@
 Platform voor motorhandelnetwerk "Moto Import" met dealer management, bestellingen, en BPM tools.
 
 ## Kernfuncties
-- **BPM Vermindering Tool**: Volledige BPM taxatie met AutoTelex integratie, snel schadebedrag, PDF export + **automatisch invullen officieel Belastingdienst formulier**
-- **Dealer Platform**: Dashboard, bestellingen, voorstellen, motor verkoop, zoekertjes
-- **Admin Platform**: Motorcycles beheer, orders, dealers, marketing, taxatie
-- **Foreign Dealer**: Motoren aanmelden, CHF prijsaanpassing
-- **Klant Deellinks**: Motoren delen zonder prijzen
+- **BPM Vermindering Tool**: Volledige BPM taxatie met:
+  - AutoTelex gegevens overnemen
+  - Snel schadebedrag (slider, presets, terugrekenen)
+  - 26-punts schadechecklist met uren + materiaalkosten (€65/uur excl. BTW)
+  - **3 PDF exports**: Belastingdienst formulier (auto-fill), Taxatieverslag (schade+uren onderbouwing), Rapport PDF
+- **Dealer Platform**: Dashboard, bestellingen, voorstellen, motor verkoop
+- **Admin Platform**: Motorcycles beheer, orders, dealers, marketing
+- **Foreign Dealer**: CHF prijsaanpassing met wisselkoers conversie
 
-## BPM Formulier Auto-Fill
-Het officiële Belastingdienst PDF-formulier (21 pagina's, 92 velden) wordt automatisch ingevuld met:
-- Voertuiggegevens (VIN, merk, model, 1e toelating)
-- Bedrijfsgegevens (Motoimport B.V., RSIN 866851525, adres)
-- Netto catalogusprijs & Bruto BPM
-- Forfaitaire afschrijvingspercentage
-- Berekende BPM & Te betalen BPM
-- Ondertekening (Sandro Milone)
-- Bijlage A (bruto BPM) & Bijlage D (vermindering)
+## Backend Structuur (18 modulaire routers)
+server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
 ### P0 - Afgerond
-- Backend Refactoring
-- CHF Prijsaanpassing
-- BPM Snel Aanpassen tools
-- AutoTelex Gegevens Overnemen
-- BPM Rapport PDF Export
-- Belastingdienst Formulier Auto-Fill
+- Backend Refactoring, CHF Prijsaanpassing, BPM Snel Aanpassen
+- AutoTelex Gegevens Overnemen, BPM Rapport PDF
+- Belastingdienst Formulier Auto-Fill (21 pagina's, 92 velden)
+- Taxatieverslag PDF (uren × €65 + materiaal onderbouwing)
+- PDF download bug fixes (XHR, auto-download template, PyMuPDF)
 
 ### P1
 - AutoTelex API (wacht op API-sleutel)

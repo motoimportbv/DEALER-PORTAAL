@@ -31,33 +31,35 @@ const INSPECTION_ITEMS = [
 ];
 
 const DEFAULT_DAMAGE_ITEMS = [
-  { name: 'Kuipdelen / Stroomlijnkappen', checked: false, cost: 0 },
-  { name: 'Tank (deuken / krassen)', checked: false, cost: 0 },
-  { name: 'Lak / Spuitwerk', checked: false, cost: 0 },
-  { name: 'Uitlaat (roest / lek)', checked: false, cost: 0 },
-  { name: 'Motorblok (lekkage / geluid)', checked: false, cost: 0 },
-  { name: 'Frame / Chassis (scheuren / roest)', checked: false, cost: 0 },
-  { name: 'Voorvork (lekkage / krom)', checked: false, cost: 0 },
-  { name: 'Achterdemper (lek / versleten)', checked: false, cost: 0 },
-  { name: 'Remschijven / Remblokken', checked: false, cost: 0 },
-  { name: 'Banden (versleten / oud)', checked: false, cost: 0 },
-  { name: 'Ketting / Tandwielen', checked: false, cost: 0 },
-  { name: 'Koppeling (versleten)', checked: false, cost: 0 },
-  { name: 'Accu', checked: false, cost: 0 },
-  { name: 'Verlichting (koplamp / achterlicht)', checked: false, cost: 0 },
-  { name: 'Knipperlichten / Richtingaanwijzers', checked: false, cost: 0 },
-  { name: 'Spiegels', checked: false, cost: 0 },
-  { name: 'Dashboard / Instrumenten', checked: false, cost: 0 },
-  { name: 'Stuurlagers', checked: false, cost: 0 },
-  { name: 'Wiellagers', checked: false, cost: 0 },
-  { name: 'Zadel (gescheurd / versleten)', checked: false, cost: 0 },
-  { name: 'Windscherm', checked: false, cost: 0 },
-  { name: 'Voetsteunen / Schakelpedaal', checked: false, cost: 0 },
-  { name: 'Koelvloeistof systeem', checked: false, cost: 0 },
-  { name: 'Remvloeistof / Remleidingen', checked: false, cost: 0 },
-  { name: 'Corrosie / Roest algemeen', checked: false, cost: 0 },
-  { name: 'Overig', checked: false, cost: 0 },
+  { name: 'Kuipdelen / Stroomlijnkappen', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Tank (deuken / krassen)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Lak / Spuitwerk', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Uitlaat (roest / lek)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Motorblok (lekkage / geluid)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Frame / Chassis (scheuren / roest)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Voorvork (lekkage / krom)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Achterdemper (lek / versleten)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Remschijven / Remblokken', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Banden (versleten / oud)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Ketting / Tandwielen', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Koppeling (versleten)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Accu', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Verlichting (koplamp / achterlicht)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Knipperlichten / Richtingaanwijzers', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Spiegels', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Dashboard / Instrumenten', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Stuurlagers', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Wiellagers', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Zadel (gescheurd / versleten)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Windscherm', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Voetsteunen / Schakelpedaal', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Koelvloeistof systeem', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Remvloeistof / Remleidingen', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Corrosie / Roest algemeen', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Overig', checked: false, cost: 0, hours: 0, material_cost: 0 },
 ];
+
+const LABOR_RATE = 65; // €65 per uur excl. BTW
 
 const EMPTY_FORM = {
   brand: '', model: '', bouwjaar: '', mileage: 0, color: '',
@@ -210,47 +212,81 @@ function BpmSummary({ form, overrideHerstelkosten }) {
 function DamageChecklist({ items, onChange }) {
   const checkedItems = items.filter(i => i.checked);
   const totalCost = checkedItems.reduce((s, i) => s + (i.cost || 0), 0);
+  const totalHours = checkedItems.reduce((s, i) => s + (i.hours || 0), 0);
+  const totalLabor = totalHours * LABOR_RATE;
+  const totalMaterial = checkedItems.reduce((s, i) => s + (i.material_cost || 0), 0);
 
   const toggle = (idx) => {
-    const next = items.map((it, i) => i === idx ? { ...it, checked: !it.checked, cost: !it.checked ? it.cost : 0 } : it);
+    const next = items.map((it, i) => i === idx ? { ...it, checked: !it.checked, cost: !it.checked ? it.cost : 0, hours: !it.checked ? it.hours : 0, material_cost: !it.checked ? it.material_cost : 0 } : it);
     onChange(next);
   };
-  const setCost = (idx, cost) => {
-    const next = items.map((it, i) => i === idx ? { ...it, cost } : it);
+  const updateItem = (idx, field, value) => {
+    const next = items.map((it, i) => {
+      if (i !== idx) return it;
+      const updated = { ...it, [field]: value };
+      // Auto-calculate total cost from hours + material
+      if (field === 'hours' || field === 'material_cost') {
+        updated.cost = Math.round((updated.hours || 0) * LABOR_RATE + (updated.material_cost || 0));
+      }
+      return updated;
+    });
     onChange(next);
   };
 
   return (
     <div data-testid="damage-checklist">
-      <div className="grid sm:grid-cols-2 gap-2">
+      <div className="grid gap-2">
         {items.map((item, idx) => (
-          <div key={idx} className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${item.checked ? 'bg-red-50 border-red-200' : 'bg-zinc-50 border-zinc-100'}`}>
-            <button type="button" onClick={() => toggle(idx)}
-              className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 transition-colors ${item.checked ? 'bg-red-600 text-white' : 'bg-white border border-zinc-300 text-transparent hover:border-zinc-400'}`}
-              data-testid={`damage-check-${idx}`}>
-              <Check className="w-3.5 h-3.5" />
-            </button>
-            <span className={`text-sm flex-1 min-w-0 truncate ${item.checked ? 'font-medium text-zinc-900' : 'text-zinc-500'}`}>{item.name}</span>
+          <div key={idx} className={`p-2.5 rounded-lg border transition-all ${item.checked ? 'bg-red-50 border-red-200' : 'bg-zinc-50 border-zinc-100'}`}>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => toggle(idx)}
+                className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 transition-colors ${item.checked ? 'bg-red-600 text-white' : 'bg-white border border-zinc-300 text-transparent hover:border-zinc-400'}`}
+                data-testid={`damage-check-${idx}`}>
+                <Check className="w-3.5 h-3.5" />
+              </button>
+              <span className={`text-sm flex-1 min-w-0 ${item.checked ? 'font-medium text-zinc-900' : 'text-zinc-500'}`}>{item.name}</span>
+              {item.checked && (
+                <span className="text-sm font-bold text-red-700 flex-shrink-0">{fmtEur(item.cost || 0)}</span>
+              )}
+            </div>
             {item.checked && (
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <span className="text-xs text-zinc-400">€</span>
-                <input type="number" value={item.cost || ''} onChange={e => setCost(idx, Number(e.target.value))}
-                  placeholder="0" className="w-20 border border-red-200 rounded px-2 py-1 text-sm text-right font-medium focus:border-red-500 focus:outline-none bg-white"
-                  data-testid={`damage-cost-${idx}`} />
+              <div className="flex gap-3 mt-2 ml-8 items-center">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-zinc-400 w-10">Uren:</span>
+                  <input type="number" value={item.hours || ''} onChange={e => updateItem(idx, 'hours', Number(e.target.value))}
+                    placeholder="0" step="0.5" min="0" className="w-16 border border-red-200 rounded px-2 py-1 text-xs text-right focus:border-red-500 focus:outline-none bg-white"
+                    data-testid={`damage-hours-${idx}`} />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-zinc-400 w-14">Materiaal:</span>
+                  <span className="text-[10px] text-zinc-400">€</span>
+                  <input type="number" value={item.material_cost || ''} onChange={e => updateItem(idx, 'material_cost', Number(e.target.value))}
+                    placeholder="0" min="0" className="w-20 border border-red-200 rounded px-2 py-1 text-xs text-right focus:border-red-500 focus:outline-none bg-white"
+                    data-testid={`damage-material-${idx}`} />
+                </div>
+                <span className="text-[10px] text-zinc-400">= {item.hours > 0 ? `${item.hours}u × €${LABOR_RATE}` : ''}{item.hours > 0 && item.material_cost > 0 ? ' + ' : ''}{item.material_cost > 0 ? `€${item.material_cost}` : ''}</span>
               </div>
             )}
           </div>
         ))}
       </div>
       {checkedItems.length > 0 && (
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="font-bold text-zinc-700">{checkedItems.length} schade-item(s) aangevinkt</span>
-            <span className="font-black text-red-700">{fmtEur(totalCost)}</span>
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 space-y-1">
+          <div className="flex items-center justify-between text-xs text-zinc-500">
+            <span>Arbeid: {totalHours} uur × €{LABOR_RATE}/uur</span>
+            <span>{fmtEur(totalLabor)}</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-green-700 font-bold">BPM-aftrek (31%)</span>
-            <span className="text-green-700 font-black">- {fmtEur(totalCost * 0.31)}</span>
+          <div className="flex items-center justify-between text-xs text-zinc-500">
+            <span>Materiaalkosten</span>
+            <span>{fmtEur(totalMaterial)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm font-bold text-zinc-700 border-t border-red-200 pt-1">
+            <span>{checkedItems.length} schade-item(s) — Totaal herstelkosten</span>
+            <span className="text-red-700">{fmtEur(totalCost)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm font-bold text-green-700">
+            <span>BPM-aftrek (31%)</span>
+            <span>- {fmtEur(totalCost * 0.31)}</span>
           </div>
         </div>
       )}
@@ -295,7 +331,33 @@ function BpmReport({ taxatie, onClose }) {
             xhr.onerror = function() { alert('Fout bij PDF download: netwerk fout'); };
             xhr.send();
           }} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="download-bd-pdf-btn">
-            <Download className="w-4 h-4 mr-2" />Belastingdienst Formulier
+            <Download className="w-4 h-4 mr-2" />Belastingdienst
+          </Button>
+          <Button onClick={() => {
+            const token = localStorage.getItem('token');
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/taxatieverslag-pdf`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.responseType = 'blob';
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                const blob = xhr.response;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Taxatieverslag_${taxatie.brand}_${taxatie.model}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } else {
+                alert('Fout bij PDF download: server fout ' + xhr.status);
+              }
+            };
+            xhr.onerror = function() { alert('Fout bij PDF download: netwerk fout'); };
+            xhr.send();
+          }} className="bg-amber-600 hover:bg-amber-700 text-white" data-testid="download-verslag-pdf-btn">
+            <Download className="w-4 h-4 mr-2" />Taxatieverslag
           </Button>
           <Button onClick={() => {
             const token = localStorage.getItem('token');
