@@ -274,6 +274,24 @@ function BpmReport({ taxatie, onClose }) {
           <Button onClick={async () => {
             try {
               const token = localStorage.getItem('token');
+              const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/belastingdienst-pdf`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (!res.ok) throw new Error('PDF generatie mislukt');
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `Aangifte_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch (e) { alert('Fout bij PDF download: ' + e.message); }
+          }} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="download-bd-pdf-btn">
+            <Download className="w-4 h-4 mr-2" />Belastingdienst Formulier
+          </Button>
+          <Button onClick={async () => {
+            try {
+              const token = localStorage.getItem('token');
               const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/pdf`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
@@ -287,9 +305,9 @@ function BpmReport({ taxatie, onClose }) {
               URL.revokeObjectURL(url);
             } catch (e) { alert('Fout bij PDF download: ' + e.message); }
           }} variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" data-testid="download-pdf-btn">
-            <Download className="w-4 h-4 mr-2" />Download PDF
+            <Download className="w-4 h-4 mr-2" />Rapport PDF
           </Button>
-          <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen / PDF</Button>
+          <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen</Button>
         </div>
       </div>
 

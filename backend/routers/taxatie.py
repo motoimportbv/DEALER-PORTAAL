@@ -996,3 +996,141 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     )
 
 
+
+
+@router.get("/taxatie-programma/{taxatie_id}/belastingdienst-pdf")
+async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depends(require_admin)):
+    """Fill the official Belastingdienst BPM form with taxatie data using PyMuPDF"""
+    if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    doc_data = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    if not doc_data:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    
+    blank_form = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'bpm_form_blank.pdf')
+    if not os.path.exists(blank_form):
+        raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden")
+    
+    import fitz
+    
+    now = datetime.now(timezone.utc)
+    vin = doc_data.get("vin_number", "")
+    doc_kenmerk = vin[-7:] if len(vin) >= 7 else vin
+    
+    # Parse first registration date
+    first_reg = doc_data.get("first_registration_date", "")
+    reg_day, reg_month, reg_year = "", "", ""
+    if first_reg:
+        try:
+            d = datetime.fromisoformat(first_reg)
+            reg_day, reg_month, reg_year = f"{d.day:02d}", f"{d.month:02d}", str(d.year)
+        except: pass
+    
+    bruto_bpm = doc_data.get("bruto_bpm", 0) or 0
+    netto_cat = doc_data.get("netto_catalogusprijs", 0) or 0
+    forfaitair_pct = doc_data.get("forfaitair_percentage", 0) or 0
+    beste = doc_data.get("beste_methode", "forfaitair")
+    
+    if beste == "forfaitair":
+        afschr_pct = forfaitair_pct
+    elif beste == "koerslijst":
+        afschr_pct = doc_data.get("koerslijst_percentage", 0)
+    else:
+        afschr_pct = doc_data.get("taxatie_percentage", 0)
+    
+    afschr_bedrag = round(bruto_bpm * afschr_pct / 100, 2)
+    berekende_bpm = round(bruto_bpm - afschr_bedrag, 2)
+    herstelkosten = doc_data.get("herstelkosten", 0) or 0
+    schade_aftrek = doc_data.get("schade_aftrek", 0) or 0
+    te_betalen = int(max(0, berekende_bpm - schade_aftrek))
+    
+    # Field mapping: field_name -> value
+    field_map = {
+        # Page 1: Identificatie
+        '1.0.VIN': vin,
+        '1.1.VIN._C7.1': doc_kenmerk,
+        '1.2_BSR': '866851525',
+        
+        # Page 2: Aangifte + Gegevens (ondernemer: Motoimport B.V.)
+        '1.1.VIN._C7.2': doc_kenmerk,
+        '4.2.0': 'Motoimport B.V.',
+        '4.2.1': 'Sandro Milone',
+        '4.4': 'Horsterhoekweg',
+        '4.5_HN': '11',
+        '4.7_PC': '7433 SV',
+        '4.8': 'Schalkhaar',
+        '4.9_TEL': '0681792660',
+        '4.10_EM': 'motoimportbv@gmail.com',
+        '3.date01.d_CF': f"{now.day:02d}",
+        '3.date01.m_CF': f"{now.month:02d}",
+        '3.date01.y_CF': str(now.year),
+        
+        # Page 3: Voertuiggegevens
+        '1.1.VIN._C7.3': doc_kenmerk,
+        '6.4': doc_data.get("brand", ""),
+        '6.5': doc_data.get("model", ""),
+        '6.6': doc_data.get("model", ""),
+        '6.date02.d_C': reg_day,
+        '6.date02.m_C': reg_month,
+        '6.date02.y_C': reg_year,
+        
+        # Page 4: Netto-catalogusprijs & BPM
+        '1.1.VIN._C7.4': doc_kenmerk,
+        '7.0_A7': str(int(netto_cat)),
+        '7.1_A7': '0',
+        '7.2_A7': str(int(netto_cat)),
+        '8b.3.date03.d_C': '01',
+        '8b.3.date03.m_C': '01',
+        '8b.3.date03.y_C': '2026',
+        '8b.4_A7': str(int(bruto_bpm)),
+        
+        # Page 5: Afschrijvingsmethode
+        '1.1.VIN._C7.5': doc_kenmerk,
+        '8c.3._AD33': f"{afschr_pct:.3f}".replace('.', ','),
+        '8d.0_A7': str(int(berekende_bpm)),
+        '8e._A7': str(te_betalen),
+        
+        # Page 6: Ondertekening
+        '1.1.VIN._C7.6': doc_kenmerk,
+        '10.0': 'Sandro Milone',
+        '10.date05.d_CF': f"{now.day:02d}",
+        '10.date05.m_CF': f"{now.month:02d}",
+        '10.date05.y_CF': str(now.year),
+        
+        # Page 7: Bijlage A (Bruto BPM)
+        'B.A.0': 'Motoimport B.V.',
+        'B.A.1_BSR': '866851525',
+        'B.A.VIN.17': vin,
+        'B.A.date01.d_F': reg_day,
+        'B.A.date01.m_F': reg_month,
+        'B.A.date01.y_F': reg_year,
+        
+        # Page 20-21: Bijlage D - Forfaitaire tabel (methode 3)
+        'B.D.3.0_A7': str(int(bruto_bpm)),
+        'B.D.3.1_AD33': f"{afschr_pct:.3f}".replace('.', ','),
+        'B.D.3.2_A7': str(int(afschr_bedrag)),
+        'B.D.3.3_A7': str(int(berekende_bpm)),
+    }
+    
+    # Open and fill the PDF
+    pdf_doc = fitz.open(blank_form)
+    
+    for page_num in range(len(pdf_doc)):
+        page = pdf_doc[page_num]
+        for widget in page.widgets():
+            fname = widget.field_name or ''
+            if fname in field_map and field_map[fname]:
+                widget.field_value = field_map[fname]
+                widget.update()
+    
+    # Save to bytes
+    pdf_bytes = pdf_doc.tobytes()
+    pdf_doc.close()
+    
+    filename = f"Aangifte_BPM_{doc_data.get('brand', 'Motor')}_{doc_data.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
