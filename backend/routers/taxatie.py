@@ -1010,12 +1010,28 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
     
     blank_form = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf')
     if not os.path.exists(blank_form):
-        # Fallback: try relative to config ROOT_DIR
         from config import ROOT_DIR
         blank_form = os.path.join(str(ROOT_DIR), 'uploads', 'bpm_form_blank.pdf')
+    
+    # Auto-download the official form if not present
+    if not os.path.exists(blank_form):
+        try:
+            import httpx
+            logger.info("Downloading Belastingdienst BPM form template...")
+            os.makedirs(os.path.dirname(blank_form), exist_ok=True)
+            resp = httpx.get("https://download.belastingdienst.nl/belastingdienst/docs/aang-meld-opg-bpm-bpm0111z13fol.pdf", timeout=30, follow_redirects=True)
+            if resp.status_code == 200:
+                with open(blank_form, 'wb') as f:
+                    f.write(resp.content)
+                logger.info(f"BPM form template downloaded: {len(resp.content)} bytes")
+            else:
+                logger.error(f"Failed to download BPM form: HTTP {resp.status_code}")
+        except Exception as dl_err:
+            logger.error(f"Failed to download BPM form template: {dl_err}")
+    
     if not os.path.exists(blank_form):
         logger.error(f"BPM form template not found at: {blank_form}")
-        raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden")
+        raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden. Probeer het later opnieuw.")
     
     try:
         import fitz
