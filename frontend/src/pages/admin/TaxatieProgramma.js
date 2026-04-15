@@ -626,8 +626,16 @@ export default function TaxatieProgramma() {
             </h1>
             <div className="flex gap-2">
               <Button variant="outline" onClick={resetForm} data-testid="cancel-btn">Annuleren</Button>
-              <Button onClick={() => window.open('https://www.autotelex.nl', '_blank')} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-btn">
-                <ExternalLink className="w-4 h-4 mr-2" />AutoTelex
+              <Button onClick={() => {
+                // Smart AutoTelex link: open search with VIN if available
+                const vin = form.vin_number?.trim();
+                if (vin && vin.length >= 10) {
+                  window.open(`https://autotelexpro.nl/Default.aspx`, '_blank');
+                } else {
+                  window.open('https://autotelexpro.nl/Default.aspx', '_blank');
+                }
+              }} variant="outline" className="border-blue-500 text-blue-700 hover:bg-blue-50 font-bold" data-testid="autotelex-btn">
+                <ExternalLink className="w-4 h-4 mr-2" />AutoTelex PRO
               </Button>
               <Button onClick={() => window.open('https://ovi.rdw.nl/', '_blank')} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50" data-testid="rdw-btn">
                 <ExternalLink className="w-4 h-4 mr-2" />RDW
@@ -681,24 +689,98 @@ export default function TaxatieProgramma() {
             </div>
           </div>
 
-          {/* BPM Gegevens */}
-          <div className="bg-white rounded-2xl border-2 border-red-200 p-6">
-            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-red-700"><Calculator className="w-5 h-5" />BPM Berekening</h2>
-            <p className="text-xs text-zinc-500 mb-4">Vul de prijzen in om de BPM-vermindering te berekenen. De voordeligste methode wordt automatisch gekozen.</p>
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
+          {/* AutoTelex Gegevens Overnemen */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6" data-testid="autotelex-import-section">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold flex items-center gap-2 text-blue-700">
+                <ExternalLink className="w-5 h-5" />AutoTelex Gegevens Overnemen
+              </h2>
+              <Button 
+                onClick={() => window.open('https://autotelexpro.nl/Default.aspx', '_blank')}
+                size="sm" variant="outline" className="border-blue-400 text-blue-700 hover:bg-blue-100"
+                data-testid="open-autotelex-btn"
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />Open AutoTelex PRO
+              </Button>
+            </div>
+            <p className="text-xs text-blue-600 mb-4">
+              Open AutoTelex PRO, zoek het voertuig op (kenmerken/import → Motoren), en vul hieronder de waarden in. 
+              De BPM wordt direct herberekend.
+            </p>
+            
+            {form.vin_number && (
+              <div className="bg-white/70 rounded-lg px-3 py-2 mb-4 flex items-center gap-2 border border-blue-100">
+                <span className="text-xs text-blue-500 font-bold">VIN:</span>
+                <span className="text-sm font-mono font-bold text-zinc-800 select-all">{form.vin_number}</span>
+                <button type="button" onClick={() => { navigator.clipboard.writeText(form.vin_number); toast.success('VIN gekopieerd!'); }}
+                  className="text-xs text-blue-600 hover:text-blue-800 ml-auto underline" data-testid="copy-vin-btn">
+                  Kopieer VIN
+                </button>
+              </div>
+            )}
+            
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
-                <label className="text-xs font-bold text-zinc-600 block mb-1">Netto catalogusprijs (excl. BPM) *</label>
-                <input type="number" value={form.netto_catalogusprijs || ''} onChange={e => updateField('netto_catalogusprijs', Number(e.target.value))}
-                  placeholder="0" className="w-full border-2 border-red-300 rounded-lg px-3 py-2 text-sm font-bold focus:border-red-500 focus:outline-none bg-red-50" data-testid="field-netto_catalogusprijs" />
-                <p className="text-[10px] text-zinc-400 mt-1">Bruto BPM: {fmtEur(bpm.bruto_bpm)}</p>
+                <label className="text-xs font-bold text-blue-700 block mb-1">Netto catalogusprijs</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input type="number" value={form.netto_catalogusprijs || ''} 
+                    onChange={e => updateField('netto_catalogusprijs', Number(e.target.value))}
+                    placeholder="Excl. BPM" 
+                    className="w-full border-2 border-blue-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-blue-500 focus:outline-none bg-white" 
+                    data-testid="atx-netto-catalogusprijs" />
+                </div>
               </div>
               <div>
-                <label className="text-xs font-bold text-zinc-600 block mb-1">Consumentenprijs (incl. BPM)</label>
-                <input type="number" value={form.consumentenprijs || ''} onChange={e => updateField('consumentenprijs', Number(e.target.value))}
-                  placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-consumentenprijs" />
-                <p className="text-[10px] text-zinc-400 mt-1">Nodig voor koerslijst/taxatie methode</p>
+                <label className="text-xs font-bold text-blue-700 block mb-1">Consumentenprijs</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input type="number" value={form.consumentenprijs || ''} 
+                    onChange={e => updateField('consumentenprijs', Number(e.target.value))}
+                    placeholder="Incl. BPM" 
+                    className="w-full border-2 border-blue-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-blue-500 focus:outline-none bg-white" 
+                    data-testid="atx-consumentenprijs" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-blue-700 block mb-1">Koerslijstwaarde</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input type="number" value={form.koerslijst_waarde || ''} 
+                    onChange={e => updateField('koerslijst_waarde', Number(e.target.value))}
+                    placeholder="Handelsinkoopwaarde" 
+                    className="w-full border-2 border-blue-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-blue-500 focus:outline-none bg-white" 
+                    data-testid="atx-koerslijstwaarde" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-blue-700 block mb-1">Taxatie inruilwaarde</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input type="number" value={form.taxatie_inruil_waarde || ''} 
+                    onChange={e => updateField('taxatie_inruil_waarde', Number(e.target.value))}
+                    placeholder="Taxatierapport waarde" 
+                    className="w-full border-2 border-blue-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-blue-500 focus:outline-none bg-white" 
+                    data-testid="atx-taxatiewaarde" />
+                </div>
               </div>
             </div>
+            
+            {(form.netto_catalogusprijs > 0) && (
+              <div className="mt-3 flex flex-wrap gap-3 text-xs">
+                {bpm.bruto_bpm > 0 && <span className="bg-white rounded-full px-3 py-1 border border-blue-200 text-blue-700 font-bold">Bruto BPM: {fmtEur(bpm.bruto_bpm)}</span>}
+                {bpm.forfaitair_percentage > 0 && <span className="bg-white rounded-full px-3 py-1 border border-green-200 text-green-700 font-bold">Forfaitair: {fmtPct(bpm.forfaitair_percentage)} → {fmtEur(bpm.forfaitair_bpm)}</span>}
+                {bpm.koerslijst_percentage > 0 && <span className="bg-white rounded-full px-3 py-1 border border-purple-200 text-purple-700 font-bold">Koerslijst: {fmtPct(bpm.koerslijst_percentage)} → {fmtEur(bpm.koerslijst_bpm)}</span>}
+                {bpm.taxatie_percentage > 0 && <span className="bg-white rounded-full px-3 py-1 border border-orange-200 text-orange-700 font-bold">Taxatie: {fmtPct(bpm.taxatie_percentage)} → {fmtEur(bpm.taxatie_bpm)}</span>}
+              </div>
+            )}
+          </div>
+
+          {/* BPM Gegevens */}
+          <div className="bg-white rounded-2xl border-2 border-red-200 p-6">
+            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-red-700"><Calculator className="w-5 h-5" />BPM Berekening — Methode Overzicht</h2>
+            <p className="text-xs text-zinc-500 mb-4">De voordeligste methode wordt automatisch gekozen op basis van de ingevoerde AutoTelex gegevens.</p>
+            
             <div className="bg-zinc-50 rounded-xl p-4 mb-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 1: Forfaitaire Tabel (automatisch)</h3>
               <div className="flex items-center gap-4 text-sm">
@@ -709,28 +791,22 @@ export default function TaxatieProgramma() {
             </div>
             <div className="bg-zinc-50 rounded-xl p-4 mb-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 2: Koerslijst</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-zinc-600 block mb-1">Koerslijstwaarde</label>
-                  <input type="number" value={form.koerslijst_waarde || ''} onChange={e => updateField('koerslijst_waarde', Number(e.target.value))}
-                    placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-koerslijst_waarde" />
-                </div>
-                <div className="flex items-end text-sm pb-2">
-                  {bpm.koerslijst_percentage > 0 && <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.koerslijst_percentage)}</strong> | BPM: <strong>{fmtEur(bpm.koerslijst_bpm)}</strong></p>}
-                </div>
+              <div className="flex items-center gap-4 text-sm">
+                {form.koerslijst_waarde > 0 ? (
+                  <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.koerslijst_percentage)}</strong> | BPM: <strong>{fmtEur(bpm.koerslijst_bpm)}</strong></p>
+                ) : (
+                  <p className="text-zinc-400">Vul koerslijstwaarde in bij AutoTelex gegevens</p>
+                )}
               </div>
             </div>
             <div className="bg-zinc-50 rounded-xl p-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Methode 3: Taxatierapport</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-zinc-600 block mb-1">Getaxeerde (inruil)waarde</label>
-                  <input type="number" value={form.taxatie_inruil_waarde || ''} onChange={e => updateField('taxatie_inruil_waarde', Number(e.target.value))}
-                    placeholder="0" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-taxatie_inruil_waarde" />
-                </div>
-                <div className="flex items-end text-sm pb-2">
-                  {bpm.taxatie_percentage > 0 && <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.taxatie_percentage)}</strong> | BPM: <strong>{fmtEur(bpm.taxatie_bpm)}</strong></p>}
-                </div>
+              <div className="flex items-center gap-4 text-sm">
+                {form.taxatie_inruil_waarde > 0 ? (
+                  <p>Afschrijving: <strong className="text-green-700">{fmtPct(bpm.taxatie_percentage)}</strong> | BPM: <strong>{fmtEur(bpm.taxatie_bpm)}</strong></p>
+                ) : (
+                  <p className="text-zinc-400">Vul taxatie inruilwaarde in bij AutoTelex gegevens</p>
+                )}
               </div>
             </div>
           </div>
