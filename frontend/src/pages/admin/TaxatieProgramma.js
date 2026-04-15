@@ -271,39 +271,55 @@ function BpmReport({ taxatie, onClose }) {
       <div className="print:hidden sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center justify-between">
         <Button variant="ghost" onClick={onClose} data-testid="close-report-btn"><ArrowLeft className="w-4 h-4 mr-2" />Terug</Button>
         <div className="flex gap-2">
-          <Button onClick={async () => {
-            try {
-              const token = localStorage.getItem('token');
-              const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/belastingdienst-pdf`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              if (!res.ok) throw new Error('PDF generatie mislukt');
-              const blob = await res.blob();
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `Aangifte_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
-              a.click();
-              URL.revokeObjectURL(url);
-            } catch (e) { alert('Fout bij PDF download: ' + e.message); }
+          <Button onClick={() => {
+            const token = localStorage.getItem('token');
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/belastingdienst-pdf`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.responseType = 'blob';
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                const blob = xhr.response;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Aangifte_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } else {
+                alert('Fout bij PDF download: server fout ' + xhr.status);
+              }
+            };
+            xhr.onerror = function() { alert('Fout bij PDF download: netwerk fout'); };
+            xhr.send();
           }} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="download-bd-pdf-btn">
             <Download className="w-4 h-4 mr-2" />Belastingdienst Formulier
           </Button>
-          <Button onClick={async () => {
-            try {
-              const token = localStorage.getItem('token');
-              const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/pdf`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              if (!res.ok) throw new Error('PDF generatie mislukt');
-              const blob = await res.blob();
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `BPM_Rapport_${taxatie.brand}_${taxatie.model}.pdf`;
-              a.click();
-              URL.revokeObjectURL(url);
-            } catch (e) { alert('Fout bij PDF download: ' + e.message); }
+          <Button onClick={() => {
+            const token = localStorage.getItem('token');
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/pdf`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.responseType = 'blob';
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                const blob = xhr.response;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `BPM_Rapport_${taxatie.brand}_${taxatie.model}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } else {
+                alert('Fout bij PDF download: server fout ' + xhr.status);
+              }
+            };
+            xhr.onerror = function() { alert('Fout bij PDF download: netwerk fout'); };
+            xhr.send();
           }} variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" data-testid="download-pdf-btn">
             <Download className="w-4 h-4 mr-2" />Rapport PDF
           </Button>
