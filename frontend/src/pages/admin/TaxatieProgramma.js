@@ -92,7 +92,7 @@ function calcForfaitairPct(months) {
   return Math.min(81 + (months - 114) * 0.19, 100);
 }
 
-function calcBpmLocal(form) {
+function calcBpmLocal(form, overrideHerstelkosten = null) {
   const cat = form.netto_catalogusprijs || 0;
   const bruto = cat <= 0 ? 0 : cat <= 2133 ? cat * 0.096 : cat * 0.194 - 210;
 
@@ -117,8 +117,10 @@ function calcBpmLocal(form) {
   if (cons > 0 && taxVal > 0) taxPct = Math.max(0, Math.min(((cons - taxVal) / cons) * 100, 100));
   const taxBpm = bruto * (1 - taxPct / 100);
 
+  // Use override if provided, otherwise sum from checklist
   const items = form.damage_items || [];
-  const totalHerstel = items.filter(i => i.checked).reduce((s, i) => s + (i.cost || 0), 0);
+  const checklistTotal = items.filter(i => i.checked).reduce((s, i) => s + (i.cost || 0), 0);
+  const totalHerstel = overrideHerstelkosten !== null ? overrideHerstelkosten : checklistTotal;
   const schade = totalHerstel * 0.31;
 
   const opts = { forfaitair: forfBpm, koerslijst: koersPct > 0 ? koersBpm : 999999, taxatierapport: taxPct > 0 ? taxBpm : 999999 };
@@ -127,13 +129,16 @@ function calcBpmLocal(form) {
   if (lowest === 999999) { best = 'forfaitair'; lowest = forfBpm; }
 
   const netto = Math.max(0, lowest - schade);
+  // Also calculate what the BPM would be without damage deduction (the base before deduction)
+  const bpmVoorAftrek = lowest;
   return {
     bruto_bpm: bruto, months_age: months,
     forfaitair_percentage: forfPct, forfaitair_bpm: forfBpm,
     koerslijst_percentage: koersPct, koerslijst_bpm: koersBpm,
     taxatie_percentage: taxPct, taxatie_bpm: taxBpm,
-    herstelkosten: totalHerstel, schade_aftrek: schade,
+    herstelkosten: totalHerstel, checklistTotal, schade_aftrek: schade,
     beste_methode: best, netto_bpm: netto, bpm_vermindering: bruto - netto,
+    bpm_voor_aftrek: bpmVoorAftrek,
   };
 }
 
@@ -151,8 +156,8 @@ function ScoreSelector({ value, onChange, testId }) {
 }
 
 /* ── BPM Summary card ── */
-function BpmSummary({ form }) {
-  const bpm = calcBpmLocal(form);
+function BpmSummary({ form, overrideHerstelkosten }) {
+  const bpm = calcBpmLocal(form, overrideHerstelkosten);
   if (!form.netto_catalogusprijs) return null;
   const ml = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
   return (
@@ -491,6 +496,11 @@ export default function TaxatieProgramma() {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) });
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Quick BPM tools state
+  const [manualDamageAmount, setManualDamageAmount] = useState(null); // null = use checklist, number = manual override
+  const [targetBpm, setTargetBpm] = useState('');
+  const [showChecklist, setShowChecklist] = useState(false);
 
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
   const headers = { Authorization: `Bearer ${token}` };
@@ -530,14 +540,21 @@ export default function TaxatieProgramma() {
     if (!form.brand || !form.model) { toast.error('Vul merk en model in'); return; }
     setSaving(true);
     try {
+      // Include manual damage amount in form data if set
+      const payload = { ...form };
+      if (manualDamageAmount !== null) {
+        payload.manual_damage_amount = manualDamageAmount;
+      }
       if (editingId) {
-        await axios.put(`${API}/taxatie-programma/${editingId}`, form, { headers });
+        await axios.put(`${API}/taxatie-programma/${editingId}`, payload, { headers });
         toast.success('BPM taxatie bijgewerkt');
       } else {
-        await axios.post(`${API}/taxatie-programma`, form, { headers });
+        await axios.post(`${API}/taxatie-programma`, payload, { headers });
         toast.success('BPM taxatie aangemaakt');
       }
-      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); fetchTaxaties();
+      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); 
+      setManualDamageAmount(null); setTargetBpm(''); setShowChecklist(false);
+      fetchTaxaties();
     } catch (e) { toast.error(e.response?.data?.detail || 'Fout bij opslaan'); }
     setSaving(false);
   };
@@ -546,6 +563,9 @@ export default function TaxatieProgramma() {
     const items = t.damage_items?.length ? t.damage_items : DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d }));
     setForm({ ...EMPTY_FORM, ...t, damage_items: items });
     setEditingId(t.id);
+    setManualDamageAmount(t.manual_damage_amount ?? null);
+    setTargetBpm('');
+    setShowChecklist(false);
     setView('form');
   };
 
@@ -560,7 +580,7 @@ export default function TaxatieProgramma() {
     catch { toast.error('Fout bij definitief maken'); }
   };
 
-  const resetForm = () => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); };
+  const resetForm = () => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); setManualDamageAmount(null); setTargetBpm(''); setShowChecklist(false); };
 
   const filtered = taxaties.filter(t => {
     if (!searchTerm) return true;
@@ -573,7 +593,29 @@ export default function TaxatieProgramma() {
 
   /* ══ FORM VIEW ══ */
   if (view === 'form') {
-    const bpm = calcBpmLocal(form);
+    const effectiveHerstel = manualDamageAmount !== null ? manualDamageAmount : null;
+    const bpm = calcBpmLocal(form, effectiveHerstel);
+    
+    // Reverse calculate: what damage amount is needed for a target BPM
+    const calcNeededDamage = (target) => {
+      if (!target || bpm.bpm_voor_aftrek <= 0) return 0;
+      const needed = (bpm.bpm_voor_aftrek - target) / 0.31;
+      return Math.max(0, Math.round(needed));
+    };
+    
+    // When target BPM changes, calculate needed damage
+    const handleTargetBpmChange = (val) => {
+      setTargetBpm(val);
+      if (val && !isNaN(val)) {
+        const needed = calcNeededDamage(Number(val));
+        setManualDamageAmount(needed);
+      }
+    };
+    
+    // Slider max: enough to bring BPM to 0
+    const sliderMax = bpm.bpm_voor_aftrek > 0 ? Math.ceil(bpm.bpm_voor_aftrek / 0.31) : 50000;
+    const currentDamageAmount = manualDamageAmount !== null ? manualDamageAmount : bpm.checklistTotal;
+    
     return (
       <Layout>
         <div className="space-y-6" data-testid="bpm-taxatie-form">
@@ -596,7 +638,7 @@ export default function TaxatieProgramma() {
             </div>
           </div>
 
-          <BpmSummary form={form} />
+          <BpmSummary form={form} overrideHerstelkosten={effectiveHerstel} />
 
           {/* Voertuiggegevens */}
           <div className="bg-white rounded-2xl border p-6">
@@ -693,11 +735,181 @@ export default function TaxatieProgramma() {
             </div>
           </div>
 
-          {/* Schade Checklist */}
+          {/* Schade & Herstelkosten - SNEL AANPASSEN */}
           <div className="bg-white rounded-2xl border-2 border-amber-200 p-6">
             <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-amber-700"><Wrench className="w-5 h-5" />Schade & Herstelkosten</h2>
-            <p className="text-xs text-zinc-500 mb-4">Vink beschadigde onderdelen aan en vul de geschatte herstelkosten in. 31% wordt afgetrokken van de BPM (Belastingdienst norm).</p>
-            <DamageChecklist items={form.damage_items} onChange={items => updateField('damage_items', items)} />
+            <p className="text-xs text-zinc-500 mb-4">Pas het schadebedrag aan om de rest-BPM te verlagen. 31% wordt afgetrokken (Belastingdienst norm).</p>
+            
+            {/* ── SNEL AANPASSEN TOOLS ── */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-5 mb-5 space-y-4" data-testid="quick-damage-tools">
+              
+              {/* Direct schadebedrag invoer */}
+              <div>
+                <label className="text-xs font-bold text-amber-800 block mb-2">Totaal schadebedrag (herstelkosten)</label>
+                <div className="flex gap-3 items-center">
+                  <span className="text-sm font-bold text-zinc-500">€</span>
+                  <input
+                    type="number"
+                    value={currentDamageAmount || ''}
+                    onChange={e => {
+                      const v = e.target.value === '' ? 0 : Number(e.target.value);
+                      setManualDamageAmount(v);
+                      setTargetBpm('');
+                    }}
+                    placeholder="Voer schadebedrag in..."
+                    min="0"
+                    step="100"
+                    className="flex-1 border-2 border-amber-300 rounded-lg px-3 py-2.5 text-lg font-bold focus:border-amber-500 focus:outline-none bg-white"
+                    data-testid="quick-damage-input"
+                  />
+                  <div className="text-right min-w-[120px]">
+                    <p className="text-xs text-zinc-500">BPM-aftrek (31%)</p>
+                    <p className="text-lg font-black text-green-700">- {fmtEur(currentDamageAmount * 0.31)}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Slider */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-amber-800">Snel aanpassen</label>
+                  <span className="text-xs text-zinc-500">€0 — €{sliderMax.toLocaleString('nl-NL')}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max={sliderMax}
+                  step="100"
+                  value={currentDamageAmount}
+                  onChange={e => {
+                    setManualDamageAmount(Number(e.target.value));
+                    setTargetBpm('');
+                  }}
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer accent-amber-600"
+                  style={{
+                    background: `linear-gradient(to right, #d97706 0%, #d97706 ${(currentDamageAmount / sliderMax) * 100}%, #e5e7eb ${(currentDamageAmount / sliderMax) * 100}%, #e5e7eb 100%)`
+                  }}
+                  data-testid="damage-slider"
+                />
+                <div className="flex justify-between text-[10px] text-zinc-400 mt-1">
+                  <span>Min schade</span>
+                  <span>Rest-BPM: <strong className="text-red-600">{fmtEur(bpm.netto_bpm)}</strong></span>
+                  <span>Max schade</span>
+                </div>
+              </div>
+              
+              {/* Gewenste rest-BPM terugrekenen */}
+              <div className="bg-white/70 rounded-lg border border-amber-200 p-3">
+                <label className="text-xs font-bold text-amber-800 block mb-2">Gewenste rest-BPM (terugrekenen)</label>
+                <div className="flex gap-3 items-center">
+                  <span className="text-sm font-bold text-zinc-500">€</span>
+                  <input
+                    type="number"
+                    value={targetBpm}
+                    onChange={e => handleTargetBpmChange(e.target.value)}
+                    placeholder={`Max: ${fmtEur(bpm.bpm_voor_aftrek)}`}
+                    min="0"
+                    max={bpm.bpm_voor_aftrek}
+                    step="10"
+                    className="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm focus:border-amber-500 focus:outline-none bg-white"
+                    data-testid="target-bpm-input"
+                  />
+                  {targetBpm && (
+                    <div className="text-right min-w-[140px]">
+                      <p className="text-xs text-zinc-500">Benodigd schadebedrag</p>
+                      <p className="text-sm font-bold text-amber-700">{fmtEur(currentDamageAmount)}</p>
+                    </div>
+                  )}
+                </div>
+                {targetBpm && Number(targetBpm) >= 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Om op {fmtEur(Number(targetBpm))} rest-BPM uit te komen is {fmtEur(currentDamageAmount)} aan herstelkosten nodig (31% = {fmtEur(currentDamageAmount * 0.31)} aftrek)
+                  </p>
+                )}
+              </div>
+
+              {/* Quick preset buttons */}
+              <div className="flex flex-wrap gap-2">
+                {[1000, 2500, 5000, 7500, 10000, 15000, 20000].map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => { setManualDamageAmount(v); setTargetBpm(''); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${currentDamageAmount === v ? 'bg-amber-600 text-white' : 'bg-white border border-amber-200 text-amber-700 hover:bg-amber-100'}`}
+                    data-testid={`preset-${v}`}
+                  >
+                    €{v.toLocaleString('nl-NL')}
+                  </button>
+                ))}
+                {manualDamageAmount !== null && (
+                  <button
+                    type="button"
+                    onClick={() => { setManualDamageAmount(null); setTargetBpm(''); }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                    data-testid="reset-to-checklist"
+                  >
+                    Terug naar checklist
+                  </button>
+                )}
+              </div>
+              
+              {manualDamageAmount !== null && bpm.checklistTotal > 0 && manualDamageAmount !== bpm.checklistTotal && (
+                <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Handmatig bedrag ({fmtEur(manualDamageAmount)}) wijkt af van checklist totaal ({fmtEur(bpm.checklistTotal)})
+                </p>
+              )}
+            </div>
+
+            {/* ── CHECKLIST (uitklapbaar) ── */}
+            <div className="border border-zinc-200 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowChecklist(!showChecklist)}
+                className="w-full flex items-center justify-between p-4 bg-zinc-50 hover:bg-zinc-100 transition-colors text-left"
+                data-testid="toggle-checklist"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-zinc-500" />
+                  <span className="font-bold text-sm text-zinc-700">Schadechecklist (26 punten)</span>
+                  {bpm.checklistTotal > 0 && (
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">
+                      {form.damage_items.filter(i => i.checked).length} items = {fmtEur(bpm.checklistTotal)}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-zinc-400 transition-transform ${showChecklist ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              {showChecklist && (
+                <div className="p-4 border-t border-zinc-200">
+                  <p className="text-xs text-zinc-500 mb-3">Onderbouwing: vink beschadigde onderdelen aan en vul de geschatte herstelkosten in.</p>
+                  <DamageChecklist 
+                    items={form.damage_items} 
+                    onChange={items => {
+                      updateField('damage_items', items);
+                      // When checklist changes and we're not in manual mode, update
+                      if (manualDamageAmount === null) {
+                        setTargetBpm('');
+                      }
+                    }} 
+                  />
+                  {bpm.checklistTotal > 0 && manualDamageAmount === null && (
+                    <div className="mt-3 text-center">
+                      <p className="text-xs text-green-700 font-bold">Checklist totaal: {fmtEur(bpm.checklistTotal)} → BPM-aftrek: - {fmtEur(bpm.checklistTotal * 0.31)}</p>
+                    </div>
+                  )}
+                  {bpm.checklistTotal > 0 && manualDamageAmount !== null && (
+                    <div className="mt-3 text-center">
+                      <button type="button" onClick={() => { setManualDamageAmount(null); setTargetBpm(''); }}
+                        className="text-xs text-amber-700 underline hover:text-amber-900">
+                        Gebruik checklist totaal ({fmtEur(bpm.checklistTotal)}) als schadebedrag
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="mt-4">
               <label className="text-xs font-bold text-zinc-600 block mb-1">Toelichting schade</label>
               <textarea value={form.damage_notes} onChange={e => updateField('damage_notes', e.target.value)} placeholder="Extra toelichting bij de schade..."
