@@ -25,8 +25,10 @@ const BRANDS = ['BMW', 'Ducati', 'Honda', 'Kawasaki', 'KTM', 'Triumph', 'Yamaha'
 
 const emptyForm = {
   customer_name: '', customer_address: '', customer_city: '', customer_phone: '', customer_email: '',
-  motorcycle_brand: '', motorcycle_model: '', motorcycle_year: '', motorcycle_license_plate: '', motorcycle_vin: '',
-  taxatie_value: '', fee: 160, include_extra_fee: false, extra_fee: 60, extra_fee_no_btw: true, notes: '', date: new Date().toISOString().split('T')[0],
+  invoice_type: 'both', // 'taxatie_only', 'fee_only', 'both'
+  taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }],
+  extra_fee: 60, extra_fee_no_btw: true,
+  notes: '', date: new Date().toISOString().split('T')[0],
 };
 
 export default function TaxatieInvoices() {
@@ -59,15 +61,34 @@ export default function TaxatieInvoices() {
     if (!form.customer_name) { toast.error('Vul een klantnaam in'); return; }
     setSaving(true);
     try {
-      const res = await axios.post(`${API}/taxatie/invoices`, {
-        ...form,
-        fee: parseFloat(form.fee) || 160,
+      // Map new format to backend
+      const items = form.taxatie_items || [];
+      const firstItem = items[0] || {};
+      const totalFee = items.reduce((s, i) => s + (parseFloat(i.fee) || 0), 0);
+      const payload = {
+        customer_name: form.customer_name,
+        customer_address: form.customer_address,
+        customer_city: form.customer_city,
+        customer_phone: form.customer_phone,
+        customer_email: form.customer_email,
+        motorcycle_brand: firstItem.brand || '',
+        motorcycle_model: firstItem.model || '',
+        motorcycle_year: firstItem.year || '',
+        motorcycle_license_plate: firstItem.license_plate || '',
+        motorcycle_vin: firstItem.vin || '',
+        taxatie_value: parseFloat(firstItem.taxatie_value) || 0,
+        fee: (form.invoice_type === 'fee_only') ? 0 : totalFee,
+        include_extra_fee: form.invoice_type === 'fee_only' || form.invoice_type === 'both',
         extra_fee: parseFloat(form.extra_fee) || 60,
-        include_extra_fee: form.include_extra_fee,
-        taxatie_value: parseFloat(form.taxatie_value) || 0,
-      }, { headers });
+        extra_fee_no_btw: form.extra_fee_no_btw,
+        invoice_type: form.invoice_type,
+        taxatie_items: items,
+        notes: form.notes,
+        date: form.date,
+      };
+      const res = await axios.post(`${API}/taxatie/invoices`, payload, { headers });
       toast.success(`Factuur #${res.data.invoice_number} aangemaakt`);
-      setForm({ ...emptyForm });
+      setForm({ ...emptyForm, taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }] });
       setView('list');
       fetchInvoices();
     } catch (err) {
@@ -248,130 +269,159 @@ export default function TaxatieInvoices() {
             </div>
           </CardContent></Card>
 
-          {/* Motorgegevens */}
+          {/* Factuurtype keuze */}
           <Card><CardContent className="pt-6">
-            <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider mb-4"><Bike className="w-4 h-4" /> Motorgegevens</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Merk</label>
-                <select value={form.motorcycle_brand} onChange={(e) => setForm({ ...form, motorcycle_brand: e.target.value })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" data-testid="tax-brand">
-                  <option value="">Selecteer merk</option>
-                  {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Model</label>
-                <input value={form.motorcycle_model} onChange={(e) => setForm({ ...form, motorcycle_model: e.target.value })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="R 1250 GS" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Bouwjaar</label>
-                <input type="number" value={form.motorcycle_year} onChange={(e) => setForm({ ...form, motorcycle_year: e.target.value })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="2023" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Kenteken</label>
-                <input value={form.motorcycle_license_plate} onChange={(e) => setForm({ ...form, motorcycle_license_plate: e.target.value.toUpperCase() })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 uppercase" placeholder="XX-123-YY" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-zinc-600 mb-1">VIN / Chassisnummer</label>
-                <input value={form.motorcycle_vin} onChange={(e) => setForm({ ...form, motorcycle_vin: e.target.value.toUpperCase() })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 uppercase" placeholder="WB10XX1234567890" />
-              </div>
+            <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider mb-4"><Euro className="w-4 h-4" /> Type Factuur</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: 'taxatie_only', label: 'Alleen taxatiekosten', desc: 'Taxatie per motor met BTW' },
+                { value: 'fee_only', label: 'Alleen fee kosten', desc: 'Fee zonder BTW' },
+                { value: 'both', label: 'Taxatie + Fee', desc: 'Beide op één factuur' },
+              ].map(opt => (
+                <button key={opt.value} type="button" onClick={() => setForm({ ...form, invoice_type: opt.value })}
+                  className={`p-4 rounded-xl border-2 text-left transition-all ${form.invoice_type === opt.value ? 'border-red-500 bg-red-50' : 'border-zinc-200 hover:border-zinc-300'}`}
+                  data-testid={`type-${opt.value}`}>
+                  <span className={`text-sm font-bold ${form.invoice_type === opt.value ? 'text-red-700' : 'text-zinc-700'}`}>{opt.label}</span>
+                  <p className="text-xs text-zinc-500 mt-1">{opt.desc}</p>
+                </button>
+              ))}
             </div>
-          </CardContent></Card>
-
-          {/* Taxatie */}
-          <Card><CardContent className="pt-6">
-            <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider mb-4"><Euro className="w-4 h-4" /> Taxatie Details</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Taxatiewaarde motor</label>
-                <input type="number" data-testid="tax-value" value={form.taxatie_value} onChange={(e) => setForm({ ...form, taxatie_value: e.target.value })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="8500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-600 mb-1">Taxatie kosten (ex BTW)</label>
-                <input type="number" data-testid="tax-fee" value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })}
-                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="160" />
-              </div>
+            <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-600 mb-1">Datum</label>
                 <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
                   className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" />
               </div>
-              <div className="flex items-end">
-                <div className="bg-zinc-100 rounded-lg px-4 py-2 text-sm text-zinc-600 w-full">
-                  BTW 21%: <strong className="text-zinc-900">{formatCurrency((parseFloat(form.fee) || 0) * 0.21)}</strong>
-                  <span className="mx-2">|</span>
-                  Totaal: <strong className="text-zinc-900">{formatCurrency((parseFloat(form.fee) || 0) * 1.21)}</strong>
-                </div>
-              </div>
             </div>
+          </CardContent></Card>
 
-            {/* Extra fee checkbox */}
-            <div className="mt-4 border border-zinc-200 rounded-lg p-4">
-              <label className="flex items-center gap-3 cursor-pointer" data-testid="extra-fee-toggle">
-                <input 
-                  type="checkbox" 
-                  checked={form.include_extra_fee} 
-                  onChange={(e) => setForm({ ...form, include_extra_fee: e.target.checked })}
-                  className="w-5 h-5 rounded border-zinc-300 text-red-600 focus:ring-red-500"
-                />
+          {/* Taxatie regels (motoren) */}
+          {form.invoice_type !== 'fee_only' && (
+            <Card><CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider"><Bike className="w-4 h-4" /> Taxatie Regels ({form.taxatie_items.length})</h3>
+                <Button type="button" size="sm" variant="outline" className="text-xs" data-testid="add-taxatie-item"
+                  onClick={() => setForm({ ...form, taxatie_items: [...form.taxatie_items, { brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }] })}>
+                  <Plus className="w-3 h-3 mr-1" /> Motor toevoegen
+                </Button>
+              </div>
+              {form.taxatie_items.map((item, idx) => (
+                <div key={idx} className={`border rounded-xl p-4 mb-3 ${form.taxatie_items.length > 1 ? 'border-zinc-200' : 'border-transparent'}`}>
+                  {form.taxatie_items.length > 1 && (
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-zinc-500 uppercase">Motor {idx + 1}</span>
+                      <button type="button" onClick={() => { const next = form.taxatie_items.filter((_, i) => i !== idx); setForm({ ...form, taxatie_items: next }); }}
+                        className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1">Merk</label>
+                      <select value={item.brand} onChange={(e) => { const next = [...form.taxatie_items]; next[idx] = { ...item, brand: e.target.value }; setForm({ ...form, taxatie_items: next }); }}
+                        className="w-full border border-zinc-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-red-500" data-testid={`item-brand-${idx}`}>
+                        <option value="">Merk</option>
+                        {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1">Model</label>
+                      <input value={item.model} onChange={(e) => { const next = [...form.taxatie_items]; next[idx] = { ...item, model: e.target.value }; setForm({ ...form, taxatie_items: next }); }}
+                        className="w-full border border-zinc-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-red-500" placeholder="Model" data-testid={`item-model-${idx}`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1">Bouwjaar</label>
+                      <input type="number" value={item.year} onChange={(e) => { const next = [...form.taxatie_items]; next[idx] = { ...item, year: e.target.value }; setForm({ ...form, taxatie_items: next }); }}
+                        className="w-full border border-zinc-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-red-500" placeholder="2023" data-testid={`item-year-${idx}`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1">Taxatie kosten</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-1.5 text-xs text-zinc-400">€</span>
+                        <input type="number" value={item.fee} onChange={(e) => { const next = [...form.taxatie_items]; next[idx] = { ...item, fee: e.target.value }; setForm({ ...form, taxatie_items: next }); }}
+                          className="w-full border border-zinc-300 rounded-lg pl-6 pr-2 py-1.5 text-sm font-bold focus:outline-none focus:border-red-500" data-testid={`item-fee-${idx}`} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1">Chassisnummer (VIN)</label>
+                      <input value={item.vin} onChange={(e) => { const next = [...form.taxatie_items]; next[idx] = { ...item, vin: e.target.value.toUpperCase() }; setForm({ ...form, taxatie_items: next }); }}
+                        className="w-full border border-zinc-300 rounded-lg px-2 py-1.5 text-sm uppercase focus:outline-none focus:border-red-500" placeholder="VIN" data-testid={`item-vin-${idx}`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-500 mb-1">Kenteken</label>
+                      <input value={item.license_plate} onChange={(e) => { const next = [...form.taxatie_items]; next[idx] = { ...item, license_plate: e.target.value.toUpperCase() }; setForm({ ...form, taxatie_items: next }); }}
+                        className="w-full border border-zinc-300 rounded-lg px-2 py-1.5 text-sm uppercase focus:outline-none focus:border-red-500" placeholder="XX-123-YY" data-testid={`item-plate-${idx}`} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent></Card>
+          )}
+
+          {/* Fee kosten */}
+          {(form.invoice_type === 'fee_only' || form.invoice_type === 'both') && (
+            <Card><CardContent className="pt-6">
+              <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider mb-4"><Euro className="w-4 h-4" /> Fee Kosten</h3>
+              <div className="flex items-center gap-4">
                 <div>
-                  <span className="text-sm font-semibold text-zinc-800">Fee kosten toevoegen</span>
-                  <span className="text-sm text-zinc-500 ml-2">({formatCurrency(form.extra_fee)}{form.extra_fee_no_btw ? ' zonder BTW' : ' ex BTW'})</span>
-                </div>
-              </label>
-              {form.include_extra_fee && (
-                <div className="mt-3 ml-8 flex items-center gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">Fee bedrag</label>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">Fee bedrag</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
                     <input type="number" value={form.extra_fee} onChange={(e) => setForm({ ...form, extra_fee: e.target.value })}
-                      className="w-40 border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" data-testid="extra-fee-amount" />
-                  </div>
-                  <div className="pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer" data-testid="extra-fee-no-btw-toggle">
-                      <input 
-                        type="checkbox" 
-                        checked={form.extra_fee_no_btw || false} 
-                        onChange={(e) => setForm({ ...form, extra_fee_no_btw: e.target.checked })}
-                        className="w-4 h-4 rounded border-zinc-300 text-red-600 focus:ring-red-500"
-                      />
-                      <span className="text-sm text-zinc-700">Zonder BTW</span>
-                    </label>
+                      className="w-40 border border-zinc-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:outline-none focus:border-red-500" data-testid="fee-amount" />
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Totaaloverzicht */}
-            <div className="mt-4 bg-zinc-900 rounded-xl p-4 text-white">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-zinc-400">Taxatie kosten (ex BTW)</span>
-                <span>{formatCurrency(parseFloat(form.fee) || 0)}</span>
-              </div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-zinc-400">BTW 21%</span>
-                <span>{formatCurrency((parseFloat(form.fee) || 0) * 0.21)}</span>
-              </div>
-              {form.include_extra_fee && (
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-400">Fee kosten{form.extra_fee_no_btw ? ' (zonder BTW)' : ''}</span>
-                  <span>{formatCurrency(parseFloat(form.extra_fee) || 0)}</span>
+                <div className="pt-5">
+                  <label className="flex items-center gap-2 cursor-pointer" data-testid="fee-no-btw-toggle">
+                    <input type="checkbox" checked={form.extra_fee_no_btw || false} onChange={(e) => setForm({ ...form, extra_fee_no_btw: e.target.checked })}
+                      className="w-4 h-4 rounded border-zinc-300 text-red-600 focus:ring-red-500" />
+                    <span className="text-sm text-zinc-700">Zonder BTW</span>
+                  </label>
                 </div>
-              )}
-              <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-zinc-700">
-                <span>Totaal te betalen</span>
-                <span>{formatCurrency(
-                  ((parseFloat(form.fee) || 0) * 1.21) + (form.include_extra_fee ? (parseFloat(form.extra_fee) || 0) : 0)
-                )}</span>
               </div>
-            </div>
+            </CardContent></Card>
+          )}
 
-            <div className="mt-4">
+          {/* Totaaloverzicht */}
+          {(() => {
+            const items = form.taxatie_items || [];
+            const taxatieFee = items.reduce((s, i) => s + (parseFloat(i.fee) || 0), 0);
+            const showTaxatie = form.invoice_type !== 'fee_only';
+            const showFee = form.invoice_type === 'fee_only' || form.invoice_type === 'both';
+            const taxatieBtw = showTaxatie ? taxatieFee * 0.21 : 0;
+            const feeAmount = showFee ? (parseFloat(form.extra_fee) || 0) : 0;
+            const total = (showTaxatie ? taxatieFee + taxatieBtw : 0) + feeAmount;
+            return (
+              <div className="bg-zinc-900 rounded-xl p-5 text-white">
+                {showTaxatie && items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">Taxatie {item.brand} {item.model} {item.year}</span>
+                    <span>{formatCurrency(parseFloat(item.fee) || 0)}</span>
+                  </div>
+                ))}
+                {showTaxatie && (
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">BTW 21%</span>
+                    <span>{formatCurrency(taxatieBtw)}</span>
+                  </div>
+                )}
+                {showFee && (
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">Fee kosten{form.extra_fee_no_btw ? ' (zonder BTW)' : ''}</span>
+                    <span>{formatCurrency(feeAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-zinc-700">
+                  <span>Totaal te betalen</span>
+                  <span>{formatCurrency(total)}</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          <Card><CardContent className="pt-6">
+            <div>
               <label className="block text-sm font-medium text-zinc-600 mb-1">Opmerkingen</label>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3}
                 className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 resize-none" placeholder="Eventuele opmerkingen..." />
@@ -445,64 +495,92 @@ export default function TaxatieInvoices() {
               <div style={{ background: '#f8f8f8', borderRadius: '8px', padding: '16px' }}>
                 <h3 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '8px', fontWeight: 700 }}>Motorgegevens</h3>
                 <p style={{ fontSize: '13px', lineHeight: '1.7', color: '#333' }}>
-                  {inv.motorcycle_brand && <><strong>{inv.motorcycle_brand} {inv.motorcycle_model}</strong><br /></>}
-                  Bouwjaar: <strong>{inv.motorcycle_year || '-'}</strong><br />
-                  Chassisnummer: <strong>{inv.motorcycle_vin || '-'}</strong><br />
-                  {inv.motorcycle_license_plate && <>Kenteken: <strong>{inv.motorcycle_license_plate}</strong></>}
+                  {(inv.taxatie_items && inv.taxatie_items.length > 0) ? inv.taxatie_items.map((item, idx) => (
+                    <span key={idx}>
+                      {idx > 0 && <br />}
+                      <strong>{item.brand} {item.model}</strong> ({item.year || '-'})
+                      {item.vin && <> · VIN: {item.vin}</>}
+                      {item.license_plate && <> · {item.license_plate}</>}
+                    </span>
+                  )) : (
+                    <>
+                      {inv.motorcycle_brand && <><strong>{inv.motorcycle_brand} {inv.motorcycle_model}</strong><br /></>}
+                      Bouwjaar: <strong>{inv.motorcycle_year || '-'}</strong><br />
+                      Chassisnummer: <strong>{inv.motorcycle_vin || '-'}</strong><br />
+                      {inv.motorcycle_license_plate && <>Kenteken: <strong>{inv.motorcycle_license_plate}</strong></>}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-              <thead>
-                <tr>
-                  <th style={{ background: '#1a1a1a', color: 'white', padding: '10px 16px', textAlign: 'left', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Omschrijving</th>
-                  <th style={{ background: '#1a1a1a', color: 'white', padding: '10px 16px', textAlign: 'right', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', width: '150px' }}>Bedrag</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parseFloat(inv.taxatie_value) > 0 && (
-                  <tr>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Taxatiewaarde motorfiets</td>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.taxatie_value)}</td>
-                  </tr>
-                )}
-                <tr>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Taxatie kosten (ex BTW)</td>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.fee)}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>BTW {inv.btw_percentage || 21}%</td>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency((parseFloat(inv.fee) || 0) * ((inv.btw_percentage || 21) / 100))}</td>
-                </tr>
-                {inv.include_extra_fee && (
-                  <tr>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Fee kosten{inv.extra_fee_no_btw ? ' (zonder BTW)' : ''}</td>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.extra_fee || 60)}</td>
-                  </tr>
-                )}
-                <tr>
-                  <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa' }}>Te betalen</td>
-                  <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa', textAlign: 'right' }}>
-                    {formatCurrency(
-                      ((parseFloat(inv.fee) || 0) * (1 + (inv.btw_percentage || 21) / 100)) + (inv.include_extra_fee ? (parseFloat(inv.extra_fee) || 0) : 0)
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            {(() => {
+              const items = inv.taxatie_items && inv.taxatie_items.length > 0 ? inv.taxatie_items : [];
+              const showTaxatie = inv.invoice_type !== 'fee_only';
+              const showFee = inv.invoice_type === 'fee_only' || inv.invoice_type === 'both' || inv.include_extra_fee;
+              const taxatieFee = showTaxatie ? (items.length > 0 ? items.reduce((s, i) => s + (parseFloat(i.fee) || 0), 0) : (parseFloat(inv.fee) || 0)) : 0;
+              const taxatieBtw = taxatieFee * ((inv.btw_percentage || 21) / 100);
+              const feeAmount = showFee ? (parseFloat(inv.extra_fee) || 0) : 0;
+              const total = taxatieFee + taxatieBtw + feeAmount;
 
-            <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', padding: '20px', marginTop: '20px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>Betaalinformatie</h3>
-              <p style={{ fontSize: '14px', color: '#78350f', lineHeight: '1.8' }}>
-                Gelieve het bedrag van <strong>{formatCurrency(
-                  ((parseFloat(inv.fee) || 0) * (1 + (inv.btw_percentage || 21) / 100)) + (inv.include_extra_fee ? (parseFloat(inv.extra_fee) || 0) : 0)
-                )}</strong> over te maken naar:<br />
-                <strong>t.n.v. {inv.bank_name}</strong><br />
-                IBAN: <strong>{inv.bank_iban}</strong><br />
-                o.v.v. Factuurnummer <strong>#{inv.invoice_number}</strong>
-              </p>
-            </div>
+              return (
+                <>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ background: '#1a1a1a', color: 'white', padding: '10px 16px', textAlign: 'left', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>Omschrijving</th>
+                        <th style={{ background: '#1a1a1a', color: 'white', padding: '10px 16px', textAlign: 'right', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', width: '150px' }}>Bedrag</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {showTaxatie && items.length > 0 && items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>
+                            Taxatie {item.brand} {item.model} {item.year ? `(${item.year})` : ''}
+                            {item.vin && <span style={{ color: '#888', fontSize: '12px' }}> · {item.vin}</span>}
+                          </td>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(item.fee)}</td>
+                        </tr>
+                      ))}
+                      {showTaxatie && items.length === 0 && (
+                        <tr>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Taxatie kosten</td>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.fee)}</td>
+                        </tr>
+                      )}
+                      {showTaxatie && (
+                        <tr>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>BTW {inv.btw_percentage || 21}%</td>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(taxatieBtw)}</td>
+                        </tr>
+                      )}
+                      {showFee && (
+                        <tr>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Fee kosten{inv.extra_fee_no_btw ? ' (zonder BTW)' : ''}</td>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(feeAmount)}</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa' }}>Te betalen</td>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '16px', borderTop: '2px solid #1a1a1a', background: '#fafafa', textAlign: 'right' }}>
+                          {formatCurrency(total)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', padding: '20px', marginTop: '20px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>Betaalinformatie</h3>
+                    <p style={{ fontSize: '14px', color: '#78350f', lineHeight: '1.8' }}>
+                      Gelieve het bedrag van <strong>{formatCurrency(total)}</strong> over te maken naar:<br />
+                      <strong>t.n.v. {inv.bank_name || 'S. Milone'}</strong><br />
+                      IBAN: <strong>{inv.bank_iban || 'NL84BUNQ2159356875'}</strong><br />
+                      o.v.v. Factuurnummer <strong>#{inv.invoice_number}</strong>
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
 
             {inv.notes && (
               <div style={{ marginTop: '20px', fontSize: '13px', color: '#666', lineHeight: '1.6', paddingTop: '16px', borderTop: '1px solid #eee' }}>
