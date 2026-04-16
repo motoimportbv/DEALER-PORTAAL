@@ -56,6 +56,7 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
         "btw_percentage": TAXATIE_BTW_PERCENTAGE,
         "include_extra_fee": body.get("include_extra_fee", False),
         "extra_fee": body.get("extra_fee", 60),
+        "extra_fee_no_btw": body.get("extra_fee_no_btw", True),
         "notes": body.get("notes", ""),
         "bank_name": TAXATIE_BANK_NAME,
         "bank_iban": TAXATIE_BANK_IBAN,
@@ -89,7 +90,7 @@ async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), curren
     if current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
         raise HTTPException(status_code=403, detail="Geen toegang")
     update_fields = {}
-    for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
+    for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "extra_fee_no_btw", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
         if field in body:
             update_fields[field] = body[field]
     if not update_fields:

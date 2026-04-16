@@ -26,7 +26,7 @@ const BRANDS = ['BMW', 'Ducati', 'Honda', 'Kawasaki', 'KTM', 'Triumph', 'Yamaha'
 const emptyForm = {
   customer_name: '', customer_address: '', customer_city: '', customer_phone: '', customer_email: '',
   motorcycle_brand: '', motorcycle_model: '', motorcycle_year: '', motorcycle_license_plate: '', motorcycle_vin: '',
-  taxatie_value: '', fee: 160, include_extra_fee: false, extra_fee: 60, notes: '', date: new Date().toISOString().split('T')[0],
+  taxatie_value: '', fee: 160, include_extra_fee: false, extra_fee: 60, extra_fee_no_btw: true, notes: '', date: new Date().toISOString().split('T')[0],
 };
 
 export default function TaxatieInvoices() {
@@ -322,14 +322,27 @@ export default function TaxatieInvoices() {
                 />
                 <div>
                   <span className="text-sm font-semibold text-zinc-800">Fee kosten toevoegen</span>
-                  <span className="text-sm text-zinc-500 ml-2">({formatCurrency(form.extra_fee)})</span>
+                  <span className="text-sm text-zinc-500 ml-2">({formatCurrency(form.extra_fee)}{form.extra_fee_no_btw ? ' zonder BTW' : ' ex BTW'})</span>
                 </div>
               </label>
               {form.include_extra_fee && (
-                <div className="mt-3 ml-8">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1">Fee bedrag</label>
-                  <input type="number" value={form.extra_fee} onChange={(e) => setForm({ ...form, extra_fee: e.target.value })}
-                    className="w-40 border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" />
+                <div className="mt-3 ml-8 flex items-center gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">Fee bedrag</label>
+                    <input type="number" value={form.extra_fee} onChange={(e) => setForm({ ...form, extra_fee: e.target.value })}
+                      className="w-40 border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" data-testid="extra-fee-amount" />
+                  </div>
+                  <div className="pt-5">
+                    <label className="flex items-center gap-2 cursor-pointer" data-testid="extra-fee-no-btw-toggle">
+                      <input 
+                        type="checkbox" 
+                        checked={form.extra_fee_no_btw || false} 
+                        onChange={(e) => setForm({ ...form, extra_fee_no_btw: e.target.checked })}
+                        className="w-4 h-4 rounded border-zinc-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-zinc-700">Zonder BTW</span>
+                    </label>
+                  </div>
                 </div>
               )}
             </div>
@@ -346,7 +359,7 @@ export default function TaxatieInvoices() {
               </div>
               {form.include_extra_fee && (
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-400">Fee kosten</span>
+                  <span className="text-zinc-400">Fee kosten{form.extra_fee_no_btw ? ' (zonder BTW)' : ''}</span>
                   <span>{formatCurrency(parseFloat(form.extra_fee) || 0)}</span>
                 </div>
               )}
@@ -368,7 +381,7 @@ export default function TaxatieInvoices() {
           {/* Bank info preview */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 text-sm">
             <p className="font-bold text-amber-800 mb-1">Betaalinformatie op factuur:</p>
-            <p className="text-amber-700">t.n.v. <strong>S. Milone</strong> — IBAN: <strong>NL03SNSB8846497880</strong></p>
+            <p className="text-amber-700">t.n.v. <strong>S. Milone</strong> — IBAN: <strong>NL84 BUNQ 2159 3568 75</strong></p>
           </div>
 
           <Button type="submit" disabled={saving} data-testid="save-invoice" className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 font-semibold rounded-xl">
@@ -464,7 +477,7 @@ export default function TaxatieInvoices() {
                 </tr>
                 {inv.include_extra_fee && (
                   <tr>
-                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Fee kosten</td>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Fee kosten{inv.extra_fee_no_btw ? ' (zonder BTW)' : ''}</td>
                     <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(inv.extra_fee || 60)}</td>
                   </tr>
                 )}
