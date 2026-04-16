@@ -26,7 +26,7 @@ router = APIRouter(tags=["Taxatie"])
 
 # ==================== TAXATIE INVOICES ====================
 TAXATIE_BANK_NAME = "S. Milone"
-TAXATIE_BANK_IBAN = "NL03SNSB8846497880"
+TAXATIE_BANK_IBAN = "NL84BUNQ2159356875"
 
 @router.post("/taxatie/invoices")
 async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
