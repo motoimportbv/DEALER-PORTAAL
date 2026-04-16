@@ -1219,10 +1219,12 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
 
 
 TAXATIE_LABOR_RATE = 65.0  # €65 per uur excl. BTW
+COMPANY_RSIN = "866851525"
+COMPANY_KVK = "94622086"
 
 @router.get("/taxatie-programma/{taxatie_id}/taxatieverslag-pdf")
 async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depends(require_admin)):
-    """Generate official Taxatieverslag PDF for Belastingdienst"""
+    """Generate official Taxatieverslag PDF for Belastingdienst - AutoTelex style for motorcycles"""
     if current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
     
@@ -1233,31 +1235,43 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import mm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
     import io
     
     buffer = io.BytesIO()
-    pdf = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=18*mm, rightMargin=18*mm, topMargin=15*mm, bottomMargin=20*mm)
+    pdf = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=18*mm, rightMargin=18*mm, topMargin=15*mm, bottomMargin=15*mm)
     
     styles = getSampleStyleSheet()
-    title_s = ParagraphStyle('T', parent=styles['Title'], fontSize=18, spaceAfter=2*mm, textColor=colors.HexColor('#18181b'))
-    subtitle_s = ParagraphStyle('ST', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#555'), spaceAfter=4*mm)
-    section_s = ParagraphStyle('SEC', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#dc2626'), spaceBefore=5*mm, spaceAfter=2*mm)
-    n = ParagraphStyle('N', parent=styles['Normal'], fontSize=9, leading=13)
+    # Styles
+    header_s = ParagraphStyle('HDR', parent=styles['Normal'], fontSize=18, fontName='Helvetica-Bold', textColor=colors.HexColor('#18181b'), spaceAfter=1*mm)
+    sub_s = ParagraphStyle('SUB', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#666'), spaceAfter=3*mm)
+    section_s = ParagraphStyle('SEC', parent=styles['Normal'], fontSize=12, fontName='Helvetica-Bold', textColor=colors.HexColor('#18181b'), spaceBefore=5*mm, spaceAfter=2*mm)
+    n = ParagraphStyle('N', parent=styles['Normal'], fontSize=9, leading=12)
     b = ParagraphStyle('B', parent=n, fontName='Helvetica-Bold')
     rb = ParagraphStyle('RB', parent=b, alignment=TA_RIGHT)
-    sm = ParagraphStyle('SM', parent=n, fontSize=8, textColor=colors.HexColor('#666'))
+    sm = ParagraphStyle('SM', parent=n, fontSize=7.5, textColor=colors.HexColor('#888'))
+    label_s = ParagraphStyle('LBL', parent=n, fontSize=8, textColor=colors.HexColor('#666'))
+    val_s = ParagraphStyle('VAL', parent=n, fontSize=9, fontName='Helvetica-Bold')
+    red_s = ParagraphStyle('RED', parent=val_s, textColor=colors.HexColor('#dc2626'))
+    green_s = ParagraphStyle('GRN', parent=val_s, textColor=colors.HexColor('#16a34a'))
+    white_b = ParagraphStyle('WB', parent=b, textColor=colors.white)
+    white_rb = ParagraphStyle('WRB', parent=rb, textColor=colors.white)
     
     elements = []
     now = datetime.now(timezone.utc)
+    taxatie_nr = doc.get("taxatie_nummer", f"BPM-{now.strftime('%Y%m%d')}")
     
     def fe(val):
-        if val is None: return "-"
+        if val is None or val == 0: return "\u20ac 0,00"
         return f"\u20ac {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     
-    # Parse date
+    def fi(val):
+        if val is None or val == 0: return "\u20ac 0"
+        return f"\u20ac {int(val):,}".replace(",", ".")
+    
+    # Parse dates
     first_reg = doc.get("first_registration_date", "")
     reg_str = "-"
     if first_reg:
@@ -1273,22 +1287,100 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
             bouwjaar_str = d.strftime("%d-%m-%Y")
         except: pass
     
-    # === HEADER ===
-    elements.append(Paragraph("TAXATIEVERSLAG", title_s))
-    elements.append(Paragraph("Schaderapport ten behoeve van BPM-vermindering", subtitle_s))
+    brand = doc.get("brand", "-")
+    model = doc.get("model", "")
+    vin = doc.get("vin_number", "-")
+    netto_cat = doc.get("netto_catalogusprijs", 0) or 0
+    consumentenprijs = doc.get("consumentenprijs", 0) or 0
+    bruto_bpm = doc.get("bruto_bpm", 0) or 0
     
-    header_data = [
-        [Paragraph("<b>Rapportnummer</b>", n), doc.get("taxatie_nummer", "-"), Paragraph("<b>Datum taxatie</b>", n), now.strftime("%d-%m-%Y")],
-        [Paragraph("<b>Taxateur</b>", n), "S. Milone", Paragraph("<b>Bedrijf</b>", n), "Moto Import B.V."],
-        [Paragraph("<b>Adres</b>", n), "Horsterhoekweg 11, 7433 SV Schalkhaar", Paragraph("<b>KVK</b>", n), "94622086"],
+    # ==========================================
+    # PAGE 1: TAXATIERAPPORT MOTORFIETS
+    # ==========================================
+    
+    # Company header bar
+    hdr_data = [[
+        Paragraph("<b>MOTO IMPORT B.V.</b>", ParagraphStyle('H1', parent=n, fontSize=14, fontName='Helvetica-Bold', textColor=colors.white)),
+        Paragraph(f"<b>Taxatierapport Motorfiets</b><br/>{taxatie_nr}", ParagraphStyle('H2', parent=n, fontSize=10, textColor=colors.HexColor('#ccc'), alignment=TA_RIGHT)),
+    ]]
+    t = Table(hdr_data, colWidths=[90*mm, 84*mm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#18181b')),
+        ('LEFTPADDING', (0,0), (-1,-1), 10),
+        ('RIGHTPADDING', (0,0), (-1,-1), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 2*mm))
+    
+    # Company info block
+    info_data = [
+        [Paragraph("<b>Naam:</b>", label_s), "Moto Import B.V.", Paragraph("<b>Datum rapport:</b>", label_s), now.strftime("%d-%m-%Y")],
+        [Paragraph("<b>RSIN:</b>", label_s), COMPANY_RSIN, Paragraph("<b>KVK:</b>", label_s), COMPANY_KVK],
+        [Paragraph("<b>Adres:</b>", label_s), "Horsterhoekweg 11, 7433 SV Schalkhaar", Paragraph("<b>Taxateur:</b>", label_s), "S. Milone"],
+        [Paragraph("<b>Tel:</b>", label_s), "+31 6 24264861", Paragraph("<b>Email:</b>", label_s), "motoimportbv@gmail.com"],
     ]
-    t = Table(header_data, colWidths=[28*mm, 60*mm, 28*mm, 54*mm])
+    t = Table(info_data, colWidths=[22*mm, 66*mm, 26*mm, 60*mm])
+    t.setStyle(TableStyle([
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#e5e5e5')),
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#fafafa')),
+        ('BACKGROUND', (2,0), (2,-1), colors.HexColor('#fafafa')),
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 4*mm))
+    
+    # Section 1: Voertuiggegevens
+    elements.append(Paragraph("1. Gegevens motorfiets", section_s))
+    
+    veh_data = [
+        [Paragraph("<b>Merk</b>", label_s), brand, Paragraph("<b>Model</b>", label_s), model],
+        [Paragraph("<b>Chassisnummer (VIN)</b>", label_s), Paragraph(f"<b>{vin}</b>", val_s), Paragraph("<b>Brandstof</b>", label_s), doc.get("fuel_type", "Benzine")],
+        [Paragraph("<b>Datum 1e toelating</b>", label_s), reg_str, Paragraph("<b>Bouwjaar</b>", label_s), bouwjaar_str],
+        [Paragraph("<b>Kilometerstand</b>", label_s), f"{doc.get('mileage', 0):,} km".replace(",", "."), Paragraph("<b>Kleur</b>", label_s), doc.get("color", "-")],
+        [Paragraph("<b>Cilinderinhoud</b>", label_s), f"{doc.get('cylinder_capacity', '-')} cc", Paragraph("<b>Vermogen</b>", label_s), f"{doc.get('power_kw', '-')} kW"],
+    ]
+    t = Table(veh_data, colWidths=[32*mm, 56*mm, 32*mm, 54*mm])
     t.setStyle(TableStyle([
         ('FONTSIZE', (0,0), (-1,-1), 9),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#ddd')),
         ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f5f5f5')),
         ('BACKGROUND', (2,0), (2,-1), colors.HexColor('#f5f5f5')),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 3*mm))
+    
+    # Section 2: Prijsinformatie
+    elements.append(Paragraph("2. Prijsinformatie en waardebepaling", section_s))
+    
+    koerslijst = doc.get("koerslijst_waarde", 0) or 0
+    taxatie_waarde = doc.get("taxatie_inruil_waarde", 0) or 0
+    
+    prijs_data = [
+        [Paragraph("<b>Omschrijving</b>", white_b), Paragraph("<b>Bedrag</b>", white_rb)],
+        ["Netto catalogusprijs (excl. BPM, excl. BTW)", fi(netto_cat)],
+        ["Consumentenprijs (incl. BPM, incl. BTW)", fi(consumentenprijs) if consumentenprijs > 0 else "-"],
+        ["Bruto BPM", fi(bruto_bpm)],
+    ]
+    if koerslijst > 0:
+        prijs_data.append(["Handelsinkoopwaarde onbeschadigd (koerslijst)", fi(koerslijst)])
+    if taxatie_waarde > 0:
+        prijs_data.append(["Getaxeerde inruilwaarde", fi(taxatie_waarde)])
+    
+    t = Table(prijs_data, colWidths=[130*mm, 44*mm])
+    t.setStyle(TableStyle([
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#ddd')),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#18181b')),
+        ('ALIGN', (1,1), (1,-1), 'RIGHT'),
         ('LEFTPADDING', (0,0), (-1,-1), 5),
         ('TOPPADDING', (0,0), (-1,-1), 4),
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
@@ -1296,64 +1388,39 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(t)
     elements.append(Spacer(1, 4*mm))
     
-    # === 1. VOERTUIGGEGEVENS ===
-    elements.append(Paragraph("1. Voertuiggegevens", section_s))
-    veh = [
-        [Paragraph("<b>Merk / Model</b>", n), f"{doc.get('brand', '-')} {doc.get('model', '')}", Paragraph("<b>Brandstof</b>", n), doc.get("fuel_type", "Benzine")],
-        [Paragraph("<b>Chassisnr (VIN)</b>", n), doc.get("vin_number", "-"), Paragraph("<b>Cilinderinhoud</b>", n), doc.get("cylinder_capacity", "-")],
-        [Paragraph("<b>1e toelating</b>", n), reg_str, Paragraph("<b>Vermogen</b>", n), f"{doc.get('power_kw', '-')} kW"],
-        [Paragraph("<b>Bouwjaar</b>", n), bouwjaar_str, Paragraph("<b>Kleur</b>", n), doc.get("color", "-")],
-        [Paragraph("<b>Km-stand</b>", n), f"{doc.get('mileage', 0):,}".replace(",", ".") + " km", "", ""],
-    ]
-    t = Table(veh, colWidths=[28*mm, 60*mm, 28*mm, 54*mm])
-    t.setStyle(TableStyle([
-        ('FONTSIZE', (0,0), (-1,-1), 9),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#ddd')),
-        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f5f5f5')),
-        ('BACKGROUND', (2,0), (2,-1), colors.HexColor('#f5f5f5')),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('LEFTPADDING', (0,0), (-1,-1), 5),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-    ]))
-    elements.append(t)
-    elements.append(Spacer(1, 4*mm))
-    
-    # === 2. SCHADEBEOORDELING ===
-    elements.append(Paragraph("2. Geconstateerde schade en herstelkosten", section_s))
-    elements.append(Paragraph(f"Uurtarief arbeid: <b>\u20ac {TAXATIE_LABOR_RATE:.2f}</b> excl. BTW | Datum fysieke inspectie: <b>{now.strftime('%d-%m-%Y')}</b>", sm))
+    # Section 3: Schadebeoordeling
+    elements.append(Paragraph("3. Geconstateerde schade en herstelkostenbegroting", section_s))
+    elements.append(Paragraph(f"Datum fysieke inspectie: <b>{now.strftime('%d-%m-%Y')}</b> | Uurtarief arbeid: <b>\u20ac {TAXATIE_LABOR_RATE:.2f}</b> excl. BTW", sm))
     elements.append(Spacer(1, 2*mm))
     
     damage_items = doc.get("damage_items", [])
     checked_items = [i for i in damage_items if i.get("checked")]
     
-    # Table header
-    damage_rows = [[
-        Paragraph("<b>Nr.</b>", ParagraphStyle('NH', parent=n, textColor=colors.white)),
-        Paragraph("<b>Omschrijving schade</b>", ParagraphStyle('NH', parent=n, textColor=colors.white)),
-        Paragraph("<b>Uren</b>", ParagraphStyle('NH', parent=n, textColor=colors.white, alignment=TA_RIGHT)),
-        Paragraph("<b>Arbeid</b>", ParagraphStyle('NH', parent=n, textColor=colors.white, alignment=TA_RIGHT)),
-        Paragraph("<b>Materiaal</b>", ParagraphStyle('NH', parent=n, textColor=colors.white, alignment=TA_RIGHT)),
-        Paragraph("<b>Totaal</b>", ParagraphStyle('NH', parent=n, textColor=colors.white, alignment=TA_RIGHT)),
+    dmg_rows = [[
+        Paragraph("<b>Nr.</b>", white_b),
+        Paragraph("<b>Omschrijving schade</b>", white_b),
+        Paragraph("<b>Uren</b>", ParagraphStyle('WR', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("<b>Arbeid</b>", ParagraphStyle('WR', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("<b>Materiaal</b>", ParagraphStyle('WR', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("<b>Totaal</b>", ParagraphStyle('WR', parent=white_b, alignment=TA_RIGHT)),
     ]]
     
-    total_hours = 0
-    total_labor = 0
-    total_material = 0
-    total_cost = 0
+    tot_hours = 0
+    tot_labor = 0
+    tot_mat = 0
+    tot_cost = 0
     
     for idx, item in enumerate(checked_items, 1):
         hours = item.get("hours", 0) or 0
         mat = item.get("material_cost", 0) or 0
         labor = round(hours * TAXATIE_LABOR_RATE, 2)
         cost = item.get("cost", 0) or round(labor + mat, 2)
+        tot_hours += hours
+        tot_labor += labor
+        tot_mat += mat
+        tot_cost += cost
         
-        total_hours += hours
-        total_labor += labor
-        total_material += mat
-        total_cost += cost
-        
-        damage_rows.append([
+        dmg_rows.append([
             str(idx),
             item.get("name", "-"),
             f"{hours:.1f}" if hours > 0 else "-",
@@ -1362,78 +1429,69 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
             Paragraph(f"<b>{fe(cost)}</b>", rb),
         ])
     
-    # Totals
-    damage_rows.append([
-        "", Paragraph("<b>Subtotaal arbeid</b>", b), f"{total_hours:.1f}", Paragraph(f"<b>{fe(total_labor)}</b>", rb), "", ""
-    ])
-    damage_rows.append([
-        "", Paragraph("<b>Subtotaal materiaal</b>", b), "", "", Paragraph(f"<b>{fe(total_material)}</b>", rb), ""
-    ])
-    damage_rows.append([
-        "", Paragraph("<b>TOTAAL HERSTELKOSTEN</b>", ParagraphStyle('TB', parent=b, fontSize=10)),
-        "", "", "", Paragraph(f"<b>{fe(total_cost)}</b>", ParagraphStyle('TRB', parent=rb, fontSize=10))
-    ])
+    # Subtotals
+    dmg_rows.append(["", Paragraph("<b>Subtotaal arbeid</b>", b), f"{tot_hours:.1f}", Paragraph(f"<b>{fe(tot_labor)}</b>", rb), "", ""])
+    dmg_rows.append(["", Paragraph("<b>Subtotaal materiaal</b>", b), "", "", Paragraph(f"<b>{fe(tot_mat)}</b>", rb), ""])
+    dmg_rows.append(["", Paragraph("<b>TOTAAL HERSTELKOSTEN</b>", ParagraphStyle('TB', parent=b, fontSize=10)), "", "", "", Paragraph(f"<b>{fe(tot_cost)}</b>", ParagraphStyle('TRB', parent=rb, fontSize=10, textColor=colors.HexColor('#dc2626')))])
     
-    col_w = [12*mm, 60*mm, 18*mm, 28*mm, 28*mm, 28*mm]
-    t = Table(damage_rows, colWidths=col_w)
-    ts = [
+    cw = [10*mm, 62*mm, 16*mm, 26*mm, 26*mm, 26*mm]
+    t = Table(dmg_rows, colWidths=cw)
+    ts_dmg = [
         ('FONTSIZE', (0,0), (-1,-1), 8),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#ddd')),
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#18181b')),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#dc2626')),
         ('ALIGN', (2,1), (-1,-1), 'RIGHT'),
         ('ALIGN', (0,0), (0,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('TOPPADDING', (0,0), (-1,-1), 3),
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#fef2f2')),
-        ('BACKGROUND', (0, -2), (-1, -2), colors.HexColor('#fafafa')),
-        ('BACKGROUND', (0, -3), (-1, -3), colors.HexColor('#fafafa')),
-        ('LINEABOVE', (0, -3), (-1, -3), 1, colors.HexColor('#999')),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#fef2f2')),
+        ('LINEABOVE', (0,-3), (-1,-3), 0.8, colors.HexColor('#999')),
+        ('BACKGROUND', (0,-2), (-1,-2), colors.HexColor('#fafafa')),
+        ('BACKGROUND', (0,-3), (-1,-3), colors.HexColor('#fafafa')),
     ]
-    # Alternate row colors for items
-    for i in range(1, len(checked_items) + 1):
+    for i in range(1, len(checked_items)+1):
         if i % 2 == 0:
-            ts.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor('#fafafa')))
-    t.setStyle(TableStyle(ts))
+            ts_dmg.append(('BACKGROUND', (0,i), (-1,i), colors.HexColor('#fafafa')))
+    t.setStyle(TableStyle(ts_dmg))
     elements.append(t)
     
     if doc.get("damage_notes"):
         elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph(f"<b>Toelichting:</b> {doc['damage_notes']}", sm))
-    
+        elements.append(Paragraph(f"<i>Toelichting: {doc['damage_notes']}</i>", sm))
     elements.append(Spacer(1, 4*mm))
     
-    # === 3. BPM BEREKENING ===
-    elements.append(Paragraph("3. BPM-vermindering berekening", section_s))
+    # Section 4: BPM Vermindering
+    elements.append(Paragraph("4. Berekening BPM-vermindering", section_s))
     
-    bruto_bpm = doc.get("bruto_bpm", 0) or 0
-    herstelkosten = doc.get("herstelkosten", 0) or total_cost
+    herstelkosten = tot_cost if tot_cost > 0 else (doc.get("herstelkosten", 0) or 0)
     schade_aftrek = round(herstelkosten * 0.31, 2)
+    beste = doc.get("beste_methode", "forfaitair")
+    methode_labels = {"forfaitair": "Forfaitaire afschrijvingstabel", "koerslijst": "Koerslijstmethode", "taxatierapport": "Taxatierapport"}
+    beste_bpm = doc.get(f"{beste}_bpm" if beste != "taxatierapport" else "taxatie_bpm", bruto_bpm)
     netto_bpm = doc.get("netto_bpm", 0) or 0
     
-    methode_labels = {"forfaitair": "Forfaitaire afschrijvingstabel", "koerslijst": "Koerslijstmethode", "taxatierapport": "Taxatierapport"}
-    beste = doc.get("beste_methode", "forfaitair")
-    
-    bpm_rows = [
-        [Paragraph("<b>Omschrijving</b>", ParagraphStyle('NH2', parent=n, textColor=colors.white)), Paragraph("<b>Bedrag</b>", ParagraphStyle('NH2', parent=n, textColor=colors.white, alignment=TA_RIGHT))],
-        ["Netto catalogusprijs (excl. BPM)", fe(doc.get("netto_catalogusprijs", 0))],
-        ["Bruto BPM", fe(bruto_bpm)],
-        [f"Afschrijving ({methode_labels.get(beste, beste)})", f"- {fe(bruto_bpm - (doc.get(f'{beste}_bpm', bruto_bpm) if beste != 'taxatierapport' else doc.get('taxatie_bpm', bruto_bpm)))}"],
-        ["BPM na afschrijving", fe(doc.get(f"{beste}_bpm" if beste != "taxatierapport" else "taxatie_bpm", bruto_bpm))],
+    bpm_data = [
+        [Paragraph("<b>Omschrijving</b>", white_b), Paragraph("<b>Bedrag</b>", white_rb)],
+        ["Bruto BPM motorfiets", fe(bruto_bpm)],
+        [f"Afschrijving via {methode_labels.get(beste, beste)} ({doc.get(f'{beste}_percentage' if beste != 'taxatierapport' else 'taxatie_percentage', 0):.1f}%)", f"- {fe(bruto_bpm - beste_bpm)}"],
+        [Paragraph("<b>BPM na afschrijving</b>", b), Paragraph(f"<b>{fe(beste_bpm)}</b>", rb)],
         ["", ""],
-        [Paragraph("<b>Totaal herstelkosten (dit verslag)</b>", b), Paragraph(f"<b>{fe(herstelkosten)}</b>", rb)],
-        ["BPM-aftrek (31% van herstelkosten)", Paragraph(f"<b>- {fe(schade_aftrek)}</b>", rb)],
+        [f"Totaal herstelkosten (zie sectie 3)", fe(herstelkosten)],
+        ["BPM-aftrek: 31% van herstelkosten", Paragraph(f"<b>- {fe(schade_aftrek)}</b>", ParagraphStyle('GRB', parent=rb, textColor=colors.HexColor('#16a34a')))],
         ["", ""],
-        [Paragraph("<b>TE BETALEN BPM</b>", ParagraphStyle('FB', parent=b, fontSize=11)), Paragraph(f"<b>{fe(netto_bpm)}</b>", ParagraphStyle('FRB', parent=rb, fontSize=11, textColor=colors.HexColor('#dc2626')))],
+        [Paragraph("<b>TE BETALEN BPM</b>", ParagraphStyle('FBB', parent=b, fontSize=11)), Paragraph(f"<b>{fe(netto_bpm)}</b>", ParagraphStyle('FRBB', parent=rb, fontSize=11, textColor=colors.HexColor('#dc2626')))],
+        [Paragraph(f"<b>BPM-vermindering</b>", ParagraphStyle('GBB', parent=b, fontSize=10, textColor=colors.HexColor('#16a34a'))), Paragraph(f"<b>- {fe(doc.get('bpm_vermindering', 0))}</b>", ParagraphStyle('GRBB', parent=rb, fontSize=10, textColor=colors.HexColor('#16a34a')))],
     ]
     
-    t = Table(bpm_rows, colWidths=[120*mm, 54*mm])
+    t = Table(bpm_data, colWidths=[130*mm, 44*mm])
     t.setStyle(TableStyle([
         ('FONTSIZE', (0,0), (-1,-1), 9),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#ddd')),
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#dc2626')),
-        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#fef2f2')),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#18181b')),
+        ('BACKGROUND', (0,-2), (-1,-2), colors.HexColor('#fef2f2')),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#f0fdf4')),
         ('ALIGN', (1,1), (1,-1), 'RIGHT'),
         ('LEFTPADDING', (0,0), (-1,-1), 5),
         ('TOPPADDING', (0,0), (-1,-1), 4),
@@ -1442,46 +1500,52 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(t)
     elements.append(Spacer(1, 6*mm))
     
-    # === 4. VERKLARING ===
-    elements.append(Paragraph("4. Verklaring", section_s))
+    # Section 5: Verklaring & Ondertekening
+    elements.append(Paragraph("5. Verklaring en ondertekening", section_s))
     elements.append(Paragraph(
-        f"Ondergetekende verklaart dat bovenstaand voertuig (<b>{doc.get('brand', '')} {doc.get('model', '')}</b>, "
-        f"chassisnummer <b>{doc.get('vin_number', '-')}</b>) op <b>{now.strftime('%d-%m-%Y')}</b> fysiek is ge\u00efnspecteerd. "
-        f"De in dit verslag genoemde schadeposten zijn daadwerkelijk geconstateerd. "
-        f"De geschatte herstelkosten zijn gebaseerd op gangbare tarieven in de motorfietsbranche "
-        f"(uurtarief arbeid: \u20ac {TAXATIE_LABOR_RATE:.2f} excl. BTW). "
-        f"Dit verslag is opgesteld ten behoeve van de BPM-aangifte conform artikel 10 Wet BPM 1992.",
+        f"Ondergetekende verklaart dat het motorrijtuig <b>{brand} {model}</b> "
+        f"(chassisnummer <b>{vin}</b>) op <b>{now.strftime('%d-%m-%Y')}</b> fysiek is ge\u00efnspecteerd "
+        f"op locatie Horsterhoekweg 11, 7433 SV Schalkhaar. "
+        f"De in dit verslag genoemde schadeposten zijn daadwerkelijk geconstateerd en de geschatte "
+        f"herstelkosten zijn gebaseerd op gangbare tarieven in de motorfietsbranche "
+        f"(uurtarief arbeid: \u20ac {TAXATIE_LABOR_RATE:.2f} excl. BTW, materiaalkosten op basis van actuele prijzen). "
+        f"Dit taxatieverslag is opgesteld ten behoeve van de BPM-aangifte conform artikel 10, lid 7 van de Wet op de belasting van personenauto's en motorrijwielen 1992.",
         n
     ))
-    elements.append(Spacer(1, 8*mm))
+    elements.append(Spacer(1, 6*mm))
     
-    # === ONDERTEKENING ===
     sign_data = [
-        [Paragraph("<b>Naam taxateur</b>", n), "S. Milone"],
-        [Paragraph("<b>Functie</b>", n), "Directeur / Taxateur"],
-        [Paragraph("<b>Bedrijf</b>", n), "Moto Import B.V."],
-        [Paragraph("<b>Datum</b>", n), now.strftime("%d-%m-%Y")],
-        [Paragraph("<b>Handtekening</b>", n), ""],
+        [Paragraph("<b>Naam</b>", label_s), "S. Milone", Paragraph("<b>Datum</b>", label_s), now.strftime("%d-%m-%Y")],
+        [Paragraph("<b>Functie</b>", label_s), "Directeur / Taxateur", Paragraph("<b>Bedrijf</b>", label_s), "Moto Import B.V."],
+        [Paragraph("<b>Handtekening</b>", label_s), "", "", ""],
     ]
-    t = Table(sign_data, colWidths=[35*mm, 80*mm])
+    t = Table(sign_data, colWidths=[24*mm, 64*mm, 24*mm, 62*mm])
     t.setStyle(TableStyle([
         ('FONTSIZE', (0,0), (-1,-1), 9),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#ddd')),
         ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f5f5f5')),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BACKGROUND', (2,0), (2,-1), colors.HexColor('#f5f5f5')),
         ('LEFTPADDING', (0,0), (-1,-1), 5),
         ('TOPPADDING', (0,0), (-1,-1), 4),
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,-1), (-1,-1), 20),
+        ('BOTTOMPADDING', (0,-1), (-1,-1), 25),
     ]))
     elements.append(t)
     elements.append(Spacer(1, 4*mm))
-    elements.append(Paragraph("Dit document dient als bijlage bij de Aangifte BPM (formulier BPM 011) en het taxatierapport.", sm))
+    
+    # Footer
+    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#ddd')))
+    elements.append(Spacer(1, 2*mm))
+    elements.append(Paragraph(
+        f"Dit document dient als bijlage bij de Aangifte BPM (formulier BPM 011) en vervangt het taxatierapport voor motorfietsen. "
+        f"Moto Import B.V. | KVK {COMPANY_KVK} | RSIN {COMPANY_RSIN} | Horsterhoekweg 11, 7433 SV Schalkhaar",
+        ParagraphStyle('FT', parent=sm, fontSize=7, textColor=colors.HexColor('#aaa'))
+    ))
     
     pdf.build(elements)
     buffer.seek(0)
     
-    filename = f"Taxatieverslag_{doc.get('brand', 'Motor')}_{doc.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
+    filename = f"Taxatierapport_{brand}_{model}_{now.strftime('%Y%m%d')}.pdf"
     return Response(
         content=buffer.read(),
         media_type="application/pdf",
