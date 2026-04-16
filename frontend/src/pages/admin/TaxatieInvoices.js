@@ -187,7 +187,7 @@ export default function TaxatieInvoices() {
                   </div>
                   <div>
                     <p className="font-bold text-zinc-900 text-sm">#{inv.invoice_number} — {inv.customer_name}</p>
-                    <p className="text-xs text-zinc-500">{inv.motorcycle_brand} {inv.motorcycle_model} · {inv.date}</p>
+                    <p className="text-xs text-zinc-500">{inv.motorcycle_brand} {inv.motorcycle_model} {inv.motorcycle_year ? `(${inv.motorcycle_year})` : ''} {inv.motorcycle_vin ? `· ${inv.motorcycle_vin}` : ''} · {inv.date}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -433,9 +433,9 @@ export default function TaxatieInvoices() {
                 <h3 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '8px', fontWeight: 700 }}>Motorgegevens</h3>
                 <p style={{ fontSize: '13px', lineHeight: '1.7', color: '#333' }}>
                   {inv.motorcycle_brand && <><strong>{inv.motorcycle_brand} {inv.motorcycle_model}</strong><br /></>}
-                  {inv.motorcycle_year && <>Bouwjaar: {inv.motorcycle_year}<br /></>}
-                  {inv.motorcycle_license_plate && <>Kenteken: <strong>{inv.motorcycle_license_plate}</strong><br /></>}
-                  {inv.motorcycle_vin && <>VIN: {inv.motorcycle_vin}</>}
+                  Bouwjaar: <strong>{inv.motorcycle_year || '-'}</strong><br />
+                  Chassisnummer: <strong>{inv.motorcycle_vin || '-'}</strong><br />
+                  {inv.motorcycle_license_plate && <>Kenteken: <strong>{inv.motorcycle_license_plate}</strong></>}
                 </p>
               </div>
             </div>
