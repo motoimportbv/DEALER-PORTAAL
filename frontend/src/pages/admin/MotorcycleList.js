@@ -68,6 +68,15 @@ const MotorcycleList = () => {
     fetchMotorcycles();
   }, []);
 
+  // Auto-refresh when tab/app becomes visible again
+  useEffect(() => {
+    const onFocus = () => fetchMotorcycles();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchMotorcycles(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
+
   // Filter motorcycles when search term or availability filter changes
   useEffect(() => {
     let filtered = motorcycles;

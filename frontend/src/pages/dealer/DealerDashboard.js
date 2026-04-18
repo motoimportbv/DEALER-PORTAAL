@@ -202,6 +202,13 @@ const DealerDashboard = () => {
     }
   }, [refreshTrigger]);
 
+  // Auto-refresh when tab/app becomes visible again
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchMotorcycles(false); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); };
+  }, [token]);
+
   // Handmatige refresh functie
   const handleManualRefresh = () => {
     fetchMotorcycles(true);

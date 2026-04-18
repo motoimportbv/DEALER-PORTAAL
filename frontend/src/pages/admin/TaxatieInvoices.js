@@ -56,6 +56,15 @@ export default function TaxatieInvoices() {
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
+  // Auto-refresh when tab/app becomes visible again
+  useEffect(() => {
+    const onFocus = () => fetchInvoices();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchInvoices(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onVisible); };
+  }, [fetchInvoices]);
+
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!form.customer_name) { toast.error('Vul een klantnaam in'); return; }

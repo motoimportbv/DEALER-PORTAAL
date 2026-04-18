@@ -67,6 +67,15 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
+  // Auto-refresh when tab/app becomes visible again
+  useEffect(() => {
+    const onFocus = () => fetchData();
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
+
   const fetchData = async () => {
     try {
       const [statsRes, ordersRes, topDealersRes, conversionRes, marketingRes] = await Promise.all([

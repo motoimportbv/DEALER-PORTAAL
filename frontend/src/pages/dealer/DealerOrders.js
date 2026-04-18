@@ -100,6 +100,13 @@ const DealerOrders = () => {
     }
   }, [refreshTrigger, loading, fetchOrders]);
 
+  // Auto-refresh when tab/app becomes visible again
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchOrders(false); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); };
+  }, [fetchOrders]);
+
   // Handmatige refresh functie
   const handleManualRefresh = () => {
     fetchOrders(true);

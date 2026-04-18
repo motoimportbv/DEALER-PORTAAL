@@ -630,6 +630,13 @@ export default function TaxatieProgramma() {
 
   useEffect(() => { fetchTaxaties(); }, [fetchTaxaties]);
 
+  // Auto-refresh when tab/app becomes visible again
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchTaxaties(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); };
+  }, [fetchTaxaties]);
+
   if (!isAllowed) {
     return <Layout><div className="flex items-center justify-center h-64 text-zinc-500">Geen toegang tot deze pagina.</div></Layout>;
   }
