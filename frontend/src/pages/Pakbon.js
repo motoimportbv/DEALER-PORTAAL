@@ -228,34 +228,96 @@ const Pakbon = () => {
             <div className="border-t border-b border-zinc-200 py-6 my-6">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">{t('motorcycle.singular')}</h3>
               
-              {/* Kenteken - editable field */}
-              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4 print:bg-white print:border-zinc-300">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-amber-700 block mb-1">Kenteken</label>
-                    <input
-                      type="text"
-                      value={order.motorcycle_license_plate || motorcycle.license_plate || ''}
-                      onChange={async (e) => {
-                        const val = e.target.value.toUpperCase();
-                        setOrder(prev => ({ ...prev, motorcycle_license_plate: val }));
-                        try {
-                          await axios.put(`${API}/api/orders/${order.id}/license-plate`, { license_plate: val }, {
-                            headers: { Authorization: `Bearer ${token}` }
-                          });
-                        } catch (err) { console.error('Failed to save license plate:', err); }
-                      }}
-                      placeholder="XX-123-YY"
-                      className="w-full border-2 border-amber-300 rounded-lg px-3 py-2 text-lg font-bold uppercase tracking-wider focus:border-amber-500 focus:outline-none print:border-none print:px-0 print:bg-transparent"
-                      data-testid="pakbon-license-plate"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-amber-700 block mb-1">Chassisnummer (VIN)</label>
-                    <p className="text-lg font-mono font-bold text-zinc-800 py-2">{motorcycle.chassis_number || '-'}</p>
-                  </div>
+              {/* Kenteken & Documenten */}
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4 print:bg-white print:border-zinc-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-amber-700 block mb-1">Kenteken</label>
+                  <input
+                    type="text"
+                    value={order.motorcycle_license_plate || motorcycle.license_plate || ''}
+                    onChange={async (e) => {
+                      const val = e.target.value.toUpperCase();
+                      setOrder(prev => ({ ...prev, motorcycle_license_plate: val }));
+                      try {
+                        await axios.put(`${API}/api/orders/${order.id}/license-plate`, { license_plate: val }, {
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                      } catch (err) { console.error('Failed to save license plate:', err); }
+                    }}
+                    placeholder="XX-123-YY"
+                    className="w-full border-2 border-amber-300 rounded-lg px-3 py-2 text-lg font-bold uppercase tracking-wider focus:border-amber-500 focus:outline-none print:border-none print:px-0 print:bg-transparent"
+                    data-testid="pakbon-license-plate"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-amber-700 block mb-1">Chassisnummer (VIN)</label>
+                  <p className="text-lg font-mono font-bold text-zinc-800 py-2">{motorcycle.chassis_number || '-'}</p>
                 </div>
               </div>
+              
+              {/* Kentekenbewijs upload */}
+              <div className="mt-4 border-t border-amber-200 pt-4">
+                <label className="text-xs font-bold text-amber-700 block mb-2">Kentekenbewijs (foto)</label>
+                {order.kentekenbewijs_url ? (
+                  <div className="space-y-2">
+                    <img src={order.kentekenbewijs_url} alt="Kentekenbewijs" 
+                      className="max-w-full max-h-64 rounded-lg border border-zinc-200 cursor-pointer hover:opacity-90"
+                      onClick={() => window.open(order.kentekenbewijs_url, '_blank')}
+                      data-testid="kentekenbewijs-image" />
+                    <div className="flex gap-2 print:hidden">
+                      <Button type="button" size="sm" variant="outline" className="text-xs"
+                        onClick={() => window.open(order.kentekenbewijs_url, '_blank')}>
+                        Vergroten
+                      </Button>
+                      {(user?.role === 'admin') && (
+                        <Button type="button" size="sm" variant="outline" className="text-xs text-red-600 border-red-200"
+                          onClick={async () => {
+                            if (!window.confirm('Kentekenbewijs verwijderen?')) return;
+                            try {
+                              await axios.put(`${API}/api/orders/${order.id}/kentekenbewijs`, { url: '' }, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                              setOrder(prev => ({ ...prev, kentekenbewijs_url: '' }));
+                            } catch (err) { console.error(err); }
+                          }}>
+                          Verwijderen
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="print:hidden">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        try {
+                          const uploadRes = await axios.post(`${API}/api/upload/image`, formData, {
+                            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+                          });
+                          const imageUrl = uploadRes.data.url || uploadRes.data.image_url;
+                          await axios.put(`${API}/api/orders/${order.id}/kentekenbewijs`, { url: imageUrl }, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                          setOrder(prev => ({ ...prev, kentekenbewijs_url: imageUrl }));
+                        } catch (err) { 
+                          console.error('Upload failed:', err);
+                          alert('Upload mislukt: ' + (err.response?.data?.detail || err.message));
+                        }
+                      }}
+                      className="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200 cursor-pointer"
+                      data-testid="kentekenbewijs-upload"
+                    />
+                    <p className="text-xs text-zinc-400 mt-1">Upload een foto van het kentekenbewijs</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
               <table className="w-full">
                 <thead>

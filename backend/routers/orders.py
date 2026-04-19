@@ -227,6 +227,22 @@ async def update_order_license_plate(order_id: str, data: dict = Body(...), user
 
 
 
+@router.put("/orders/{order_id}/kentekenbewijs")
+async def update_order_kentekenbewijs(order_id: str, data: dict = Body(...), user: dict = Depends(require_pakbon)):
+    """Upload/update kentekenbewijs photo URL on an order (pakbon/admin)"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    url = data.get("url", "").strip()
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"kentekenbewijs_url": url}}
+    )
+    return {"message": "Kentekenbewijs bijgewerkt", "url": url}
+
+
+
 @router.put("/orders/{order_id}/transport")
 async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):
     """Admin updates transport status for an order"""
