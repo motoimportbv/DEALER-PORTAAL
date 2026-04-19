@@ -24,6 +24,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 - Belastingdienst Formulier Auto-Fill (21 pagina's, 92 velden)
 - Taxatieverslag PDF (uren × €65 + materiaal onderbouwing)
 - PDF download bug fixes (XHR, auto-download template, PyMuPDF)
+- Pakbon zichtbaarheid voor Ellen (pakbon rol) - OrderWithMotorcycle model miste velden kentekenbewijs_url, payment_instructions, supplier_info, motorcycle_license_plate (Feb 2026)
 
 ### P1
 - AutoTelex API (wacht op API-sleutel)
