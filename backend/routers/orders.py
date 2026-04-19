@@ -242,6 +242,22 @@ async def update_order_kentekenbewijs(order_id: str, data: dict = Body(...), use
     return {"message": "Kentekenbewijs bijgewerkt", "url": url}
 
 
+@router.put("/orders/{order_id}/payment-instructions")
+async def update_order_payment_instructions(order_id: str, data: dict = Body(...), user: dict = Depends(require_admin)):
+    """Update payment instructions on an order (admin only)"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    instructions = data.get("instructions", {})
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"payment_instructions": instructions}}
+    )
+    return {"message": "Betalingsinstructies bijgewerkt"}
+
+
+
 
 @router.put("/orders/{order_id}/transport")
 async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):

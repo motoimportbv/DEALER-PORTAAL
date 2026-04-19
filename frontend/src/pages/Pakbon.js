@@ -421,6 +421,135 @@ const Pakbon = () => {
               </div>
             )}
 
+            {/* Betalingsinstructies voor Ellen (CHF overmaken) */}
+            {(order.payment_instructions || user?.role === 'admin') && (
+              <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-xl p-5" data-testid="payment-instructions">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-blue-800 mb-3 flex items-center gap-2">
+                  💳 Betalingsinstructie
+                </h3>
+                {user?.role === 'admin' ? (
+                  <div className="space-y-3 print:hidden">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-blue-700 block mb-1">Bedrag (CHF)</label>
+                        <input type="text" 
+                          value={order.payment_instructions?.amount || ''}
+                          onChange={async (e) => {
+                            const val = e.target.value;
+                            const updated = { ...(order.payment_instructions || {}), amount: val };
+                            setOrder(prev => ({ ...prev, payment_instructions: updated }));
+                            try {
+                              await axios.put(`${API}/api/orders/${order.id}/payment-instructions`, { instructions: updated }, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                            } catch (err) { console.error(err); }
+                          }}
+                          placeholder="bijv. 7.500"
+                          className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm font-bold focus:border-blue-500 focus:outline-none"
+                          data-testid="payment-amount" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-blue-700 block mb-1">Valuta</label>
+                        <select 
+                          value={order.payment_instructions?.currency || 'CHF'}
+                          onChange={async (e) => {
+                            const updated = { ...(order.payment_instructions || {}), currency: e.target.value };
+                            setOrder(prev => ({ ...prev, payment_instructions: updated }));
+                            try {
+                              await axios.put(`${API}/api/orders/${order.id}/payment-instructions`, { instructions: updated }, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                            } catch (err) { console.error(err); }
+                          }}
+                          className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                          <option value="CHF">CHF</option>
+                          <option value="EUR">EUR</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-blue-700 block mb-1">Naar (naam begunstigde)</label>
+                      <input type="text"
+                        value={order.payment_instructions?.recipient_name || ''}
+                        onChange={async (e) => {
+                          const updated = { ...(order.payment_instructions || {}), recipient_name: e.target.value };
+                          setOrder(prev => ({ ...prev, payment_instructions: updated }));
+                          try {
+                            await axios.put(`${API}/api/orders/${order.id}/payment-instructions`, { instructions: updated }, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            });
+                          } catch (err) { console.error(err); }
+                        }}
+                        placeholder="Naam leverancier"
+                        className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        data-testid="payment-recipient" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-blue-700 block mb-1">IBAN / Bankrekeningnummer</label>
+                      <input type="text"
+                        value={order.payment_instructions?.iban || ''}
+                        onChange={async (e) => {
+                          const updated = { ...(order.payment_instructions || {}), iban: e.target.value };
+                          setOrder(prev => ({ ...prev, payment_instructions: updated }));
+                          try {
+                            await axios.put(`${API}/api/orders/${order.id}/payment-instructions`, { instructions: updated }, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            });
+                          } catch (err) { console.error(err); }
+                        }}
+                        placeholder="IBAN of rekeningnummer"
+                        className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm font-mono focus:border-blue-500 focus:outline-none"
+                        data-testid="payment-iban" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-blue-700 block mb-1">Referentie / Omschrijving</label>
+                      <input type="text"
+                        value={order.payment_instructions?.reference || ''}
+                        onChange={async (e) => {
+                          const updated = { ...(order.payment_instructions || {}), reference: e.target.value };
+                          setOrder(prev => ({ ...prev, payment_instructions: updated }));
+                          try {
+                            await axios.put(`${API}/api/orders/${order.id}/payment-instructions`, { instructions: updated }, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            });
+                          } catch (err) { console.error(err); }
+                        }}
+                        placeholder="bijv. Yamaha MT-10"
+                        className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        data-testid="payment-reference" />
+                    </div>
+                  </div>
+                ) : null}
+                {/* Read-only view for pakbon/Ellen (always shown on print) */}
+                {(user?.role !== 'admin' || true) && order.payment_instructions?.amount && (
+                  <div className={`${user?.role === 'admin' ? 'mt-4 pt-4 border-t border-blue-200' : ''} space-y-2`}>
+                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-xs text-blue-600 block">Bedrag</span>
+                          <span className="text-xl font-black text-blue-900">{order.payment_instructions.currency || 'CHF'} {order.payment_instructions.amount}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-blue-600 block">Naar</span>
+                          <span className="text-sm font-bold text-zinc-900">{order.payment_instructions.recipient_name || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-blue-600 block">IBAN / Rekening</span>
+                          <span className="text-sm font-mono font-bold text-zinc-900">{order.payment_instructions.iban || '-'}</span>
+                        </div>
+                        {order.payment_instructions.reference && (
+                          <div>
+                            <span className="text-xs text-blue-600 block">Referentie</span>
+                            <span className="text-sm text-zinc-900">{order.payment_instructions.reference}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Signature Area */}
             <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t border-zinc-200">
               <div>
