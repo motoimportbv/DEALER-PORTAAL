@@ -298,7 +298,7 @@ const Pakbon = () => {
                         const formData = new FormData();
                         formData.append('file', file);
                         try {
-                          const uploadRes = await axios.post(`${API}/api/upload/image`, formData, {
+                          const uploadRes = await axios.post(`${API}/api/upload`, formData, {
                             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
                           });
                           const imageUrl = uploadRes.data.url || uploadRes.data.image_url;
@@ -322,7 +322,50 @@ const Pakbon = () => {
               </div>
             </div>
 
-              <table className="w-full">
+            {/* Leverancier gegevens (als motor van foreign dealer) */}
+            {(order.supplier_info || motorcycle.foreign_dealer_company) && (
+              <div className="mb-6 bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-purple-700 mb-3">Leverancier</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-xs text-purple-500 block">Bedrijf</span>
+                    <span className="font-bold text-zinc-900">{order.supplier_info?.company || motorcycle.foreign_dealer_company || '-'}</span>
+                  </div>
+                  {order.supplier_info?.country && (
+                    <div>
+                      <span className="text-xs text-purple-500 block">Land</span>
+                      <span className="text-zinc-900">{order.supplier_info.country}</span>
+                    </div>
+                  )}
+                  {order.supplier_info?.address && (
+                    <div>
+                      <span className="text-xs text-purple-500 block">Adres</span>
+                      <span className="text-zinc-900">{order.supplier_info.address}</span>
+                    </div>
+                  )}
+                  {order.supplier_info?.phone && (
+                    <div>
+                      <span className="text-xs text-purple-500 block">Telefoon</span>
+                      <span className="text-zinc-900">{order.supplier_info.phone}</span>
+                    </div>
+                  )}
+                  {order.supplier_info?.email && (
+                    <div>
+                      <span className="text-xs text-purple-500 block">Email</span>
+                      <span className="text-zinc-900">{order.supplier_info.email}</span>
+                    </div>
+                  )}
+                  {motorcycle.original_price && (
+                    <div>
+                      <span className="text-xs text-purple-500 block">Inkoopprijs</span>
+                      <span className="font-bold text-zinc-900">{motorcycle.original_currency || 'CHF'} {motorcycle.original_price?.toLocaleString('nl-NL')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-200">
                     <th className="text-left py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">{t('pakbon.description')}</th>
