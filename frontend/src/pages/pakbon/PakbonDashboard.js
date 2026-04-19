@@ -174,6 +174,11 @@ const PakbonDashboard = () => {
                               <Building className="w-3.5 h-3.5" />
                               {order.dealer_company || 'Onbekend'}
                             </div>
+                            {(order.motorcycle_license_plate || moto.license_plate) && (
+                              <Badge className="bg-amber-100 text-amber-800 text-xs font-mono font-bold">
+                                {order.motorcycle_license_plate || moto.license_plate}
+                              </Badge>
+                            )}
                             {moto.chassis_number && (
                               <span className="font-mono text-xs">VIN: {moto.chassis_number}</span>
                             )}

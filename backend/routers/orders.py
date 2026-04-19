@@ -203,6 +203,30 @@ async def complete_pakbon(order_id: str, user: dict = Depends(require_pakbon)):
     return {"message": "Pakbon voltooid", "order_id": order_id}
 
 
+@router.put("/orders/{order_id}/license-plate")
+async def update_order_license_plate(order_id: str, data: dict = Body(...), user: dict = Depends(require_pakbon)):
+    """Update license plate on an order (pakbon/admin)"""
+    order = await db.orders.find_one({"id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    
+    license_plate = data.get("license_plate", "").strip().upper()
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"motorcycle_license_plate": license_plate}}
+    )
+    
+    # Also update the motorcycle record if it exists
+    if order.get("motorcycle_id"):
+        await db.motorcycles.update_one(
+            {"id": order["motorcycle_id"]},
+            {"$set": {"license_plate": license_plate}}
+        )
+    
+    return {"message": "Kenteken bijgewerkt", "license_plate": license_plate}
+
+
+
 @router.put("/orders/{order_id}/transport")
 async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):
     """Admin updates transport status for an order"""

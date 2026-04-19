@@ -228,6 +228,35 @@ const Pakbon = () => {
             <div className="border-t border-b border-zinc-200 py-6 my-6">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-4">{t('motorcycle.singular')}</h3>
               
+              {/* Kenteken - editable field */}
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4 print:bg-white print:border-zinc-300">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-amber-700 block mb-1">Kenteken</label>
+                    <input
+                      type="text"
+                      value={order.motorcycle_license_plate || motorcycle.license_plate || ''}
+                      onChange={async (e) => {
+                        const val = e.target.value.toUpperCase();
+                        setOrder(prev => ({ ...prev, motorcycle_license_plate: val }));
+                        try {
+                          await axios.put(`${API}/api/orders/${order.id}/license-plate`, { license_plate: val }, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                        } catch (err) { console.error('Failed to save license plate:', err); }
+                      }}
+                      placeholder="XX-123-YY"
+                      className="w-full border-2 border-amber-300 rounded-lg px-3 py-2 text-lg font-bold uppercase tracking-wider focus:border-amber-500 focus:outline-none print:border-none print:px-0 print:bg-transparent"
+                      data-testid="pakbon-license-plate"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-amber-700 block mb-1">Chassisnummer (VIN)</label>
+                    <p className="text-lg font-mono font-bold text-zinc-800 py-2">{motorcycle.chassis_number || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-200">
