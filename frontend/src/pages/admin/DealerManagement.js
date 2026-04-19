@@ -172,6 +172,29 @@ const DealerManagement = () => {
     }
   };
 
+  const [ibanDialogOpen, setIbanDialogOpen] = useState(false);
+  const [ibanInput, setIbanInput] = useState('');
+  const [ibanDealer, setIbanDealer] = useState(null);
+
+  const updateDealerIban = async () => {
+    if (!ibanDealer) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/dealers/${ibanDealer.id}/iban`, 
+        { iban: ibanInput },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      toast.success(`IBAN bijgewerkt voor ${ibanDealer.company_name}`);
+      setIbanDialogOpen(false);
+      setIbanInput('');
+      setIbanDealer(null);
+      fetchDealers();
+    } catch (error) {
+      toast.error('Kon IBAN niet bijwerken');
+    }
+  };
+
+
   const resetDealerPassword = async () => {
     if (!resetPasswordDealer || !newPassword || newPassword.length < 6) {
       toast.error('Wachtwoord moet minimaal 6 tekens zijn');
@@ -283,6 +306,18 @@ const DealerManagement = () => {
               {dealer.address ? `${dealer.address}, ${dealer.postal_code} ${dealer.city}` : '-'}
             </span>
           </div>
+          {dealer.is_foreign_dealer && (
+            <div className="flex items-center gap-3 text-sm">
+              <Building className="w-4 h-4 text-zinc-400" />
+              <span className="text-zinc-600 font-mono">{dealer.iban || 'Geen IBAN'}</span>
+              <button 
+                onClick={() => { setIbanDealer(dealer); setIbanInput(dealer.iban || ''); setIbanDialogOpen(true); }}
+                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {dealer.iban ? 'wijzig' : '+ IBAN toevoegen'}
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-3 text-sm">
             <Clock className="w-4 h-4 text-zinc-400" />
             <span className="text-zinc-600">
@@ -661,6 +696,36 @@ const DealerManagement = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* IBAN Dialog */}
+        <Dialog open={ibanDialogOpen} onOpenChange={setIbanDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building className="w-5 h-5 text-purple-600" />
+                IBAN Bewerken
+              </DialogTitle>
+              <DialogDescription>
+                {ibanDealer?.company_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-4">
+              <label className="block text-sm font-medium text-zinc-700">IBAN / Bankrekeningnummer</label>
+              <Input
+                value={ibanInput}
+                onChange={(e) => setIbanInput(e.target.value.toUpperCase())}
+                placeholder="CH93 0076 2011 6238 5295 7"
+                className="font-mono"
+                data-testid="iban-input"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIbanDialogOpen(false)}>Annuleren</Button>
+              <Button className="bg-purple-600 hover:bg-purple-700" onClick={updateDealerIban}>Opslaan</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         {/* Password Reset Dialog */}
         <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>

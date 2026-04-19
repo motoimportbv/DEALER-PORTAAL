@@ -469,3 +469,18 @@ async def update_dealer_phone(dealer_id: str, data: DealerPhoneUpdate, user: dic
     }
 
 
+
+
+@router.put("/dealers/{dealer_id}/iban")
+async def update_dealer_iban(dealer_id: str, data: dict = Body(...), user: dict = Depends(require_admin)):
+    """Admin updates dealer IBAN"""
+    dealer = await db.users.find_one({"id": dealer_id, "role": {"$in": ["dealer", "foreign_dealer"]}})
+    if not dealer:
+        raise HTTPException(status_code=404, detail="Dealer niet gevonden")
+    
+    iban = data.get("iban", "").strip().upper()
+    await db.users.update_one(
+        {"id": dealer_id},
+        {"$set": {"iban": iban}}
+    )
+    return {"message": f"IBAN bijgewerkt voor {dealer['company_name']}", "iban": iban}

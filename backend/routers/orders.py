@@ -526,6 +526,26 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         order_dict["seller_company"] = seller_company
         order_dict["seller_id"] = seller_id
     
+    # Auto-fill payment instructions from foreign dealer (supplier) data
+    foreign_dealer_id = motorcycle.get("foreign_dealer_id")
+    if foreign_dealer_id:
+        foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0})
+        if foreign_dealer:
+            order_dict["payment_instructions"] = {
+                "amount": str(int(motorcycle.get("original_price", 0))) if motorcycle.get("original_price") else "",
+                "currency": motorcycle.get("original_currency", "CHF"),
+                "recipient_name": foreign_dealer.get("company_name", ""),
+                "iban": foreign_dealer.get("iban", foreign_dealer.get("bank_iban", "")),
+                "reference": f"{motorcycle.get('brand', '')} {motorcycle.get('model', '')} VIN:{motorcycle.get('chassis_number', '')}",
+            }
+            order_dict["supplier_info"] = {
+                "company": foreign_dealer.get("company_name", ""),
+                "email": foreign_dealer.get("email", ""),
+                "phone": foreign_dealer.get("phone", ""),
+                "country": foreign_dealer.get("country", ""),
+                "address": foreign_dealer.get("address", ""),
+            }
+    
     await db.orders.insert_one(order_dict)
     
     # Auto-create concept taxatie invoice when dealer requests valuation
