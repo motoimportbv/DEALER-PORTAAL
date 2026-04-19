@@ -319,6 +319,7 @@ const Pakbon = () => {
                             headers: { Authorization: `Bearer ${token}` }
                           });
                           setOrder(prev => ({ ...prev, kentekenbewijs_url: imageUrl }));
+                          alert('Kentekenbewijs opgeslagen!');
                         } catch (err) { 
                           console.error('Upload failed:', err);
                           alert('Upload mislukt: ' + (err.response?.data?.detail || err.message));

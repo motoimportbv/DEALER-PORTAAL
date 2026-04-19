@@ -140,6 +140,11 @@ const MotorcycleForm = () => {
   const [supplierChfPrice, setSupplierChfPrice] = useState('');
   const [savingSupplierPrice, setSavingSupplierPrice] = useState(false);
   
+  // Motor bron (leverancier of particulier)
+  const [motorSource, setMotorSource] = useState('own'); // 'own', 'supplier', 'private'
+  const [foreignDealers, setForeignDealers] = useState([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  
   // Dealers for visibility selection
   const [dealers, setDealers] = useState([]);
   const [loadingDealers, setLoadingDealers] = useState(false);
@@ -148,30 +153,19 @@ const MotorcycleForm = () => {
   const [exchangeRate, setExchangeRate] = useState(null);
   const [eurPreview, setEurPreview] = useState(null);
   
-  // Fetch dealers when visibility changes to 'selected'
+  // Fetch dealers and foreign dealers
   useEffect(() => {
-    if (formData.visibility === 'selected' && dealers.length === 0) {
-      fetchDealers();
+    const token = localStorage.getItem('token');
+    if (token) {
+      axios.get(`${API}/dealers`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => {
+          const dutchDealers = res.data.filter(d => d.is_approved && !d.is_foreign_dealer);
+          setDealers(dutchDealers);
+          const foreign = res.data.filter(d => d.is_foreign_dealer || d.role === 'foreign_dealer');
+          setForeignDealers(foreign);
+        }).catch(() => {});
     }
-  }, [formData.visibility]);
-
-  const fetchDealers = async () => {
-    setLoadingDealers(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/dealers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const dutchDealers = response.data.filter(d => 
-        d.is_approved && !d.is_foreign_dealer
-      );
-      setDealers(dutchDealers);
-    } catch (error) {
-      toast.error('Kon dealers niet laden');
-    } finally {
-      setLoadingDealers(false);
-    }
-  };
+  }, []);
 
   const toggleDealerSelection = (dealerId) => {
     setFormData(prev => {
@@ -362,10 +356,26 @@ const MotorcycleForm = () => {
         ...formData,
         price: parseFloat(formData.price),
         purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
-        starting_price: parseFloat(formData.price), // Same as price - no auction
+        starting_price: parseFloat(formData.price),
         mileage: parseInt(formData.mileage),
         year: parseInt(formData.year)
       };
+
+      // Add source info
+      if (motorSource === 'supplier' && selectedSupplierId) {
+        const supplier = foreignDealers.find(s => s.id === selectedSupplierId);
+        if (supplier) {
+          payload.is_foreign_listing = true;
+          payload.foreign_dealer_id = supplier.id;
+          payload.foreign_dealer_company = supplier.company_name;
+          if (formData.currency === 'CHF') {
+            payload.original_price = parseFloat(formData.price);
+            payload.original_currency = 'CHF';
+          }
+        }
+      } else if (motorSource === 'private') {
+        payload.is_private_source = true;
+      }
 
       if (isEditing) {
         const token = localStorage.getItem('token');
@@ -379,6 +389,24 @@ const MotorcycleForm = () => {
         const response = await axios.post(`${API}/motorcycles`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
+        // If linked to a supplier, update the motorcycle with foreign dealer info
+        if (motorSource === 'supplier' && selectedSupplierId && response.data?.id) {
+          const supplier = foreignDealers.find(s => s.id === selectedSupplierId);
+          if (supplier) {
+            await axios.put(`${API}/motorcycles/${response.data.id}/source`, {
+              is_foreign_listing: true,
+              foreign_dealer_id: supplier.id,
+              foreign_dealer_company: supplier.company_name,
+            }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+          }
+        }
+        if (motorSource === 'private' && response.data?.id) {
+          await axios.put(`${API}/motorcycles/${response.data.id}/source`, {
+            is_private_source: true,
+          }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+        }
+        
         toast.success('Motor toegevoegd');
         
         // Show WhatsApp share option for new motorcycles
@@ -447,6 +475,41 @@ const MotorcycleForm = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Bron selectie - alleen bij nieuwe motor */}
+                {!isEditing && (
+                  <div className="bg-zinc-50 rounded-xl p-4 space-y-3" data-testid="motor-source-select">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">Bron</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'own', label: 'Eigen inkoop' },
+                        { value: 'supplier', label: 'Leverancier' },
+                        { value: 'private', label: 'Particulier' },
+                      ].map(opt => (
+                        <button key={opt.value} type="button" onClick={() => { setMotorSource(opt.value); if (opt.value !== 'supplier') setSelectedSupplierId(''); }}
+                          className={`py-2.5 px-3 rounded-lg text-sm font-bold border-2 transition-all ${motorSource === opt.value ? 'border-red-500 bg-red-50 text-red-700' : 'border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
+                          data-testid={`source-${opt.value}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {motorSource === 'supplier' && (
+                      <div>
+                        <select value={selectedSupplierId} onChange={(e) => {
+                          setSelectedSupplierId(e.target.value);
+                          if (e.target.value) setFormData(prev => ({ ...prev, currency: 'CHF' }));
+                        }}
+                          className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+                          data-testid="supplier-select-form">
+                          <option value="">-- Kies leverancier --</option>
+                          {foreignDealers.map(s => (
+                            <option key={s.id} value={s.id}>{s.company_name} ({s.country})</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-500">

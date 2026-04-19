@@ -75,7 +75,7 @@ async def create_motorcycle(data: MotorcycleCreate, user: dict = Depends(require
     )
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
-    
+
     # Get dealers for notifications based on visibility
     if data.visibility == "selected" and data.visible_to_dealers:
         # Only notify selected dealers
@@ -1538,6 +1538,35 @@ async def get_motorcycle(motorcycle_id: str, user: dict = Depends(require_approv
         motorcycle.pop("purchase_price", None)  # Inkoopprijs alleen voor admin
     
     return motorcycle
+
+
+@router.put("/motorcycles/{motorcycle_id}/source")
+async def update_motorcycle_source(motorcycle_id: str, data: dict = Body(...), user: dict = Depends(require_admin)):
+    """Admin sets the source of a motorcycle (foreign dealer or private)"""
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    update_fields = {}
+    
+    if data.get("is_foreign_listing"):
+        foreign_dealer_id = data.get("foreign_dealer_id")
+        foreign_dealer = await db.users.find_one({"id": foreign_dealer_id}, {"_id": 0}) if foreign_dealer_id else None
+        update_fields["is_foreign_listing"] = True
+        update_fields["foreign_dealer_id"] = foreign_dealer_id
+        update_fields["foreign_dealer_company"] = data.get("foreign_dealer_company", foreign_dealer.get("company_name", "") if foreign_dealer else "")
+        if motorcycle.get("original_currency") == "CHF" or data.get("original_currency") == "CHF":
+            update_fields["original_price"] = motorcycle.get("price", 0)
+            update_fields["original_currency"] = "CHF"
+    
+    if data.get("is_private_source"):
+        update_fields["is_private_source"] = True
+    
+    if update_fields:
+        await db.motorcycles.update_one({"id": motorcycle_id}, {"$set": update_fields})
+    
+    return {"message": "Bron bijgewerkt", "source": update_fields}
+
 
 @router.put("/motorcycles/{motorcycle_id}", response_model=Motorcycle)
 async def update_motorcycle(motorcycle_id: str, data: MotorcycleUpdate, user: dict = Depends(require_admin)):
