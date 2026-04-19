@@ -128,15 +128,16 @@ async def register_supplier(supplier_data: SupplierCreate):
         "password_hash": hash_password(supplier_data.password),
         "company_name": supplier_data.company_name,
         "kvk_number": "",
-        "address": "",
-        "postal_code": "",
-        "city": "",
+        "address": supplier_data.address,
+        "postal_code": supplier_data.postal_code,
+        "city": supplier_data.city,
         "phone": supplier_data.phone,
         "contact_person": supplier_data.contact_person,
         "role": "dealer",
         "is_approved": False,
         "is_foreign_dealer": True,
         "country": supplier_data.country,
+        "iban": supplier_data.iban,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user_doc)

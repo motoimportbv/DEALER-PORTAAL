@@ -250,9 +250,13 @@ async def update_order_payment_instructions(order_id: str, data: dict = Body(...
         raise HTTPException(status_code=404, detail="Order niet gevonden")
     
     instructions = data.get("instructions", {})
+    update_fields = {"payment_instructions": instructions}
+    supplier_info = data.get("supplier_info")
+    if supplier_info:
+        update_fields["supplier_info"] = supplier_info
     await db.orders.update_one(
         {"id": order_id},
-        {"$set": {"payment_instructions": instructions}}
+        {"$set": update_fields}
     )
     return {"message": "Betalingsinstructies bijgewerkt"}
 

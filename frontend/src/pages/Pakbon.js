@@ -22,6 +22,7 @@ const Pakbon = () => {
   const [supplierPhone, setSupplierPhone] = useState('');
   const [supplierAddress, setSupplierAddress] = useState('');
   const [showKentekenFull, setShowKentekenFull] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
   const printRef = useRef();
 
   useEffect(() => {
@@ -57,6 +58,18 @@ const Pakbon = () => {
       }, 500);
     }
   }, [order, searchParams, hasPrinted]);
+
+  // Fetch suppliers for dropdown (admin only)
+  useEffect(() => {
+    if (user?.role === 'admin' && token) {
+      axios.get(`${API}/api/dealers`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => {
+          const foreign = res.data.filter(d => d.is_foreign_dealer || d.role === 'foreign_dealer');
+          setSuppliers(foreign);
+        }).catch(() => {});
+    }
+  }, [user, token]);
+
 
   const handlePrint = () => {
     window.print();
@@ -472,6 +485,56 @@ const Pakbon = () => {
                 </h3>
                 {user?.role === 'admin' ? (
                   <div className="space-y-3 print:hidden">
+                    {/* Leverancier dropdown */}
+                    {suppliers.length > 0 && (
+                      <div>
+                        <label className="text-xs font-bold text-blue-700 block mb-1">Leverancier selecteren</label>
+                        <select
+                          onChange={(e) => {
+                            const supplier = suppliers.find(s => s.id === e.target.value);
+                            if (!supplier) return;
+                            const updated = {
+                              ...(order.payment_instructions || {}),
+                              amount: order.payment_instructions?.amount || '',
+                              currency: order.payment_instructions?.currency || 'CHF',
+                              recipient_name: supplier.company_name || '',
+                              iban: supplier.iban || '',
+                              reference: order.payment_instructions?.reference || '',
+                            };
+                            setOrder(prev => ({ 
+                              ...prev, 
+                              payment_instructions: updated,
+                              supplier_info: {
+                                company: supplier.company_name,
+                                email: supplier.email,
+                                phone: supplier.phone,
+                                country: supplier.country,
+                                address: supplier.address ? `${supplier.address}, ${supplier.postal_code || ''} ${supplier.city || ''}`.trim() : '',
+                              }
+                            }));
+                            // Save immediately
+                            axios.put(`${API}/api/orders/${order.id}/payment-instructions`, { 
+                              instructions: updated,
+                              supplier_info: {
+                                company: supplier.company_name,
+                                email: supplier.email,
+                                phone: supplier.phone,
+                                country: supplier.country,
+                                address: supplier.address ? `${supplier.address}, ${supplier.postal_code || ''} ${supplier.city || ''}`.trim() : '',
+                              }
+                            }, { headers: { Authorization: `Bearer ${token}` } }).catch(console.error);
+                          }}
+                          className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                          data-testid="supplier-select"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>-- Kies leverancier --</option>
+                          {suppliers.map(s => (
+                            <option key={s.id} value={s.id}>{s.company_name} ({s.country}){s.iban ? ' ✓' : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-xs font-bold text-blue-700 block mb-1">Bedrag (CHF)</label>

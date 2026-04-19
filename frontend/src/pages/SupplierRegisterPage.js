@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Globe, Mail, Lock, Building, ArrowRight, Phone, User, ChevronDown } from 'lucide-react';
+import { Globe, Mail, Lock, Building, ArrowRight, Phone, User, ChevronDown, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -51,7 +51,11 @@ const SupplierRegisterPage = () => {
     company_name: '',
     country: '',
     contact_person: '',
-    phone: ''
+    phone: '',
+    address: '',
+    city: '',
+    postal_code: '',
+    iban: ''
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -250,6 +254,61 @@ const SupplierRegisterPage = () => {
                     className="pl-10"
                     placeholder="+49 123 456789"
                     data-testid="supplier-phone-input"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="address">{t('register.address') || 'Adres / Address'}</Label>
+                <div className="relative mt-1.5">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => handleChange('address', e.target.value)}
+                    className="pl-10"
+                    placeholder="Musterstraße 123"
+                    data-testid="supplier-address-input"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="postal_code">{t('register.postalCode') || 'PLZ / Postal Code'}</Label>
+                  <Input
+                    id="postal_code"
+                    value={formData.postal_code}
+                    onChange={(e) => handleChange('postal_code', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="12345"
+                    data-testid="supplier-postal-input"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="city">{t('register.city') || 'Stadt / City'}</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleChange('city', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="Berlin"
+                    data-testid="supplier-city-input"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="iban">IBAN / {t('register.bankAccount') || 'Bankrekening'}</Label>
+                <div className="relative mt-1.5">
+                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Input
+                    id="iban"
+                    value={formData.iban}
+                    onChange={(e) => handleChange('iban', e.target.value.toUpperCase())}
+                    className="pl-10 font-mono"
+                    placeholder="CH93 0076 2011 6238 5295 7"
+                    data-testid="supplier-iban-input"
                   />
                 </div>
               </div>

@@ -28,6 +28,10 @@ class SupplierCreate(BaseModel):
     country: str
     contact_person: str = ""
     phone: str = ""
+    address: str = ""
+    city: str = ""
+    postal_code: str = ""
+    iban: str = ""
 
 class UserLogin(BaseModel):
     email: str
