@@ -257,7 +257,7 @@ const ForeignDealerAddMotorcycle = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="brand">{t('motorcycle.brand')} *</Label>
                   <SearchableSelect
@@ -346,7 +346,7 @@ const ForeignDealerAddMotorcycle = () => {
                 </div>
                 
                 {/* Maintenance History - Required */}
-                <div className="space-y-2 col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="space-y-2 lg:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <Label className="text-blue-900 font-semibold">
                     {t('foreignDealer.maintenanceHistory', 'Onderhoudshistorie')} *
                   </Label>
@@ -475,7 +475,7 @@ const ForeignDealerAddMotorcycle = () => {
                 </div>
                 
                 {formData.images.length > 0 && (
-                  <div className="grid grid-cols-4 gap-4 mt-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
                     {formData.images.map((url, index) => (
                       <div key={index} className="relative aspect-square">
                         <img
