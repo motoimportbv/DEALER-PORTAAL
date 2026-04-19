@@ -21,6 +21,7 @@ const Pakbon = () => {
   const [completed, setCompleted] = useState(false);
   const [supplierPhone, setSupplierPhone] = useState('');
   const [supplierAddress, setSupplierAddress] = useState('');
+  const [showKentekenFull, setShowKentekenFull] = useState(false);
   const printRef = useRef();
 
   useEffect(() => {
@@ -263,11 +264,11 @@ const Pakbon = () => {
                   <div className="space-y-2">
                     <img src={order.kentekenbewijs_url} alt="Kentekenbewijs" 
                       className="max-w-full max-h-64 rounded-lg border border-zinc-200 cursor-pointer hover:opacity-90"
-                      onClick={() => window.open(order.kentekenbewijs_url, '_blank')}
+                      onClick={() => setShowKentekenFull(true)}
                       data-testid="kentekenbewijs-image" />
                     <div className="flex gap-2 print:hidden">
                       <Button type="button" size="sm" variant="outline" className="text-xs"
-                        onClick={() => window.open(order.kentekenbewijs_url, '_blank')}>
+                        onClick={() => setShowKentekenFull(true)}>
                         Vergroten
                       </Button>
                       {user?.role === 'admin' && (
@@ -461,6 +462,28 @@ const Pakbon = () => {
           }
         }
       `}</style>
+
+      {/* Fullscreen kentekenbewijs overlay */}
+      {showKentekenFull && order.kentekenbewijs_url && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 print:hidden"
+          onClick={() => setShowKentekenFull(false)}
+          data-testid="kentekenbewijs-fullscreen"
+        >
+          <button 
+            className="absolute top-4 right-4 text-white bg-black/50 rounded-full w-10 h-10 flex items-center justify-center text-2xl hover:bg-black/80 z-50"
+            onClick={() => setShowKentekenFull(false)}
+          >
+            &times;
+          </button>
+          <img 
+            src={order.kentekenbewijs_url} 
+            alt="Kentekenbewijs" 
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };
