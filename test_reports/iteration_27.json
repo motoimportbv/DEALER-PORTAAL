@@ -1,0 +1,55 @@
+{
+  "summary": "Verified fix for OrderWithMotorcycle response model. All 4 new fields (kentekenbewijs_url, payment_instructions, supplier_info, motorcycle_license_plate) are now correctly returned for BOTH pakbon (Ellen) and admin. Backend: 5/5 pytest tests pass. Frontend: Ellen logs in, sees /pakbonnen list, opens /pakbon/{id}, and sees payment instructions card (CHF 7.500, IBAN CH93..., recipient 'hostettler moto ag'), kentekenbewijs img element, and license plate. Admin sees same data plus edit controls. Permission boundaries hold: pakbon cannot PUT payment-instructions (403), pakbon view shows no Verwijderen button. Fix is working end-to-end.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/pakbon/{orderId}", "issues": ["Seed kentekenbewijs_url points to https://example.com/test-kentekenbewijs.jpg which 404s - img renders broken icon. Not a fix regression, just the placeholder URL. Suggest replacing seed data with a real uploaded image to visually confirm the overlay (Vergroten) flow."]}
+    ]
+  },
+  "passed_tests": [
+    "Backend: Pakbon GET /api/orders returns kentekenbewijs_url, payment_instructions, supplier_info, motorcycle_license_plate for seed order",
+    "Backend: Admin GET /api/orders returns all 4 fields (regression passes)",
+    "Backend: Admin PUT /api/orders/{id}/payment-instructions saves instructions+supplier_info and data persists on re-GET",
+    "Backend: Pakbon PUT /api/orders/{id}/payment-instructions returns 403 (admin-only, correct)",
+    "Backend: Pakbon PUT /api/orders/{id}/license-plate succeeds and motorcycle_license_plate persists on re-GET",
+    "Frontend: Ellen (pakbon) logs in -> redirected to /pakbonnen -> sees 44 orders incl. 630312C9 with badge 'Bezorging'",
+    "Frontend: Ellen opens /pakbon/630312c9-...: Kenteken 'TEST-99-ZZ', Kentekenbewijs img element rendered with Vergroten button (no delete - correct pakbon restriction), LEVERANCIER card shows 'hostettler moto ag Eschenbach', 'CH', 'CHF 7.500'",
+    "Frontend: Admin opens /pakbon/{id}: sees same data plus Vergroten + Verwijderen controls (edit privileges)",
+    "Frontend: Layout restriction confirmed - pakbon left-nav shows only 'Pakbonnen' (no admin links)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_pakbon_fields.py",
+    "/app/test_reports/pytest/pytest_pakbon_fields.xml"
+  ],
+  "action_items": [
+    "Optional: seed order 630312c9-2560-41ac-98a8-626d79cc3651 has kentekenbewijs_url = https://example.com/test-kentekenbewijs.jpg (broken). Replace with a real uploaded image URL so the kenteken photo actually renders in UI for demos",
+    "Note: during license-plate regression test the motorcycle_license_plate was set to 'TEST-99-ZZ'. Main agent may want to reset if visual matches with real data are needed"
+  ],
+  "critical_code_review_comments": [
+    "Fix in /app/backend/models/schemas.py OrderWithMotorcycle is correct - adding Optional fields with defaults is backward compatible and unblocks pakbon visibility",
+    "PUT /api/orders/{id}/payment-instructions uses `data.get('instructions', {})` - if client sends empty object or forgets key it silently clears payment_instructions. Consider validating non-empty or using Pydantic model for this body",
+    "Pakbon role correctly restricted on payment-instructions endpoint (403) and edit UI controls (no Verwijderen) - authorization boundaries verified"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pakbon_fields.py"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 passed)",
+    "frontend": "100% - Pakbon + Admin flows verified, data rendering confirmed"
+  },
+  "test_credentials": {
+    "admin": "motoimportbv@gmail.com / Admin2024!",
+    "pakbon": "ellenmilone@gmail.com / Test2024!",
+    "test_order_id": "630312c9-2560-41ac-98a8-626d79cc3651"
+  },
+  "seed_data_creation": "None. Used existing seed order. One side-effect: motorcycle_license_plate on test order was set to 'TEST-99-ZZ' via license-plate regression test. payment_instructions was temporarily wiped by an initial test call (payload shape issue) then restored to original values {amount: 'CHF 7.500', iban: 'CH93 0000 0000 0000 0000 0', recipient: 'Hostettler AG'} and supplier_info {name: 'Hostettler AG', country: 'CH'}.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "OrderWithMotorcycle schema fix verified. Regression file: /app/backend/tests/test_pakbon_fields.py. Note the /api/orders/{id}/payment-instructions endpoint expects body shape {'instructions': {...}, 'supplier_info': {...}} NOT {'payment_instructions': ...}. kentekenbewijs_url on seed order 630312c9... is https://example.com/test-kentekenbewijs.jpg (returns broken img but the field is returned correctly to the client). Pakbon role restricted to /pakbon* routes via Layout.js and to read-only for payment-instructions via require_admin on backend.",
+  "rca_of_the_issue": "Root cause (already fixed by main agent): FastAPI applies Pydantic response_model serialization on GET /api/orders. OrderWithMotorcycle did not declare kentekenbewijs_url, payment_instructions, supplier_info, motorcycle_license_plate fields. With model_config extra='ignore' (default strip), Pydantic silently removed those fields from the outbound payload even though MongoDB had the data. Admin's internal tooling (curl/network tab) may have shown the data existed in DB but the API layer stripped them. Ellen's frontend /pakbon/:id therefore received undefined for these props and rendered nothing. Fix: added Optional fields with defaults to OrderWithMotorcycle. Verified: pakbon + admin now both receive the fields and the UI renders them."
+}

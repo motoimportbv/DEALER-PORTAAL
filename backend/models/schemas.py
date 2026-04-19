@@ -258,6 +258,14 @@ class OrderWithMotorcycle(BaseModel):
     pakbon_completed: bool = False
     pakbon_completed_at: Optional[str] = None
     pakbon_completed_by: Optional[str] = None
+    kentekenbewijs_url: Optional[str] = None
+    payment_instructions: Optional[dict] = None
+    supplier_info: Optional[dict] = None
+    motorcycle_license_plate: Optional[str] = None
+    archived: bool = False
+    is_dealer_to_dealer: bool = False
+    seller_company: Optional[str] = None
+    seller_id: Optional[str] = None
 
 class BuyNowRequest(BaseModel):
     motorcycle_id: str
