@@ -256,7 +256,7 @@ const Pakbon = () => {
                 </div>
               </div>
               
-              {/* Kentekenbewijs upload */}
+              {/* Kentekenbewijs foto */}
               <div className="mt-4 border-t border-amber-200 pt-4">
                 <label className="text-xs font-bold text-amber-700 block mb-2">Kentekenbewijs (foto)</label>
                 {order.kentekenbewijs_url ? (
@@ -270,7 +270,7 @@ const Pakbon = () => {
                         onClick={() => window.open(order.kentekenbewijs_url, '_blank')}>
                         Vergroten
                       </Button>
-                      {(user?.role === 'admin') && (
+                      {user?.role === 'admin' && (
                         <Button type="button" size="sm" variant="outline" className="text-xs text-red-600 border-red-200"
                           onClick={async () => {
                             if (!window.confirm('Kentekenbewijs verwijderen?')) return;
@@ -286,7 +286,7 @@ const Pakbon = () => {
                       )}
                     </div>
                   </div>
-                ) : (
+                ) : user?.role === 'admin' ? (
                   <div className="print:hidden">
                     <input
                       type="file"
@@ -315,6 +315,8 @@ const Pakbon = () => {
                     />
                     <p className="text-xs text-zinc-400 mt-1">Upload een foto van het kentekenbewijs</p>
                   </div>
+                ) : (
+                  <p className="text-sm text-zinc-400 italic">Nog geen kentekenbewijs geüpload</p>
                 )}
               </div>
             </div>
