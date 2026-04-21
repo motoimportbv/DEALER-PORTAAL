@@ -295,6 +295,23 @@ const OrderList = () => {
                                 : formatPrice(order.motorcycle.original_price)}
                             </p>
                           )}
+                          {/* Order options badges */}
+                          <div className="flex flex-wrap gap-1 mt-2" data-testid={`order-options-${order.id}`}>
+                            {order.needs_coc && (
+                              <Badge className="bg-purple-100 text-purple-800 text-xs">
+                                COC/CVO €{order.coc_cost || 0}
+                              </Badge>
+                            )}
+                            {order.needs_inspection && (
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">Keuring €{order.inspection_cost || 125}</Badge>
+                            )}
+                            {order.needs_valuation && (
+                              <Badge className="bg-amber-100 text-amber-800 text-xs">Taxatie €{order.valuation_cost || 160}</Badge>
+                            )}
+                            {order.needs_delivery && (
+                              <Badge className="bg-zinc-100 text-zinc-800 text-xs">Bezorging €{order.delivery_cost || 50}</Badge>
+                            )}
+                          </div>
                         </>
                       ) : (
                         <span className="text-zinc-400">{t('motorcycle.deleted')}</span>
@@ -409,6 +426,22 @@ const OrderList = () => {
                               <p className="text-sm text-zinc-500">
                                 {order.motorcycle.year} • {order.motorcycle.color}
                               </p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {order.needs_coc && (
+                                  <Badge className="bg-purple-100 text-purple-800 text-xs" data-testid={`coc-badge-${order.id}`}>
+                                    COC €{order.coc_cost || 0}
+                                  </Badge>
+                                )}
+                                {order.needs_inspection && (
+                                  <Badge className="bg-blue-100 text-blue-800 text-xs">Keur</Badge>
+                                )}
+                                {order.needs_valuation && (
+                                  <Badge className="bg-amber-100 text-amber-800 text-xs">Tax</Badge>
+                                )}
+                                {order.needs_delivery && (
+                                  <Badge className="bg-zinc-100 text-zinc-800 text-xs">Bezorg</Badge>
+                                )}
+                              </div>
                             </div>
                           ) : (
                             <span className="text-zinc-400">{t('motorcycle.deleted')}</span>

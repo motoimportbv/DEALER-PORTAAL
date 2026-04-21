@@ -244,6 +244,8 @@ class OrderWithMotorcycle(BaseModel):
     inspection_cost: float = 0.0
     needs_valuation: bool = False
     valuation_cost: float = 0.0
+    needs_coc: bool = False
+    coc_cost: float = 0.0
     voucher_code: Optional[str] = None
     voucher_discount: float = 0.0
     deposit_amount: float = 0.0
@@ -272,6 +274,7 @@ class BuyNowRequest(BaseModel):
     needs_delivery: bool = False
     needs_inspection: bool = False
     needs_valuation: bool = False
+    needs_coc: bool = False
     voucher_code: Optional[str] = None
 
 class TransportStatusUpdate(BaseModel):

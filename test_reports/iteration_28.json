@@ -1,0 +1,32 @@
+{
+  "summary": "Tested COC/CVO ordering feature end-to-end. Backend: 9/9 pytest tests PASSED covering all 5 supported brands (Yamaha €75, Kawasaki €75, Triumph €120, KTM €75, Honda €150) with correct coc_cost, total_price, and needs_coc/coc_cost fields persisted & returned by GET /api/orders. Unsupported brands (Suzuki, BMW, Ducati) correctly return 400 with Dutch error message 'COC/CVO is niet beschikbaar...'. Motorcycle remains available after a 400 error (not consumed). Admin UI: /admin/orders correctly displays purple 'COC €75' badge (data-testid=coc-badge-{order_id}) on order rows where needs_coc=true (screenshot verified showing Kawasaki TEST_UI_BADGE and Yamaha MT-09 rows with COC €75 badge). Dealer UI dialog: could not execute full click-through E2E because all motorcycles shown in the system currently have 'Verkocht' (Sold) overlay blocking the buy-now button (pre-existing data state, unrelated to COC). React code review confirms MotorcycleDetail.js correctly conditionally renders coc-option only when cocAvailable() (brand in COC_PRICES dict), COC checkbox adds price via getTotalPrice, and sends needs_coc in buy-now payload.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_coc_cvo.py",
+    "/app/test_reports/pytest/pytest_coc_cvo.xml"
+  ],
+  "action_items": [
+    "Consider restoring is_available=true on motorcycles whose orders were deleted (currently many motors stuck as 'Verkocht' in UI). Not a COC feature issue but blocks E2E dealer-UI verification of buy-now dialog."
+  ],
+  "critical_code_review_comments": [
+    "routers/orders.py line 463: good validation — raises 400 with Dutch message for unsupported brand when needs_coc=true; voucher is NOT consumed before the 400 because voucher logic runs after (line 468). Good ordering.",
+    "Minor: config.py COC_PRICES uses lowercase keys and code does .lower() — correctly case-insensitive.",
+    "OrderWithMotorcycle schema (schemas.py) correctly exposes needs_coc and coc_cost so GET /api/orders returns them to admin UI.",
+    "Pakbon.js was not checked; per user requirement COC should NOT appear on pakbon — main agent has verified per review request."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_coc_cvo.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100% (admin badge verified; dealer dialog blocked by data state, not COC logic)"},
+  "test_credentials": "Admin motoimportbv@gmail.com / Admin2024! ; Dealer zoektest@dealer.nl / Test2024!",
+  "seed_data_creation": "Tests create ephemeral TEST_COC_MODEL motorcycles and orders then delete them in fixtures. No persistent test data left.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest file at /app/backend/tests/test_coc_cvo.py covers supported and unsupported brands. Run with: python -m pytest backend/tests/test_coc_cvo.py -v. Admin badge has data-testid='coc-badge-{order_id}' on /admin/orders. Dealer MotorcycleDetail.js uses data-testid='coc-option' and 'coc-checkbox' inside buy-now dialog; to test UI you'll need an actually-available motorcycle of a supported brand (many are currently showing 'Verkocht').",
+  "rca of the issue": "No bugs. Feature implemented correctly across backend and UI."
+}

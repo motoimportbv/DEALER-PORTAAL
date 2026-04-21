@@ -65,6 +65,15 @@ DEPOSIT_PERCENTAGE = 0.10
 INSPECTION_COST = 125.0
 VALUATION_COST = 160.0
 
+# ============ COC/CVO CONFIG (per brand, case-insensitive) ============
+COC_PRICES = {
+    "yamaha": 75.0,
+    "kawasaki": 75.0,
+    "triumph": 120.0,
+    "ktm": 75.0,
+    "honda": 150.0,
+}
+
 # ============ TWILIO SMS CONFIG ============
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')

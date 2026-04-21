@@ -454,6 +454,14 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     inspection_cost = INSPECTION_COST if data.needs_inspection else 0.0
     valuation_cost = VALUATION_COST if data.needs_valuation else 0.0
     
+    # COC/CVO cost based on motorcycle brand (only supported brands)
+    coc_cost = 0.0
+    if data.needs_coc:
+        brand_key = (motorcycle.get("brand") or "").strip().lower()
+        coc_cost = COC_PRICES.get(brand_key, 0.0)
+        if coc_cost == 0.0:
+            raise HTTPException(status_code=400, detail=f"COC/CVO is niet beschikbaar voor merk: {motorcycle.get('brand', '')}")
+    
     # Check and apply voucher
     voucher_discount = 0.0
     voucher_applied = None
@@ -477,7 +485,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                 }
             )
     
-    total_price = max(0, motorcycle["price"] + delivery_cost + inspection_cost + valuation_cost - voucher_discount)
+    total_price = max(0, motorcycle["price"] + delivery_cost + inspection_cost + valuation_cost + coc_cost - voucher_discount)
     
     # Create snapshot of motorcycle data for historical reference
     motorcycle_snapshot = {
@@ -519,6 +527,8 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     order_dict["inspection_cost"] = inspection_cost
     order_dict["needs_valuation"] = data.needs_valuation
     order_dict["valuation_cost"] = valuation_cost
+    order_dict["needs_coc"] = data.needs_coc
+    order_dict["coc_cost"] = coc_cost
     
     # Check if this is a dealer-to-dealer sale
     is_dealer_listing = motorcycle.get("is_dealer_listing", False)
@@ -678,6 +688,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     delivery_text = "Ja (€50)" if data.needs_delivery else "Nee (ophalen)"
     inspection_text = "Ja (€125)" if data.needs_inspection else "Nee"
     valuation_text = "Ja (€160 excl. BTW)" if data.needs_valuation else "Nee"
+    coc_text = f"Ja (€{coc_cost:.0f})" if data.needs_coc else "Nee"
     voucher_text = f"€{voucher_discount:,.2f} korting (code: {voucher_applied})" if voucher_applied else "Geen"
     
     # If dealer-to-dealer sale, send special admin notification about €250 fee
@@ -757,6 +768,10 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                     <tr>
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Taxatie</td>
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{valuation_text}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">COC / CVO</td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{coc_text}</td>
                     </tr>
                     {"<tr style='color: #16a34a;'><td style='padding: 8px 0; border-bottom: 1px solid #e5e7eb;'>🎁 Welkomstkorting</td><td style='padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;'>-€" + f"{voucher_discount:,.2f}" + "</td></tr>" if voucher_applied else ""}
                     <tr style="font-weight: bold; font-size: 18px;">

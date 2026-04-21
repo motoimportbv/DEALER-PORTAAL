@@ -33,7 +33,8 @@ import {
   ClipboardCheck,
   Calculator,
   Share2,
-  Mail
+  Mail,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -63,7 +64,22 @@ const MotorcycleDetail = () => {
   const [needsDelivery, setNeedsDelivery] = useState(false);
   const [needsInspection, setNeedsInspection] = useState(false);
   const [needsValuation, setNeedsValuation] = useState(false);
+  const [needsCoc, setNeedsCoc] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
+
+  // COC/CVO pricing per brand (case-insensitive)
+  const COC_PRICES = {
+    yamaha: 75,
+    kawasaki: 75,
+    triumph: 120,
+    ktm: 75,
+    honda: 150,
+  };
+  const getCocPrice = () => {
+    const brand = (motorcycle?.brand || '').trim().toLowerCase();
+    return COC_PRICES[brand] || 0;
+  };
+  const cocAvailable = () => getCocPrice() > 0;
 
   // Redirect from preview URLs to production
   useEffect(() => {
@@ -200,6 +216,7 @@ const MotorcycleDetail = () => {
         needs_delivery: needsDelivery,
         needs_inspection: needsInspection,
         needs_valuation: needsValuation,
+        needs_coc: needsCoc && cocAvailable(),
         voucher_code: voucherValid ? voucherCode : null
       });
       
@@ -224,7 +241,8 @@ const MotorcycleDetail = () => {
     const basePrice = motorcycle.price + 
       (needsDelivery ? 50 : 0) + 
       (needsInspection ? 125 : 0) + 
-      (needsValuation ? 160 : 0);
+      (needsValuation ? 160 : 0) +
+      (needsCoc && cocAvailable() ? getCocPrice() : 0);
     return Math.max(0, basePrice - (voucherValid ? voucherDiscount : 0));
   };
 
@@ -729,6 +747,12 @@ const MotorcycleDetail = () => {
                     <span>€50,00</span>
                   </div>
                 )}
+                {needsCoc && cocAvailable() && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">COC / CVO</span>
+                    <span>€{getCocPrice().toLocaleString('nl-NL')},00</span>
+                  </div>
+                )}
                 {voucherValid && voucherDiscount > 0 && (
                   <div className="flex justify-between items-center text-green-400">
                     <span className="flex items-center gap-1">
@@ -864,6 +888,29 @@ const MotorcycleDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* COC / CVO Option - alleen voor ondersteunde merken */}
+            {cocAvailable() && (
+              <div className="p-4 border rounded-lg" data-testid="coc-option">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="coc"
+                    checked={needsCoc}
+                    onCheckedChange={(checked) => setNeedsCoc(checked)}
+                    data-testid="coc-checkbox"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="coc" className="font-semibold text-zinc-900 cursor-pointer flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      COC / CVO bestellen
+                    </label>
+                    <p className="text-sm text-zinc-500 mt-1">
+                      Certificaat voor <strong>{motorcycle.brand}</strong>: <strong>€{getCocPrice()},00</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Info */}
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm text-blue-800">
