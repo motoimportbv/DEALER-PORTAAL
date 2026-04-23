@@ -33,6 +33,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
   - Automatische Duitstalige COC-aanvraagmail naar leverancier met admin in CC
   - Admin dashboard /admin/coc-orders met 4 statusstappen (Aangevraagd → Besteld → Ontvangen → Verzonden) incl. merk-specifieke inkoopkosten in CHF
   - Dealer ziet live COC-statusbalk in /dealer/orders; automatische bevestigingsmail zodra status 'sent_to_dealer'
+  - **COC PDF upload** in admin dashboard: PDF wordt automatisch als bijlage naar dealer gemaild bij status 'Verstuurd naar dealer'. Dealer kan PDF zelf downloaden via paarse knop in /dealer/orders (Feb 2026)
 
 ### P1
 - AutoTelex API (wacht op API-sleutel)
