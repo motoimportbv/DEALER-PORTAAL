@@ -209,6 +209,41 @@ const CocOrders = () => {
                       </div>
                     )}
 
+                    {/* Dealer-provided COC details */}
+                    {(order.coc_brand || order.coc_type || order.coc_chassis_number || order.coc_document_url) && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4" data-testid={`coc-details-${order.id}`}>
+                        <p className="text-xs font-bold uppercase tracking-wider text-blue-800 mb-2">Dealer Gegevens</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                          {order.coc_brand && (
+                            <div>
+                              <span className="text-xs text-blue-600 block">Merk</span>
+                              <span className="font-semibold">{order.coc_brand}</span>
+                            </div>
+                          )}
+                          {order.coc_type && (
+                            <div>
+                              <span className="text-xs text-blue-600 block">Type</span>
+                              <span className="font-semibold">{order.coc_type}</span>
+                            </div>
+                          )}
+                          {order.coc_chassis_number && (
+                            <div>
+                              <span className="text-xs text-blue-600 block">Chassisnummer</span>
+                              <span className="font-mono font-semibold">{order.coc_chassis_number}</span>
+                            </div>
+                          )}
+                        </div>
+                        {order.coc_document_url && (
+                          <div className="mt-2">
+                            <span className="text-xs text-blue-600 block mb-1">Foto kenteken</span>
+                            <a href={order.coc_document_url} target="_blank" rel="noopener noreferrer" data-testid={`coc-document-link-${order.id}`}>
+                              <img src={order.coc_document_url} alt="Kenteken" className="h-24 rounded border border-blue-200 hover:opacity-90 cursor-pointer" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* PDF upload / download */}
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4" data-testid={`coc-pdf-section-${order.id}`}>
                       <div className="flex items-center justify-between gap-3 flex-wrap">

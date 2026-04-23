@@ -585,6 +585,17 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         coc_cost = COC_PRICES.get(brand_key, 0.0)
         if coc_cost == 0.0:
             raise HTTPException(status_code=400, detail=f"COC/CVO is niet beschikbaar voor merk: {motorcycle.get('brand', '')}")
+        # Dealer must supply brand + type + (chassis number OR document photo)
+        coc_brand = (data.coc_brand or "").strip()
+        coc_type = (data.coc_type or "").strip()
+        coc_chassis = (data.coc_chassis_number or "").strip()
+        coc_doc_url = (data.coc_document_url or "").strip()
+        if not coc_brand:
+            raise HTTPException(status_code=400, detail="Vul het merk in voor COC/CVO")
+        if not coc_type:
+            raise HTTPException(status_code=400, detail="Vul het type in voor COC/CVO")
+        if not coc_chassis and not coc_doc_url:
+            raise HTTPException(status_code=400, detail="Vul het volledige chassisnummer in of upload een foto van het kenteken")
     
     # Check and apply voucher
     voucher_discount = 0.0
@@ -660,6 +671,10 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
         order_dict["coc_supplier_email"] = supplier.get("email") if supplier else ""
         order_dict["coc_supplier_name"] = supplier.get("name") if supplier else ""
         order_dict["coc_admin_cost_chf"] = supplier.get("admin_cost_chf", 0.0) if supplier else 0.0
+        order_dict["coc_brand"] = (data.coc_brand or "").strip()
+        order_dict["coc_type"] = (data.coc_type or "").strip()
+        order_dict["coc_chassis_number"] = (data.coc_chassis_number or "").strip()
+        order_dict["coc_document_url"] = (data.coc_document_url or "").strip()
     
     # Check if this is a dealer-to-dealer sale
     is_dealer_listing = motorcycle.get("is_dealer_listing", False)
@@ -711,11 +726,11 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                     <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin: 20px 0;">
                         <tr>
                             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Marke</strong></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('brand', '')}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{order_dict.get('coc_brand') or motorcycle.get('brand', '')}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Modell</strong></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('model', '')}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Typ / Modell</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{order_dict.get('coc_type') or motorcycle.get('model', '')}</td>
                         </tr>
                         <tr>
                             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Baujahr</strong></td>
@@ -723,7 +738,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                         </tr>
                         <tr>
                             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Fahrgestellnummer (VIN)</strong></td>
-                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-family: monospace;">{motorcycle.get('chassis_number', 'N/A')}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-family: monospace;">{order_dict.get('coc_chassis_number') or motorcycle.get('chassis_number', 'N/A')}</td>
                         </tr>
                         <tr>
                             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Kilometerstand</strong></td>
@@ -738,6 +753,7 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
                             <td style="padding: 12px; font-family: monospace;">{order_dict['id'][:8].upper()}</td>
                         </tr>
                     </table>
+                    {f'<p style="margin: 15px 0;"><strong>Foto Fahrzeugausweis / KFZ-Schein:</strong><br><a href="{order_dict.get("coc_document_url")}" style="color: #DC2626;">{order_dict.get("coc_document_url")}</a></p>' if order_dict.get('coc_document_url') else ''}
                     <p>Bitte senden Sie das COC/CVO-Dokument an folgende Adresse:</p>
                     <div style="background: white; border: 2px solid #DC2626; border-radius: 8px; padding: 15px; margin: 15px 0;">
                         <p style="margin: 0; font-weight: bold; font-size: 16px;">Moto Import B.V.</p>

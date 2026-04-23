@@ -65,6 +65,11 @@ const MotorcycleDetail = () => {
   const [needsInspection, setNeedsInspection] = useState(false);
   const [needsValuation, setNeedsValuation] = useState(false);
   const [needsCoc, setNeedsCoc] = useState(false);
+  const [cocBrand, setCocBrand] = useState('');
+  const [cocType, setCocType] = useState('');
+  const [cocChassis, setCocChassis] = useState('');
+  const [cocDocumentUrl, setCocDocumentUrl] = useState('');
+  const [uploadingCocPhoto, setUploadingCocPhoto] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
 
   // COC/CVO pricing per brand (case-insensitive). Honda NOT included: dealer bestelt zelf via Honda portal.
@@ -218,6 +223,10 @@ const MotorcycleDetail = () => {
         needs_inspection: needsInspection,
         needs_valuation: needsValuation,
         needs_coc: needsCoc && cocAvailable(),
+        coc_brand: cocBrand,
+        coc_type: cocType,
+        coc_chassis_number: cocChassis,
+        coc_document_url: cocDocumentUrl,
         voucher_code: voucherValid ? voucherCode : null
       });
       
@@ -897,7 +906,15 @@ const MotorcycleDetail = () => {
                   <Checkbox
                     id="coc"
                     checked={needsCoc}
-                    onCheckedChange={(checked) => setNeedsCoc(checked)}
+                    onCheckedChange={(checked) => {
+                      setNeedsCoc(checked);
+                      if (checked) {
+                        // Pre-fill from motorcycle data
+                        if (!cocBrand) setCocBrand(motorcycle.brand || '');
+                        if (!cocType) setCocType(motorcycle.model || '');
+                        if (!cocChassis) setCocChassis(motorcycle.chassis_number || '');
+                      }
+                    }}
                     data-testid="coc-checkbox"
                   />
                   <div className="flex-1">
@@ -910,6 +927,95 @@ const MotorcycleDetail = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* COC details - alleen tonen als checkbox aan staat */}
+                {needsCoc && (
+                  <div className="mt-4 pt-4 border-t border-zinc-200 space-y-3" data-testid="coc-details">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-zinc-700 block mb-1">Merk *</label>
+                        <Input
+                          type="text"
+                          value={cocBrand}
+                          onChange={(e) => setCocBrand(e.target.value)}
+                          placeholder="Bijv. Yamaha"
+                          data-testid="coc-brand-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-zinc-700 block mb-1">Type *</label>
+                        <Input
+                          type="text"
+                          value={cocType}
+                          onChange={(e) => setCocType(e.target.value)}
+                          placeholder="Bijv. MT-09"
+                          data-testid="coc-type-input"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-zinc-700 block mb-1">Volledig chassisnummer (VIN) *</label>
+                      <Input
+                        type="text"
+                        value={cocChassis}
+                        onChange={(e) => setCocChassis(e.target.value.toUpperCase())}
+                        placeholder="17 tekens, bijv. JYARN40E0JA000000"
+                        className="font-mono"
+                        data-testid="coc-chassis-input"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Of upload hieronder een foto van het kenteken in plaats van het chassisnummer
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-zinc-700 block mb-1">Foto kenteken / voertuigdocument (optioneel)</label>
+                      {cocDocumentUrl ? (
+                        <div className="flex items-center gap-3">
+                          <img src={cocDocumentUrl} alt="Kenteken" className="h-20 rounded border border-zinc-200" />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCocDocumentUrl('')}
+                            data-testid="coc-document-remove"
+                          >
+                            Verwijder
+                          </Button>
+                        </div>
+                      ) : (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={uploadingCocPhoto}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploadingCocPhoto(true);
+                            try {
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              const uploadRes = await axios.post(`${API}/upload`, formData, {
+                                headers: { 'Content-Type': 'multipart/form-data' }
+                              });
+                              const url = uploadRes.data.url || uploadRes.data.image_url;
+                              setCocDocumentUrl(url);
+                              toast.success('Foto geüpload');
+                            } catch (err) {
+                              toast.error('Upload mislukt: ' + (err.response?.data?.detail || err.message));
+                            } finally {
+                              setUploadingCocPhoto(false);
+                            }
+                          }}
+                          className="block w-full text-sm text-zinc-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-100 file:text-zinc-700 hover:file:bg-zinc-200 cursor-pointer"
+                          data-testid="coc-document-upload"
+                        />
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      * Verplicht. Vul óf het chassisnummer in, óf upload een duidelijke foto van het kenteken.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

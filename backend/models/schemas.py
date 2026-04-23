@@ -253,6 +253,10 @@ class OrderWithMotorcycle(BaseModel):
     coc_updated_at: Optional[str] = None
     coc_pdf_filename: Optional[str] = None
     coc_pdf_uploaded_at: Optional[str] = None
+    coc_brand: Optional[str] = None
+    coc_type: Optional[str] = None
+    coc_chassis_number: Optional[str] = None
+    coc_document_url: Optional[str] = None
     voucher_code: Optional[str] = None
     voucher_discount: float = 0.0
     deposit_amount: float = 0.0
@@ -282,6 +286,10 @@ class BuyNowRequest(BaseModel):
     needs_inspection: bool = False
     needs_valuation: bool = False
     needs_coc: bool = False
+    coc_brand: Optional[str] = None
+    coc_type: Optional[str] = None
+    coc_chassis_number: Optional[str] = None
+    coc_document_url: Optional[str] = None
     voucher_code: Optional[str] = None
 
 class TransportStatusUpdate(BaseModel):
