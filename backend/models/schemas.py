@@ -246,6 +246,11 @@ class OrderWithMotorcycle(BaseModel):
     valuation_cost: float = 0.0
     needs_coc: bool = False
     coc_cost: float = 0.0
+    coc_status: Optional[str] = None
+    coc_supplier_name: Optional[str] = None
+    coc_supplier_email: Optional[str] = None
+    coc_admin_cost_chf: float = 0.0
+    coc_updated_at: Optional[str] = None
     voucher_code: Optional[str] = None
     voucher_discount: float = 0.0
     deposit_amount: float = 0.0

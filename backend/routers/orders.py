@@ -263,6 +263,72 @@ async def update_order_payment_instructions(order_id: str, data: dict = Body(...
 
 
 
+@router.put("/orders/{order_id}/coc-status")
+async def update_coc_status(order_id: str, data: dict = Body(...), user: dict = Depends(require_admin)):
+    """Admin updates COC/CVO status for an order"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    if not order.get("needs_coc"):
+        raise HTTPException(status_code=400, detail="Deze bestelling heeft geen COC aangevraagd")
+    
+    new_status = data.get("status")
+    if new_status not in COC_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Ongeldige status. Geldig: {COC_STATUSES}")
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "coc_status": new_status,
+            "coc_updated_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+    
+    # If sent to dealer, notify them via email
+    if new_status == "sent_to_dealer" and order.get("dealer_email"):
+        moto = order.get("motorcycle_snapshot") or {}
+        dealer_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #16a34a; padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 22px;">COC/CVO Verzonden!</h1>
+            </div>
+            <div style="padding: 25px; background: #f9fafb;">
+                <p>Beste {order.get('dealer_company', 'Dealer')},</p>
+                <p>Goed nieuws! Het COC/CVO-document voor uw <strong>{moto.get('brand', '')} {moto.get('model', '')}</strong> is verzonden.</p>
+                <p>Bestelnummer: <strong>{order_id[:8].upper()}</strong></p>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Met vriendelijke groet,<br>Moto Import B.V.</p>
+            </div>
+        </div>
+        """
+        try:
+            await send_email(order["dealer_email"], f"📄 COC/CVO verzonden - {moto.get('brand', '')} {moto.get('model', '')}", dealer_html)
+        except Exception as e:
+            logger.error(f"Failed to send COC dealer notification: {e}")
+    
+    return {"message": "COC status bijgewerkt", "status": new_status}
+
+
+@router.get("/admin/coc-orders")
+async def get_coc_orders(user: dict = Depends(require_admin)):
+    """Get all orders with COC/CVO requested (admin only)"""
+    orders = await db.orders.find(
+        {"needs_coc": True},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(2000)
+    
+    # Enrich with motorcycle data (use snapshot as fallback)
+    motorcycle_ids = [o["motorcycle_id"] for o in orders if o.get("motorcycle_id")]
+    motos = await db.motorcycles.find({"id": {"$in": motorcycle_ids}}, {"_id": 0}).to_list(2000)
+    moto_map = {m["id"]: m for m in motos}
+    
+    result = []
+    for o in orders:
+        moto = moto_map.get(o.get("motorcycle_id")) or o.get("motorcycle_snapshot") or {}
+        o["motorcycle"] = moto
+        result.append(o)
+    return result
+
+
 @router.put("/orders/{order_id}/transport")
 async def update_transport_status(order_id: str, data: TransportStatusUpdate, user: dict = Depends(require_admin)):
     """Admin updates transport status for an order"""
@@ -529,6 +595,13 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     order_dict["valuation_cost"] = valuation_cost
     order_dict["needs_coc"] = data.needs_coc
     order_dict["coc_cost"] = coc_cost
+    if data.needs_coc:
+        brand_key = (motorcycle.get("brand") or "").strip().lower()
+        supplier = COC_SUPPLIERS.get(brand_key)
+        order_dict["coc_status"] = "requested"
+        order_dict["coc_supplier_email"] = supplier.get("email") if supplier else ""
+        order_dict["coc_supplier_name"] = supplier.get("name") if supplier else ""
+        order_dict["coc_admin_cost_chf"] = supplier.get("admin_cost_chf", 0.0) if supplier else 0.0
     
     # Check if this is a dealer-to-dealer sale
     is_dealer_listing = motorcycle.get("is_dealer_listing", False)
@@ -561,6 +634,72 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
             }
     
     await db.orders.insert_one(order_dict)
+    
+    # ============ COC/CVO: send automatic email to supplier (admin in CC) ============
+    if data.needs_coc and coc_cost > 0:
+        brand_key = (motorcycle.get("brand") or "").strip().lower()
+        coc_supplier = COC_SUPPLIERS.get(brand_key)
+        if coc_supplier and coc_supplier.get("email"):
+            # German email to supplier (Hostettler / Mage Motos)
+            coc_subject = f"COC/CVO Bestellung - {motorcycle.get('brand', '')} {motorcycle.get('model', '')}"
+            coc_html = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #DC2626; padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 22px;">COC/CVO Bestellung</h1>
+                </div>
+                <div style="padding: 25px; background: #f9fafb;">
+                    <p>Sehr geehrte Damen und Herren,</p>
+                    <p>Wir möchten hiermit ein <strong>COC/CVO-Dokument</strong> für das folgende Motorrad bei Ihnen bestellen:</p>
+                    <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin: 20px 0;">
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Marke</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('brand', '')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Modell</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('model', '')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Baujahr</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('year', '')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Fahrgestellnummer (VIN)</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-family: monospace;">{motorcycle.get('chassis_number', 'N/A')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Kilometerstand</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('mileage', 0):,} km</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;"><strong>Farbe</strong></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">{motorcycle.get('color', 'N/A')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px;"><strong>Bestellnummer</strong></td>
+                            <td style="padding: 12px; font-family: monospace;">{order_dict['id'][:8].upper()}</td>
+                        </tr>
+                    </table>
+                    <p>Bitte senden Sie das COC/CVO-Dokument an folgende Adresse:</p>
+                    <div style="background: white; border: 2px solid #DC2626; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                        <p style="margin: 0; font-weight: bold; font-size: 16px;">Moto Import B.V.</p>
+                        <p style="margin: 5px 0;">Tel: +31 6 24264861</p>
+                        <p style="margin: 5px 0;">E-Mail: Motoimportbv@gmail.com</p>
+                    </div>
+                    <p style="color: #6b7280; font-size: 14px;">Vielen Dank im Voraus für Ihre Hilfe!</p>
+                    <p style="color: #6b7280; font-size: 14px;">Mit freundlichen Grüßen,<br>Moto Import B.V.</p>
+                </div>
+                <div style="background: #18181b; padding: 15px; text-align: center; color: #a1a1aa; font-size: 11px;">
+                    <p style="margin: 0;">Moto Import B.V. | www.motoimportbv.nl</p>
+                </div>
+            </div>
+            """
+            try:
+                # Send to supplier with admin in CC
+                await send_email(coc_supplier["email"], coc_subject, coc_html, cc=[GMAIL_EMAIL] if GMAIL_EMAIL else None)
+                logger.info(f"COC request email sent to supplier {coc_supplier['email']} for order {order_dict['id']}")
+            except Exception as e:
+                logger.error(f"Failed to send COC supplier email: {e}")
     
     # Auto-create concept taxatie invoice when dealer requests valuation
     if data.needs_valuation:

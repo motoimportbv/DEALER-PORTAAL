@@ -33,6 +33,7 @@ import MotorcycleForm from "./pages/admin/MotorcycleForm";
 import BulkMotorcycleForm from "./pages/admin/BulkMotorcycleForm";
 import TaxatieInvoices from "./pages/admin/TaxatieInvoices";
 import OrderList from "./pages/admin/OrderList";
+import CocOrders from "./pages/admin/CocOrders";
 import DealerManagement from "./pages/admin/DealerManagement";
 import PendingForeignListings from "./pages/admin/PendingForeignListings";
 import AdminParts from "./pages/admin/AdminParts";
@@ -234,6 +235,7 @@ function App() {
             <Route path="/admin/motorcycles/bulk" element={<BulkMotorcycleForm />} />
             <Route path="/admin/motorcycles/:id/edit" element={<MotorcycleForm />} />
             <Route path="/admin/orders" element={<OrderList />} />
+            <Route path="/admin/coc-orders" element={<CocOrders />} />
             <Route path="/admin/dealers" element={<DealerManagement />} />
             <Route path="/admin/pending-foreign" element={<PendingForeignListings />} />
             <Route path="/admin/parts" element={<AdminParts />} />

@@ -66,12 +66,48 @@ INSPECTION_COST = 125.0
 VALUATION_COST = 160.0
 
 # ============ COC/CVO CONFIG (per brand, case-insensitive) ============
+# Honda zit hier NIET in: dealers regelen Honda COC zelf via de Honda portal link.
 COC_PRICES = {
     "yamaha": 75.0,
     "kawasaki": 75.0,
     "triumph": 120.0,
     "ktm": 75.0,
-    "honda": 150.0,
+}
+
+# Leverancier-info per merk voor automatische COC-aanvraagmail (in het Duits)
+COC_SUPPLIERS = {
+    "yamaha": {
+        "name": "Hostettler AG Eschenbach",
+        "email": "walter.breny@hostettler-moto.ch",
+        "admin_cost_chf": 0.0,
+    },
+    "kawasaki": {
+        "name": "Hostettler AG Eschenbach",
+        "email": "walter.breny@hostettler-moto.ch",
+        "admin_cost_chf": 0.0,
+    },
+    "ktm": {
+        "name": "Hostettler AG Eschenbach",
+        "email": "walter.breny@hostettler-moto.ch",
+        "admin_cost_chf": 0.0,
+    },
+    "triumph": {
+        "name": "Mage Motos",
+        "email": "mgredig@maegemotos.ch",
+        "admin_cost_chf": 80.0,
+    },
+}
+
+# Honda COC wordt door dealer zelf bij Honda geregeld via deze link
+HONDA_COC_LINK = "https://coc-registration.honda.eu/cocobo/termsAndConditions;jsessionid=e001532b5e9a5dcd9ef8ade61897:grxQ?locale=de_CH"
+
+# Geldige COC-statussen in chronologische volgorde
+COC_STATUSES = ["requested", "ordered_from_supplier", "coc_received", "sent_to_dealer"]
+COC_STATUS_LABELS = {
+    "requested": "Aangevraagd",
+    "ordered_from_supplier": "Besteld bij leverancier",
+    "coc_received": "COC ontvangen",
+    "sent_to_dealer": "Verstuurd naar dealer",
 }
 
 # ============ TWILIO SMS CONFIG ============

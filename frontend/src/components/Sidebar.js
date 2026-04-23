@@ -83,6 +83,7 @@ const Sidebar = () => {
     { path: '/admin/motorcycles/new', icon: Plus, label: t('motorcycle.addMotorcycle') },
     { path: '/admin/pending-foreign', icon: Globe, label: t('nav.pendingListings') },
     { path: '/admin/orders', icon: ShoppingCart, label: t('nav.orders') },
+    { path: '/admin/coc-orders', icon: FileText, label: 'COC / CVO' },
     { path: '/admin/license-plates', icon: CreditCard, label: t('nav.licensePlates') || 'Kentekens' },
     { path: '/admin/parts', icon: Wrench, label: t('nav.partsManagement') },
     { path: '/admin/part-orders', icon: ClipboardList, label: t('nav.partOrders') },

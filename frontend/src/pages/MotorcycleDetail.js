@@ -67,19 +67,20 @@ const MotorcycleDetail = () => {
   const [needsCoc, setNeedsCoc] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState(null);
 
-  // COC/CVO pricing per brand (case-insensitive)
+  // COC/CVO pricing per brand (case-insensitive). Honda NOT included: dealer bestelt zelf via Honda portal.
   const COC_PRICES = {
     yamaha: 75,
     kawasaki: 75,
     triumph: 120,
     ktm: 75,
-    honda: 150,
   };
+  const HONDA_COC_LINK = 'https://coc-registration.honda.eu/cocobo/termsAndConditions;jsessionid=e001532b5e9a5dcd9ef8ade61897:grxQ?locale=de_CH';
   const getCocPrice = () => {
     const brand = (motorcycle?.brand || '').trim().toLowerCase();
     return COC_PRICES[brand] || 0;
   };
   const cocAvailable = () => getCocPrice() > 0;
+  const isHonda = () => (motorcycle?.brand || '').trim().toLowerCase() === 'honda';
 
   // Redirect from preview URLs to production
   useEffect(() => {
@@ -907,6 +908,30 @@ const MotorcycleDetail = () => {
                     <p className="text-sm text-zinc-500 mt-1">
                       Certificaat voor <strong>{motorcycle.brand}</strong>: <strong>€{getCocPrice()},00</strong>
                     </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Honda: info-link, dealer regelt zelf */}
+            {isHonda() && (
+              <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg" data-testid="honda-coc-info">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-blue-900 mb-1">COC / CVO voor Honda</p>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Voor Honda motoren bestelt u het COC/CVO-document rechtstreeks bij Honda (niet via Moto Import).
+                    </p>
+                    <a
+                      href={HONDA_COC_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900 underline"
+                      data-testid="honda-coc-link"
+                    >
+                      Bestel COC bij Honda →
+                    </a>
                   </div>
                 </div>
               </div>

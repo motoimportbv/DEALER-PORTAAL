@@ -25,7 +25,8 @@ import {
   FolderArchive,
   RefreshCw,
   Package,
-  MapPin
+  MapPin,
+  FileText
 } from 'lucide-react';
 import {
   Dialog,
@@ -363,6 +364,38 @@ const DealerOrders = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* COC / CVO Status Section */}
+                      {order.needs_coc && (
+                        <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl" data-testid={`coc-status-${order.id}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-5 h-5 text-purple-600" />
+                              <h4 className="font-semibold text-purple-900">COC / CVO Status</h4>
+                            </div>
+                            <span className="text-sm font-bold text-purple-700">€{order.coc_cost || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            {[
+                              { key: 'requested', label: 'Aangevraagd' },
+                              { key: 'ordered_from_supplier', label: 'Besteld' },
+                              { key: 'coc_received', label: 'Ontvangen' },
+                              { key: 'sent_to_dealer', label: 'Verzonden' }
+                            ].map((step) => {
+                              const order_idx = ['requested', 'ordered_from_supplier', 'coc_received', 'sent_to_dealer'].indexOf(order.coc_status || 'requested');
+                              const step_idx = ['requested', 'ordered_from_supplier', 'coc_received', 'sent_to_dealer'].indexOf(step.key);
+                              const isActive = step_idx <= order_idx;
+                              const isCurrent = step_idx === order_idx;
+                              return (
+                                <div key={step.key} className="flex-1 text-center">
+                                  <div className={`h-2 rounded-full mb-1 ${isActive ? 'bg-purple-600' : 'bg-zinc-200'} ${isCurrent ? 'ring-2 ring-purple-300' : ''}`}></div>
+                                  <p className={`text-xs ${isActive ? 'font-semibold text-purple-900' : 'text-zinc-400'}`}>{step.label}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Transport Tracking Section */}
                       {order.needs_delivery && (

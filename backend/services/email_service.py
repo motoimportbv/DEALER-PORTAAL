@@ -17,13 +17,18 @@ from config import (
 logger = logging.getLogger(__name__)
 
 
-async def send_email(to_email: str, subject: str, html_content: str) -> bool:
-    """Send email via Gmail SMTP"""
+async def send_email(to_email: str, subject: str, html_content: str, cc: list = None) -> bool:
+    """Send email via Gmail SMTP. Optional cc list."""
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = f"Moto Import <{GMAIL_EMAIL}>"
         msg['To'] = to_email
+        
+        cc_list = [c for c in (cc or []) if c and c != to_email]
+        if cc_list:
+            msg['Cc'] = ", ".join(cc_list)
+        recipients = [to_email] + cc_list
         
         html_part = MIMEText(html_content, 'html')
         msg.attach(html_part)
@@ -31,10 +36,10 @@ async def send_email(to_email: str, subject: str, html_content: str) -> bool:
         def send_sync():
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
                 server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
-                server.sendmail(GMAIL_EMAIL, to_email, msg.as_string())
+                server.sendmail(GMAIL_EMAIL, recipients, msg.as_string())
         
         await asyncio.to_thread(send_sync)
-        logger.info(f"Email sent to {to_email}")
+        logger.info(f"Email sent to {to_email}{' (cc: ' + ', '.join(cc_list) + ')' if cc_list else ''}")
         return True
     except Exception as e:
         logger.error(f"Failed to send email: {str(e)}")
