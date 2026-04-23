@@ -26,6 +26,13 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 - PDF download bug fixes (XHR, auto-download template, PyMuPDF)
 - Pakbon zichtbaarheid voor Ellen (pakbon rol) - OrderWithMotorcycle model miste velden kentekenbewijs_url, payment_instructions, supplier_info, motorcycle_license_plate (Feb 2026)
 - COC/CVO bestellen bij buy-now: Yamaha/Kawasaki/KTM €75, Triumph €120, Honda €150. Optionele checkbox in buy-now dialog (alleen zichtbaar voor de 5 merken), toegevoegd aan totaalprijs, zichtbaar in admin /admin/orders met paarse badge (Feb 2026)
+- COC/CVO leveranciersflow (Feb 2026):
+  - Honda uit COC_PRICES verwijderd — dealer bestelt zelf via Honda portal (info-link in buy-now dialog)
+  - Yamaha/Kawasaki/KTM → Hostettler Eschenbach (walter.breny@hostettler-moto.ch), admin kosten €0
+  - Triumph → Mage Motos (mgredig@maegemotos.ch), admin kosten CHF 80
+  - Automatische Duitstalige COC-aanvraagmail naar leverancier met admin in CC
+  - Admin dashboard /admin/coc-orders met 4 statusstappen (Aangevraagd → Besteld → Ontvangen → Verzonden) incl. merk-specifieke inkoopkosten in CHF
+  - Dealer ziet live COC-statusbalk in /dealer/orders; automatische bevestigingsmail zodra status 'sent_to_dealer'
 
 ### P1
 - AutoTelex API (wacht op API-sleutel)
