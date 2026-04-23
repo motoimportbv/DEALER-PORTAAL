@@ -251,6 +251,8 @@ class OrderWithMotorcycle(BaseModel):
     coc_supplier_email: Optional[str] = None
     coc_admin_cost_chf: float = 0.0
     coc_updated_at: Optional[str] = None
+    coc_pdf_filename: Optional[str] = None
+    coc_pdf_uploaded_at: Optional[str] = None
     voucher_code: Optional[str] = None
     voucher_discount: float = 0.0
     deposit_amount: float = 0.0

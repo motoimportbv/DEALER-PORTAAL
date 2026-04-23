@@ -394,6 +394,35 @@ const DealerOrders = () => {
                               );
                             })}
                           </div>
+                          {/* Download button when PDF available */}
+                          {order.coc_pdf_filename && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const res = await axios.get(`${API}/orders/${order.id}/coc-pdf`, {
+                                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                                    responseType: 'blob'
+                                  });
+                                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.setAttribute('download', order.coc_pdf_filename || `coc_${order.id.slice(0,8)}.pdf`);
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  link.remove();
+                                  window.URL.revokeObjectURL(url);
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              }}
+                              className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+                              data-testid={`coc-pdf-dealer-download-${order.id}`}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              Download COC/CVO PDF
+                            </button>
+                          )}
                         </div>
                       )}
 

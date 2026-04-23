@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { FileText, CheckCircle, Clock, Package, Send, ExternalLink, Bike } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Package, Send, ExternalLink, Bike, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -58,6 +58,43 @@ const CocOrders = () => {
       toast.error(err.response?.data?.detail || 'Fout bij bijwerken status');
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const uploadCocPdf = async (orderId, file) => {
+    if (!file) return;
+    setUpdating(orderId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await axios.post(`${API}/orders/${orderId}/coc-pdf`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('COC PDF geüpload');
+      await fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Upload mislukt');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const downloadCocPdf = async (orderId, filename) => {
+    try {
+      const response = await axios.get(`${API}/orders/${orderId}/coc-pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename || `coc_${orderId.slice(0, 8)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Download mislukt');
     }
   };
 
@@ -171,6 +208,47 @@ const CocOrders = () => {
                         </Badge>
                       </div>
                     )}
+
+                    {/* PDF upload / download */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4" data-testid={`coc-pdf-section-${order.id}`}>
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">COC PDF</p>
+                          {order.coc_pdf_filename ? (
+                            <p className="text-sm text-amber-900 truncate">
+                              📎 <span className="font-mono">{order.coc_pdf_filename}</span>
+                            </p>
+                          ) : (
+                            <p className="text-sm text-amber-700 italic">Nog geen PDF geüpload — upload voor automatische bijlage aan dealer-mail bij "Verstuurd naar dealer"</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {order.coc_pdf_filename && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => downloadCocPdf(order.id, order.coc_pdf_filename)}
+                              className="gap-1"
+                              data-testid={`coc-pdf-download-${order.id}`}
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download
+                            </Button>
+                          )}
+                          <label className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-md cursor-pointer transition-colors" data-testid={`coc-pdf-upload-label-${order.id}`}>
+                            <Upload className="w-3.5 h-3.5" />
+                            {order.coc_pdf_filename ? 'Vervangen' : 'Upload PDF'}
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              className="hidden"
+                              onChange={(e) => uploadCocPdf(order.id, e.target.files?.[0])}
+                              data-testid={`coc-pdf-upload-${order.id}`}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Status progression */}
                     <div className="border-t border-zinc-100 pt-4">

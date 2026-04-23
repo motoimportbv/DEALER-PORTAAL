@@ -1,0 +1,45 @@
+{
+  "summary": "Tested COC PDF upload/download feature (admin upload, dealer download, email attachment). Backend: 9 passed, 1 skipped (non-owner dealer test - no second approved dealer + reset-password endpoint unavailable). Frontend: admin /admin/coc-orders shows amber COC PDF section with Upload/Vervangen label and Download button, filename 'test_coc.pdf' rendered correctly; uploading a new PDF via hidden file input (data-testid=coc-pdf-upload-{id}) refreshes UI and shows new filename. Dealer /dealer/orders shows purple 'Download COC/CVO PDF' button (data-testid=coc-pdf-dealer-download-{id}) visible and clickable for the owning dealer. Status update to 'sent_to_dealer' returns 200 and backend logs confirm 'Email sent to zoektest@dealer.nl' (email attachment path executes without error).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Dealer /dealer/orders page load",
+        "issue": "Pre-existing 403 AxiosError on secondary fetch (known from iteration_29). Does not affect COC PDF flow - main orders fetch works and dealer download button renders correctly.",
+        "affected_selectors": []
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_coc_pdf.py",
+    "/app/test_reports/pytest/pytest_coc_pdf.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routers/orders.py upload_coc_pdf: extension check happens AFTER reading full file content into memory. For large non-PDF uploads this wastes memory. Suggest validating file.filename extension and/or content_type BEFORE reading the body (or at least before saving). Not a blocker since 20MB size cap exists.",
+    "routers/orders.py upload_coc_pdf: file is saved with fixed name '{order_id}.pdf' so re-uploads silently overwrite previous PDFs. Acceptable behavior (Vervangen button in UI matches this), but no backup/version retained.",
+    "routers/orders.py download_coc_pdf: properly checks admin OR owning dealer authorization via user[role] and dealer_id. Good.",
+    "routers/orders.py update_coc_status: send_email_with_attachment wrapped in try/except and falls back to send_email when no pdf_path - robust. Good.",
+    "OrderWithMotorcycle schema correctly includes coc_pdf_filename + coc_pdf_uploaded_at (Optional). Good.",
+    "CocOrders.js uses consistent data-testid naming (coc-pdf-section-{id}, coc-pdf-upload-{id}, coc-pdf-upload-label-{id}, coc-pdf-download-{id}). Good.",
+    "DealerOrders.js only renders download button when coc_pdf_filename is present - correct conditional."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_coc_pdf.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 executed passed, 1 skipped due to no second dealer)",
+    "frontend": "100% (admin upload+download+filename render + dealer download button verified)"
+  },
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! ; Dealer: zoektest@dealer.nl / Test2024!",
+  "seed_data_creation": "Re-uploaded small test PDFs (test_coc.pdf, ui_upload.pdf) to order 4c8b3e8c-1aca-4dcf-9920-e97baf90f1f6 at /app/backend/uploads/coc/ - overwrites existing file; no persistent test artifacts.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression file /app/backend/tests/test_coc_pdf.py covers: admin upload success, non-PDF 400, dealer-forbidden upload, non-COC-order 400, admin download, owning-dealer download, missing-PDF 404, admin/coc-orders field enrichment, sent_to_dealer status update. Non-owner dealer test is skipped when no second approved dealer exists. TEST_ORDER_ID=4c8b3e8c-1aca-4dcf-9920-e97baf90f1f6 (Triumph, pre-seeded COC). Email attachment path confirmed via backend logs ('Email sent to zoektest@dealer.nl' after PUT /coc-status sent_to_dealer). Pre-existing dealer-orders 403 console noise still present (unrelated secondary request).",
+  "rca of the issue": "No bugs. Feature works end-to-end: admin can upload/replace PDF, dealer sees filename and can download via authorized endpoint, status update to sent_to_dealer attaches PDF to notification email when coc_pdf_path exists."
+}

@@ -284,9 +284,10 @@ async def update_coc_status(order_id: str, data: dict = Body(...), user: dict = 
         }}
     )
     
-    # If sent to dealer, notify them via email
+    # If sent to dealer, notify them via email with optional PDF attachment
     if new_status == "sent_to_dealer" and order.get("dealer_email"):
         moto = order.get("motorcycle_snapshot") or {}
+        pdf_path = order.get("coc_pdf_path")
         dealer_html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #16a34a; padding: 20px; text-align: center;">
@@ -294,18 +295,75 @@ async def update_coc_status(order_id: str, data: dict = Body(...), user: dict = 
             </div>
             <div style="padding: 25px; background: #f9fafb;">
                 <p>Beste {order.get('dealer_company', 'Dealer')},</p>
-                <p>Goed nieuws! Het COC/CVO-document voor uw <strong>{moto.get('brand', '')} {moto.get('model', '')}</strong> is verzonden.</p>
+                <p>Goed nieuws! Het COC/CVO-document voor uw <strong>{moto.get('brand', '')} {moto.get('model', '')}</strong> is {'bijgevoegd in deze e-mail' if pdf_path and os.path.exists(pdf_path) else 'verzonden'}.</p>
                 <p>Bestelnummer: <strong>{order_id[:8].upper()}</strong></p>
                 <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">Met vriendelijke groet,<br>Moto Import B.V.</p>
             </div>
         </div>
         """
+        subject = f"📄 COC/CVO verzonden - {moto.get('brand', '')} {moto.get('model', '')}"
         try:
-            await send_email(order["dealer_email"], f"📄 COC/CVO verzonden - {moto.get('brand', '')} {moto.get('model', '')}", dealer_html)
+            if pdf_path and os.path.exists(pdf_path):
+                await send_email_with_attachment(order["dealer_email"], subject, dealer_html, pdf_path)
+            else:
+                await send_email(order["dealer_email"], subject, dealer_html)
         except Exception as e:
             logger.error(f"Failed to send COC dealer notification: {e}")
     
     return {"message": "COC status bijgewerkt", "status": new_status}
+
+
+@router.post("/orders/{order_id}/coc-pdf")
+async def upload_coc_pdf(order_id: str, file: UploadFile = File(...), user: dict = Depends(require_admin)):
+    """Admin uploads COC/CVO PDF for an order (saved locally for email attachment)"""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    if not order.get("needs_coc"):
+        raise HTTPException(status_code=400, detail="Deze bestelling heeft geen COC aangevraagd")
+    
+    # Validate file
+    content = await file.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Leeg bestand")
+    if len(content) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 20MB)")
+    
+    # Save to local storage
+    coc_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "coc")
+    os.makedirs(coc_dir, exist_ok=True)
+    ext = os.path.splitext(file.filename or "document.pdf")[1].lower() or ".pdf"
+    if ext not in (".pdf",):
+        raise HTTPException(status_code=400, detail="Alleen PDF toegestaan")
+    pdf_path = os.path.join(coc_dir, f"{order_id}{ext}")
+    with open(pdf_path, "wb") as f:
+        f.write(content)
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "coc_pdf_path": pdf_path,
+            "coc_pdf_filename": file.filename or f"coc_{order_id}.pdf",
+            "coc_pdf_uploaded_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+    return {"message": "COC PDF geüpload", "filename": file.filename}
+
+
+@router.get("/orders/{order_id}/coc-pdf")
+async def download_coc_pdf(order_id: str, user: dict = Depends(get_current_user)):
+    """Download the COC PDF for an order. Admin or the owning dealer only."""
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order niet gevonden")
+    # Authorization: admin or owning dealer
+    if user["role"] != "admin" and order.get("dealer_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    pdf_path = order.get("coc_pdf_path")
+    if not pdf_path or not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail="Geen COC PDF beschikbaar")
+    filename = order.get("coc_pdf_filename") or f"coc_{order_id}.pdf"
+    return FileResponse(pdf_path, media_type="application/pdf", filename=filename)
 
 
 @router.get("/admin/coc-orders")
