@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only testing of the new COC/CVO one-time announcement popup (CocAnnouncementPopup). All 6 scenarios passed: dealer sees popup on fresh login after ~1.5s; content includes COC/CVO, Yamaha/Kawasaki/KTM €75, Triumph €120, and Honda exception; 'Begrepen' dismiss closes popup and writes localStorage key 'coc_announcement_seen_{userId}_v1'; reload does NOT re-show popup; 'Bekijk aanbod' CTA closes popup, persists localStorage, and keeps user on /dealer; admin and pakbon roles do NOT see the popup. Coexists with other popups (WelcomePopup / Google promo) without conflict.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CocAnnouncementPopup Dialog", "issues": ["Radix Dialog warning: 'Missing Description or aria-describedby={undefined} for DialogContent' - non-blocking accessibility warning. Consider adding a DialogDescription for a11y."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional a11y improvement: add <DialogDescription> to CocAnnouncementPopup to satisfy Radix Dialog aria-describedby requirement (currently logs a React warning)."
+  ],
+  "critical_code_review_comments": [
+    "Component is clean, well-scoped, uses versioned localStorage key ('coc_announcement_seen_{userId}_v1') which allows future re-announcements by bumping ANNOUNCEMENT_VERSION.",
+    "Correctly guards on user.role === 'dealer' && !user.is_foreign_dealer so admin/pakbon/foreign dealers are excluded.",
+    "Minor: Dialog is missing DialogDescription -> causes accessibility console warning but no functional impact.",
+    "Minor: goToMotorcycles navigates to '/dealer' which is typically where the dealer already is after login; CTA could be enhanced later to navigate to a concrete 'new order' flow, but matches the provided spec."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested - frontend-only request)", "frontend": "100% (6/6 scenarios passed)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com/Admin2024!, Dealer: zoektest@dealer.nl/Test2024!, Pakbon: ellenmilone@gmail.com/Test2024!",
+  "seed_data_creation": "None - pure client-side localStorage feature.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "CocAnnouncementPopup uses localStorage key 'coc_announcement_seen_{userId}_v1' with a 1500ms setTimeout. Always call page.evaluate(\"localStorage.clear()\") before login and wait >=2000ms after landing on /dealer before asserting visibility. Note that WelcomePopup and a separate Google promo popup may also appear concurrently; they use different data-testids and coexist fine. Dealer user id used in this run: b26314eb-d0af-478d-a0c3-61ac0e28cbe4.",
+  "rca_of_the_issue": "N/A - no bugs found."
+}

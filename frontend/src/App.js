@@ -9,6 +9,7 @@ import { DataRefreshProvider } from "./components/DataRefreshProvider";
 import { initializeNativeFeatures, isNative } from "./services/nativeService";
 import InstallPrompt from "./components/InstallPrompt";
 import WelcomePopup from "./components/WelcomePopup";
+import CocAnnouncementPopup from "./components/CocAnnouncementPopup";
 import { useGeoLanguage } from "./hooks/useGeoLanguage";
 
 // Global navigation ref for service worker notifications
@@ -290,6 +291,7 @@ function App() {
           </Routes>
           <InstallPrompt />
           <WelcomePopup />
+          <CocAnnouncementPopup />
         </BrowserRouter>
       </div>
       </DataRefreshProvider>
