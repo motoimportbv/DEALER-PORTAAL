@@ -1,0 +1,38 @@
+{
+  "summary": "Tested new 'report_date' (Datum rapport) feature on BPM Vermindering Taxaties end-to-end. Backend: 8/8 pytest cases PASS — POST persists report_date, GET list/single returns it, PUT updates it, taxatieverslag PDF embeds '15-01-2026' in body, belastingdienst PDF form fields date01/date05 are correctly filled with d=15/m=01/y=2026, and PDFs still generate without report_date (regression OK). Frontend: 'Datum rapport' input (data-testid=field-report_date) renders side-by-side with field-first_registration_date, is a HTML5 type=date input, accepts 2026-01-15 and shows label hint 'optioneel — anders vandaag'. One spec deviation worth noting: there is no separate /api/taxatie-programma/{id}/taxatierapport-pdf route — the 'Taxatierapport' content lives inside the /taxatieverslag-pdf endpoint (verified via grep). Also, Belastingdienst PDF date06 widget (8c.2.4.date06) is NOT being filled (left blank); review_request stated 3 sections should be filled (date01/05/06). Only date01 and date05 are populated.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/taxatie-programma/{id}/belastingdienst-pdf", "issue": "Form field '8c.2.4.date06' (date06) is not filled with report_date. Only date01 (3.date01.*) and date05 (10.date05.*) get the d/m/y values. Spec said 3 sections (date01, date05, date06) should be auto-filled."},
+      {"endpoint": "GET /api/taxatie-programma/{id}/taxatierapport-pdf", "issue": "Endpoint does not exist. Review request lists this as a separate route, but only /taxatieverslag-pdf exists and renders the Taxatierapport content. If main agent intended a separate route, it is missing; otherwise the spec wording is wrong."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_taxatie_report_date.py",
+    "/app/test_reports/pytest/taxatie_report_date.xml"
+  ],
+  "action_items": [
+    "Verify whether report_date should also fill belastingdienst date06 (8c.2.4.date06.d/m/y). Currently those widgets remain empty — if intended per spec, add the widget update in routers/taxatie.py around the existing date01/date05 block (~lines 1113/1144/1186).",
+    "Clarify the 'taxatierapport-pdf' endpoint reference in the spec/PRD. There's no such route; Taxatierapport content is in /taxatieverslag-pdf. If a separate endpoint is desired, add it; otherwise remove from spec.",
+    "(Optional/UX) The Datum rapport input shows 'mm/dd/yyyy' placeholder when empty (browser default for nl-locale). Consider Dutch dd-mm-yyyy locale formatting for consistency, but functionally fine."
+  ],
+  "critical_code_review_comments": [
+    "models/schemas.py: TaxatieCreate.report_date defaulted to '' (empty string) — backend accepts both empty string and ISO date 'YYYY-MM-DD' and parses safely; fallback to created_at works (verified).",
+    "routers/taxatie.py taxatieverslag-pdf (~line 1284-1297, 1351, 1421, 1538, 1547): report_date_str is interpolated correctly — found 4+ occurrences of '15-01-2026' in generated PDF text.",
+    "routers/taxatie.py belastingdienst-pdf: date01 and date05 widgets receive d/m/y from parsed report_date. date06 (8c.2.4.date06) is currently NOT being assigned the report_date; please confirm if intentional.",
+    "frontend TaxatieProgramma.js EMPTY_FORM line 77 has report_date:'', form input correctly placed in a 2-column grid next to first_registration_date; data-testid=field-report_date present and functional; list display (line 406) uses report_date || created_at — good fallback for legacy taxaties."
+  ],
+  "updated_files": ["/app/backend/tests/test_taxatie_report_date.py"],
+  "success_rate": {"backend": "100% (8/8 pytest cases pass)", "frontend": "100% (UI form renders, accepts and persists date)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024!",
+  "seed_data_creation": "Two taxaties auto-created+deleted per test run (Yamaha TestReport with report_date=2026-01-15 and another without report_date for regression). All cleaned up via fixture teardown. No persistent test data left behind.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Reuse /app/backend/tests/test_taxatie_report_date.py for regression. Run with: REACT_APP_BACKEND_URL=https://promo-asset-lab.preview.emergentagent.com python -m pytest backend/tests/test_taxatie_report_date.py -v. The belastingdienst PDF widget naming uses suffixes like '_CF' and '_F', and the same logical 'date01' name appears multiple times for different sections (e.g. 'B.A.date01.d_F' is registration date, '3.date01.d_CF' is report date). Use containment matching, not exact-prefix matching. Two outstanding open questions for main agent: (1) should date06 also be filled? (2) is /taxatierapport-pdf a missing route or just spec wording?",
+  "rca_of_the_issue": "Feature works as implemented. Two minor mismatches with the original spec are reported (date06 not filled in belastingdienst PDF, no separate taxatierapport-pdf route) — main agent to decide whether spec or implementation is the source of truth."
+}

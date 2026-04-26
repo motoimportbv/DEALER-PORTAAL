@@ -74,6 +74,7 @@ const EMPTY_FORM = {
   notes_electrics: '', notes_general: '',
   customer_name: '', customer_phone: '', customer_email: '', customer_address: '',
   photos: [], notes: '',
+  report_date: '',
 };
 
 /* ── Local BPM calculator ── */
@@ -401,7 +402,10 @@ function BpmReport({ taxatie, onClose }) {
             <div className="text-right">
               <p className="font-mono text-lg">{taxatie.taxatie_nummer}</p>
               <p className="text-sm text-zinc-400 mt-1">
-                {taxatie.created_at ? new Date(taxatie.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : '-'}
+                {(() => {
+                  const d = taxatie.report_date || taxatie.created_at;
+                  return d ? new Date(d).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+                })()}
               </p>
               <span className={`inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full ${taxatie.status === 'definitief' ? 'bg-green-600 text-white' : 'bg-amber-500 text-white'}`}>
                 {taxatie.status === 'definitief' ? 'DEFINITIEF' : 'CONCEPT'}
@@ -808,6 +812,13 @@ export default function TaxatieProgramma() {
                 <label className="text-xs font-bold text-zinc-600 block mb-1">Datum eerste toelating</label>
                 <input type="date" value={form.first_registration_date} onChange={e => updateField('first_registration_date', e.target.value)}
                   className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-first_registration_date" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">
+                  Datum rapport <span className="text-zinc-400 font-normal">(optioneel — anders vandaag)</span>
+                </label>
+                <input type="date" value={form.report_date} onChange={e => updateField('report_date', e.target.value)}
+                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" data-testid="field-report_date" />
               </div>
             </div>
           </div>

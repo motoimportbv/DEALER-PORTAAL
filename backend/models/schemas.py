@@ -720,3 +720,4 @@ class TaxatieCreate(BaseModel):
     customer_address: str = ""
     photos: List[str] = []
     notes: str = ""
+    report_date: str = ""

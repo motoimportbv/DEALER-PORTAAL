@@ -985,7 +985,17 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     
     # Footer
     now = datetime.now(timezone.utc)
-    elements.append(Paragraph(f"Opgesteld door: Moto Import B.V. | Datum: {now.strftime('%d-%m-%Y')} | {doc.get('taxatie_nummer', '')}", small_style))
+    # Use admin-overridden report_date if present, otherwise now
+    report_date_str = doc.get('report_date') or now.strftime('%d-%m-%Y')
+    if doc.get('report_date'):
+        try:
+            report_date_str = datetime.fromisoformat(doc['report_date']).strftime('%d-%m-%Y')
+        except Exception:
+            try:
+                report_date_str = datetime.strptime(doc['report_date'], '%Y-%m-%d').strftime('%d-%m-%Y')
+            except Exception:
+                report_date_str = doc['report_date']
+    elements.append(Paragraph(f"Opgesteld door: Moto Import B.V. | Datum: {report_date_str} | {doc.get('taxatie_nummer', '')}", small_style))
     elements.append(Paragraph("Dit rapport is opgesteld conform de richtlijnen van de Belastingdienst voor BPM-aangifte bij import van motorfietsen.", small_style))
     
     pdf.build(elements)
@@ -1043,6 +1053,16 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
         raise HTTPException(status_code=500, detail="PDF bibliotheek niet beschikbaar")
     
     now = datetime.now(timezone.utc)
+    # Override-able report date (admin can edit). Falls back to "now"
+    report_dt = now
+    if doc_data.get("report_date"):
+        try:
+            report_dt = datetime.fromisoformat(doc_data["report_date"])
+        except Exception:
+            try:
+                report_dt = datetime.strptime(doc_data["report_date"], "%Y-%m-%d")
+            except Exception:
+                pass
     vin = doc_data.get("vin_number", "")
     doc_kenmerk = vin[-7:] if len(vin) >= 7 else vin
     
@@ -1090,9 +1110,9 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
         '4.8': 'Schalkhaar',
         '4.9_TEL': '0681792660',
         '4.10_EM': 'motoimportbv@gmail.com',
-        '3.date01.d_CF': f"{now.day:02d}",
-        '3.date01.m_CF': f"{now.month:02d}",
-        '3.date01.y_CF': str(now.year),
+        '3.date01.d_CF': f"{report_dt.day:02d}",
+        '3.date01.m_CF': f"{report_dt.month:02d}",
+        '3.date01.y_CF': str(report_dt.year),
         
         # Page 3: Voertuiggegevens
         '1.1.VIN._C7.3': doc_kenmerk,
@@ -1121,9 +1141,9 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
         # Page 6: Ondertekening
         '1.1.VIN._C7.6': doc_kenmerk,
         '10.0': 'Sandro Milone',
-        '10.date05.d_CF': f"{now.day:02d}",
-        '10.date05.m_CF': f"{now.month:02d}",
-        '10.date05.y_CF': str(now.year),
+        '10.date05.d_CF': f"{report_dt.day:02d}",
+        '10.date05.m_CF': f"{report_dt.month:02d}",
+        '10.date05.y_CF': str(report_dt.year),
         
         # Page 7: Bijlage A (Bruto BPM)
         'B.A.0': 'Motoimport B.V.',
@@ -1163,9 +1183,9 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
             '8c.2.1': 'Sandro Milone',
             '8c.2.2': 'Schalkhaar',
             '8c.2.3': 'Motoimport',
-            '8c.2.4.date06.d': f"{now.day:02d}",
-            '8c.2.4.date06.m': f"{now.month:02d}",
-            '8c.2.4.date06.y': str(now.year),
+            '8c.2.4.date06.d': f"{report_dt.day:02d}",
+            '8c.2.4.date06.m': f"{report_dt.month:02d}",
+            '8c.2.4.date06.y': str(report_dt.year),
             '8c.2.6_A7': str(hist_nieuwprijs),
             '8c.2.7_A7': str(handelswaarde_onbesch) if handelswaarde_onbesch > 0 else '',
             '8c.2.8_A7': str(int(herstelkosten)),
@@ -1266,6 +1286,18 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     now = datetime.now(timezone.utc)
     taxatie_nr = doc.get("taxatie_nummer", f"BPM-{now.strftime('%Y%m%d')}")
     
+    # Override-able report date (admin can edit). Falls back to "now"
+    report_date_dt = now
+    if doc.get("report_date"):
+        try:
+            report_date_dt = datetime.fromisoformat(doc["report_date"])
+        except Exception:
+            try:
+                report_date_dt = datetime.strptime(doc["report_date"], "%Y-%m-%d")
+            except Exception:
+                pass
+    report_date_str = report_date_dt.strftime("%d-%m-%Y")
+    
     def fe(val):
         if val is None or val == 0: return "\u20ac 0,00"
         return f"\u20ac {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -1320,7 +1352,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     
     # Company info block
     info_data = [
-        [Paragraph("<b>Naam:</b>", label_s), "Moto Import B.V.", Paragraph("<b>Datum rapport:</b>", label_s), now.strftime("%d-%m-%Y")],
+        [Paragraph("<b>Naam:</b>", label_s), "Moto Import B.V.", Paragraph("<b>Datum rapport:</b>", label_s), report_date_str],
         [Paragraph("<b>RSIN:</b>", label_s), COMPANY_RSIN, Paragraph("<b>KVK:</b>", label_s), COMPANY_KVK],
         [Paragraph("<b>Adres:</b>", label_s), "Horsterhoekweg 11, 7433 SV Schalkhaar", Paragraph("<b>Taxateur:</b>", label_s), "S. Milone"],
         [Paragraph("<b>Tel:</b>", label_s), "+31 6 24264861", Paragraph("<b>Email:</b>", label_s), "motoimportbv@gmail.com"],
@@ -1393,7 +1425,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     
     # Section 3: Schadebeoordeling
     elements.append(Paragraph("3. Geconstateerde schade en herstelkostenbegroting", section_s))
-    elements.append(Paragraph(f"Datum fysieke inspectie: <b>{now.strftime('%d-%m-%Y')}</b> | Uurtarief arbeid: <b>\u20ac {TAXATIE_LABOR_RATE:.2f}</b> excl. BTW", sm))
+    elements.append(Paragraph(f"Datum fysieke inspectie: <b>{report_date_str}</b> | Uurtarief arbeid: <b>\u20ac {TAXATIE_LABOR_RATE:.2f}</b> excl. BTW", sm))
     elements.append(Spacer(1, 2*mm))
     
     damage_items = doc.get("damage_items", [])
@@ -1507,7 +1539,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(Paragraph("5. Verklaring en ondertekening", section_s))
     elements.append(Paragraph(
         f"Ondergetekende verklaart dat het motorrijtuig <b>{brand} {model}</b> "
-        f"(chassisnummer <b>{vin}</b>) op <b>{now.strftime('%d-%m-%Y')}</b> fysiek is ge\u00efnspecteerd "
+        f"(chassisnummer <b>{vin}</b>) op <b>{report_date_str}</b> fysiek is ge\u00efnspecteerd "
         f"op locatie Horsterhoekweg 11, 7433 SV Schalkhaar. "
         f"De in dit verslag genoemde schadeposten zijn daadwerkelijk geconstateerd en de geschatte "
         f"herstelkosten zijn gebaseerd op gangbare tarieven in de motorfietsbranche "
@@ -1518,7 +1550,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(Spacer(1, 6*mm))
     
     sign_data = [
-        [Paragraph("<b>Naam</b>", label_s), "S. Milone", Paragraph("<b>Datum</b>", label_s), now.strftime("%d-%m-%Y")],
+        [Paragraph("<b>Naam</b>", label_s), "S. Milone", Paragraph("<b>Datum</b>", label_s), report_date_str],
         [Paragraph("<b>Functie</b>", label_s), "Directeur / Taxateur", Paragraph("<b>Bedrijf</b>", label_s), "Moto Import B.V."],
         [Paragraph("<b>Handtekening</b>", label_s), "", "", ""],
     ]
