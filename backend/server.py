@@ -95,6 +95,14 @@ async def startup_db_client():
     asyncio.create_task(expire_wanted_requests())
     asyncio.create_task(monthly_taxatie_reminder())
 
+    # Pre-warm AutoTelex login so first /api/admin/autotelex/search is fast
+    # Note: disabled — warmup races with first request via cached context
+    # try:
+    #     from services.autotelex_scraper import warmup as autotelex_warmup
+    #     asyncio.create_task(autotelex_warmup())
+    # except Exception as e:
+    #     logger.warning(f"Could not start AutoTelex warmup: {e}")
+
     # Migrate pakbon role for Ellen
     await db.users.update_many(
         {"email": {"$regex": "^ellenmilone@gmail\\.com$", "$options": "i"}},

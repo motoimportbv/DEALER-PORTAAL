@@ -131,25 +131,32 @@ def _parse_dutch_number(s: str) -> Optional[float]:
 
 
 async def search_motors(brand: str, day: int, month: int, year: int, model_substring: str = "") -> List[Dict]:
-    """Search AutoTelex for motorcycles matching brand + first registration date."""
+    """Search AutoTelex for motorcycles matching brand + first registration date.
+    Optimized: skips intermediate networkidle waits and uses targeted state polls."""
     ctx = await _ensure_logged_in()
     page = await ctx.new_page()
     try:
-        await page.goto(HOME_URL, wait_until="networkidle", timeout=30000)
-        # 1. Select Motoren
+        await page.goto(HOME_URL, wait_until="networkidle", timeout=20000)
+        # Activate "Op kenmerken / import" tab (Manual)
+        try:
+            await page.click("#ctl00_cp_ucSearch_Manual_lblHeaderTabTitle", timeout=3000)
+            await page.wait_for_timeout(300)
+        except Exception:
+            pass
+        # 1. Voertuigsoort = Motoren (5) — triggers ASP.NET __doPostBack
         await page.select_option("#ctl00_cp_ucSearch_Manual_ddlVoertuigType", value="5")
-        await page.wait_for_load_state("networkidle", timeout=20000)
-        await page.wait_for_timeout(500)
-        # 2. Set 1e toelating (day, month, year). Each select triggers a postback
+        await page.wait_for_load_state("networkidle", timeout=15000)
+        # 2. Date components — each triggers a postback that progressively populates the brand list
         for sel_id, val in [
             ("ctl00_cp_ucSearch_Manual_ddlBouwdag", str(day)),
             ("ctl00_cp_ucSearch_Manual_ddlBouwmaand", str(month)),
             ("ctl00_cp_ucSearch_Manual_ddlBouwjaar", str(year)),
         ]:
-            sel = f"#{sel_id}"
-            await page.select_option(sel, value=val)
-            await page.wait_for_load_state("networkidle", timeout=20000)
-            await page.wait_for_timeout(400)
+            try:
+                await page.select_option(f"#{sel_id}", value=val, timeout=8000)
+                await page.wait_for_load_state("networkidle", timeout=10000)
+            except Exception:
+                pass
         # 3. Pick brand
         merk_sel = "#ctl00_cp_ucSearch_Manual_ddlMerk"
         options = await page.query_selector_all(f"{merk_sel} option")
@@ -169,18 +176,18 @@ async def search_motors(brand: str, day: int, month: int, year: int, model_subst
                 t = ((await o.inner_text()) or "").strip()
                 if t and t != "- Kies merk -":
                     avail.append(t)
-            raise RuntimeError(f"Merk '{brand}' niet gevonden. Beschikbaar: {', '.join(avail[:30])}")
+            raise RuntimeError(
+                f"Merk '{brand}' niet gevonden ({len(options)} opties). "
+                f"Beschikbaar: {', '.join(avail[:30])}"
+            )
         await page.select_option(merk_sel, value=target_value)
-        await page.wait_for_load_state("networkidle", timeout=20000)
-        await page.wait_for_timeout(500)
-        # 4. Click Zoeken (Manual tab)
+        await page.wait_for_load_state("networkidle", timeout=10000)
+        # 4. Click Zoeken and wait for result rows
         await page.click("#btnHandmatigZoeken")
-        await page.wait_for_load_state("networkidle", timeout=30000)
         try:
             await page.wait_for_selector("tr.rgRow, tr.rgAltRow", timeout=15000)
         except Exception:
             pass
-        await page.wait_for_timeout(1500)
         # 5. Parse result rows from Telerik RadGrid (rgRow / rgAltRow)
         results: List[Dict] = []
         rows = await page.query_selector_all("tr.rgRow, tr.rgAltRow")
@@ -347,3 +354,12 @@ async def lookup_with_details(brand: str, day: int, month: int, year: int, execu
 async def get_brands() -> List[str]:
     """Public function for frontend dropdown."""
     return await _get_brand_options()
+
+
+async def warmup():
+    """Pre-warm browser + login. Call at app startup so first request is fast."""
+    try:
+        await _ensure_logged_in()
+        logger.info("AutoTelex warmup OK")
+    except Exception as e:
+        logger.warning(f"AutoTelex warmup skipped: {e}")
