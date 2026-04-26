@@ -622,6 +622,12 @@ export default function TaxatieProgramma() {
   const [targetBpm, setTargetBpm] = useState('');
   const [showChecklist, setShowChecklist] = useState(false);
 
+  // AutoTelex search modal
+  const [atxOpen, setAtxOpen] = useState(false);
+  const [atxLoading, setAtxLoading] = useState(false);
+  const [atxResults, setAtxResults] = useState(null);
+  const [atxSubstring, setAtxSubstring] = useState('');
+
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -646,6 +652,54 @@ export default function TaxatieProgramma() {
   }
 
   const updateField = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  // === AutoTelex search ===
+  const runAutoTelexSearch = async () => {
+    if (!form.brand) { toast.error('Vul eerst het merk in'); return; }
+    if (!form.first_registration_date) { toast.error('Vul eerst de datum eerste toelating in'); return; }
+    const d = new Date(form.first_registration_date);
+    if (isNaN(d.getTime())) { toast.error('Ongeldige datum'); return; }
+    setAtxLoading(true);
+    setAtxResults(null);
+    setAtxOpen(true);
+    try {
+      const res = await axios.post(`${API}/admin/autotelex/search`, {
+        brand: form.brand,
+        day: d.getDate(),
+        month: d.getMonth() + 1,
+        year: d.getFullYear(),
+        model_substring: atxSubstring || form.model || '',
+      });
+      setAtxResults(res.data?.results || []);
+    } catch (err) {
+      toast.error('AutoTelex zoeken mislukt: ' + (err.response?.data?.detail || err.message));
+      setAtxResults([]);
+    } finally {
+      setAtxLoading(false);
+    }
+  };
+
+  const applyAtxResult = (r) => {
+    // r.prijs is the netto catalogusprijs (excl options) and consumentenprijs are typically same
+    if (r.prijs) {
+      updateField('netto_catalogusprijs', r.prijs);
+      updateField('consumentenprijs', r.prijs);
+    }
+    if (r.cc && !form.cylinder_capacity) {
+      updateField('cylinder_capacity', r.cc.replace(/[^0-9]/g, '') + ' cc');
+    }
+    if (r.kw_pk && !form.power_kw) {
+      const m = r.kw_pk.match(/(\d+(?:[.,]\d+)?)\s*kW/i) || r.kw_pk.match(/(\d+(?:[.,]\d+)?)/);
+      if (m) updateField('power_kw', Number(m[1].replace(',', '.')));
+    }
+    // Auto-fill model with the execution name
+    if (r.execution && (!form.model || form.model !== r.execution)) {
+      updateField('model', r.execution);
+    }
+    toast.success(`Overgenomen: ${r.execution} — €${r.prijs?.toLocaleString('nl-NL')}`);
+    setAtxOpen(false);
+  };
+
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -836,10 +890,19 @@ export default function TaxatieProgramma() {
               >
                 <ExternalLink className="w-3 h-3 mr-1" />Open AutoTelex PRO
               </Button>
+              <Button 
+                onClick={runAutoTelexSearch}
+                disabled={atxLoading}
+                size="sm" className="ml-2 bg-blue-600 hover:bg-blue-700 text-white"
+                data-testid="atx-search-btn"
+              >
+                {atxLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Search className="w-3 h-3 mr-1" />}
+                Zoek automatisch
+              </Button>
             </div>
             <p className="text-xs text-blue-600 mb-4">
-              Open AutoTelex PRO, zoek het voertuig op (kenmerken/import → Motoren), en vul hieronder de waarden in. 
-              De BPM wordt direct herberekend.
+              Vul eerst <strong>merk</strong> en <strong>datum eerste toelating</strong> hierboven in, druk dan op
+              <strong> "Zoek automatisch" </strong> en kies het juiste model uit de lijst — wij vullen catalogus- en consumentenprijs voor je in.
             </p>
             
             {form.vin_number && (
@@ -1199,6 +1262,72 @@ export default function TaxatieProgramma() {
             </Button>
           </div>
         </div>
+
+        {/* AutoTelex search modal */}
+        {atxOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setAtxOpen(false)} data-testid="atx-modal">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="p-5 border-b flex items-center justify-between bg-blue-50">
+                <div>
+                  <h3 className="font-bold text-lg text-blue-900">AutoTelex resultaten</h3>
+                  <p className="text-xs text-blue-700">{form.brand} • {form.first_registration_date} {form.model && `• filter: "${form.model}"`}</p>
+                </div>
+                <button onClick={() => setAtxOpen(false)} className="text-zinc-400 hover:text-zinc-700" data-testid="atx-close-btn"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-5 overflow-y-auto flex-1">
+                {atxLoading && (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
+                    <p className="text-sm text-zinc-600">Bezig met inloggen op AutoTelex en ophalen resultaten — dit kan 10-15 seconden duren...</p>
+                  </div>
+                )}
+                {!atxLoading && atxResults && atxResults.length === 0 && (
+                  <div className="text-center py-12 text-zinc-500">
+                    <p>Geen resultaten gevonden voor <strong>{form.brand}</strong> op {form.first_registration_date}.</p>
+                    <p className="text-xs mt-2">Controleer of de datum klopt — AutoTelex hanteert vaak de datum dat het model op de markt kwam.</p>
+                  </div>
+                )}
+                {!atxLoading && atxResults && atxResults.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm" data-testid="atx-results-table">
+                      <thead className="bg-zinc-50 text-zinc-600 text-xs uppercase">
+                        <tr>
+                          <th className="text-left p-2">Model</th>
+                          <th className="text-right p-2">CC</th>
+                          <th className="text-right p-2">kW/pk</th>
+                          <th className="text-right p-2">BPM</th>
+                          <th className="text-right p-2">Prijs</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {atxResults.map((r, idx) => (
+                          <tr key={idx} className="border-t hover:bg-blue-50">
+                            <td className="p-2 font-semibold text-zinc-900">{r.execution}</td>
+                            <td className="p-2 text-right text-zinc-600">{r.cc || '-'}</td>
+                            <td className="p-2 text-right text-zinc-600">{r.kw_pk || '-'}</td>
+                            <td className="p-2 text-right text-zinc-700">{r.bpm ? `€${r.bpm.toLocaleString('nl-NL')}` : '-'}</td>
+                            <td className="p-2 text-right font-bold text-blue-700">{r.prijs ? `€${r.prijs.toLocaleString('nl-NL')}` : '-'}</td>
+                            <td className="p-2 text-right">
+                              <Button
+                                size="sm"
+                                onClick={() => applyAtxResult(r)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                data-testid={`atx-apply-${idx}`}
+                              >
+                                Overnemen
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </Layout>
     );
   }
