@@ -672,7 +672,11 @@ export default function TaxatieProgramma() {
       });
       setAtxResults(res.data?.results || []);
     } catch (err) {
-      toast.error('AutoTelex zoeken mislukt: ' + (err.response?.data?.detail || err.message));
+      const detail = err.response?.data?.detail || err.message;
+      const friendly = detail.includes('blokkeert')
+        ? detail
+        : `AutoTelex zoeken mislukt: ${detail}`;
+      toast.error(friendly, { duration: 6000 });
       setAtxResults([]);
     } finally {
       setAtxLoading(false);
@@ -1285,6 +1289,15 @@ export default function TaxatieProgramma() {
                   <div className="text-center py-12 text-zinc-500">
                     <p>Geen resultaten gevonden voor <strong>{form.brand}</strong> op {form.first_registration_date}.</p>
                     <p className="text-xs mt-2">Controleer of de datum klopt — AutoTelex hanteert vaak de datum dat het model op de markt kwam.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => window.open('https://autotelexpro.nl/Default.aspx', '_blank')}
+                      data-testid="atx-fallback-open"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" /> Open AutoTelex PRO handmatig
+                    </Button>
                   </div>
                 )}
                 {!atxLoading && atxResults && atxResults.length > 0 && (

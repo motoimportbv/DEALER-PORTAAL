@@ -176,9 +176,14 @@ async def search_motors(brand: str, day: int, month: int, year: int, model_subst
                 t = ((await o.inner_text()) or "").strip()
                 if t and t != "- Kies merk -":
                     avail.append(t)
+            # Friendly message if AutoTelex anti-bot returns empty list
+            if len(options) <= 1:
+                raise RuntimeError(
+                    "AutoTelex blokkeert tijdelijk geautomatiseerde verzoeken. "
+                    "Probeer over een paar minuten opnieuw, of zoek handmatig via de 'Open AutoTelex PRO' knop."
+                )
             raise RuntimeError(
-                f"Merk '{brand}' niet gevonden ({len(options)} opties). "
-                f"Beschikbaar: {', '.join(avail[:30])}"
+                f"Merk '{brand}' niet gevonden. Beschikbaar: {', '.join(avail[:30])}"
             )
         await page.select_option(merk_sel, value=target_value)
         await page.wait_for_load_state("networkidle", timeout=10000)
