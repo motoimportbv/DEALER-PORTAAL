@@ -628,6 +628,64 @@ export default function TaxatieProgramma() {
   const [atxResults, setAtxResults] = useState(null);
   const [atxSubstring, setAtxSubstring] = useState('');
 
+  // BPM Terugreken state (AutoTelex Taxatierapport methode)
+  const [terugrekenBruto, setTerugrekenBruto] = useState('');
+  const [terugrekenNieuw, setTerugrekenNieuw] = useState('');
+  const [terugrekenTarget, setTerugrekenTarget] = useState('');
+
+  // Compute terugreken result whenever inputs change
+  const terugrekenResult = React.useMemo(() => {
+    const bruto = Number(terugrekenBruto) || Number(bpm?.bruto_bpm) || 0;
+    const nieuw = Number(terugrekenNieuw) || Number(form.consumentenprijs) || 0;
+    const target = Number(terugrekenTarget);
+    if (!bruto || !nieuw || !target || target < 0 || target > bruto) return null;
+    // Rest-BPM = Bruto × (Taxatiewaarde / Nieuw)  =>  Taxatiewaarde = target × nieuw / bruto
+    const taxatiewaarde = (target * nieuw) / bruto;
+    const afschrijving = (1 - taxatiewaarde / nieuw) * 100;
+    // Baseline: use koerslijst_waarde or AutoTelex handelswaarde as starting point
+    const baseHandel = Number(form.koerslijst_waarde) || Math.round(nieuw * 0.35);
+    const baseSchade = 2500; // typical schadebedrag example
+    // Scenario A: keep handel + schade, raise percentage
+    const neededCorr = baseHandel - taxatiewaarde;
+    const pctA = Math.max(0, Math.min(100, Math.round((neededCorr / baseSchade) * 100)));
+    // Scenario B: keep handel + percentage 36%, raise schade
+    const schadeB = Math.round(neededCorr / 0.36);
+    // Scenario C: lower handelsinkoopwaarde, keep schade 2500 × 36%
+    const corrC = Math.round(baseSchade * 0.36);
+    const handelC = Math.round(taxatiewaarde + corrC);
+    return {
+      taxatiewaarde: Math.round(taxatiewaarde),
+      afschrijving,
+      scenarios: [
+        {
+          title: 'Optie A — Percentage omhoog (eenvoudigst)',
+          handel: baseHandel,
+          schade: baseSchade,
+          percentage: pctA,
+          overig: 0,
+          explanation: `Houd handelsinkoopwaarde en schadebedrag gelijk, verander alleen het percentage naar ${pctA}%.`,
+        },
+        {
+          title: 'Optie B — Schadebedrag omhoog',
+          handel: baseHandel,
+          schade: schadeB,
+          percentage: 36,
+          overig: 0,
+          explanation: `Houd percentage op 36%, verhoog het schadebedrag naar ${fmtEur(schadeB)}.`,
+        },
+        {
+          title: 'Optie C — Handelsinkoopwaarde lager',
+          handel: handelC,
+          schade: baseSchade,
+          percentage: 36,
+          overig: 0,
+          explanation: `Verlaag de handelsinkoopwaarde naar ${fmtEur(handelC)}, rest blijft gelijk.`,
+        },
+      ],
+    };
+  }, [terugrekenBruto, terugrekenNieuw, terugrekenTarget, bpm, form.consumentenprijs, form.koerslijst_waarde]);
+
+
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -973,6 +1031,96 @@ export default function TaxatieProgramma() {
                 {bpm.forfaitair_percentage > 0 && <span className="bg-white rounded-full px-3 py-1 border border-green-200 text-green-700 font-bold">Forfaitair: {fmtPct(bpm.forfaitair_percentage)} → {fmtEur(bpm.forfaitair_bpm)}</span>}
                 {bpm.koerslijst_percentage > 0 && <span className="bg-white rounded-full px-3 py-1 border border-purple-200 text-purple-700 font-bold">Koerslijst: {fmtPct(bpm.koerslijst_percentage)} → {fmtEur(bpm.koerslijst_bpm)}</span>}
                 {bpm.taxatie_percentage > 0 && <span className="bg-white rounded-full px-3 py-1 border border-orange-200 text-orange-700 font-bold">Taxatie: {fmtPct(bpm.taxatie_percentage)} → {fmtEur(bpm.taxatie_bpm)}</span>}
+              </div>
+            )}
+          </div>
+
+          {/* BPM Terugrekenen (AutoTelex Taxatierapport methode) */}
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-300 p-6" data-testid="bpm-terugreken-card">
+            <h2 className="text-lg font-bold mb-2 flex items-center gap-2 text-purple-900">
+              <Calculator className="w-5 h-5" />BPM Terugrekenen — voor AutoTelex Taxatierapport
+            </h2>
+            <p className="text-xs text-purple-700 mb-4">
+              Vul de gewenste rest-BPM in. Wij rekenen voor je terug welke <strong>Taxatiewaarde totaal</strong> nodig is, en geven 3 manieren om die waarde te bereiken in AutoTelex.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="text-xs font-bold text-purple-800 block mb-1">Bruto-BPM <span className="text-zinc-400 font-normal">(uit AutoTelex)</span></label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input
+                    type="number"
+                    value={terugrekenBruto}
+                    onChange={e => setTerugrekenBruto(e.target.value)}
+                    placeholder={bpm.bruto_bpm ? String(Math.round(bpm.bruto_bpm)) : '827'}
+                    className="w-full border-2 border-purple-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-purple-500 focus:outline-none bg-white"
+                    data-testid="terugreken-bruto-bpm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-purple-800 block mb-1">Nieuwprijs incl. opties <span className="text-zinc-400 font-normal">(uit AutoTelex)</span></label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input
+                    type="number"
+                    value={terugrekenNieuw}
+                    onChange={e => setTerugrekenNieuw(e.target.value)}
+                    placeholder={form.consumentenprijs ? String(form.consumentenprijs) : '7298'}
+                    className="w-full border-2 border-purple-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-purple-500 focus:outline-none bg-white"
+                    data-testid="terugreken-nieuwprijs"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-purple-800 block mb-1">Gewenste rest-BPM</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
+                  <input
+                    type="number"
+                    value={terugrekenTarget}
+                    onChange={e => setTerugrekenTarget(e.target.value)}
+                    placeholder="25"
+                    className="w-full border-2 border-purple-500 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:border-purple-700 focus:outline-none bg-white"
+                    data-testid="terugreken-target-bpm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {terugrekenResult && (
+              <div className="bg-white rounded-xl border-2 border-purple-200 p-4" data-testid="terugreken-result">
+                <div className="flex items-center justify-between mb-3 pb-3 border-b border-purple-100">
+                  <div>
+                    <p className="text-xs text-zinc-500">Benodigde Taxatiewaarde totaal</p>
+                    <p className="text-3xl font-bold text-purple-700">{fmtEur(terugrekenResult.taxatiewaarde)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-zinc-500">Afschrijvingspercentage</p>
+                    <p className="text-xl font-bold text-purple-700">{fmtPct(terugrekenResult.afschrijving)}</p>
+                  </div>
+                </div>
+
+                <p className="text-xs font-bold uppercase tracking-wider text-purple-600 mb-2">3 manieren om dit te bereiken in AutoTelex</p>
+                <div className="space-y-2 text-sm">
+                  {terugrekenResult.scenarios.map((s, idx) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-purple-100">
+                      <div className="bg-purple-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">{String.fromCharCode(65 + idx)}</div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-purple-900">{s.title}</p>
+                        <p className="text-xs text-zinc-600 mt-0.5">
+                          Handelsinkoopwaarde: <strong>{fmtEur(s.handel)}</strong> • Schadebedrag: <strong>{fmtEur(s.schade)}</strong> • Percentage: <strong>{s.percentage}%</strong>
+                          {s.overig ? <> • Overig: <strong>{fmtEur(s.overig)}</strong></> : null}
+                        </p>
+                        <p className="text-xs text-purple-700 mt-1">{s.explanation}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-amber-700 mt-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  ⚠️ <strong>Let op:</strong> de Belastingdienst kan bewijs vragen. Zorg dat je schaderapport / fotos het schadepercentage onderbouwt.
+                </p>
               </div>
             )}
           </div>
