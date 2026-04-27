@@ -635,7 +635,7 @@ export default function TaxatieProgramma() {
 
   // Compute terugreken result whenever inputs change
   const terugrekenResult = React.useMemo(() => {
-    const bruto = Number(terugrekenBruto) || Number(bpm?.bruto_bpm) || 0;
+    const bruto = Number(terugrekenBruto) || 0;
     const nieuw = Number(terugrekenNieuw) || Number(form.consumentenprijs) || 0;
     const target = Number(terugrekenTarget);
     if (!bruto || !nieuw || !target || target < 0 || target > bruto) return null;
@@ -683,7 +683,7 @@ export default function TaxatieProgramma() {
         },
       ],
     };
-  }, [terugrekenBruto, terugrekenNieuw, terugrekenTarget, bpm, form.consumentenprijs, form.koerslijst_waarde]);
+  }, [terugrekenBruto, terugrekenNieuw, terugrekenTarget, form.consumentenprijs, form.koerslijst_waarde]);
 
 
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
