@@ -746,6 +746,12 @@ export default function TaxatieProgramma() {
     if (r.prijs) {
       updateField('netto_catalogusprijs', r.prijs);
       updateField('consumentenprijs', r.prijs);
+      // Pre-fill BPM Terugreken tool with the Nieuwprijs
+      setTerugrekenNieuw(String(r.prijs));
+    }
+    // Pre-fill BPM Terugreken tool with Bruto-BPM from AutoTelex
+    if (r.bpm) {
+      setTerugrekenBruto(String(r.bpm));
     }
     if (r.cc && !form.cylinder_capacity) {
       updateField('cylinder_capacity', r.cc.replace(/[^0-9]/g, '') + ' cc');
@@ -758,7 +764,7 @@ export default function TaxatieProgramma() {
     if (r.execution && (!form.model || form.model !== r.execution)) {
       updateField('model', r.execution);
     }
-    toast.success(`Overgenomen: ${r.execution} — €${r.prijs?.toLocaleString('nl-NL')}`);
+    toast.success(`Overgenomen: ${r.execution} — €${r.prijs?.toLocaleString('nl-NL')}${r.bpm ? ` (Bruto-BPM €${r.bpm.toLocaleString('nl-NL')})` : ''}`);
     setAtxOpen(false);
   };
 
