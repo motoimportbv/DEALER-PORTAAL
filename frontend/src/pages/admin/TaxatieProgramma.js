@@ -659,35 +659,53 @@ export default function TaxatieProgramma() {
     'Frame / Chassis (scheuren / roest)': 850,
     'Overig': 250,
   };
-  // Priority order — start with most plausible items
-  const PRIORITY_ORDER = [
-    'Banden (versleten / oud)',
-    'Accu',
-    'Lak / Spuitwerk',
-    'Ketting / Tandwielen',
-    'Remschijven / Remblokken',
-    'Kuipdelen / Stroomlijnkappen',
-    'Tank (deuken / krassen)',
-    'Spiegels',
-    'Knipperlichten / Richtingaanwijzers',
-    'Verlichting (koplamp / achterlicht)',
-    'Voorvork (lekkage / krom)',
-    'Achterdemper (lek / versleten)',
-    'Stuurlagers',
-    'Wiellagers',
-    'Koppeling (versleten)',
-    'Uitlaat (roest / lek)',
-    'Zadel (gescheurd / versleten)',
-    'Windscherm',
-    'Voetsteunen / Schakelpedaal',
-    'Koelvloeistof systeem',
-    'Remvloeistof / Remleidingen',
-    'Dashboard / Instrumenten',
-    'Corrosie / Roest algemeen',
-    'Motorblok (lekkage / geluid)',
-    'Frame / Chassis (scheuren / roest)',
-    'Overig',
+  // Priority order with probability tiers — randomized per rapport zodat elk taxatieverslag uniek is
+  const DAMAGE_TIERS = [
+    // Tier 1 — very common (90% kans, altijd in het rapport)
+    { prob: 0.9, items: [
+      'Banden (versleten / oud)',
+      'Accu',
+      'Lak / Spuitwerk',
+      'Ketting / Tandwielen',
+      'Remschijven / Remblokken',
+    ]},
+    // Tier 2 — common (60% kans)
+    { prob: 0.6, items: [
+      'Kuipdelen / Stroomlijnkappen',
+      'Tank (deuken / krassen)',
+      'Spiegels',
+      'Voorvork (lekkage / krom)',
+      'Verlichting (koplamp / achterlicht)',
+      'Uitlaat (roest / lek)',
+    ]},
+    // Tier 3 — occasional (35% kans)
+    { prob: 0.35, items: [
+      'Achterdemper (lek / versleten)',
+      'Stuurlagers',
+      'Wiellagers',
+      'Koppeling (versleten)',
+      'Zadel (gescheurd / versleten)',
+      'Windscherm',
+      'Knipperlichten / Richtingaanwijzers',
+    ]},
+    // Tier 4 — rare (15% kans)
+    { prob: 0.15, items: [
+      'Voetsteunen / Schakelpedaal',
+      'Koelvloeistof systeem',
+      'Remvloeistof / Remleidingen',
+      'Dashboard / Instrumenten',
+      'Corrosie / Roest algemeen',
+    ]},
   ];
+
+  const shuffleArr = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
 
   const autoTickDamage = (targetBpmInput) => {
     // Compute bpm locally — `bpm` from the form view is block-scoped and not visible here
@@ -703,30 +721,51 @@ export default function TaxatieProgramma() {
     let remaining = neededHerstel;
     const ticked = new Set();
     const newItems = form.damage_items.map(d => ({ ...d, checked: false, cost: 0, hours: 0, material_cost: 0 }));
-    // Loop priority order, ticking until we have enough
-    for (const itemName of PRIORITY_ORDER) {
+
+    // Build randomized selection: shuffle elke tier en voeg toe op basis van kans
+    const selectionOrder = [];
+    for (const tier of DAMAGE_TIERS) {
+      const shuffled = shuffleArr(tier.items);
+      for (const itemName of shuffled) {
+        if (Math.random() <= tier.prob) {
+          selectionOrder.push(itemName);
+        }
+      }
+    }
+    // Fallback: zorg minimaal een paar tier-1 items als kans-shuffle ze allemaal heeft uitgesloten
+    if (selectionOrder.length < 3) {
+      for (const itemName of shuffleArr(DAMAGE_TIERS[0].items)) {
+        if (!selectionOrder.includes(itemName)) selectionOrder.push(itemName);
+        if (selectionOrder.length >= 5) break;
+      }
+    }
+
+    // Loop random selection, ticken tot we genoeg hebben
+    for (const itemName of selectionOrder) {
       if (remaining <= 0) break;
       const baseCost = DAMAGE_COST_TABLE[itemName] || 200;
-      // Add slight randomness ±10% for realism per rapport
-      const variance = baseCost * (0.9 + Math.random() * 0.2);
+      // Bredere randomness ±25% voor meer variatie tussen rapporten
+      const variance = baseCost * (0.75 + Math.random() * 0.5);
       const cost = Math.min(Math.round(variance / 5) * 5, Math.round(remaining));
       if (cost <= 0) break;
       const idx = newItems.findIndex(d => d.name === itemName);
       if (idx === -1) continue;
-      // Split cost into ~40% labor, 60% material for realism
-      const hours = Math.max(0.5, Math.round((cost * 0.4 / LABOR_RATE) * 2) / 2); // 0.5-uur stappen
+      // Variabele labor/material split (35-50% labor) voor extra variatie
+      const laborRatio = 0.35 + Math.random() * 0.15;
+      const hours = Math.max(0.5, Math.round((cost * laborRatio / LABOR_RATE) * 2) / 2);
       const laborCost = Math.round(hours * LABOR_RATE);
       const material_cost = Math.max(0, cost - laborCost);
       newItems[idx] = { ...newItems[idx], checked: true, cost, hours, material_cost };
       ticked.add(itemName);
       remaining -= cost;
     }
-    // If still remaining, top up "Overig"
+    // Als er nog over is, top-up "Overig"
     if (remaining > 0) {
       const idx = newItems.findIndex(d => d.name === 'Overig');
       if (idx !== -1) {
         const cost = Math.round(remaining);
-        const hours = Math.max(0.5, Math.round((cost * 0.4 / LABOR_RATE) * 2) / 2);
+        const laborRatio = 0.35 + Math.random() * 0.15;
+        const hours = Math.max(0.5, Math.round((cost * laborRatio / LABOR_RATE) * 2) / 2);
         const laborCost = Math.round(hours * LABOR_RATE);
         const material_cost = Math.max(0, cost - laborCost);
         newItems[idx] = { ...newItems[idx], checked: true, cost, hours, material_cost };
