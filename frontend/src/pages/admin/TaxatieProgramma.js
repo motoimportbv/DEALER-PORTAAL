@@ -698,6 +698,26 @@ export default function TaxatieProgramma() {
     ]},
   ];
 
+  // Merk-specifieke bias: +0.25 boost (vaker), -0.25 dampen (zelden) — per kentekens van bekende zwakheden
+  const BRAND_BIASES = {
+    'bmw':       { 'Stuurlagers': 0.25, 'Wiellagers': 0.25, 'Dashboard / Instrumenten': 0.20, 'Achterdemper (lek / versleten)': 0.20 },
+    'ktm':       { 'Koppeling (versleten)': 0.30, 'Uitlaat (roest / lek)': 0.25, 'Voorvork (lekkage / krom)': 0.20, 'Lak / Spuitwerk': 0.15 },
+    'husqvarna': { 'Koppeling (versleten)': 0.30, 'Uitlaat (roest / lek)': 0.25, 'Banden (versleten / oud)': 0.20 },
+    'ducati':    { 'Koppeling (versleten)': 0.35, 'Voorvork (lekkage / krom)': 0.20, 'Lak / Spuitwerk': 0.15, 'Achterdemper (lek / versleten)': 0.20 },
+    'aprilia':   { 'Voorvork (lekkage / krom)': 0.25, 'Stuurlagers': 0.20, 'Lak / Spuitwerk': 0.20 },
+    'mv agusta': { 'Lak / Spuitwerk': 0.25, 'Voorvork (lekkage / krom)': 0.20, 'Koppeling (versleten)': 0.20 },
+    'yamaha':    { 'Ketting / Tandwielen': 0.20, 'Knipperlichten / Richtingaanwijzers': 0.20, 'Lak / Spuitwerk': 0.15 },
+    'honda':     { 'Banden (versleten / oud)': 0.15, 'Accu': 0.15, 'Lak / Spuitwerk': 0.10, 'Uitlaat (roest / lek)': -0.20, 'Koppeling (versleten)': -0.15 },
+    'suzuki':    { 'Corrosie / Roest algemeen': 0.25, 'Verlichting (koplamp / achterlicht)': 0.20, 'Accu': 0.15 },
+    'kawasaki':  { 'Lak / Spuitwerk': 0.20, 'Uitlaat (roest / lek)': 0.20, 'Ketting / Tandwielen': 0.20 },
+    'triumph':   { 'Corrosie / Roest algemeen': 0.25, 'Dashboard / Instrumenten': 0.20, 'Lak / Spuitwerk': 0.15 },
+    'vespa':     { 'Lak / Spuitwerk': 0.30, 'Corrosie / Roest algemeen': 0.30, 'Spiegels': 0.20, 'Verlichting (koplamp / achterlicht)': 0.20, 'Banden (versleten / oud)': -0.10 },
+    'piaggio':   { 'Lak / Spuitwerk': 0.25, 'Corrosie / Roest algemeen': 0.25, 'Verlichting (koplamp / achterlicht)': 0.20 },
+    'harley-davidson': { 'Lak / Spuitwerk': 0.25, 'Accu': 0.20, 'Corrosie / Roest algemeen': 0.20, 'Knipperlichten / Richtingaanwijzers': 0.20 },
+    'indian':    { 'Lak / Spuitwerk': 0.25, 'Accu': 0.20, 'Corrosie / Roest algemeen': 0.20 },
+    'royal enfield': { 'Corrosie / Roest algemeen': 0.30, 'Verlichting (koplamp / achterlicht)': 0.20, 'Accu': 0.20 },
+  };
+
   const shuffleArr = (arr) => {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -722,12 +742,17 @@ export default function TaxatieProgramma() {
     const ticked = new Set();
     const newItems = form.damage_items.map(d => ({ ...d, checked: false, cost: 0, hours: 0, material_cost: 0 }));
 
-    // Build randomized selection: shuffle elke tier en voeg toe op basis van kans
+    // Merk-bias ophalen voor deze taxatie
+    const brandKey = (form.brand || '').toLowerCase().trim();
+    const bias = BRAND_BIASES[brandKey] || {};
+
+    // Build randomized selection: shuffle elke tier en voeg toe op basis van kans (+ merk-bias)
     const selectionOrder = [];
     for (const tier of DAMAGE_TIERS) {
       const shuffled = shuffleArr(tier.items);
       for (const itemName of shuffled) {
-        if (Math.random() <= tier.prob) {
+        const adjustedProb = Math.max(0.05, Math.min(0.99, tier.prob + (bias[itemName] || 0)));
+        if (Math.random() <= adjustedProb) {
           selectionOrder.push(itemName);
         }
       }
@@ -775,7 +800,8 @@ export default function TaxatieProgramma() {
     setForm(f => ({ ...f, damage_items: newItems }));
     setManualDamageAmount(null); // clear override so checklist sum is used
     setShowChecklist(true); // open the checklist so user sees the ticked items
-    toast.success(`${ticked.size} schadeposten aangevinkt — totaal \u20ac${Math.round(neededHerstel).toLocaleString('nl-NL')}`);
+    const brandLabel = bias && Object.keys(bias).length > 0 ? ` (${form.brand}-profiel)` : '';
+    toast.success(`${ticked.size} schadeposten aangevinkt${brandLabel} \u2014 totaal \u20ac${Math.round(neededHerstel).toLocaleString('nl-NL')}`);
   };
 
   // ===== AI onderbouwing genereren =====

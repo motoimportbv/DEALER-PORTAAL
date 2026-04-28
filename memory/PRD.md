@@ -19,7 +19,8 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
-- **Auto-vink schadepunten gerandomiseerd** (Feb 2026): Item-selectie nu via 4-laags probability tier systeem (90%/60%/35%/15% kans per categorie). Items worden binnen elke tier geshuffeld + dobbelsteen-roll voor inclusie. Cost variance verbreed naar ±25% (was ±10%) en labor/material split is 35-50% (was vast 40%). Elke klik produceert een uniek schaderapport.
+- **Merk-specifieke schadeprofielen** (Feb 2026): Auto-vink past nu kansen aan op basis van het merk. Bv. KTM → vaker Koppeling/Uitlaat/Voorvork, Vespa → vaker Lak/Corrosie/Spiegels, BMW → vaker Stuurlagers/Wiellagers, Honda → minder Uitlaat/Koppeling. 16 merken vooraf geconfigureerd. Toast toont actief profiel: "(KTM-profiel)".
+- **Auto-vink schadepunten gerandomiseerd** (Feb 2026): 4-laags probability tier systeem.
 - **AutoTelex Invul Helper** (Feb 2026): Nieuwe sectie in BPM Terugreken-kaart waar admin de inkoopprijs (van factuur) + overig waardeverminderingsbedrag invult.
 - **AI prompt verrijking met regelitems** (Feb 2026): `bpm_ai.py` verzendt nu `hours` + `material_cost` per damage-item naar Claude.
 - **AI Onderbouwing modal flow** (Feb 2026): Na "Genereer onderbouwing (AI)" opent een bewerkbaar modal met de gegenereerde tekst. Automatisch toegevoegde handtekening: *"Vastgesteld door taxateur S. Milone op {report_date}."*. Gebruiker kan tekst aanpassen, opnieuw genereren, of annuleren voordat opslaan in `damage_notes`. Axios timeout verhoogd naar 60s voor AI calls (was globaal 15s).
