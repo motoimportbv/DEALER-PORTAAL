@@ -741,27 +741,41 @@ export default function TaxatieProgramma() {
 
   // ===== AI onderbouwing genereren =====
   const [generatingText, setGeneratingText] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiTextDraft, setAiTextDraft] = useState('');
   const generateOnderbouwing = async () => {
     setGeneratingText(true);
     try {
+      // Compute BPM locally — `bpm` is block-scoped inside form view
+      const bpmCalc = calcBpmLocal(form, manualDamageAmount);
       const res = await axios.post(`${API}/admin/bpm/generate-onderbouwing`, {
         brand: form.brand,
         model: form.model,
         year: form.bouwjaar || (form.first_registration_date || '').slice(0, 4),
         mileage: form.mileage,
         damage_items: form.damage_items,
-        total_herstelkosten: bpm?.herstelkosten || 0,
-        bruto_bpm: bpm?.bruto_bpm || 0,
-        target_bpm: bpm?.netto_bpm || 0,
-      });
-      const text = res.data?.onderbouwing || '';
-      updateField('damage_notes', text);
-      toast.success('Unieke onderbouwing gegenereerd');
+        total_herstelkosten: bpmCalc?.herstelkosten || 0,
+        bruto_bpm: bpmCalc?.bruto_bpm || 0,
+        target_bpm: bpmCalc?.netto_bpm || 0,
+      }, { timeout: 60000 }); // AI generation can take 15-30s
+      const text = (res.data?.onderbouwing || '').trim();
+      // Append taxateur signature with report_date (or today)
+      const dateStr = form.report_date
+        ? new Date(form.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
+        : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
+      const signed = `${text}\n\nVastgesteld door taxateur S. Milone op ${dateStr}.`;
+      setAiTextDraft(signed);
+      setAiModalOpen(true);
     } catch (err) {
       toast.error('Genereren mislukt: ' + (err.response?.data?.detail || err.message));
     } finally {
       setGeneratingText(false);
     }
+  };
+  const saveAiText = () => {
+    updateField('damage_notes', aiTextDraft);
+    setAiModalOpen(false);
+    toast.success('Onderbouwing opgeslagen in rapport');
   };
 
   const [terugrekenBruto, setTerugrekenBruto] = useState('');
@@ -1652,6 +1666,79 @@ export default function TaxatieProgramma() {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* AI Onderbouwing — bewerk modal */}
+        {aiModalOpen && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setAiModalOpen(false)}
+            data-testid="ai-onderbouwing-modal"
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 bg-gradient-to-r from-purple-50 to-fuchsia-50">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <h2 className="text-lg font-black text-zinc-900">AI Onderbouwing — Bewerk voor opslaan</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAiModalOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors"
+                  data-testid="ai-modal-close-btn"
+                >
+                  <X className="w-5 h-5 text-zinc-500" />
+                </button>
+              </div>
+              <div className="px-5 py-4 overflow-y-auto flex-1">
+                <p className="text-xs text-zinc-500 mb-3">
+                  De AI heeft onderstaande tekst gegenereerd. Pas aan waar nodig &mdash; deze tekst verschijnt op de pagina <b>&quot;Toelichting taxateur&quot;</b> in de PDF en wordt persoonlijk ondertekend.
+                </p>
+                <textarea
+                  value={aiTextDraft}
+                  onChange={(e) => setAiTextDraft(e.target.value)}
+                  className="w-full min-h-[400px] border border-zinc-300 rounded-lg px-3 py-2 text-sm leading-relaxed focus:border-purple-500 focus:outline-none font-serif"
+                  data-testid="ai-text-draft-textarea"
+                />
+                <p className="text-[10px] text-zinc-400 mt-2">
+                  {aiTextDraft.length} tekens / ~{Math.ceil(aiTextDraft.split(/\s+/).filter(Boolean).length)} woorden
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-zinc-200 bg-zinc-50">
+                <button
+                  type="button"
+                  onClick={() => setAiModalOpen(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-zinc-300 hover:bg-zinc-100 transition-colors"
+                  data-testid="ai-modal-cancel-btn"
+                >
+                  Annuleren
+                </button>
+                <button
+                  type="button"
+                  onClick={generateOnderbouwing}
+                  disabled={generatingText}
+                  className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-purple-300 text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                  data-testid="ai-modal-regenerate-btn"
+                >
+                  {generatingText
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> AI schrijft...</>
+                    : <><Sparkles className="w-3.5 h-3.5" /> Opnieuw genereren</>
+                  }
+                </button>
+                <button
+                  type="button"
+                  onClick={saveAiText}
+                  className="px-4 py-2 rounded-lg text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white inline-flex items-center gap-1.5 transition-colors"
+                  data-testid="ai-modal-save-btn"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Opslaan in rapport
+                </button>
               </div>
             </div>
           </div>
