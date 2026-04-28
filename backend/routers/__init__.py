@@ -20,6 +20,7 @@ from routers.reviews import router as reviews_router
 from routers.taxatie import router as taxatie_router
 from routers.google_motors import router as google_motors_router
 from routers.autotelex import router as autotelex_router
+from routers.bpm_ai import router as bpm_ai_router
 
 all_routers = [
     exchange_router,
@@ -41,4 +42,5 @@ all_routers = [
     taxatie_router,
     google_motors_router,
     autotelex_router,
+    bpm_ai_router,
 ]

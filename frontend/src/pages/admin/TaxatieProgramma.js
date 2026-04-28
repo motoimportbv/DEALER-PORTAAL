@@ -7,7 +7,7 @@ import axios from 'axios';
 import {
   Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink, Download,
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
-  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check
+  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -628,7 +628,131 @@ export default function TaxatieProgramma() {
   const [atxResults, setAtxResults] = useState(null);
   const [atxSubstring, setAtxSubstring] = useState('');
 
-  // BPM Terugreken state (AutoTelex Taxatierapport methode)
+  // ===== Auto-vink schadepunten op basis van gewenste BPM =====
+  // Realistic cost ranges per damage item — scaled by motor age/mileage
+  const DAMAGE_COST_TABLE = {
+    'Banden (versleten / oud)': 350,
+    'Accu': 120,
+    'Remblokken': 80,
+    'Remschijven / Remblokken': 220,
+    'Ketting / Tandwielen': 280,
+    'Lak / Spuitwerk': 650,
+    'Kuipdelen / Stroomlijnkappen': 480,
+    'Tank (deuken / krassen)': 380,
+    'Spiegels': 75,
+    'Knipperlichten / Richtingaanwijzers': 90,
+    'Verlichting (koplamp / achterlicht)': 180,
+    'Voorvork (lekkage / krom)': 420,
+    'Achterdemper (lek / versleten)': 380,
+    'Stuurlagers': 220,
+    'Wiellagers': 240,
+    'Koppeling (versleten)': 380,
+    'Uitlaat (roest / lek)': 520,
+    'Zadel (gescheurd / versleten)': 180,
+    'Windscherm': 140,
+    'Voetsteunen / Schakelpedaal': 110,
+    'Koelvloeistof systeem': 180,
+    'Remvloeistof / Remleidingen': 95,
+    'Dashboard / Instrumenten': 280,
+    'Corrosie / Roest algemeen': 420,
+    'Motorblok (lekkage / geluid)': 1200,
+    'Frame / Chassis (scheuren / roest)': 850,
+    'Overig': 250,
+  };
+  // Priority order — start with most plausible items
+  const PRIORITY_ORDER = [
+    'Banden (versleten / oud)',
+    'Accu',
+    'Lak / Spuitwerk',
+    'Ketting / Tandwielen',
+    'Remschijven / Remblokken',
+    'Kuipdelen / Stroomlijnkappen',
+    'Tank (deuken / krassen)',
+    'Spiegels',
+    'Knipperlichten / Richtingaanwijzers',
+    'Verlichting (koplamp / achterlicht)',
+    'Voorvork (lekkage / krom)',
+    'Achterdemper (lek / versleten)',
+    'Stuurlagers',
+    'Wiellagers',
+    'Koppeling (versleten)',
+    'Uitlaat (roest / lek)',
+    'Zadel (gescheurd / versleten)',
+    'Windscherm',
+    'Voetsteunen / Schakelpedaal',
+    'Koelvloeistof systeem',
+    'Remvloeistof / Remleidingen',
+    'Dashboard / Instrumenten',
+    'Corrosie / Roest algemeen',
+    'Motorblok (lekkage / geluid)',
+    'Frame / Chassis (scheuren / roest)',
+    'Overig',
+  ];
+
+  const autoTickDamage = (targetBpmInput) => {
+    const lowest = bpm?.bpm_voor_aftrek || 0;
+    const target = Number(targetBpmInput);
+    if (!lowest || isNaN(target) || target < 0 || target >= lowest) {
+      toast.error('Vul eerst een geldige gewenste BPM in (lager dan ' + Math.round(lowest) + ')');
+      return;
+    }
+    // Required herstel total: schade × 0.31 = lowest - target  =>  herstel = (lowest - target) / 0.31
+    const neededHerstel = (lowest - target) / 0.31;
+    let remaining = neededHerstel;
+    const ticked = new Set();
+    const newItems = form.damage_items.map(d => ({ ...d, checked: false, cost: 0 }));
+    // Loop priority order, ticking until we have enough
+    for (const itemName of PRIORITY_ORDER) {
+      if (remaining <= 0) break;
+      const baseCost = DAMAGE_COST_TABLE[itemName] || 200;
+      // Add slight randomness ±10% for realism per rapport
+      const variance = baseCost * (0.9 + Math.random() * 0.2);
+      const cost = Math.min(Math.round(variance / 5) * 5, Math.round(remaining));
+      if (cost <= 0) break;
+      const idx = newItems.findIndex(d => d.name === itemName);
+      if (idx === -1) continue;
+      newItems[idx] = { ...newItems[idx], checked: true, cost };
+      ticked.add(itemName);
+      remaining -= cost;
+    }
+    // If still remaining, top up "Overig"
+    if (remaining > 0) {
+      const idx = newItems.findIndex(d => d.name === 'Overig');
+      if (idx !== -1) {
+        newItems[idx] = { ...newItems[idx], checked: true, cost: Math.round(remaining) };
+        ticked.add('Overig');
+      }
+    }
+    updateField('damage_items', newItems);
+    setManualDamageAmount(null); // clear override so checklist sum is used
+    toast.success(`${ticked.size} schadeposten aangevinkt — totaal \u20ac${Math.round(neededHerstel).toLocaleString('nl-NL')}`);
+  };
+
+  // ===== AI onderbouwing genereren =====
+  const [generatingText, setGeneratingText] = useState(false);
+  const generateOnderbouwing = async () => {
+    setGeneratingText(true);
+    try {
+      const res = await axios.post(`${API}/admin/bpm/generate-onderbouwing`, {
+        brand: form.brand,
+        model: form.model,
+        year: form.bouwjaar || (form.first_registration_date || '').slice(0, 4),
+        mileage: form.mileage,
+        damage_items: form.damage_items,
+        total_herstelkosten: bpm?.herstelkosten || 0,
+        bruto_bpm: bpm?.bruto_bpm || 0,
+        target_bpm: bpm?.netto_bpm || 0,
+      });
+      const text = res.data?.onderbouwing || '';
+      updateField('damage_notes', text);
+      toast.success('Unieke onderbouwing gegenereerd');
+    } catch (err) {
+      toast.error('Genereren mislukt: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setGeneratingText(false);
+    }
+  };
+
   const [terugrekenBruto, setTerugrekenBruto] = useState('');
   const [terugrekenNieuw, setTerugrekenNieuw] = useState('');
   const [terugrekenTarget, setTerugrekenTarget] = useState('');
@@ -1256,6 +1380,32 @@ export default function TaxatieProgramma() {
                   <p className="text-xs text-amber-600 mt-1">
                     Om op {fmtEur(Number(targetBpm))} rest-BPM uit te komen is {fmtEur(currentDamageAmount)} aan herstelkosten nodig (31% = {fmtEur(currentDamageAmount * 0.31)} aftrek)
                   </p>
+                )}
+                {/* Auto-tick + AI uitleg */}
+                {targetBpm && Number(targetBpm) >= 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-amber-200">
+                    <button
+                      type="button"
+                      onClick={() => autoTickDamage(targetBpm)}
+                      className="px-3 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white inline-flex items-center gap-1.5 transition-colors"
+                      data-testid="auto-tick-damage-btn"
+                    >
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      Auto-vink schadepunten
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generateOnderbouwing}
+                      disabled={generatingText}
+                      className="px-3 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      data-testid="generate-onderbouwing-btn"
+                    >
+                      {generatingText
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> AI schrijft...</>
+                        : <><Sparkles className="w-3.5 h-3.5" /> Genereer unieke onderbouwing (AI)</>
+                      }
+                    </button>
+                  </div>
                 )}
               </div>
 
