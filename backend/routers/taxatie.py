@@ -740,9 +740,9 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import mm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
     import io
     
     buffer = io.BytesIO()
@@ -940,10 +940,6 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
             ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ]))
         elements.append(t)
-        
-        if doc.get("damage_notes"):
-            elements.append(Spacer(1, 2*mm))
-            elements.append(Paragraph(f"Toelichting: {doc['damage_notes']}", small_style))
         elements.append(Spacer(1, 4*mm))
     
     # 5. Eindberekening
@@ -982,6 +978,30 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     ]))
     elements.append(t)
     elements.append(Spacer(1, 6*mm))
+    
+    # 6. Toelichting taxateur (AI gegenereerde unieke onderbouwing - aparte pagina)
+    if doc.get("damage_notes"):
+        elements.append(PageBreak())
+        elements.append(Paragraph("6. Toelichting taxateur", section_style))
+        elements.append(Spacer(1, 3*mm))
+        toelichting_style = ParagraphStyle(
+            'Toelichting', parent=normal, fontSize=10, leading=14, alignment=TA_JUSTIFY, spaceAfter=4*mm
+        )
+        # Split text into paragraphs on double newline or single newline
+        paragraphs = [p.strip() for p in str(doc["damage_notes"]).replace("\r", "").split("\n\n") if p.strip()]
+        if not paragraphs:
+            paragraphs = [str(doc["damage_notes"]).strip()]
+        for p in paragraphs:
+            # Replace remaining single newlines with spaces inside paragraph
+            elements.append(Paragraph(p.replace("\n", " "), toelichting_style))
+        elements.append(Spacer(1, 4*mm))
+        elements.append(HRFlowable(width="40%", thickness=0.5, color=colors.HexColor('#999')))
+        elements.append(Spacer(1, 2*mm))
+        elements.append(Paragraph(
+            "Onderbouwing opgesteld door de taxateur op basis van fysieke inspectie en bevindingen.",
+            ParagraphStyle('TOSig', parent=small_style, fontSize=8, textColor=colors.HexColor('#666'))
+        ))
+        elements.append(Spacer(1, 6*mm))
     
     # Footer
     now = datetime.now(timezone.utc)
@@ -1260,7 +1280,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
     import io
     
     buffer = io.BytesIO()
@@ -1491,10 +1511,6 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
             ts_dmg.append(('BACKGROUND', (0,i), (-1,i), colors.HexColor('#fafafa')))
     t.setStyle(TableStyle(ts_dmg))
     elements.append(t)
-    
-    if doc.get("damage_notes"):
-        elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph(f"<i>Toelichting: {doc['damage_notes']}</i>", sm))
     elements.append(Spacer(1, 4*mm))
     
     # Section 4: BPM Vermindering
@@ -1535,8 +1551,30 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(t)
     elements.append(Spacer(1, 6*mm))
     
-    # Section 5: Verklaring & Ondertekening
-    elements.append(Paragraph("5. Verklaring en ondertekening", section_s))
+    # Section 5: Toelichting taxateur (AI gegenereerde unieke onderbouwing op aparte pagina)
+    if doc.get("damage_notes"):
+        elements.append(PageBreak())
+        elements.append(Paragraph("5. Toelichting taxateur", section_s))
+        elements.append(Spacer(1, 3*mm))
+        toelichting_s = ParagraphStyle(
+            'TLT', parent=n, fontSize=10, leading=14, alignment=TA_JUSTIFY, spaceAfter=4*mm
+        )
+        paragraphs = [p.strip() for p in str(doc["damage_notes"]).replace("\r", "").split("\n\n") if p.strip()]
+        if not paragraphs:
+            paragraphs = [str(doc["damage_notes"]).strip()]
+        for p in paragraphs:
+            elements.append(Paragraph(p.replace("\n", " "), toelichting_s))
+        elements.append(Spacer(1, 4*mm))
+        elements.append(HRFlowable(width="40%", thickness=0.5, color=colors.HexColor('#999')))
+        elements.append(Spacer(1, 2*mm))
+        elements.append(Paragraph(
+            "Onderbouwing opgesteld door de taxateur op basis van fysieke inspectie en bevindingen.",
+            ParagraphStyle('TLTSig', parent=sm, fontSize=8, textColor=colors.HexColor('#666'))
+        ))
+        elements.append(Spacer(1, 6*mm))
+    
+    # Section 6: Verklaring & Ondertekening
+    elements.append(Paragraph("6. Verklaring en ondertekening", section_s))
     elements.append(Paragraph(
         f"Ondergetekende verklaart dat het motorrijtuig <b>{brand} {model}</b> "
         f"(chassisnummer <b>{vin}</b>) op <b>{report_date_str}</b> fysiek is ge\u00efnspecteerd "

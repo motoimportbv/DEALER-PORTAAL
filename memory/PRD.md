@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **AI Toelichting taxateur in PDFs** (Feb 2026): Wanneer `damage_notes` is gevuld (handmatig of via AI-knop "Genereer unieke onderbouwing"), wordt de tekst nu op een aparte pagina "Toelichting taxateur" geplaatst in zowel het BPM Rapport (sectie 6) als het Taxatieverslag (sectie 5, Verklaring naar 6). Tekst wordt netjes gerenderd met `TA_JUSTIFY`, paragraaf-splitsing op `\n\n`, en aparte PageBreak voor leesbaarheid.
 - **Auto-vink schadepunten knop** in BPM Taxatie: scope-bug opgelost (`bpm` was block-scoped binnen `if (view==='form')` en niet zichtbaar in `autoTickDamage`). `bpm` wordt nu lokaal berekend via `calcBpmLocal(form, null)`. Bonus: vult ook `hours` (40% labor) + `material_cost` automatisch in en opent de checklist (Feb 2026)
 - Backend Refactoring, CHF Prijsaanpassing, BPM Snel Aanpassen
 - AutoTelex Gegevens Overnemen, BPM Rapport PDF
