@@ -36,7 +36,17 @@ async def generate_bpm_onderbouwing(
     damage_lines = []
     for d in damage_items:
         if d.get("checked") and d.get("cost", 0) > 0:
-            damage_lines.append(f"- {d.get('name')}: \u20ac{d.get('cost'):.0f}")
+            name = d.get("name", "Onbekend")
+            cost = d.get("cost", 0)
+            hours = d.get("hours", 0) or 0
+            material = d.get("material_cost", 0) or 0
+            parts = []
+            if hours > 0:
+                parts.append(f"{hours:.1f} uur arbeid \u00e0 \u20ac65 = \u20ac{hours*65:.0f}")
+            if material > 0:
+                parts.append(f"\u20ac{material:.0f} materiaal")
+            breakdown = " + ".join(parts) if parts else f"\u20ac{cost:.0f} totaal"
+            damage_lines.append(f"- {name}: {breakdown} (totaal \u20ac{cost:.0f})")
     damage_block = "\n".join(damage_lines) if damage_lines else "- (geen specifieke schade-items aangevinkt)"
 
     system_msg = (
@@ -61,11 +71,11 @@ Vastgestelde rest-BPM na taxatie: \u20ac{target_bpm:,.0f}
 
 OPDRACHT:
 1. Schrijf 2 tot 3 alinea's professionele technische onderbouwing waarom de waarde zo laag is uitgekomen.
-2. Per aangevinkt schade-item: 1 zin technisch beschrijvend (bv. "De voorvork vertoont olielekkage met zichtbare aanslag op de stofkappen, hetgeen revisie of vervanging noodzakelijk maakt.").
+2. Per aangevinkt schade-item: een technisch beschrijvende zin (bv. "De voorvork vertoont olielekkage met zichtbare aanslag op de stofkappen, hetgeen revisie of vervanging noodzakelijk maakt.") waarbij je de **exacte uren en materiaalkosten** uit de bovenstaande lijst expliciet noemt — bijvoorbeeld: "Het herstel vergt 2,5 uur arbeid (\u20ac 162) plus \u20ac 240 aan onderdelen."
 3. Sluit af met een conclusie waarom de gevraagde rest-BPM redelijk is gezien de staat.
 4. Wees creatief en gevarieerd: GEBRUIK GEEN STANDAARDZINNEN. Elke onderbouwing moet duidelijk anders klinken dan een vorige.
 5. Vermijd: bullets, koppen, opsommingen. Alleen vloeiende paragrafen.
-6. Lengte: 200-350 woorden.
+6. Lengte: 250-400 woorden.
 
 Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel."""
 
