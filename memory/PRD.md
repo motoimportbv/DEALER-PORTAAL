@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Auto-vink schadepunten knop** in BPM Taxatie: scope-bug opgelost (`bpm` was block-scoped binnen `if (view==='form')` en niet zichtbaar in `autoTickDamage`). `bpm` wordt nu lokaal berekend via `calcBpmLocal(form, null)`. Bonus: vult ook `hours` (40% labor) + `material_cost` automatisch in en opent de checklist (Feb 2026)
 - Backend Refactoring, CHF Prijsaanpassing, BPM Snel Aanpassen
 - AutoTelex Gegevens Overnemen, BPM Rapport PDF
 - Belastingdienst Formulier Auto-Fill (21 pagina's, 92 velden)

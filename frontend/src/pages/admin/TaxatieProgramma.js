@@ -690,7 +690,9 @@ export default function TaxatieProgramma() {
   ];
 
   const autoTickDamage = (targetBpmInput) => {
-    const lowest = bpm?.bpm_voor_aftrek || 0;
+    // Compute bpm locally — `bpm` from the form view is block-scoped and not visible here
+    const bpmCalc = calcBpmLocal(form, null);
+    const lowest = bpmCalc?.bpm_voor_aftrek || 0;
     const target = Number(targetBpmInput);
     if (!lowest || isNaN(target) || target < 0 || target >= lowest) {
       toast.error('Vul eerst een geldige gewenste BPM in (lager dan ' + Math.round(lowest) + ')');
@@ -700,7 +702,7 @@ export default function TaxatieProgramma() {
     const neededHerstel = (lowest - target) / 0.31;
     let remaining = neededHerstel;
     const ticked = new Set();
-    const newItems = form.damage_items.map(d => ({ ...d, checked: false, cost: 0 }));
+    const newItems = form.damage_items.map(d => ({ ...d, checked: false, cost: 0, hours: 0, material_cost: 0 }));
     // Loop priority order, ticking until we have enough
     for (const itemName of PRIORITY_ORDER) {
       if (remaining <= 0) break;
@@ -711,7 +713,11 @@ export default function TaxatieProgramma() {
       if (cost <= 0) break;
       const idx = newItems.findIndex(d => d.name === itemName);
       if (idx === -1) continue;
-      newItems[idx] = { ...newItems[idx], checked: true, cost };
+      // Split cost into ~40% labor, 60% material for realism
+      const hours = Math.max(0.5, Math.round((cost * 0.4 / LABOR_RATE) * 2) / 2); // 0.5-uur stappen
+      const laborCost = Math.round(hours * LABOR_RATE);
+      const material_cost = Math.max(0, cost - laborCost);
+      newItems[idx] = { ...newItems[idx], checked: true, cost, hours, material_cost };
       ticked.add(itemName);
       remaining -= cost;
     }
@@ -719,12 +725,17 @@ export default function TaxatieProgramma() {
     if (remaining > 0) {
       const idx = newItems.findIndex(d => d.name === 'Overig');
       if (idx !== -1) {
-        newItems[idx] = { ...newItems[idx], checked: true, cost: Math.round(remaining) };
+        const cost = Math.round(remaining);
+        const hours = Math.max(0.5, Math.round((cost * 0.4 / LABOR_RATE) * 2) / 2);
+        const laborCost = Math.round(hours * LABOR_RATE);
+        const material_cost = Math.max(0, cost - laborCost);
+        newItems[idx] = { ...newItems[idx], checked: true, cost, hours, material_cost };
         ticked.add('Overig');
       }
     }
-    updateField('damage_items', newItems);
+    setForm(f => ({ ...f, damage_items: newItems }));
     setManualDamageAmount(null); // clear override so checklist sum is used
+    setShowChecklist(true); // open the checklist so user sees the ticked items
     toast.success(`${ticked.size} schadeposten aangevinkt — totaal \u20ac${Math.round(neededHerstel).toLocaleString('nl-NL')}`);
   };
 
