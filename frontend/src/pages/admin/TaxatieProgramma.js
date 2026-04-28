@@ -508,7 +508,11 @@ function BpmReport({ taxatie, onClose }) {
                 </table>
               </div>
             )}
-            {taxatie.damage_notes && <p className="text-sm text-zinc-600 mb-4">Toelichting schade: {taxatie.damage_notes}</p>}
+            {taxatie.damage_notes && (
+              <p className="text-xs text-zinc-400 italic mb-4 print:hidden">
+                Toelichting taxateur is opgenomen op een aparte pagina in het Taxatieverslag PDF.
+              </p>
+            )}
 
             <div className="border-t-2 border-zinc-400 pt-4">
               <div className="flex items-center justify-between">

@@ -19,7 +19,8 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
-- **Merk-specifieke schadeprofielen** (Feb 2026): Auto-vink past nu kansen aan op basis van het merk. Bv. KTM → vaker Koppeling/Uitlaat/Voorvork, Vespa → vaker Lak/Corrosie/Spiegels, BMW → vaker Stuurlagers/Wiellagers, Honda → minder Uitlaat/Koppeling. 16 merken vooraf geconfigureerd. Toast toont actief profiel: "(KTM-profiel)".
+- **AI Toelichting nog maar 1x in print** (Feb 2026): Tekst verwijderd uit HTML BpmReport view + BPM Rapport PDF. Verschijnt nu uitsluitend op de aparte pagina "Toelichting taxateur" in het officiële **Taxatieverslag PDF** (Belastingdienst-rapport). HTML view toont een kleine notitie "Toelichting is in Taxatieverslag PDF" als guidance.
+- **Merk-specifieke schadeprofielen** (Feb 2026): 16 merken vooraf geconfigureerd.
 - **Auto-vink schadepunten gerandomiseerd** (Feb 2026): 4-laags probability tier systeem.
 - **AutoTelex Invul Helper** (Feb 2026): Nieuwe sectie in BPM Terugreken-kaart waar admin de inkoopprijs (van factuur) + overig waardeverminderingsbedrag invult.
 - **AI prompt verrijking met regelitems** (Feb 2026): `bpm_ai.py` verzendt nu `hours` + `material_cost` per damage-item naar Claude.

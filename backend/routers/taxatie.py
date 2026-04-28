@@ -979,29 +979,8 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     elements.append(t)
     elements.append(Spacer(1, 6*mm))
     
-    # 6. Toelichting taxateur (AI gegenereerde unieke onderbouwing - aparte pagina)
-    if doc.get("damage_notes"):
-        elements.append(PageBreak())
-        elements.append(Paragraph("6. Toelichting taxateur", section_style))
-        elements.append(Spacer(1, 3*mm))
-        toelichting_style = ParagraphStyle(
-            'Toelichting', parent=normal, fontSize=10, leading=14, alignment=TA_JUSTIFY, spaceAfter=4*mm
-        )
-        # Split text into paragraphs on double newline or single newline
-        paragraphs = [p.strip() for p in str(doc["damage_notes"]).replace("\r", "").split("\n\n") if p.strip()]
-        if not paragraphs:
-            paragraphs = [str(doc["damage_notes"]).strip()]
-        for p in paragraphs:
-            # Replace remaining single newlines with spaces inside paragraph
-            elements.append(Paragraph(p.replace("\n", " "), toelichting_style))
-        elements.append(Spacer(1, 4*mm))
-        elements.append(HRFlowable(width="40%", thickness=0.5, color=colors.HexColor('#999')))
-        elements.append(Spacer(1, 2*mm))
-        elements.append(Paragraph(
-            "Onderbouwing opgesteld door de taxateur op basis van fysieke inspectie en bevindingen.",
-            ParagraphStyle('TOSig', parent=small_style, fontSize=8, textColor=colors.HexColor('#666'))
-        ))
-        elements.append(Spacer(1, 6*mm))
+    # NB: De AI gegenereerde "Toelichting taxateur" staat alleen in het Taxatieverslag PDF
+    # (officieel rapport voor de Belastingdienst), niet hier. Voorkomt dubbele weergave.
     
     # Footer
     now = datetime.now(timezone.utc)
