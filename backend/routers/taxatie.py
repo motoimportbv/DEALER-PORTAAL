@@ -24,6 +24,26 @@ from models import *
 
 router = APIRouter(tags=["Taxatie"])
 
+def _owner_filter_for_user(user: dict, owner_field: str = "owner_user_id") -> dict:
+    """Returns Mongo filter so each user only sees their own records.
+    
+    - taxateur (DK Automotive etc.): only own records (owner_user_id == user.id)
+    - admin / Moto Import: own records + legacy records without owner field
+    """
+    user_id = user.get("id")
+    if user.get("role") == "taxateur":
+        return {owner_field: user_id}
+    # admin: owner is admin himself OR field missing/empty (legacy records)
+    return {"$or": [{owner_field: user_id}, {owner_field: {"$in": [None, ""]}}, {owner_field: {"$exists": False}}]}
+
+
+def _stamp_owner(doc: dict, user: dict) -> dict:
+    """Add ownership fields to a new document."""
+    doc["owner_user_id"] = user.get("id")
+    doc["owner_email"] = (user.get("email") or "").lower()
+    return doc
+
+
 # ==================== TAXATIE INVOICES ====================
 TAXATIE_BANK_NAME = "S. Milone"
 TAXATIE_BANK_IBAN = "NL84BUNQ2159356875"
@@ -66,6 +86,7 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
         "created_by": current_user["id"],
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    _stamp_owner(invoice, current_user)
     
     await db.taxatie_invoices.insert_one(invoice)
     del invoice["_id"]
@@ -75,14 +96,14 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
 async def list_taxatie_invoices(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
         raise HTTPException(status_code=403, detail="Geen toegang")
-    invoices = await db.taxatie_invoices.find({}, {"_id": 0}).sort("invoice_number", -1).to_list(500)
+    invoices = await db.taxatie_invoices.find(_owner_filter_for_user(current_user), {"_id": 0}).sort("invoice_number", -1).to_list(500)
     return invoices
 
 @router.get("/taxatie/invoices/{invoice_id}")
 async def get_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
         raise HTTPException(status_code=403, detail="Geen toegang")
-    invoice = await db.taxatie_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    invoice = await db.taxatie_invoices.find_one({"id": invoice_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not invoice:
         raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     return invoice
@@ -97,7 +118,7 @@ async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), curren
             update_fields[field] = body[field]
     if not update_fields:
         raise HTTPException(status_code=400, detail="Geen velden om bij te werken")
-    result = await db.taxatie_invoices.update_one({"id": invoice_id}, {"$set": update_fields})
+    result = await db.taxatie_invoices.update_one({"id": invoice_id, **_owner_filter_for_user(current_user)}, {"$set": update_fields})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     return {"status": "updated"}
@@ -106,7 +127,7 @@ async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), curren
 async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
         raise HTTPException(status_code=403, detail="Geen toegang")
-    result = await db.taxatie_invoices.delete_one({"id": invoice_id})
+    result = await db.taxatie_invoices.delete_one({"id": invoice_id, **_owner_filter_for_user(current_user)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     return {"status": "deleted"}
@@ -654,6 +675,7 @@ async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(requi
         "created_at": now.isoformat(),
         "created_by": current_user["email"],
     }
+    _stamp_owner(doc, current_user)
 
     await db.taxatie_programma.insert_one(doc)
     doc.pop("_id", None)
@@ -663,13 +685,13 @@ async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(requi
 async def get_taxaties(current_user: dict = Depends(require_taxatie_access)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    return await db.taxatie_programma.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return await db.taxatie_programma.find(_owner_filter_for_user(current_user), {"_id": 0}).sort("created_at", -1).to_list(500)
 
 @router.get("/taxatie-programma/{taxatie_id}")
 async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return doc
@@ -700,7 +722,7 @@ async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dic
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    result = await db.taxatie_programma.update_one({"id": taxatie_id}, {"$set": update})
+    result = await db.taxatie_programma.update_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"$set": update})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
@@ -710,7 +732,7 @@ async def finalize_taxatie(taxatie_id: str, current_user: dict = Depends(require
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
     result = await db.taxatie_programma.update_one(
-        {"id": taxatie_id},
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
         {"$set": {"status": "definitief", "finalized_at": datetime.now(timezone.utc).isoformat()}}
     )
     if result.matched_count == 0:
@@ -721,7 +743,7 @@ async def finalize_taxatie(taxatie_id: str, current_user: dict = Depends(require
 async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    result = await db.taxatie_programma.delete_one({"id": taxatie_id})
+    result = await db.taxatie_programma.delete_one({"id": taxatie_id, **_owner_filter_for_user(current_user)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return {"status": "deleted"}
@@ -733,7 +755,7 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
     
-    doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     
@@ -1019,7 +1041,7 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
     
-    doc_data = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    doc_data = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not doc_data:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     
@@ -1253,7 +1275,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
     
-    doc = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
+    doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     

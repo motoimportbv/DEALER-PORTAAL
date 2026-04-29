@@ -31,7 +31,7 @@ const INSPECTION_ITEMS = [
   { key: 'general', label: 'Algemene Staat', desc: 'Totaalindruk, netheid, completheid' },
 ];
 
-const DEFAULT_DAMAGE_ITEMS = [
+const DAMAGE_ITEMS_MOTOR = [
   { name: 'Kuipdelen / Stroomlijnkappen', checked: false, cost: 0, hours: 0, material_cost: 0 },
   { name: 'Tank (deuken / krassen)', checked: false, cost: 0, hours: 0, material_cost: 0 },
   { name: 'Lak / Spuitwerk', checked: false, cost: 0, hours: 0, material_cost: 0 },
@@ -59,6 +59,51 @@ const DEFAULT_DAMAGE_ITEMS = [
   { name: 'Corrosie / Roest algemeen', checked: false, cost: 0, hours: 0, material_cost: 0 },
   { name: 'Overig', checked: false, cost: 0, hours: 0, material_cost: 0 },
 ];
+
+// Auto-specifieke schade items (personenauto's)
+const DAMAGE_ITEMS_AUTO = [
+  { name: 'Lakwerk / Spuitwerk (krassen, deuken)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Bumper voor (deuken / krassen)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Bumper achter (deuken / krassen)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Voorruit (sterretje / barst)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Zijruiten / Achterruit', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Koplampen (mat / beschadigd)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Achterlichten / Mistlamp', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Spiegels (elektrisch / behuizing)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Velgen (krassen / kromme rand)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Banden (profiel / leeftijd)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Remschijven / Remblokken voor', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Remschijven / Remblokken achter', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Schokdempers voor', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Schokdempers achter', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Stuurinrichting / Fuseekogels', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Wiellagers', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Aandrijfas / Stofhoezen', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Distributieriem / -ketting', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Koppeling (slipt / versleten)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Versnellingsbak / Olielekkage', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Uitlaat (roest / lek / katalysator)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Accu', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Airco (geen koeling / lek)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Ruitenwissers / Sproeiers', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Interieur / Bekleding (slijtage / scheuren)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Dashboard / Multimedia', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Centrale vergrendeling / Sleutels', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Koelvloeistof systeem / Radiateur', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Olieverlies (motor / versnellingsbak)', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Foutcodes / ECU diagnose', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Roest / Corrosie onderzijde', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'APK gebreken / Verwacht herstel', checked: false, cost: 0, hours: 0, material_cost: 0 },
+  { name: 'Overig', checked: false, cost: 0, hours: 0, material_cost: 0 },
+];
+
+const getDamageItemsForUser = (user) => {
+  const vt = (user?.vehicle_type || 'motorfiets').toLowerCase();
+  return vt === 'auto' ? DAMAGE_ITEMS_AUTO : DAMAGE_ITEMS_MOTOR;
+};
+
+// Backward compatibility — kept for existing references
+const DEFAULT_DAMAGE_ITEMS = DAMAGE_ITEMS_MOTOR;
 
 const LABOR_RATE = 65; // €65 per uur excl. BTW
 
@@ -615,6 +660,7 @@ function BpmReport({ taxatie, onClose }) {
 export default function TaxatieProgramma() {
   const { token, user } = useAuth();
   const cb = getBranding(user);
+  const userDamageItems = getDamageItemsForUser(user);
   const [taxaties, setTaxaties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('list');
@@ -622,7 +668,7 @@ export default function TaxatieProgramma() {
   const [selectedTaxatie, setSelectedTaxatie] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) });
+  const [form, setForm] = useState({ ...EMPTY_FORM, damage_items: userDamageItems.map(d => ({ ...d })) });
   const [searchTerm, setSearchTerm] = useState('');
   
   // Quick BPM tools state
@@ -637,8 +683,10 @@ export default function TaxatieProgramma() {
   const [atxSubstring, setAtxSubstring] = useState('');
 
   // ===== Auto-vink schadepunten op basis van gewenste BPM =====
-  // Realistic cost ranges per damage item — scaled by motor age/mileage
-  const DAMAGE_COST_TABLE = {
+  // ===== Cost tables / tier-systems — verschillend voor auto's en motoren =====
+  const isAuto = (cb.vehicleType || 'motorfiets') === 'auto';
+
+  const DAMAGE_COST_TABLE_MOTOR = {
     'Banden (versleten / oud)': 350,
     'Accu': 120,
     'Remblokken': 80,
@@ -667,47 +715,102 @@ export default function TaxatieProgramma() {
     'Frame / Chassis (scheuren / roest)': 850,
     'Overig': 250,
   };
-  // Priority order with probability tiers — randomized per rapport zodat elk taxatieverslag uniek is
-  const DAMAGE_TIERS = [
-    // Tier 1 — very common (90% kans, altijd in het rapport)
+
+  const DAMAGE_COST_TABLE_AUTO = {
+    'Lakwerk / Spuitwerk (krassen, deuken)': 750,
+    'Bumper voor (deuken / krassen)': 480,
+    'Bumper achter (deuken / krassen)': 450,
+    'Voorruit (sterretje / barst)': 420,
+    'Zijruiten / Achterruit': 320,
+    'Koplampen (mat / beschadigd)': 280,
+    'Achterlichten / Mistlamp': 180,
+    'Spiegels (elektrisch / behuizing)': 220,
+    'Velgen (krassen / kromme rand)': 350,
+    'Banden (profiel / leeftijd)': 480,
+    'Remschijven / Remblokken voor': 280,
+    'Remschijven / Remblokken achter': 240,
+    'Schokdempers voor': 380,
+    'Schokdempers achter': 360,
+    'Stuurinrichting / Fuseekogels': 320,
+    'Wiellagers': 220,
+    'Aandrijfas / Stofhoezen': 380,
+    'Distributieriem / -ketting': 680,
+    'Koppeling (slipt / versleten)': 850,
+    'Versnellingsbak / Olielekkage': 420,
+    'Uitlaat (roest / lek / katalysator)': 580,
+    'Accu': 180,
+    'Airco (geen koeling / lek)': 320,
+    'Ruitenwissers / Sproeiers': 95,
+    'Interieur / Bekleding (slijtage / scheuren)': 380,
+    'Dashboard / Multimedia': 320,
+    'Centrale vergrendeling / Sleutels': 240,
+    'Koelvloeistof systeem / Radiateur': 380,
+    'Olieverlies (motor / versnellingsbak)': 280,
+    'Foutcodes / ECU diagnose': 180,
+    'Roest / Corrosie onderzijde': 480,
+    'APK gebreken / Verwacht herstel': 320,
+    'Overig': 280,
+  };
+
+  const DAMAGE_COST_TABLE = isAuto ? DAMAGE_COST_TABLE_AUTO : DAMAGE_COST_TABLE_MOTOR;
+
+  const DAMAGE_TIERS_MOTOR = [
+    { prob: 0.9, items: ['Banden (versleten / oud)', 'Accu', 'Lak / Spuitwerk', 'Ketting / Tandwielen', 'Remschijven / Remblokken'] },
+    { prob: 0.6, items: ['Kuipdelen / Stroomlijnkappen', 'Tank (deuken / krassen)', 'Spiegels', 'Voorvork (lekkage / krom)', 'Verlichting (koplamp / achterlicht)', 'Uitlaat (roest / lek)'] },
+    { prob: 0.35, items: ['Achterdemper (lek / versleten)', 'Stuurlagers', 'Wiellagers', 'Koppeling (versleten)', 'Zadel (gescheurd / versleten)', 'Windscherm', 'Knipperlichten / Richtingaanwijzers'] },
+    { prob: 0.15, items: ['Voetsteunen / Schakelpedaal', 'Koelvloeistof systeem', 'Remvloeistof / Remleidingen', 'Dashboard / Instrumenten', 'Corrosie / Roest algemeen'] },
+  ];
+
+  const DAMAGE_TIERS_AUTO = [
+    // Tier 1 (90%): bijna altijd
     { prob: 0.9, items: [
-      'Banden (versleten / oud)',
+      'Banden (profiel / leeftijd)',
+      'Remschijven / Remblokken voor',
+      'Lakwerk / Spuitwerk (krassen, deuken)',
       'Accu',
-      'Lak / Spuitwerk',
-      'Ketting / Tandwielen',
-      'Remschijven / Remblokken',
+      'Ruitenwissers / Sproeiers',
     ]},
-    // Tier 2 — common (60% kans)
+    // Tier 2 (60%): vaak voorkomend
     { prob: 0.6, items: [
-      'Kuipdelen / Stroomlijnkappen',
-      'Tank (deuken / krassen)',
-      'Spiegels',
-      'Voorvork (lekkage / krom)',
-      'Verlichting (koplamp / achterlicht)',
-      'Uitlaat (roest / lek)',
+      'Bumper voor (deuken / krassen)',
+      'Bumper achter (deuken / krassen)',
+      'Remschijven / Remblokken achter',
+      'Velgen (krassen / kromme rand)',
+      'Voorruit (sterretje / barst)',
+      'Schokdempers voor',
+      'Uitlaat (roest / lek / katalysator)',
+      'Spiegels (elektrisch / behuizing)',
     ]},
-    // Tier 3 — occasional (35% kans)
+    // Tier 3 (35%): occasioneel
     { prob: 0.35, items: [
-      'Achterdemper (lek / versleten)',
-      'Stuurlagers',
+      'Schokdempers achter',
+      'Stuurinrichting / Fuseekogels',
       'Wiellagers',
-      'Koppeling (versleten)',
-      'Zadel (gescheurd / versleten)',
-      'Windscherm',
-      'Knipperlichten / Richtingaanwijzers',
+      'Koplampen (mat / beschadigd)',
+      'Achterlichten / Mistlamp',
+      'Aandrijfas / Stofhoezen',
+      'Interieur / Bekleding (slijtage / scheuren)',
+      'Olieverlies (motor / versnellingsbak)',
     ]},
-    // Tier 4 — rare (15% kans)
+    // Tier 4 (15%): zelden
     { prob: 0.15, items: [
-      'Voetsteunen / Schakelpedaal',
-      'Koelvloeistof systeem',
-      'Remvloeistof / Remleidingen',
-      'Dashboard / Instrumenten',
-      'Corrosie / Roest algemeen',
+      'Distributieriem / -ketting',
+      'Koppeling (slipt / versleten)',
+      'Versnellingsbak / Olielekkage',
+      'Airco (geen koeling / lek)',
+      'Centrale vergrendeling / Sleutels',
+      'Koelvloeistof systeem / Radiateur',
+      'Foutcodes / ECU diagnose',
+      'Roest / Corrosie onderzijde',
+      'Dashboard / Multimedia',
+      'APK gebreken / Verwacht herstel',
     ]},
   ];
 
+  const DAMAGE_TIERS = isAuto ? DAMAGE_TIERS_AUTO : DAMAGE_TIERS_MOTOR;
+
   // Merk-specifieke bias: +0.25 boost (vaker), -0.25 dampen (zelden) — per kentekens van bekende zwakheden
-  const BRAND_BIASES = {
+  const BRAND_BIASES_MOTOR = {
     'bmw':       { 'Stuurlagers': 0.25, 'Wiellagers': 0.25, 'Dashboard / Instrumenten': 0.20, 'Achterdemper (lek / versleten)': 0.20 },
     'ktm':       { 'Koppeling (versleten)': 0.30, 'Uitlaat (roest / lek)': 0.25, 'Voorvork (lekkage / krom)': 0.20, 'Lak / Spuitwerk': 0.15 },
     'husqvarna': { 'Koppeling (versleten)': 0.30, 'Uitlaat (roest / lek)': 0.25, 'Banden (versleten / oud)': 0.20 },
@@ -725,6 +828,39 @@ export default function TaxatieProgramma() {
     'indian':    { 'Lak / Spuitwerk': 0.25, 'Accu': 0.20, 'Corrosie / Roest algemeen': 0.20 },
     'royal enfield': { 'Corrosie / Roest algemeen': 0.30, 'Verlichting (koplamp / achterlicht)': 0.20, 'Accu': 0.20 },
   };
+
+  const BRAND_BIASES_AUTO = {
+    'volkswagen': { 'Distributieriem / -ketting': 0.25, 'Koppeling (slipt / versleten)': 0.20, 'Foutcodes / ECU diagnose': 0.20 },
+    'vw':         { 'Distributieriem / -ketting': 0.25, 'Koppeling (slipt / versleten)': 0.20, 'Foutcodes / ECU diagnose': 0.20 },
+    'audi':       { 'Distributieriem / -ketting': 0.25, 'Versnellingsbak / Olielekkage': 0.20, 'Olieverlies (motor / versnellingsbak)': 0.20, 'Foutcodes / ECU diagnose': 0.20 },
+    'bmw':        { 'Olieverlies (motor / versnellingsbak)': 0.25, 'Koelvloeistof systeem / Radiateur': 0.25, 'Versnellingsbak / Olielekkage': 0.20, 'Foutcodes / ECU diagnose': 0.20 },
+    'mercedes':   { 'Olieverlies (motor / versnellingsbak)': 0.20, 'Roest / Corrosie onderzijde': 0.25, 'Airco (geen koeling / lek)': 0.20 },
+    'mercedes-benz': { 'Olieverlies (motor / versnellingsbak)': 0.20, 'Roest / Corrosie onderzijde': 0.25, 'Airco (geen koeling / lek)': 0.20 },
+    'opel':       { 'Roest / Corrosie onderzijde': 0.25, 'Olieverlies (motor / versnellingsbak)': 0.20, 'Distributieriem / -ketting': 0.20 },
+    'ford':       { 'Distributieriem / -ketting': 0.25, 'Koppeling (slipt / versleten)': 0.20, 'Lakwerk / Spuitwerk (krassen, deuken)': 0.15 },
+    'renault':    { 'Foutcodes / ECU diagnose': 0.25, 'Centrale vergrendeling / Sleutels': 0.20, 'Distributieriem / -ketting': 0.20, 'Olieverlies (motor / versnellingsbak)': 0.20 },
+    'peugeot':    { 'Foutcodes / ECU diagnose': 0.25, 'Distributieriem / -ketting': 0.25, 'Olieverlies (motor / versnellingsbak)': 0.20 },
+    'citroen':    { 'Foutcodes / ECU diagnose': 0.25, 'Distributieriem / -ketting': 0.25, 'Olieverlies (motor / versnellingsbak)': 0.20 },
+    'citroën':    { 'Foutcodes / ECU diagnose': 0.25, 'Distributieriem / -ketting': 0.25, 'Olieverlies (motor / versnellingsbak)': 0.20 },
+    'fiat':       { 'Roest / Corrosie onderzijde': 0.25, 'Lakwerk / Spuitwerk (krassen, deuken)': 0.20, 'Foutcodes / ECU diagnose': 0.20 },
+    'alfa romeo': { 'Foutcodes / ECU diagnose': 0.25, 'Olieverlies (motor / versnellingsbak)': 0.25, 'Distributieriem / -ketting': 0.20 },
+    'toyota':     { 'Banden (profiel / leeftijd)': 0.15, 'Accu': 0.15, 'Olieverlies (motor / versnellingsbak)': -0.20, 'Distributieriem / -ketting': -0.15 },
+    'lexus':      { 'Banden (profiel / leeftijd)': 0.15, 'Lakwerk / Spuitwerk (krassen, deuken)': 0.10, 'Olieverlies (motor / versnellingsbak)': -0.20 },
+    'honda':      { 'Banden (profiel / leeftijd)': 0.15, 'Accu': 0.15, 'Olieverlies (motor / versnellingsbak)': -0.20 },
+    'nissan':     { 'Versnellingsbak / Olielekkage': 0.25, 'Foutcodes / ECU diagnose': 0.20 },
+    'mazda':      { 'Roest / Corrosie onderzijde': 0.25, 'Banden (profiel / leeftijd)': 0.15 },
+    'hyundai':    { 'Distributieriem / -ketting': 0.20, 'Foutcodes / ECU diagnose': 0.15, 'Olieverlies (motor / versnellingsbak)': 0.15 },
+    'kia':        { 'Distributieriem / -ketting': 0.20, 'Foutcodes / ECU diagnose': 0.15 },
+    'volvo':      { 'Olieverlies (motor / versnellingsbak)': 0.20, 'Schokdempers voor': 0.20, 'Schokdempers achter': 0.20 },
+    'saab':       { 'Olieverlies (motor / versnellingsbak)': 0.25, 'Foutcodes / ECU diagnose': 0.25 },
+    'skoda':      { 'Distributieriem / -ketting': 0.20, 'Koppeling (slipt / versleten)': 0.20 },
+    'seat':       { 'Distributieriem / -ketting': 0.20, 'Koppeling (slipt / versleten)': 0.20, 'Foutcodes / ECU diagnose': 0.20 },
+    'mini':       { 'Olieverlies (motor / versnellingsbak)': 0.25, 'Distributieriem / -ketting': 0.20, 'Koppeling (slipt / versleten)': 0.20 },
+    'tesla':      { 'Banden (profiel / leeftijd)': 0.30, 'Schokdempers voor': 0.20, 'Schokdempers achter': 0.20, 'Foutcodes / ECU diagnose': 0.15, 'Distributieriem / -ketting': -0.30, 'Uitlaat (roest / lek / katalysator)': -0.30, 'Versnellingsbak / Olielekkage': -0.30 },
+    'porsche':    { 'Banden (profiel / leeftijd)': 0.20, 'Lakwerk / Spuitwerk (krassen, deuken)': 0.15, 'Olieverlies (motor / versnellingsbak)': 0.15 },
+  };
+
+  const BRAND_BIASES = isAuto ? BRAND_BIASES_AUTO : BRAND_BIASES_MOTOR;
 
   const shuffleArr = (arr) => {
     const a = [...arr];
@@ -1012,7 +1148,7 @@ export default function TaxatieProgramma() {
         await axios.post(`${API}/taxatie-programma`, payload, { headers });
         toast.success('BPM taxatie aangemaakt');
       }
-      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); 
+      setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: userDamageItems.map(d => ({ ...d })) }); 
       setManualDamageAmount(null); setTargetBpm(''); setShowChecklist(false);
       fetchTaxaties();
     } catch (e) { toast.error(e.response?.data?.detail || 'Fout bij opslaan'); }
@@ -1020,7 +1156,7 @@ export default function TaxatieProgramma() {
   };
 
   const handleEdit = (t) => {
-    const items = t.damage_items?.length ? t.damage_items : DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d }));
+    const items = t.damage_items?.length ? t.damage_items : userDamageItems.map(d => ({ ...d }));
     setForm({ ...EMPTY_FORM, ...t, damage_items: items });
     setEditingId(t.id);
     setManualDamageAmount(t.manual_damage_amount ?? null);
@@ -1040,7 +1176,7 @@ export default function TaxatieProgramma() {
     catch { toast.error('Fout bij definitief maken'); }
   };
 
-  const resetForm = () => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); setManualDamageAmount(null); setTargetBpm(''); setShowChecklist(false); };
+  const resetForm = () => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: userDamageItems.map(d => ({ ...d })) }); setManualDamageAmount(null); setTargetBpm(''); setShowChecklist(false); };
 
   const filtered = taxaties.filter(t => {
     if (!searchTerm) return true;
@@ -1910,7 +2046,7 @@ export default function TaxatieProgramma() {
             <Button onClick={() => window.open('https://ovi.rdw.nl/', '_blank')} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50">
               <ExternalLink className="w-4 h-4 mr-2" />RDW
             </Button>
-            <Button onClick={() => { setForm({ ...EMPTY_FORM, damage_items: DEFAULT_DAMAGE_ITEMS.map(d => ({ ...d })) }); setEditingId(null); setView('form'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="new-bpm-taxatie-btn">
+            <Button onClick={() => { setForm({ ...EMPTY_FORM, damage_items: userDamageItems.map(d => ({ ...d })) }); setEditingId(null); setView('form'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="new-bpm-taxatie-btn">
               <Plus className="w-4 h-4 mr-2" />Nieuwe BPM Taxatie
             </Button>
           </div>
