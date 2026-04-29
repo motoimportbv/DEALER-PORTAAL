@@ -52,12 +52,27 @@ async def generate_bpm_onderbouwing(
     from services.branding import get_branding
     cb = get_branding(user)
     vehicle_label = cb['vehicle_label']
+    is_motorfiets = vehicle_label == 'motorfiets'
 
     system_msg = (
         "Je bent een professionele BPM-taxateur in Nederland. "
         "Je schrijft gedetailleerde, technisch onderbouwde teksten voor BPM-taxatierapporten "
         "die voldoen aan de eisen van de Belastingdienst. Schrijf in vlot, formeel Nederlands."
     )
+
+    # Extra context voor motorfietsen: importmotoren hebben aantoonbaar minder marktwaarde
+    # Verschillen per stuk: ophaalkosten, extra inspectie/onderhoud bij Nederlandse keuring,
+    # afwezigheid van Nederlandse onderhoudshistorie, garantieverlies, BTW-margeregeling
+    motorfiets_import_context = """
+
+CONTEXT VOOR IMPORTMOTOREN (verplicht meenemen in onderbouwing):
+Belangrijk: deze motorfiets is een import. In de markt is ruim gedocumenteerd dat geïmporteerde motorfietsen aanzienlijk minder waard zijn dan vergelijkbare exemplaren met een Nederlandse historie. De onderbouwing moet daarom — naast de schadeposten — expliciet één alinea bevatten die deze waardedrukkende factoren benoemt:
+- **Logistieke en transactiekosten**: het ophalen in het buitenland (BE/DE/AT/IT/CH), grenstransport, douaneformaliteiten en exportkenteken brengen extra kosten met zich mee die op de transactiewaarde drukken.
+- **Aanvullende keurings- en onderhoudskosten**: bij import is een volledige onderhoudsbeurt, RDW-keuring, vervanging van koplampen/snelheidsmeter naar Nederlandse spec en eventuele aanpassing van de uitlaat noodzakelijk voordat de motor verkoopklaar is.
+- **Geen Nederlandse onderhoudshistorie / garantieverlies**: kopers waarderen het ontbreken van een Nederlandse dealerhistorie en de niet-overdraagbare fabrieksgarantie negatief, hetgeen de marktwaarde structureel drukt.
+- **Verminderde verkoopbaarheid**: vraagprijzen op AutoScout24/Marktplaats voor importmotoren liggen aantoonbaar 10-20% onder die van Nederlandse exemplaren.
+- **Wettelijke basis**: artikel 10 lid 7 Wet BPM en de bijhorende uitspraken (HR 17 januari 2014, ECLI:NL:HR:2014:80) bevestigen dat de werkelijke marktwaarde — inclusief bovengenoemde correcties — leidend is voor de BPM-vermindering.
+Verwerk deze elementen op een natuurlijke wijze in een aparte alinea binnen de onderbouwing (geen bullets in de output)."""
 
     prompt = f"""Schrijf een unieke onderbouwing voor een BPM-taxatierapport voor onderstaande {vehicle_label}.
 
@@ -72,14 +87,16 @@ Vastgestelde schade en gebreken:
 Totale herstelkosten: \u20ac{total_herstel:,.0f}
 Bruto BPM: \u20ac{bruto_bpm:,.0f}
 Vastgestelde rest-BPM na taxatie: \u20ac{target_bpm:,.0f}
+{motorfiets_import_context if is_motorfiets else ''}
 
 OPDRACHT:
-1. Schrijf 2 tot 3 alinea's professionele technische onderbouwing waarom de waarde zo laag is uitgekomen.
+1. Schrijf {'3 tot 4' if is_motorfiets else '2 tot 3'} alinea's professionele technische onderbouwing waarom de waarde zo laag is uitgekomen.
 2. Per aangevinkt schade-item: een technisch beschrijvende zin (bv. "De voorvork vertoont olielekkage met zichtbare aanslag op de stofkappen, hetgeen revisie of vervanging noodzakelijk maakt.") waarbij je de **exacte uren en materiaalkosten** uit de bovenstaande lijst expliciet noemt — bijvoorbeeld: "Het herstel vergt 2,5 uur arbeid (\u20ac 162) plus \u20ac 240 aan onderdelen."
-3. Sluit af met een conclusie waarom de gevraagde rest-BPM redelijk is gezien de staat.
-4. Wees creatief en gevarieerd: GEBRUIK GEEN STANDAARDZINNEN. Elke onderbouwing moet duidelijk anders klinken dan een vorige.
-5. Vermijd: bullets, koppen, opsommingen. Alleen vloeiende paragrafen.
-6. Lengte: 250-400 woorden.
+{('3. Wijd één aparte alinea aan de waardedrukkende invloed van de import-status (zoals beschreven in de CONTEXT hierboven) — noem expliciet de logistieke kosten, de noodzakelijke voorbereiding voor de Nederlandse markt, het garantieverlies en de marktverhouding tot Nederlandse exemplaren.' if is_motorfiets else '')}
+{4 if is_motorfiets else 3}. Sluit af met een conclusie waarom de gevraagde rest-BPM redelijk is gezien de staat{' en de import-status' if is_motorfiets else ''}.
+{5 if is_motorfiets else 4}. Wees creatief en gevarieerd: GEBRUIK GEEN STANDAARDZINNEN. Elke onderbouwing moet duidelijk anders klinken dan een vorige.
+{6 if is_motorfiets else 5}. Vermijd: bullets, koppen, opsommingen. Alleen vloeiende paragrafen.
+{7 if is_motorfiets else 6}. Lengte: {'350-500' if is_motorfiets else '250-400'} woorden.
 
 Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel."""
 
