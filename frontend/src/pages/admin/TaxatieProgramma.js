@@ -908,8 +908,6 @@ export default function TaxatieProgramma() {
     }
     // Required herstel total: schade × 0.31 = lowest - target  =>  herstel = (lowest - target) / 0.31
     const neededHerstel = (lowest - target) / 0.31;
-    let remaining = neededHerstel;
-    const ticked = new Set();
     const newItems = form.damage_items.map(d => ({ ...d, checked: false, cost: 0, hours: 0, material_cost: 0 }));
 
     // Merk-bias ophalen voor deze taxatie
@@ -927,7 +925,22 @@ export default function TaxatieProgramma() {
         }
       }
     }
-    // Fallback: zorg minimaal een paar tier-1 items als kans-shuffle ze allemaal heeft uitgesloten
+
+    // Bepaal hoeveel items we willen aanvinken op basis van budget — meer is realistischer
+    // Richtlijn: ~€150-€350 per item gemiddeld
+    const targetItemCount = Math.max(8, Math.min(20, Math.round(neededHerstel / 220)));
+
+    // Vul aan met willekeurige extra items uit alle tiers tot we minimaal targetItemCount items hebben
+    if (selectionOrder.length < targetItemCount) {
+      const allItems = DAMAGE_TIERS.flatMap(t => t.items).filter(i => !selectionOrder.includes(i));
+      const extras = shuffleArr(allItems);
+      for (const itemName of extras) {
+        if (selectionOrder.length >= targetItemCount) break;
+        selectionOrder.push(itemName);
+      }
+    }
+
+    // Fallback voor minimum tier-1 items
     if (selectionOrder.length < 3) {
       for (const itemName of shuffleArr(DAMAGE_TIERS[0].items)) {
         if (!selectionOrder.includes(itemName)) selectionOrder.push(itemName);
@@ -935,38 +948,47 @@ export default function TaxatieProgramma() {
       }
     }
 
-    // Loop random selection, ticken tot we genoeg hebben
-    for (const itemName of selectionOrder) {
-      if (remaining <= 0) break;
-      const baseCost = DAMAGE_COST_TABLE[itemName] || 200;
-      // Bredere randomness ±25% voor meer variatie tussen rapporten
-      const variance = baseCost * (0.75 + Math.random() * 0.5);
-      const cost = Math.min(Math.round(variance / 5) * 5, Math.round(remaining));
-      if (cost <= 0) break;
-      const idx = newItems.findIndex(d => d.name === itemName);
-      if (idx === -1) continue;
-      // Variabele labor/material split (35-50% labor) voor extra variatie
+    // ===== BUDGET VERDELEN OVER ALLE GESELECTEERDE ITEMS =====
+    // Bereken voor elk item een gewogen "share" op basis van basiskost
+    // Daarna schaal alle bedragen zodat de som == neededHerstel
+    const itemList = selectionOrder
+      .map(itemName => {
+        const idx = newItems.findIndex(d => d.name === itemName);
+        if (idx === -1) return null;
+        const baseCost = DAMAGE_COST_TABLE[itemName] || 200;
+        // Random gewicht ±30% per item voor unieke verdeling
+        const weight = baseCost * (0.7 + Math.random() * 0.6);
+        return { itemName, idx, weight };
+      })
+      .filter(Boolean);
+
+    if (itemList.length === 0) {
+      toast.error('Geen schadeposten beschikbaar');
+      return;
+    }
+
+    const totalWeight = itemList.reduce((s, it) => s + it.weight, 0);
+    let allocated = 0;
+    const ticked = new Set();
+    itemList.forEach((it, i) => {
+      let cost;
+      if (i === itemList.length - 1) {
+        // Laatste item: vul exact bij tot het totaal klopt
+        cost = Math.round(neededHerstel - allocated);
+      } else {
+        cost = Math.round((it.weight / totalWeight) * neededHerstel / 5) * 5;
+      }
+      if (cost < 25) cost = Math.max(25, cost); // minimum realistische post
+      allocated += cost;
+      // Variabele labor/material split (35-50% labor)
       const laborRatio = 0.35 + Math.random() * 0.15;
       const hours = Math.max(0.5, Math.round((cost * laborRatio / LABOR_RATE) * 2) / 2);
       const laborCost = Math.round(hours * LABOR_RATE);
       const material_cost = Math.max(0, cost - laborCost);
-      newItems[idx] = { ...newItems[idx], checked: true, cost, hours, material_cost };
-      ticked.add(itemName);
-      remaining -= cost;
-    }
-    // Als er nog over is, top-up "Overig"
-    if (remaining > 0) {
-      const idx = newItems.findIndex(d => d.name === 'Overig');
-      if (idx !== -1) {
-        const cost = Math.round(remaining);
-        const laborRatio = 0.35 + Math.random() * 0.15;
-        const hours = Math.max(0.5, Math.round((cost * laborRatio / LABOR_RATE) * 2) / 2);
-        const laborCost = Math.round(hours * LABOR_RATE);
-        const material_cost = Math.max(0, cost - laborCost);
-        newItems[idx] = { ...newItems[idx], checked: true, cost, hours, material_cost };
-        ticked.add('Overig');
-      }
-    }
+      newItems[it.idx] = { ...newItems[it.idx], checked: true, cost, hours, material_cost };
+      ticked.add(it.itemName);
+    });
+
     setForm(f => ({ ...f, damage_items: newItems }));
     setManualDamageAmount(null); // clear override so checklist sum is used
     setShowChecklist(true); // open the checklist so user sees the ticked items
