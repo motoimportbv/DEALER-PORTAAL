@@ -1017,9 +1017,9 @@ export default function TaxatieProgramma() {
   const generateOnderbouwing = async () => {
     setGeneratingText(true);
     try {
-      // Compute BPM locally — `bpm` is block-scoped inside form view
       const bpmCalc = calcBpmLocal(form, manualDamageAmount);
-      const res = await axios.post(`${API}/admin/bpm/generate-onderbouwing`, {
+      // Stap 1: start background task — retourneert direct een task_id
+      const startRes = await axios.post(`${API}/admin/bpm/generate-onderbouwing`, {
         brand: form.brand,
         model: form.model,
         year: form.bouwjaar || (form.first_registration_date || '').slice(0, 4),
@@ -1028,9 +1028,36 @@ export default function TaxatieProgramma() {
         total_herstelkosten: bpmCalc?.herstelkosten || 0,
         bruto_bpm: bpmCalc?.bruto_bpm || 0,
         target_bpm: bpmCalc?.netto_bpm || 0,
-      }, { timeout: 60000 }); // AI generation can take 15-30s
-      const text = (res.data?.onderbouwing || '').trim();
-      // Append taxateur signature with report_date (or today)
+      }, { timeout: 15000 });
+      const taskId = startRes.data?.task_id;
+      if (!taskId) throw new Error('Geen task_id ontvangen');
+
+      // Stap 2: poll status elke 2.5s, max 90s totaal
+      const maxAttempts = 36;
+      let attempts = 0;
+      let text = '';
+      while (attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 2500));
+        attempts += 1;
+        try {
+          const statusRes = await axios.get(`${API}/admin/bpm/onderbouwing-status/${taskId}`, { timeout: 10000 });
+          const status = statusRes.data?.status;
+          if (status === 'done') {
+            text = (statusRes.data?.onderbouwing || '').trim();
+            break;
+          }
+          if (status === 'failed') {
+            throw new Error(statusRes.data?.error || 'AI generatie mislukt');
+          }
+        } catch (pollErr) {
+          // Bij netwerkglitch tijdens poll: gewoon doorgaan
+          if (pollErr.response?.status === 404 || pollErr.response?.status === 403) {
+            throw pollErr;
+          }
+        }
+      }
+      if (!text) throw new Error('Time-out: AI generatie duurde langer dan 90 seconden');
+
       const dateStr = form.report_date
         ? new Date(form.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
         : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });

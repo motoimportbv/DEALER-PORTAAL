@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **AI Onderbouwing async + polling** (Feb 2026): `/api/admin/bpm/generate-onderbouwing` retourneert nu direct (<1s) een `task_id` en draait Claude generatie als `asyncio.create_task` background. Resultaat in collectie `bpm_ai_tasks`. Frontend pollt `GET /api/admin/bpm/onderbouwing-status/{task_id}` elke 2.5s tot status `done` (max 90s). Lost productie "Network Error" definitief op (Kubernetes ingress sloot synchrone 30s+ requests af; nu zijn alle requests <2s).
 - **Wettelijke onderbouwing-pagina in Taxatieverslag PDF** (Feb 2026): Voor motorfietsen wordt automatisch een sectie 7 toegevoegd met letterlijke citaten van Artikel 10 lid 7 Wet BPM (bron: wetten.overheid.nl) + Hoge Raad uitspraak ECLI:NL:HR:2014:80 (bron: uitspraken.rechtspraak.nl) + de 5 toegepaste waardedrukkende factoren (logistiek, RDW-keuring, garantieverlies, marktverhouding, technische gebreken). Alleen voor `vehicle_type=motorfiets` — auto-rapporten van Deniz krijgen deze pagina niet (lokale taxatie).
 - **Import-context in AI onderbouwing voor motorfietsen** (Feb 2026): AI verwerkt expliciet alle 5 import-elementen.
 - **Auto-specifieke Technische Inspectie** (Feb 2026): 13 categorieën (Carrosserie, Ruiten, Aandrijflijn, Airco, Interieur, etc.) automatisch geladen voor taxateurs met `vehicle_type=auto`.

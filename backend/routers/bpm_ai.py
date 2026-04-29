@@ -1,10 +1,20 @@
-"""BPM Verlaging onderbouwing - AI text generation per rapport."""
+"""BPM Verlaging onderbouwing - AI text generation per rapport.
+
+Productie-architectuur: async background task + polling.
+Reden: Kubernetes/Nginx ingress sluit synchrone HTTP requests af na ~30s,
+maar de Claude generatie duurt 20-40s. Daarom retourneert het POST endpoint
+direct een task_id en draait de LLM-call op de achtergrond. De frontend
+pollt vervolgens een status endpoint tot de tekst klaar is.
+"""
 import os
 import logging
 import uuid
+import asyncio
+from datetime import datetime, timezone
 from fastapi import APIRouter, Body, HTTPException, Depends
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from services.auth_service import require_taxatie_access
+from database import db
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -12,18 +22,8 @@ router = APIRouter()
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 
 
-@router.post("/admin/bpm/generate-onderbouwing")
-async def generate_bpm_onderbouwing(
-    body: dict = Body(...),
-    user: dict = Depends(require_taxatie_access),
-):
-    """Generate unique Dutch onderbouwing text for a BPM taxatierapport using Claude.
-    Body: {brand, model, year, mileage, damage_items: [{name, cost}], target_bpm, total_herstelkosten}
-    Returns: {onderbouwing: "long text", samenvatting: "short text"}
-    """
-    if not EMERGENT_LLM_KEY:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY niet geconfigureerd")
-
+def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
+    """Bouwt (system_msg, prompt) op basis van body + user context."""
     brand = body.get("brand", "")
     model = body.get("model", "")
     year = body.get("year") or body.get("bouwjaar", "")
@@ -60,9 +60,6 @@ async def generate_bpm_onderbouwing(
         "die voldoen aan de eisen van de Belastingdienst. Schrijf in vlot, formeel Nederlands."
     )
 
-    # Extra context voor motorfietsen: importmotoren hebben aantoonbaar minder marktwaarde
-    # Verschillen per stuk: ophaalkosten, extra inspectie/onderhoud bij Nederlandse keuring,
-    # afwezigheid van Nederlandse onderhoudshistorie, garantieverlies, BTW-margeregeling
     motorfiets_import_context = """
 
 CONTEXT VOOR IMPORTMOTOREN (verplicht meenemen in onderbouwing):
@@ -100,10 +97,16 @@ OPDRACHT:
 
 Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel."""
 
+    return system_msg, prompt
+
+
+async def _run_generation_task(task_id: str, body: dict, user: dict) -> None:
+    """Background task: roept Claude aan en slaat resultaat op in MongoDB."""
     try:
+        system_msg, prompt = _build_prompt(body, user)
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
-            session_id=f"bpm-onderbouwing-{uuid.uuid4()}",
+            session_id=f"bpm-onderbouwing-{task_id}",
             system_message=system_msg,
         ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
@@ -112,7 +115,63 @@ Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel."""
         text = (response or "").strip()
         if not text:
             raise RuntimeError("Lege LLM response")
-        return {"onderbouwing": text}
+
+        await db.bpm_ai_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {
+                "status": "done",
+                "onderbouwing": text,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }},
+        )
+        logger.info(f"BPM AI task {task_id} voltooid ({len(text)} chars)")
     except Exception as e:
-        logger.exception("BPM onderbouwing generatie mislukt")
-        raise HTTPException(status_code=502, detail=f"AI tekst genereren mislukt: {str(e)}")
+        logger.exception(f"BPM AI task {task_id} mislukt")
+        await db.bpm_ai_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {
+                "status": "failed",
+                "error": str(e),
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }},
+        )
+
+
+@router.post("/admin/bpm/generate-onderbouwing")
+async def start_bpm_onderbouwing(
+    body: dict = Body(...),
+    user: dict = Depends(require_taxatie_access),
+):
+    """Start een AI-onderbouwing als background task. Retourneert direct een task_id.
+    Body: {brand, model, year, mileage, damage_items, target_bpm, total_herstelkosten, bruto_bpm}
+    """
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY niet geconfigureerd")
+
+    task_id = str(uuid.uuid4())
+    await db.bpm_ai_tasks.insert_one({
+        "task_id": task_id,
+        "status": "pending",
+        "user_id": user.get("id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    # Fire-and-forget: draait verder ook nadat de HTTP response al gestuurd is
+    asyncio.create_task(_run_generation_task(task_id, body, user))
+
+    return {"task_id": task_id, "status": "pending"}
+
+
+@router.get("/admin/bpm/onderbouwing-status/{task_id}")
+async def get_onderbouwing_status(
+    task_id: str,
+    user: dict = Depends(require_taxatie_access),
+):
+    """Polling endpoint: retourneert status (pending/done/failed) en bij done de onderbouwing."""
+    task = await db.bpm_ai_tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task niet gevonden")
+    # Eenvoudige eigenaarscheck: alleen de starter mag pollen
+    if task.get("user_id") and task.get("user_id") != user.get("id"):
+        raise HTTPException(status_code=403, detail="Geen toegang tot deze task")
+    return task
