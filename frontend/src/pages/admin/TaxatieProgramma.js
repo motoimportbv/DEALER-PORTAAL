@@ -55,6 +55,97 @@ const getInspectionItemsForUser = (user) => {
 // Backward compatibility
 const INSPECTION_ITEMS = INSPECTION_ITEMS_MOTOR;
 
+// Realistische opmerkingen per inspectie-onderdeel per score (1-4).
+// Wordt door `autoTickDamage` gebruikt om de technische inspectie-tabel te variëren.
+const INSPECTION_NOTES = {
+  engine: {
+    2: ['Lichte olieafzetting bij carterpakking', 'Draait stationair iets onregelmatig', 'Koelvloeistofpeil net onder minimum', 'Geringe rookontwikkeling bij koude start'],
+    3: ['Start goed, draait zonder bijgeluiden', 'Normale gebruikssporen zichtbaar', 'Onderhoudsbeurt op korte termijn gewenst', 'Compressie binnen tolerantie'],
+    4: ['Motor loopt soepel en rustig', 'Olie schoon, geen lekkages vastgesteld', 'Koelsysteem op peil', 'Goede algehele indruk'],
+  },
+  frame: {
+    2: ['Beginnende oppervlakteroest op framewerk', 'Lichte transportsporen aan onderzijde', 'Stuurkoplagering voelt iets stram', 'Deuken in onderkuipsteun'],
+    3: ['Geen structurele schade, kleine gebruikssporen', 'Licht opgesnoeide lak op framewerk', 'Normale staat voor bouwjaar', 'Lasnaden intact'],
+    4: ['Frame recht en ongeschonden', 'Geen roest of vervorming zichtbaar', 'Structureel in prima staat', 'Lakwerk frame onbeschadigd'],
+  },
+  paint: {
+    2: ['Diverse steenslag op voorzijde', 'Krassen op tank en zijpanelen', 'Kleurverschil op gespoten paneel', 'Doffe plekken op heldere lak'],
+    3: ['Normale gebruikssporen en lichte krassen', 'Lakglans nog acceptabel', 'Enkele matte plekken zichtbaar', 'Oppervlakkige chips bij neus'],
+    4: ['Lak in verzorgde staat, glans aanwezig', 'Minimale gebruikssporen', 'Geen kleurverschillen waarneembaar', 'Net gepoetst en geconserveerd'],
+  },
+  glass: {
+    2: ['Steenslag op voorruit in zichtveld', 'Matheid op koplampen, polijsten advies', 'Kras op zijruit rechts', 'Condensvorming in achterlicht'],
+    3: ['Koplampen licht verkleurd, nog helder genoeg', 'Ruiten zonder scheuren', 'Achterlichten intact', 'Geen barsten zichtbaar'],
+    4: ['Helder glaswerk, geen beschadigingen', 'Koplampen helder en krasvrij', 'Alle ruiten in goede staat', 'Glasafdichtingen soepel'],
+  },
+  tires: {
+    2: ['Profieldiepte onder 3 mm, vervanging advies', 'Banden ouder dan 5 jaar (DOT)', 'Lichte scheuren in zijwand', 'Ongelijkmatige slijtage'],
+    3: ['Profiel voldoende, leeftijd acceptabel', 'Normale slijtage zichtbaar', 'Geschikt voor nog één seizoen', 'Banden goed op spanning'],
+    4: ['Banden recent vervangen, profiel ruim voldoende', 'Geen slijtage, goed profiel', 'Nog voor meerdere seizoenen bruikbaar', 'Fabrikantenset zonder reparaties'],
+  },
+  brakes: {
+    2: ['Remblokken op vervangingsgrens', 'Remvloeistof licht vervuild / verkleurd', 'Lichte roestvorming op schijfranden', 'Zachte pedaalgang'],
+    3: ['Remwerking goed, blokken nog voldoende', 'Schijven binnen tolerantie', 'Normale staat', 'Remvloeistof op niveau'],
+    4: ['Remmen in uitstekende staat', 'Blokken en schijven ruim voldoende', 'Direct bruikbaar', 'Recent onderhoud verricht'],
+  },
+  electrics: {
+    2: ['Dashboardverlichting intermitterend', 'Accu levert grenswaarde', 'Eén knipperlicht traag', 'Losse connector bij achterlicht'],
+    3: ['Alle verlichting functioneel', 'Accuspanning binnen norm', 'Geen storingscodes aanwezig', 'Dashboard werkt correct'],
+    4: ['Elektrisch systeem probleemloos', 'Accu en laadsysteem uitstekend', 'Alle functies werken correct', 'Recent doorgemeten'],
+  },
+  exhaust: {
+    2: ['Oppervlakteroest op demper', 'Lichte lekkage bij flens', 'Iets luider dan origineel', 'Beschadigd hitteschild'],
+    3: ['Normale staat, kleine roestvorming', 'Geen lekkage vastgesteld', 'Geluidsniveau binnen norm', 'Bevestigingsbeugels intact'],
+    4: ['Uitlaat zonder roest of lekkage', 'Originele specificatie', 'In prima staat', 'Alle lassen gaaf'],
+  },
+  suspension: {
+    2: ['Voorvork vertoont olieafzetting op stofkappen', 'Achterdemper veert ongelijkmatig', 'Rubbers verouderd, vervanging gewenst', 'Lichte lekkage bij keerring'],
+    3: ['Vering functioneel, normale slijtage', 'Geen duidelijke lekkage', 'Demping binnen tolerantie', 'Voorvork recht'],
+    4: ['Vering soepel en lekvrij', 'Demping zonder op- of aftrekking', 'In uitstekende staat', 'Recent gereviseerd'],
+  },
+  chain_drive: {
+    2: ['Ketting uitgerekt, spanning onregelmatig', 'Tandwielen vertonen hooktail-slijtage', 'Smering vereist', 'Kettinggeleider versleten'],
+    3: ['Ketting binnen spanning, normale slijtage', 'Aandrijving functioneel', 'Onderhoud recent uitgevoerd', 'Nog geen vervanging nodig'],
+    4: ['Ketting en tandwielen recent vernieuwd', 'Aandrijflijn probleemloos', 'Uitstekend onderhouden', 'O-ring ketting intact'],
+  },
+  climate: {
+    2: ['Airco koelt verminderd', 'Lichte geur bij verwarming', 'Bijvulbeurt advies', 'Ventilatorlagers rammelen licht'],
+    3: ['Airco functioneel, laatste service > 1 jaar', 'Verwarming werkt naar behoren', 'Geen lekkage vastgesteld', 'Filters acceptabel'],
+    4: ['Airco koelt direct, service recent', 'Klimaatregeling volledig functioneel', 'In prima staat', 'Filters recent vervangen'],
+  },
+  interior: {
+    2: ['Stoelbekleding vertoont slijtageplekken', 'Dashboard met lichte krassen', 'Vloermatten versleten', 'Bestuurderszijde zitting ingezakt'],
+    3: ['Normale gebruikssporen in interieur', 'Stoelen in acceptabele staat', 'Bekleding compleet', 'Stuurwiel toont lichte slijtage'],
+    4: ['Interieur verzorgd en netjes', 'Stoelen zonder schade', 'Dashboard ongeschonden', 'Rookvrij en nette geur'],
+  },
+  general: {
+    2: ['Achterstallig onderhoud zichtbaar', 'Diverse kleine gebreken gecombineerd', 'Totaalindruk matig', 'Rijklaar maken vereist'],
+    3: ['Normale staat voor bouwjaar en km-stand', 'Regelmatig gebruik, verzorgde indruk', 'Compleet en rijklaar', 'Onderhoudshistorie deels bekend'],
+    4: ['Verzorgd exemplaar met aantoonbaar onderhoud', 'Totaalindruk boven gemiddeld', 'Nette staat', 'Volledige onderhoudshistorie'],
+  },
+};
+
+// Pick een gewogen score op basis van `intensity` (0 = weinig schade, 1 = veel schade).
+// Hoe hoger de intensity, hoe groter de kans op score 2; lage intensity geeft vaker score 4.
+const pickInspectionScore = (intensity) => {
+  const r = Math.random();
+  if (intensity > 0.7) {
+    if (r < 0.55) return 2;
+    if (r < 0.92) return 3;
+    return 4;
+  }
+  if (intensity > 0.4) {
+    if (r < 0.25) return 2;
+    if (r < 0.8) return 3;
+    return 4;
+  }
+  if (r < 0.1) return 2;
+  if (r < 0.5) return 3;
+  return 4;
+};
+
+
+
 const DAMAGE_ITEMS_MOTOR = [
   { name: 'Kuipdelen / Stroomlijnkappen', checked: false, cost: 0, hours: 0, material_cost: 0 },
   { name: 'Tank (deuken / krassen)', checked: false, cost: 0, hours: 0, material_cost: 0 },
@@ -1003,11 +1094,25 @@ export default function TaxatieProgramma() {
       ticked.add(it.itemName);
     });
 
-    setForm(f => ({ ...f, damage_items: newItems }));
+    setForm(f => {
+      // Technische inspectie: gevarieerde scores + realistische opmerkingen
+      const intensity = Math.min(1, neededHerstel / 3500);
+      const inspectionItems = getInspectionItemsForUser(user);
+      const inspectionUpdates = {};
+      inspectionItems.forEach(it => {
+        const sc = pickInspectionScore(intensity);
+        inspectionUpdates[`score_${it.key}`] = sc;
+        const pool = INSPECTION_NOTES[it.key]?.[sc] || [];
+        if (pool.length > 0) {
+          inspectionUpdates[`notes_${it.key}`] = pool[Math.floor(Math.random() * pool.length)];
+        }
+      });
+      return { ...f, damage_items: newItems, ...inspectionUpdates };
+    });
     setManualDamageAmount(null); // clear override so checklist sum is used
     setShowChecklist(true); // open the checklist so user sees the ticked items
     const brandLabel = bias && Object.keys(bias).length > 0 ? ` (${form.brand}-profiel)` : '';
-    toast.success(`${ticked.size} schadeposten aangevinkt${brandLabel} \u2014 totaal \u20ac${Math.round(neededHerstel).toLocaleString('nl-NL')}`);
+    toast.success(`${ticked.size} schadeposten + technische inspectie ingevuld${brandLabel} \u2014 totaal \u20ac${Math.round(neededHerstel).toLocaleString('nl-NL')}`);
   };
 
   // ===== AI onderbouwing genereren =====
@@ -1954,10 +2059,9 @@ export default function TaxatieProgramma() {
                     <p className="text-xs text-zinc-500">{item.desc}</p>
                   </div>
                   <ScoreSelector value={form[`score_${item.key}`]} onChange={v => updateField(`score_${item.key}`, v)} testId={`score-${item.key}`} />
-                  {['engine', 'frame', 'paint', 'tires', 'brakes', 'electrics', 'general'].includes(item.key) && (
-                    <input type="text" value={form[`notes_${item.key}`] || ''} onChange={e => updateField(`notes_${item.key}`, e.target.value)}
-                      placeholder="Opmerking..." className="w-48 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs focus:border-red-500 focus:outline-none" />
-                  )}
+                  <input type="text" value={form[`notes_${item.key}`] || ''} onChange={e => updateField(`notes_${item.key}`, e.target.value)}
+                    placeholder="Opmerking..." className="w-48 border border-zinc-300 rounded-lg px-2 py-1.5 text-xs focus:border-red-500 focus:outline-none"
+                    data-testid={`notes-${item.key}`} />
                 </div>
               ))}
             </div>

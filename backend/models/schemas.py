@@ -718,12 +718,22 @@ class TaxatieCreate(BaseModel):
     score_suspension: int = 3
     score_chain_drive: int = 3
     score_general: int = 3
+    # Auto-specifieke inspectie scores (taxateur-rol)
+    score_glass: int = 3
+    score_climate: int = 3
+    score_interior: int = 3
     notes_engine: str = ""
     notes_frame: str = ""
     notes_paint: str = ""
     notes_tires: str = ""
     notes_brakes: str = ""
     notes_electrics: str = ""
+    notes_exhaust: str = ""
+    notes_suspension: str = ""
+    notes_chain_drive: str = ""
+    notes_glass: str = ""
+    notes_climate: str = ""
+    notes_interior: str = ""
     notes_general: str = ""
     customer_name: str = ""
     customer_phone: str = ""
