@@ -10,6 +10,7 @@ import os
 import logging
 import uuid
 import asyncio
+import random
 from datetime import datetime, timezone
 from fastapi import APIRouter, Body, HTTPException, Depends
 from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -20,6 +21,96 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+
+
+# =====================================================================
+# VARIATIE-POOLS — forceren dat elke onderbouwing compleet anders klinkt.
+# Combinatoriek: 20 × 10 × 8 × 6 × 12 = 115.200 unieke style-combinaties,
+# ruim boven de door de gebruiker gewenste 600.
+# =====================================================================
+
+_OPENERS = [
+    "Begin met een objectieve beschrijving van de algehele technische conditie zoals aangetroffen tijdens de keuring.",
+    "Open met een korte typering van het voertuig (bouwjaar, kilometerstand, gebruik) voordat je ingaat op de gebreken.",
+    "Start direct met de meest waardedrukkende factor — vermeld deze in de eerste zin.",
+    "Begin met een zin over het doel van deze taxatie (rest-BPM vaststellen conform artikel 10 Wet BPM).",
+    "Open met een beschouwing over de marktpositie van dit merk/model voor het betreffende bouwjaar.",
+    "Start met een zin die de complete technische inspectie samenvat in één overkoepelende indruk.",
+    "Begin met een verwijzing naar het verschil tussen catalogusprijs en de werkelijke economische waarde.",
+    "Open vanuit het perspectief van een potentiële koper die het voertuig op Marktplaats aantreft.",
+    "Start met een observatie over de onderhoudshistorie en hoe deze zich verhoudt tot het kilometrage.",
+    "Begin met een zin die de staat van het voertuig vergelijkt met een marktconform exemplaar in gemiddelde staat.",
+    "Open met een korte chronologische schets: aankoop in buitenland, transport, aankomst, inspectie.",
+    "Start met een zakelijke inleiding waarin je aankondigt dat onderstaande onderbouwing de vastgestelde rest-BPM rechtvaardigt.",
+    "Begin met een observatie over cosmetische of structurele afwijkingen die direct opvielen.",
+    "Open met de belangrijkste negatieve bevinding uit de technische inspectie.",
+    "Start met de bedrijfseconomische realiteit: de kosten om dit voertuig verkoopklaar te maken.",
+    "Begin door het voertuig te positioneren binnen de huidige importmarkt en daarna in te zoomen.",
+    "Open met een zin over de combinatie van leeftijd, gebruikssporen en technische staat.",
+    "Start met een samenvatting van de onderzoeksmethodiek (visuele inspectie, proefrit, historie-check).",
+    "Begin met een typering van de geconstateerde gebreken in volgorde van ernst.",
+    "Open door de waardevermindering uit te drukken als percentage ten opzichte van een schadevrij exemplaar.",
+]
+
+_TONES = [
+    "zakelijk-formeel en beknopt, met korte directe zinnen",
+    "uitvoerig-beschrijvend en analytisch, met lange zinnen en nuance",
+    "technisch-objectief in de stijl van een onafhankelijk expertiserapport",
+    "feitelijk-afstandelijk, alsof het een juridisch document betreft",
+    "neutraal maar met lichte empathie voor de eigenaar",
+    "vakinhoudelijk gedreven met veel technisch jargon",
+    "helder-toegankelijk, zoals een taxateur aan een leek uitlegt",
+    "gedocumenteerd-bureaucratisch met verwijzingen naar normen en regelingen",
+    "compact-professioneel met focus op cijfers en economische impact",
+    "kritisch-evaluerend waarbij elke bevinding wordt afgewogen",
+]
+
+_STRUCTURES = [
+    "Structuur A: eerst algemene staat → daarna per schadepost met kostenonderbouwing → conclusie.",
+    "Structuur B: eerst de meest impactvolle gebreken → daarna de kleinere posten → marktcontext → conclusie.",
+    "Structuur C: chronologisch vanaf aankomst in Nederland → per onderdeel wat vervangen/hersteld moet worden → conclusie.",
+    "Structuur D: begin met marktcontext → vervolg met technische gebreken → eindig met economische rechtvaardiging.",
+    "Structuur E: groepeer gebreken thematisch (motor/veiligheid/optiek) → behandel per groep → conclusie.",
+    "Structuur F: begin met een brede contextuele alinea → behandel alle schadeposten in één vloeiende alinea → korte conclusie.",
+    "Structuur G: open met het eindoordeel → onderbouw vervolgens waarom dit oordeel terecht is.",
+    "Structuur H: vergelijk met referentievoertuig → licht de afwijkingen toe → kwantificeer de impact.",
+]
+
+_VOCAB_PALETTES = [
+    "Gebruik een woordenschat rond: 'geconstateerd', 'vastgesteld', 'bevinding', 'afwijking', 'tolerantie'.",
+    "Gebruik een woordenschat rond: 'revisie', 'vervanging', 'hersteltraject', 'kostenpost', 'arbeidsuur'.",
+    "Gebruik een woordenschat rond: 'marktconforme waarde', 'transactieprijs', 'koopgedrag', 'vraagzijde'.",
+    "Gebruik een woordenschat rond: 'slijtageprofiel', 'onderhoudsachterstand', 'functioneel gebrek', 'levensduur'.",
+    "Gebruik een woordenschat rond: 'economische waardevermindering', 'afschrijving', 'restwaarde', 'depreciation'.",
+    "Gebruik een woordenschat rond: 'defect', 'malfunctie', 'technische onvolkomenheid', 'reparatienoodzaak'.",
+]
+
+_CLOSERS = [
+    "Sluit af met een zin waarin je de vastgestelde rest-BPM expliciet als 'redelijk en marktconform' typeert.",
+    "Sluit af met een verwijzing naar artikel 10 Wet BPM en de noodzaak van werkelijke marktwaarde.",
+    "Eindig met een beschouwing over de verkoopbaarheid en de tijd die nodig is om een koper te vinden.",
+    "Eindig met een conclusie waarin de herstelkosten worden afgezet tegen de restwaarde.",
+    "Sluit af door te stellen dat een hogere rest-BPM economisch niet verdedigbaar zou zijn.",
+    "Eindig met een samenvattend oordeel over de algehele staat in één krachtige slotzin.",
+    "Sluit af met een doorkijk naar wat een eventuele doorverkoop voor de eigenaar zou betekenen.",
+    "Eindig met een bevestiging dat het taxatiebedrag aansluit bij de daadwerkelijk te realiseren verkoopprijs.",
+    "Sluit af met een neutrale constatering dat de vastgestelde waarde correspondeert met vergelijkbare transacties.",
+    "Eindig met een verwijzing naar de Hoge Raad-uitspraak en de objectieve benadering daarvan.",
+    "Sluit af met een conclusie die de economische realiteit van importvoertuigen onderstreept.",
+    "Eindig door te stellen dat de rest-BPM het enige passende resultaat is na alle in acht genomen factoren.",
+]
+
+
+def _pick_style_card() -> dict:
+    """Kies 5 onafhankelijke stijl-dimensies — combinatoriek > 100k."""
+    return {
+        "opener": random.choice(_OPENERS),
+        "tone": random.choice(_TONES),
+        "structure": random.choice(_STRUCTURES),
+        "vocab": random.choice(_VOCAB_PALETTES),
+        "closer": random.choice(_CLOSERS),
+        "variatie_nr": random.randint(1, 999),
+    }
 
 
 def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
@@ -54,10 +145,16 @@ def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
     vehicle_label = cb['vehicle_label']
     is_motorfiets = vehicle_label == 'motorfiets'
 
+    # Random stijl-kaart: 5 orthogonale dimensies ⇒ >100k unieke combinaties
+    style = _pick_style_card()
+
     system_msg = (
         "Je bent een professionele BPM-taxateur in Nederland. "
         "Je schrijft gedetailleerde, technisch onderbouwde teksten voor BPM-taxatierapporten "
-        "die voldoen aan de eisen van de Belastingdienst. Schrijf in vlot, formeel Nederlands."
+        "die voldoen aan de eisen van de Belastingdienst. Schrijf in vlot, formeel Nederlands. "
+        "BELANGRIJK: elke onderbouwing die je schrijft moet fundamenteel anders klinken dan eerdere — "
+        "varieer openingszin, zinsbouw, woordkeuze, volgorde van argumentatie en afsluitende formulering. "
+        f"Werk deze taxatie uit volgens stijl-variant #{style['variatie_nr']}."
     )
 
     motorfiets_import_context = """
@@ -72,6 +169,16 @@ Belangrijk: deze motorfiets is een import. In de markt is ruim gedocumenteerd da
 Verwerk deze elementen op een natuurlijke wijze in een aparte alinea binnen de onderbouwing (geen bullets in de output)."""
 
     prompt = f"""Schrijf een unieke onderbouwing voor een BPM-taxatierapport voor onderstaande {vehicle_label}.
+
+=== VERPLICHTE STIJL-KAART (variatie #{style['variatie_nr']}) ===
+Volg ONDERSTAANDE instructies letterlijk zodat elke onderbouwing fundamenteel anders leest:
+• OPENING: {style['opener']}
+• TOON: Schrijf {style['tone']}.
+• STRUCTUUR: {style['structure']}
+• WOORDENSCHAT: {style['vocab']}
+• AFSLUITING: {style['closer']}
+
+Vermijd de vaste openingszin "De onderhavige [merk] ..." — wissel af met natuurlijke alternatieven.
 
 Voertuig:
 - Merk en model: {brand} {model}
@@ -91,7 +198,7 @@ OPDRACHT:
 2. Per aangevinkt schade-item: een technisch beschrijvende zin (bv. "De voorvork vertoont olielekkage met zichtbare aanslag op de stofkappen, hetgeen revisie of vervanging noodzakelijk maakt.") waarbij je de **exacte uren en materiaalkosten** uit de bovenstaande lijst expliciet noemt — bijvoorbeeld: "Het herstel vergt 2,5 uur arbeid (\u20ac 162) plus \u20ac 240 aan onderdelen."
 {('3. Wijd één aparte alinea aan de waardedrukkende invloed van de import-status (zoals beschreven in de CONTEXT hierboven) — noem expliciet de logistieke kosten, de noodzakelijke voorbereiding voor de Nederlandse markt, het garantieverlies en de marktverhouding tot Nederlandse exemplaren.' if is_motorfiets else '')}
 {4 if is_motorfiets else 3}. Sluit af met een conclusie waarom de gevraagde rest-BPM redelijk is gezien de staat{' en de import-status' if is_motorfiets else ''}.
-{5 if is_motorfiets else 4}. Wees creatief en gevarieerd: GEBRUIK GEEN STANDAARDZINNEN. Elke onderbouwing moet duidelijk anders klinken dan een vorige.
+{5 if is_motorfiets else 4}. Wees creatief en gevarieerd: GEBRUIK GEEN STANDAARDZINNEN. Elke onderbouwing moet duidelijk anders klinken dan een vorige — de stijl-kaart hierboven is leidend.
 {6 if is_motorfiets else 5}. Vermijd: bullets, koppen, opsommingen. Alleen vloeiende paragrafen.
 {7 if is_motorfiets else 6}. Lengte: {'350-500' if is_motorfiets else '250-400'} woorden.
 
