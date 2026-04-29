@@ -49,13 +49,17 @@ async def generate_bpm_onderbouwing(
             damage_lines.append(f"- {name}: {breakdown} (totaal \u20ac{cost:.0f})")
     damage_block = "\n".join(damage_lines) if damage_lines else "- (geen specifieke schade-items aangevinkt)"
 
+    from services.branding import get_branding
+    cb = get_branding(user)
+    vehicle_label = cb['vehicle_label']
+
     system_msg = (
         "Je bent een professionele BPM-taxateur in Nederland. "
         "Je schrijft gedetailleerde, technisch onderbouwde teksten voor BPM-taxatierapporten "
         "die voldoen aan de eisen van de Belastingdienst. Schrijf in vlot, formeel Nederlands."
     )
 
-    prompt = f"""Schrijf een unieke onderbouwing voor een BPM-taxatierapport voor onderstaande motorfiets.
+    prompt = f"""Schrijf een unieke onderbouwing voor een BPM-taxatierapport voor onderstaande {vehicle_label}.
 
 Voertuig:
 - Merk en model: {brand} {model}

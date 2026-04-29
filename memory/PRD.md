@@ -19,7 +19,8 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
-- **Nieuwe rol "taxateur" voor Deniz Kabakolak** (Feb 2026): Account `denizkabakolak10@hotmail.com` / `Kabakolakdeniz!` aangemaakt met rol `taxateur`. KvK 88479935, BTW NL004610985B39, adres Schotwillemsweg 1c Lettele. Toegang beperkt tot **alleen Taxatie Facturen + BPM Vermindering** (auto's). Backend: nieuwe `require_taxatie_access` dependency in `auth_service.py`, taxatie/programma + bpm_ai endpoints accepteren admin OF taxateur rol. Frontend: Sidebar toont alleen 2 menu-items voor taxateur, Layout redirect andere routes naar /admin/taxatie, LoginPage redirect taxateur naar /admin/taxatie.
+- **Eigen DK Automotive branding voor Deniz** (Feb 2026): Volledige multi-tenant whitelabeling. Backend `services/branding.py` + frontend `utils/branding.js` retourneren bedrijfsgegevens per gebruiker (admin → Moto Import, taxateur → DK Automotive). Toegepast op: BPM Rapport PDF (header/footer), Taxatieverslag PDF (alle 6 secties + ondertekening + footer), Taxatie Factuur (afzender + footer), Sidebar header (desktop + mobile), BpmReport HTML view, paginatitels. Voertuig-labels dynamisch: "motorfiets" voor admin → "auto" voor Deniz (vehicle_type=auto). AI prompt schrijft over auto's i.p.v. motorfiets. Adres "Schalkhaar" → "Lettele", KVK 94622086 → 88479935, S. Milone → Denizkabakolak23.
+- **Nieuwe rol "taxateur" voor Deniz Kabakolak** (Feb 2026): Account aangemaakt met rol `taxateur`.
 - **Merk-specifieke schadeprofielen** (Feb 2026): 16 merken vooraf geconfigureerd.
 - **Auto-vink schadepunten gerandomiseerd** (Feb 2026): 4-laags probability tier systeem.
 - **AutoTelex Invul Helper** (Feb 2026): Nieuwe sectie in BPM Terugreken-kaart waar admin de inkoopprijs (van factuur) + overig waardeverminderingsbedrag invult.

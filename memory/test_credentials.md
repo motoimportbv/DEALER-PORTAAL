@@ -17,9 +17,12 @@
 - Email: denizkabakolak10@hotmail.com
 - Password: Kabakolakdeniz!
 - Username: Denizkabakolak23
+- Bedrijfsnaam: DK Automotive
 - KvK: 88479935 | BTW: NL004610985B39
 - Adres: Schotwillemsweg 1c, Lettele
+- vehicle_type: auto (alleen auto's, geen motorfietsen)
 - Role: taxateur (restricted to /admin/taxatie and /admin/taxatie-programma routes)
+- Eigen branding: PDFs en UI tonen "DK Automotive" i.p.v. "Moto Import"
 
 ## Test Order (with pakbon data pre-filled)
 - Order ID: 630312c9-2560-41ac-98a8-626d79cc3651

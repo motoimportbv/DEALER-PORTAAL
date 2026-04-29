@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { getBranding } from '../../utils/branding';
 import Layout from '../../components/Layout';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -32,7 +33,8 @@ const emptyForm = {
 };
 
 export default function TaxatieInvoices() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const cb = getBranding(user);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('list'); // 'list' | 'create' | 'detail'
@@ -484,9 +486,9 @@ export default function TaxatieInvoices() {
                 <p style={{ fontSize: '13px', color: '#888' }}>Status: <strong style={{ color: inv.status === 'betaald' ? '#16a34a' : inv.status === 'concept' ? '#6b7280' : '#d97706' }}>{inv.status === 'betaald' ? 'BETAALD' : inv.status === 'concept' ? 'CONCEPT' : 'OPEN'}</strong></p>
               </div>
               <div style={{ textAlign: 'right', fontSize: '13px', color: '#555', lineHeight: '1.6' }}>
-                <strong style={{ color: '#111' }}>Moto Import B.V.</strong><br />
-                info@motoimportbv.nl<br />
-                +31 6 24264861
+                <strong style={{ color: '#111' }}>{cb.name}</strong><br />
+                {cb.email && <>{cb.email}<br /></>}
+                {cb.phone && <>{cb.phone}</>}
               </div>
             </div>
 
@@ -598,7 +600,7 @@ export default function TaxatieInvoices() {
             )}
 
             <div style={{ marginTop: '40px', textAlign: 'center', fontSize: '11px', color: '#aaa', paddingTop: '16px', borderTop: '1px solid #eee' }}>
-              Moto Import B.V. · info@motoimportbv.nl · +31 6 24264861
+              {cb.name}{cb.email ? ` · ${cb.email}` : ''}{cb.phone ? ` · ${cb.phone}` : ''}{cb.kvk ? ` · KVK ${cb.kvk}` : ''}
             </div>
           </div>
         </div>

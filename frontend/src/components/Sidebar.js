@@ -6,6 +6,7 @@ import NotificationBell from './NotificationBell';
 import AdminActivityBell from './AdminActivityBell';
 import LanguageSelector from './LanguageSelector';
 import ChangePasswordModal from './ChangePasswordModal';
+import { getBranding } from '../utils/branding';
 import axios from 'axios';
 import { 
   Bike, 
@@ -157,7 +158,7 @@ const Sidebar = () => {
               {user?.is_foreign_dealer ? <Globe className="w-6 h-6 text-white" /> : <Bike className="w-6 h-6 text-white" />}
             </div>
             <span className="font-barlow text-xl font-bold uppercase tracking-tight text-white">
-              Moto Import
+              {getBranding(user).shortName}
             </span>
           </Link>
           {user?.role === 'admin' && <AdminActivityBell />}

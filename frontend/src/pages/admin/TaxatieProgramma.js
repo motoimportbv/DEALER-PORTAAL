@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { getBranding } from '../../utils/branding';
 import Layout from '../../components/Layout';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
@@ -297,6 +298,8 @@ function DamageChecklist({ items, onChange }) {
 
 /* ── Print / Report view ── */
 function BpmReport({ taxatie, onClose }) {
+  const { user } = useAuth();
+  const cb = getBranding(user);
   const handlePrint = () => window.print();
   const avgScore = taxatie.average_score || 0;
   const ml = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
@@ -396,8 +399,8 @@ function BpmReport({ taxatie, onClose }) {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">BPM VERMINDERING</h1>
-              <p className="text-zinc-400 mt-1">Taxatierapport Motorfiets</p>
-              <p className="text-zinc-500 text-sm mt-1">Moto Import B.V. | KVK: 94622086</p>
+              <p className="text-zinc-400 mt-1">Taxatierapport {cb.vehicleLabel.charAt(0).toUpperCase() + cb.vehicleLabel.slice(1)}</p>
+              <p className="text-zinc-500 text-sm mt-1">{cb.name}{cb.kvk ? ` | KVK: ${cb.kvk}` : ''}</p>
             </div>
             <div className="text-right">
               <p className="font-mono text-lg">{taxatie.taxatie_nummer}</p>
@@ -598,7 +601,7 @@ function BpmReport({ taxatie, onClose }) {
           </div>
 
           <div className="text-center text-xs text-zinc-400 pt-6 border-t">
-            <p>Moto Import B.V. | KVK: 94622086 | +31 6 24264861 | motoimportbv@gmail.com</p>
+            <p>{cb.name}{cb.kvk ? ` | KVK: ${cb.kvk}` : ''}{cb.phone ? ` | ${cb.phone}` : ''}{cb.email ? ` | ${cb.email}` : ''}</p>
             <p className="mt-1">Dit taxatierapport dient als onderbouwing voor de BPM-aangifte bij de Belastingdienst.</p>
           </div>
         </div>
@@ -611,6 +614,7 @@ function BpmReport({ taxatie, onClose }) {
 /* ══════ MAIN COMPONENT ══════ */
 export default function TaxatieProgramma() {
   const { token, user } = useAuth();
+  const cb = getBranding(user);
   const [taxaties, setTaxaties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('list');
@@ -1897,7 +1901,7 @@ export default function TaxatieProgramma() {
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
               <Shield className="w-7 h-7 text-red-600" />BPM Vermindering
             </h1>
-            <p className="text-zinc-500 mt-1">Taxatieprogramma voor motorfiets BPM-berekening</p>
+            <p className="text-zinc-500 mt-1">Taxatieprogramma voor {cb.vehicleLabel} BPM-berekening</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={() => window.open('https://www.autotelex.nl', '_blank')} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" data-testid="autotelex-list-btn">

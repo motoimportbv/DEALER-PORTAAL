@@ -737,6 +737,9 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     
+    from services.branding import get_branding
+    cb = get_branding(current_user)
+    
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import mm
@@ -769,7 +772,7 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     
     # Header
     elements.append(Paragraph("BPM Import Rapport", title_style))
-    elements.append(Paragraph(f"Moto Import B.V. | Rapportnummer: {doc.get('taxatie_nummer', '-')}", subtitle_style))
+    elements.append(Paragraph(f"{cb['name']} | Rapportnummer: {doc.get('taxatie_nummer', '-')}", subtitle_style))
     
     # 1. Voertuiggegevens
     elements.append(Paragraph("1. Voertuiggegevens", section_style))
@@ -994,8 +997,8 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
                 report_date_str = datetime.strptime(doc['report_date'], '%Y-%m-%d').strftime('%d-%m-%Y')
             except Exception:
                 report_date_str = doc['report_date']
-    elements.append(Paragraph(f"Opgesteld door: Moto Import B.V. | Datum: {report_date_str} | {doc.get('taxatie_nummer', '')}", small_style))
-    elements.append(Paragraph("Dit rapport is opgesteld conform de richtlijnen van de Belastingdienst voor BPM-aangifte bij import van motorfietsen.", small_style))
+    elements.append(Paragraph(f"Opgesteld door: {cb['name']} | Datum: {report_date_str} | {doc.get('taxatie_nummer', '')}", small_style))
+    elements.append(Paragraph(f"Dit rapport is opgesteld conform de richtlijnen van de Belastingdienst voor BPM-aangifte bij import van {cb['vehicle_label_plural']}.", small_style))
     
     pdf.build(elements)
     buffer.seek(0)
@@ -1254,6 +1257,9 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     
+    from services.branding import get_branding
+    cb = get_branding(current_user)
+    
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.lib.units import mm
@@ -1335,7 +1341,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     # Company header bar
     hdr_data = [[
         Paragraph("<b>MOTO IMPORT B.V.</b>", ParagraphStyle('H1', parent=n, fontSize=14, fontName='Helvetica-Bold', textColor=colors.white)),
-        Paragraph(f"<b>Taxatierapport Motorfiets</b><br/>{taxatie_nr}", ParagraphStyle('H2', parent=n, fontSize=10, textColor=colors.HexColor('#ccc'), alignment=TA_RIGHT)),
+        Paragraph(f"<b>Taxatierapport {cb['vehicle_label'].capitalize()}</b><br/>{taxatie_nr}", ParagraphStyle('H2', parent=n, fontSize=10, textColor=colors.HexColor('#ccc'), alignment=TA_RIGHT)),
     ]]
     t = Table(hdr_data, colWidths=[90*mm, 84*mm])
     t.setStyle(TableStyle([
@@ -1350,11 +1356,12 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(Spacer(1, 2*mm))
     
     # Company info block
+    taxateur_name = (current_user or {}).get("username") or (current_user or {}).get("company_name") or "S. Milone"
     info_data = [
-        [Paragraph("<b>Naam:</b>", label_s), "Moto Import B.V.", Paragraph("<b>Datum rapport:</b>", label_s), report_date_str],
-        [Paragraph("<b>RSIN:</b>", label_s), COMPANY_RSIN, Paragraph("<b>KVK:</b>", label_s), COMPANY_KVK],
-        [Paragraph("<b>Adres:</b>", label_s), "Horsterhoekweg 11, 7433 SV Schalkhaar", Paragraph("<b>Taxateur:</b>", label_s), "S. Milone"],
-        [Paragraph("<b>Tel:</b>", label_s), "+31 6 24264861", Paragraph("<b>Email:</b>", label_s), "motoimportbv@gmail.com"],
+        [Paragraph("<b>Naam:</b>", label_s), cb['name'], Paragraph("<b>Datum rapport:</b>", label_s), report_date_str],
+        [Paragraph("<b>RSIN:</b>", label_s), cb.get('rsin') or "-", Paragraph("<b>KVK:</b>", label_s), cb.get('kvk') or "-"],
+        [Paragraph("<b>Adres:</b>", label_s), cb.get('address') or "-", Paragraph("<b>Taxateur:</b>", label_s), taxateur_name],
+        [Paragraph("<b>Tel:</b>", label_s), cb.get('phone') or "-", Paragraph("<b>Email:</b>", label_s), cb.get('email') or "-"],
     ]
     t = Table(info_data, colWidths=[22*mm, 66*mm, 26*mm, 60*mm])
     t.setStyle(TableStyle([
@@ -1370,7 +1377,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(Spacer(1, 4*mm))
     
     # Section 1: Voertuiggegevens
-    elements.append(Paragraph("1. Gegevens motorfiets", section_s))
+    elements.append(Paragraph(f"1. Gegevens {cb['vehicle_label']}", section_s))
     
     veh_data = [
         [Paragraph("<b>Merk</b>", label_s), brand, Paragraph("<b>Model</b>", label_s), model],
@@ -1504,7 +1511,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     
     bpm_data = [
         [Paragraph("<b>Omschrijving</b>", white_b), Paragraph("<b>Bedrag</b>", white_rb)],
-        ["Bruto BPM motorfiets", fe(bruto_bpm)],
+        [f"Bruto BPM {cb['vehicle_label']}", fe(bruto_bpm)],
         [f"Afschrijving via {methode_labels.get(beste, beste)} ({doc.get(f'{beste}_percentage' if beste != 'taxatierapport' else 'taxatie_percentage', 0):.1f}%)", f"- {fe(bruto_bpm - beste_bpm)}"],
         [Paragraph("<b>BPM na afschrijving</b>", b), Paragraph(f"<b>{fe(beste_bpm)}</b>", rb)],
         ["", ""],
@@ -1554,12 +1561,13 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     
     # Section 6: Verklaring & Ondertekening
     elements.append(Paragraph("6. Verklaring en ondertekening", section_s))
+    location_text = cb.get('address') or "het bedrijfsadres"
     elements.append(Paragraph(
         f"Ondergetekende verklaart dat het motorrijtuig <b>{brand} {model}</b> "
         f"(chassisnummer <b>{vin}</b>) op <b>{report_date_str}</b> fysiek is ge\u00efnspecteerd "
-        f"op locatie Horsterhoekweg 11, 7433 SV Schalkhaar. "
+        f"op locatie {location_text}. "
         f"De in dit verslag genoemde schadeposten zijn daadwerkelijk geconstateerd en de geschatte "
-        f"herstelkosten zijn gebaseerd op gangbare tarieven in de motorfietsbranche "
+        f"herstelkosten zijn gebaseerd op gangbare tarieven in de {cb['branche_label']} "
         f"(uurtarief arbeid: \u20ac {TAXATIE_LABOR_RATE:.2f} excl. BTW, materiaalkosten op basis van actuele prijzen). "
         f"Dit taxatieverslag is opgesteld ten behoeve van de BPM-aangifte conform artikel 10, lid 7 van de Wet op de belasting van personenauto's en motorrijwielen 1992.",
         n
@@ -1567,8 +1575,8 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(Spacer(1, 6*mm))
     
     sign_data = [
-        [Paragraph("<b>Naam</b>", label_s), "S. Milone", Paragraph("<b>Datum</b>", label_s), report_date_str],
-        [Paragraph("<b>Functie</b>", label_s), "Directeur / Taxateur", Paragraph("<b>Bedrijf</b>", label_s), "Moto Import B.V."],
+        [Paragraph("<b>Naam</b>", label_s), taxateur_name, Paragraph("<b>Datum</b>", label_s), report_date_str],
+        [Paragraph("<b>Functie</b>", label_s), "Directeur / Taxateur", Paragraph("<b>Bedrijf</b>", label_s), cb['name']],
         [Paragraph("<b>Handtekening</b>", label_s), "", "", ""],
     ]
     t = Table(sign_data, colWidths=[24*mm, 64*mm, 24*mm, 62*mm])
@@ -1589,8 +1597,8 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#ddd')))
     elements.append(Spacer(1, 2*mm))
     elements.append(Paragraph(
-        f"Dit document dient als bijlage bij de Aangifte BPM (formulier BPM 011) en vervangt het taxatierapport voor motorfietsen. "
-        f"Moto Import B.V. | KVK {COMPANY_KVK} | RSIN {COMPANY_RSIN} | Horsterhoekweg 11, 7433 SV Schalkhaar",
+        f"Dit document dient als bijlage bij de Aangifte BPM (formulier BPM 011) en vervangt het taxatierapport voor {cb['vehicle_label_plural']}. "
+        f"{cb['name']} | KVK {cb.get('kvk') or '-'}{(' | RSIN ' + cb.get('rsin')) if cb.get('rsin') else ''} | {cb.get('address') or ''}",
         ParagraphStyle('FT', parent=sm, fontSize=7, textColor=colors.HexColor('#aaa'))
     ))
     

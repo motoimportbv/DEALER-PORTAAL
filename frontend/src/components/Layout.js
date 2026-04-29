@@ -7,6 +7,7 @@ import WhatsAppButton from './WhatsAppButton';
 import LanguageSelector from './LanguageSelector';
 import NotificationBell from './NotificationBell';
 import AdminActivityBell from './AdminActivityBell';
+import { getBranding } from '../utils/branding';
 import { AlertCircle, RefreshCw, Bike, LogOut, Menu, X, LayoutDashboard, ShoppingCart, Plus, Wrench, CreditCard, Globe } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -152,7 +153,7 @@ const Layout = ({ children, requiredRole }) => {
                 )}
               </button>
               <span className="font-barlow text-base font-bold uppercase tracking-tight text-zinc-900">
-                Moto Import
+                {getBranding(user).shortName}
               </span>
             </div>
             <div className="flex items-center gap-1">
