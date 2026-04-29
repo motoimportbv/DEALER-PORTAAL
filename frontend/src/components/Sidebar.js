@@ -124,6 +124,12 @@ const Sidebar = () => {
     { path: '/pakbonnen', icon: Printer, label: 'Pakbonnen' },
   ];
 
+  // Taxateur-only role: alleen Taxatie Facturen + BPM Vermindering
+  const taxateurNavItems = [
+    { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
+    { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
+  ];
+
   // Determine nav items based on user type
   let navItems = dealerNavItems;
   let dashboardPath = '/dealer';
@@ -131,6 +137,9 @@ const Sidebar = () => {
   if (user?.role === 'admin') {
     navItems = adminNavItems;
     dashboardPath = '/admin';
+  } else if (user?.role === 'taxateur') {
+    navItems = taxateurNavItems;
+    dashboardPath = '/admin/taxatie';
   } else if (user?.role === 'pakbon') {
     navItems = pakbonNavItems;
     dashboardPath = '/pakbonnen';

@@ -4,7 +4,7 @@ import logging
 import uuid
 from fastapi import APIRouter, Body, HTTPException, Depends
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-from services.auth_service import require_admin
+from services.auth_service import require_taxatie_access
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,7 +15,7 @@ EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 @router.post("/admin/bpm/generate-onderbouwing")
 async def generate_bpm_onderbouwing(
     body: dict = Body(...),
-    user: dict = Depends(require_admin),
+    user: dict = Depends(require_taxatie_access),
 ):
     """Generate unique Dutch onderbouwing text for a BPM taxatierapport using Claude.
     Body: {brand, model, year, mileage, damage_items: [{name, cost}], target_bpm, total_herstelkosten}

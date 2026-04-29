@@ -11,6 +11,7 @@ from services.auth_service import (
     get_current_user,
     get_optional_user,
     require_admin,
+    require_taxatie_access,
     require_pakbon,
     require_approved_dealer,
     require_foreign_dealer,

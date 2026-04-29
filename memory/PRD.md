@@ -19,7 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
-- **AI Toelichting nog maar 1x in print** (Feb 2026): Tekst verwijderd uit HTML BpmReport view + BPM Rapport PDF. Verschijnt nu uitsluitend op de aparte pagina "Toelichting taxateur" in het officiële **Taxatieverslag PDF** (Belastingdienst-rapport). HTML view toont een kleine notitie "Toelichting is in Taxatieverslag PDF" als guidance.
+- **Nieuwe rol "taxateur" voor Deniz Kabakolak** (Feb 2026): Account `denizkabakolak10@hotmail.com` / `Kabakolakdeniz!` aangemaakt met rol `taxateur`. KvK 88479935, BTW NL004610985B39, adres Schotwillemsweg 1c Lettele. Toegang beperkt tot **alleen Taxatie Facturen + BPM Vermindering** (auto's). Backend: nieuwe `require_taxatie_access` dependency in `auth_service.py`, taxatie/programma + bpm_ai endpoints accepteren admin OF taxateur rol. Frontend: Sidebar toont alleen 2 menu-items voor taxateur, Layout redirect andere routes naar /admin/taxatie, LoginPage redirect taxateur naar /admin/taxatie.
 - **Merk-specifieke schadeprofielen** (Feb 2026): 16 merken vooraf geconfigureerd.
 - **Auto-vink schadepunten gerandomiseerd** (Feb 2026): 4-laags probability tier systeem.
 - **AutoTelex Invul Helper** (Feb 2026): Nieuwe sectie in BPM Terugreken-kaart waar admin de inkoopprijs (van factuur) + overig waardeverminderingsbedrag invult.

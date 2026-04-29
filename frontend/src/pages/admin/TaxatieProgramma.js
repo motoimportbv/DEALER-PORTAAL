@@ -893,7 +893,7 @@ export default function TaxatieProgramma() {
   }, [terugrekenBruto, terugrekenNieuw, terugrekenTarget, terugrekenInkoop, terugrekenOverig, terugrekenPct, form.consumentenprijs]);
 
 
-  const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
+  const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
   const headers = { Authorization: `Bearer ${token}` };
 
   const fetchTaxaties = useCallback(async () => {

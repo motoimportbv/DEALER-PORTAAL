@@ -108,6 +108,13 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
+async def require_taxatie_access(user: dict = Depends(get_current_user)) -> dict:
+    """Toegang tot Taxatie Facturen + BPM Vermindering — admin of taxateur rol."""
+    if user["role"] not in ("admin", "taxateur"):
+        raise HTTPException(status_code=403, detail="Taxateur of admin rechten vereist")
+    return user
+
+
 async def require_pakbon(user: dict = Depends(get_current_user)) -> dict:
     if user["role"] not in ("admin", "pakbon"):
         raise HTTPException(status_code=403, detail="Pakbon access required")

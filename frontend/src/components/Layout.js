@@ -84,8 +84,17 @@ const Layout = ({ children, requiredRole }) => {
     return <Navigate to="/pakbonnen" replace />;
   }
 
+  // Taxateur users can ONLY access /admin/taxatie and /admin/taxatie-programma routes
+  if (user.role === 'taxateur') {
+    const allowedTaxateur = location.pathname === '/admin/taxatie' || location.pathname.startsWith('/admin/taxatie/') ||
+      location.pathname === '/admin/taxatie-programma' || location.pathname.startsWith('/admin/taxatie-programma/');
+    if (!allowedTaxateur) {
+      return <Navigate to="/admin/taxatie" replace />;
+    }
+  }
+
   if (requiredRole && user.role !== requiredRole) {
-    const roleRedirects = { admin: '/admin', pakbon: '/pakbonnen', foreign_dealer: '/foreign-dealer' };
+    const roleRedirects = { admin: '/admin', pakbon: '/pakbonnen', taxateur: '/admin/taxatie', foreign_dealer: '/foreign-dealer' };
     return <Navigate to={roleRedirects[user.role] || '/dealer'} replace />;
   }
 

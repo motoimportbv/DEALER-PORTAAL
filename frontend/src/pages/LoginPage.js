@@ -149,6 +149,8 @@ const LoginPage = () => {
               redirectUrl = '/admin';
             } else if (role === 'pakbon') {
               redirectUrl = '/pakbonnen';
+            } else if (role === 'taxateur') {
+              redirectUrl = '/admin/taxatie';
             } else if (role === 'particulier') {
               redirectUrl = '/particulier';
             } else if (isForeignDealer) {
@@ -252,6 +254,8 @@ const LoginPage = () => {
         redirectPath = '/admin';
       } else if (loggedInUser.role === 'pakbon') {
         redirectPath = '/pakbonnen';
+      } else if (loggedInUser.role === 'taxateur') {
+        redirectPath = '/admin/taxatie';
       } else if (loggedInUser.role === 'particulier') {
         redirectPath = '/particulier';
       } else if (loggedInUser.is_foreign_dealer) {
