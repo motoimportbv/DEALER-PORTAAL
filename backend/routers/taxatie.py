@@ -728,16 +728,23 @@ async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dic
     return await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
 
 @router.post("/taxatie-programma/{taxatie_id}/finalize")
-async def finalize_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
+async def finalize_taxatie(taxatie_id: str, body: dict | None = None, current_user: dict = Depends(require_taxatie_access)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
+    body = body or {}
+    update_set = {"status": "definitief", "finalized_at": datetime.now(timezone.utc).isoformat()}
+    custom_date = (body.get("report_date") or "").strip()
+    if custom_date:
+        update_set["report_date"] = custom_date
+    else:
+        update_set["report_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     result = await db.taxatie_programma.update_one(
         {"id": taxatie_id, **_owner_filter_for_user(current_user)},
-        {"$set": {"status": "definitief", "finalized_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": update_set}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
-    return {"status": "definitief"}
+    return {"status": "definitief", "report_date": update_set["report_date"]}
 
 @router.delete("/taxatie-programma/{taxatie_id}")
 async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
