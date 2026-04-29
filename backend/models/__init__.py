@@ -38,7 +38,7 @@ from models.schemas import (
     PermanentLoginRequest, ShortCodeLoginRequest,
     PasswordResetRequest, PasswordResetConfirm, ChangePasswordRequest,
     # Admin request models
-    CreateAdminRequest, ResetPasswordRequest, DealerPhoneUpdate,
+    CreateAdminRequest, CreateTaxateurRequest, ResetPasswordRequest, DealerPhoneUpdate,
     # SMS request models
     SMSRequest, BulkSMSRequest, SelectedSMSRequest,
     # Email request models

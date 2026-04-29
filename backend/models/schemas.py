@@ -605,6 +605,17 @@ class CreateAdminRequest(BaseModel):
     password: str
     company_name: str = "Moto Import Admin"
 
+class CreateTaxateurRequest(BaseModel):
+    email: str
+    password: str
+    username: str = ""
+    company_name: str
+    kvk_number: str = ""
+    btw_number: str = ""
+    address: str = ""
+    phone: str = ""
+    vehicle_type: str = "auto"  # 'auto' of 'motorfiets'
+
 class ResetPasswordRequest(BaseModel):
     email: str
     new_password: str

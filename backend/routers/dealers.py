@@ -298,6 +298,46 @@ async def create_admin_user(data: CreateAdminRequest, user: dict = Depends(requi
         "user_id": user_id
     }
 
+@router.post("/admin/create-taxateur")
+async def create_taxateur_user(data: CreateTaxateurRequest, user: dict = Depends(require_admin)):
+    """Admin kan een nieuwe taxateur aanmaken (eigen branding, alleen toegang tot Taxatie Facturen + BPM Vermindering)"""
+    email = data.email.lower().strip()
+    existing = await db.users.find_one({"email": {"$regex": f"^{email}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="E-mailadres is al in gebruik")
+    
+    if not data.password or len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minimaal 6 tekens zijn")
+    if not data.company_name or len(data.company_name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Bedrijfsnaam is verplicht")
+    
+    user_id = str(uuid.uuid4())
+    password_hash = hash_password(data.password)
+    
+    new_taxateur = {
+        "id": user_id,
+        "email": email,
+        "username": (data.username or email.split('@')[0]).strip(),
+        "password_hash": password_hash,
+        "role": "taxateur",
+        "company_name": data.company_name.strip(),
+        "kvk_number": data.kvk_number.strip(),
+        "btw_number": data.btw_number.strip(),
+        "address": data.address.strip(),
+        "phone": data.phone.strip(),
+        "vehicle_type": data.vehicle_type if data.vehicle_type in ("auto", "motorfiets") else "auto",
+        "is_approved": True,
+        "is_foreign_dealer": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    await db.users.insert_one(new_taxateur)
+    
+    return {
+        "message": f"Taxateur account aangemaakt voor {data.company_name} ({email})",
+        "user_id": user_id
+    }
+
 @router.post("/admin/reset-password")
 async def reset_user_password(data: ResetPasswordRequest, user: dict = Depends(require_admin)):
     """Admin kan wachtwoord van een gebruiker resetten"""

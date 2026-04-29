@@ -41,6 +41,7 @@ import AdminParts from "./pages/admin/AdminParts";
 import AdminPartOrders from "./pages/admin/AdminPartOrders";
 import AdminLicensePlates from "./pages/admin/AdminLicensePlates";
 import AdminCreateAdmin from "./pages/admin/AdminCreateAdmin";
+import AdminCreateTaxateur from "./pages/admin/AdminCreateTaxateur";
 import AdminResetPassword from "./pages/admin/AdminResetPassword";
 import AdminExchangeRate from "./pages/admin/AdminExchangeRate";
 import AdminBulkEmail from "./pages/admin/AdminBulkEmail";
@@ -243,6 +244,7 @@ function App() {
             <Route path="/admin/part-orders" element={<AdminPartOrders />} />
             <Route path="/admin/license-plates" element={<AdminLicensePlates />} />
             <Route path="/admin/create-admin" element={<AdminCreateAdmin />} />
+            <Route path="/admin/create-taxateur" element={<AdminCreateTaxateur />} />
             <Route path="/admin/reset-password" element={<AdminResetPassword />} />
             <Route path="/admin/exchange-rate" element={<AdminExchangeRate />} />
             <Route path="/admin/bulk-email" element={<AdminBulkEmail />} />
