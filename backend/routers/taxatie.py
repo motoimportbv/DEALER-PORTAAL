@@ -746,6 +746,19 @@ async def finalize_taxatie(taxatie_id: str, body: dict | None = None, current_us
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return {"status": "definitief", "report_date": update_set["report_date"]}
 
+@router.post("/taxatie-programma/{taxatie_id}/revert-to-concept")
+async def revert_taxatie_to_concept(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
+    """Zet een definitief gemaakt rapport terug naar concept zodat datum/inhoud aangepast kan worden."""
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    result = await db.taxatie_programma.update_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"$set": {"status": "concept"}, "$unset": {"finalized_at": ""}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return {"status": "concept"}
+
 @router.delete("/taxatie-programma/{taxatie_id}")
 async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":

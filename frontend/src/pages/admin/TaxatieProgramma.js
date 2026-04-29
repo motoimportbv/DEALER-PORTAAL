@@ -8,7 +8,7 @@ import axios from 'axios';
 import {
   Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink, Download,
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
-  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles
+  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles, RefreshCw
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -1223,6 +1223,17 @@ export default function TaxatieProgramma() {
 
   const resetForm = () => { setView('list'); setEditingId(null); setForm({ ...EMPTY_FORM, damage_items: userDamageItems.map(d => ({ ...d })) }); setManualDamageAmount(null); setTargetBpm(''); setShowChecklist(false); };
 
+  const handleRevertToConcept = async (id) => {
+    if (!window.confirm('Wilt u dit rapport terugzetten naar concept? De datum en inhoud worden weer aanpasbaar.')) return;
+    try {
+      await axios.post(`${API}/taxatie-programma/${id}/revert-to-concept`, {}, { headers });
+      toast.success('Rapport teruggezet naar concept');
+      fetchTaxaties();
+    } catch {
+      toast.error('Fout bij terugzetten naar concept');
+    }
+  };
+
   const filtered = taxaties.filter(t => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
@@ -2153,6 +2164,7 @@ export default function TaxatieProgramma() {
                       <button onClick={() => setSelectedTaxatie(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Rapport" data-testid={`view-${t.id}`}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Bewerken" data-testid={`edit-${t.id}`}><Edit2 className="w-4 h-4" /></button>
                       {t.status === 'concept' && <button onClick={() => openFinalizeModal(t)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="Definitief maken" data-testid={`finalize-${t.id}`}><FileCheck className="w-4 h-4" /></button>}
+                      {t.status === 'definitief' && <button onClick={() => handleRevertToConcept(t.id)} className="p-2 rounded-lg hover:bg-amber-100 text-amber-600" title="Terug naar concept (datum aanpassen)" data-testid={`revert-${t.id}`}><RefreshCw className="w-4 h-4" /></button>}
                       <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg hover:bg-red-100 text-red-500" title="Verwijderen" data-testid={`delete-${t.id}`}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
