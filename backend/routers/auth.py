@@ -232,6 +232,7 @@ async def login(credentials: UserLogin):
         "user": {
             "id": user["id"],
             "email": user["email"],
+            "username": user.get("username", ""),
             "company_name": user.get("company_name", user.get("name", "")),
             "name": user.get("name", ""),
             "role": user["role"],
@@ -241,6 +242,10 @@ async def login(credentials: UserLogin):
             "country": user.get("country", ""),
             "phone": user.get("phone", ""),
             "city": user.get("city", ""),
+            "vehicle_type": user.get("vehicle_type", ""),
+            "kvk_number": user.get("kvk_number", ""),
+            "btw_number": user.get("btw_number", ""),
+            "address": user.get("address", ""),
         }
     }
 
