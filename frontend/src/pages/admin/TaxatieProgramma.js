@@ -18,7 +18,7 @@ const fmtPct = (p) => `${(p || 0).toFixed(1)}%`;
 const CONDITION_LABELS = { 1: 'Slecht', 2: 'Matig', 3: 'Redelijk', 4: 'Goed', 5: 'Uitstekend' };
 const CONDITION_COLORS = { 1: 'bg-red-500', 2: 'bg-orange-500', 3: 'bg-yellow-500', 4: 'bg-green-500', 5: 'bg-emerald-600' };
 
-const INSPECTION_ITEMS = [
+const INSPECTION_ITEMS_MOTOR = [
   { key: 'engine', label: 'Motorblok', desc: 'Geluid, olielekkage, vermogen, koeling' },
   { key: 'frame', label: 'Frame & Chassis', desc: 'Roest, scheuren, lassen, stuurkoplagering' },
   { key: 'paint', label: 'Lak & Optisch', desc: 'Lakschade, krassen, deuken, roest' },
@@ -30,6 +30,30 @@ const INSPECTION_ITEMS = [
   { key: 'chain_drive', label: 'Ketting/Aandrijving', desc: 'Spanning, slijtage, tandwielen' },
   { key: 'general', label: 'Algemene Staat', desc: 'Totaalindruk, netheid, completheid' },
 ];
+
+const INSPECTION_ITEMS_AUTO = [
+  { key: 'engine', label: 'Motorblok', desc: 'Geluid, olielekkage, vermogen, koeling' },
+  { key: 'frame', label: 'Carrosserie & Chassis', desc: 'Roest, deuken, scheuren, structurele staat' },
+  { key: 'paint', label: 'Lak & Optisch', desc: 'Lakschade, krassen, deuken, kleurverschil' },
+  { key: 'glass', label: 'Ruiten & Optiek', desc: 'Voorruit, zijruiten, koplampen, achterlichten' },
+  { key: 'tires', label: 'Banden & Velgen', desc: 'Profieldiepte, leeftijd, velgschade' },
+  { key: 'brakes', label: 'Remsysteem', desc: 'Remschijven, remblokken, remvloeistof, ABS' },
+  { key: 'electrics', label: 'Elektra & Multimedia', desc: 'Accu, dashboard, infotainment, sensoren' },
+  { key: 'exhaust', label: 'Uitlaat & Emissie', desc: 'Roest, lekkage, katalysator, EGR' },
+  { key: 'suspension', label: 'Onderstel & Stuurinrichting', desc: 'Schokdempers, fuseekogels, stabilisator' },
+  { key: 'chain_drive', label: 'Aandrijflijn', desc: 'Koppeling, versnellingsbak, distributie, aandrijfas' },
+  { key: 'climate', label: 'Airco & Klimaatregeling', desc: 'Koeling, verwarming, lekkage' },
+  { key: 'interior', label: 'Interieur & Bekleding', desc: 'Stoelen, dashboard, vloermatten, slijtage' },
+  { key: 'general', label: 'Algemene Staat', desc: 'Totaalindruk, netheid, onderhoudshistorie' },
+];
+
+const getInspectionItemsForUser = (user) => {
+  const vt = (user?.vehicle_type || 'motorfiets').toLowerCase();
+  return vt === 'auto' ? INSPECTION_ITEMS_AUTO : INSPECTION_ITEMS_MOTOR;
+};
+
+// Backward compatibility
+const INSPECTION_ITEMS = INSPECTION_ITEMS_MOTOR;
 
 const DAMAGE_ITEMS_MOTOR = [
   { name: 'Kuipdelen / Stroomlijnkappen', checked: false, cost: 0, hours: 0, material_cost: 0 },
@@ -590,7 +614,7 @@ function BpmReport({ taxatie, onClose }) {
                 </tr>
               </thead>
               <tbody>
-                {INSPECTION_ITEMS.map(item => {
+                {getInspectionItemsForUser(user).map(item => {
                   const score = taxatie[`score_${item.key}`] || 3;
                   const notes = taxatie[`notes_${item.key}`] || '';
                   return (
@@ -1828,7 +1852,7 @@ export default function TaxatieProgramma() {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-red-600" />Technische Inspectie</h2>
             <p className="text-xs text-zinc-500 mb-4">Beoordeel elk onderdeel van 1 (slecht) tot 5 (uitstekend)</p>
             <div className="space-y-3">
-              {INSPECTION_ITEMS.map(item => (
+              {getInspectionItemsForUser(user).map(item => (
                 <div key={item.key} className="flex items-start gap-4 p-3 rounded-lg bg-zinc-50">
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm">{item.label}</p>
