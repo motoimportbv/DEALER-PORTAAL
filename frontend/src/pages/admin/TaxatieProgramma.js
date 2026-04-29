@@ -660,12 +660,26 @@ function BpmReport({ taxatie, onClose }) {
             <div>
               <p className="text-xs font-bold uppercase text-zinc-500 mb-12">Handtekening Taxateur</p>
               <div className="border-b border-zinc-300 mb-2" />
-              <p className="text-xs text-zinc-400">Datum: _______________</p>
+              <p className="text-xs text-zinc-500">
+                Datum:{' '}
+                <span className="font-medium text-zinc-700">
+                  {taxatie.report_date
+                    ? new Date(taxatie.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
+                    : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </span>
+              </p>
             </div>
             <div>
               <p className="text-xs font-bold uppercase text-zinc-500 mb-12">Handtekening Eigenaar</p>
               <div className="border-b border-zinc-300 mb-2" />
-              <p className="text-xs text-zinc-400">Datum: _______________</p>
+              <p className="text-xs text-zinc-500">
+                Datum:{' '}
+                <span className="font-medium text-zinc-700">
+                  {taxatie.report_date
+                    ? new Date(taxatie.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
+                    : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </span>
+              </p>
             </div>
           </div>
 
