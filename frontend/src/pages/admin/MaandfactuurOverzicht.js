@@ -44,6 +44,19 @@ export default function MaandfactuurOverzicht() {
     }
   };
 
+  const toggleExtraFee = async (taxatie_id, enabled) => {
+    try {
+      await axios.post(`${API}/taxatie-programma/${taxatie_id}/toggle-extra-fee`,
+        { enabled, amount: 60 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(enabled ? '+ \u20ac60 extra fee toegevoegd' : 'Extra fee verwijderd');
+      fetchData();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+  };
+
   const [downloadingMonth, setDownloadingMonth] = useState(null);
   const downloadMaandPdf = async (ym, label) => {
     setDownloadingMonth(ym);
@@ -156,8 +169,9 @@ export default function MaandfactuurOverzicht() {
                             <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Voertuig</th>
                             <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Ontvangen op</th>
                             <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">BPM bedrag</th>
-                            <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Factuur ex BTW</th>
-                            <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Factuur incl</th>
+                            <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Taxatie ex BTW</th>
+                            <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Extra \u20ac60</th>
+                            <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Totaal incl</th>
                             <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Status</th>
                             <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Actie</th>
                           </tr>
@@ -177,7 +191,22 @@ export default function MaandfactuurOverzicht() {
                               <td className="px-4 py-3 text-xs">{it.bpm_received_at ? new Date(it.bpm_received_at).toLocaleDateString('nl-NL') : '\u2014'}</td>
                               <td className="px-4 py-3 text-right font-bold text-emerald-700">{fmtEur(it.bpm_amount_received)}</td>
                               <td className="px-4 py-3 text-right text-sm text-zinc-700">{fmtEur(it.fee_ex_btw)}</td>
-                              <td className="px-4 py-3 text-right font-bold text-blue-700">{fmtEur(it.fee_incl_btw)}</td>
+                              <td className="px-4 py-3 text-center">
+                                <label className="inline-flex items-center gap-1.5 cursor-pointer" data-testid={`extra-fee-label-${it.id}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={!!it.extra_fee_enabled}
+                                    onChange={e => toggleExtraFee(it.id, e.target.checked)}
+                                    disabled={it.invoiced}
+                                    className="w-4 h-4 rounded border-zinc-400 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                    data-testid={`extra-fee-${it.id}`}
+                                  />
+                                  <span className={`text-xs font-bold ${it.extra_fee_enabled ? 'text-blue-700' : 'text-zinc-400'}`}>
+                                    {it.extra_fee_enabled ? '+\u20ac60' : '\u2014'}
+                                  </span>
+                                </label>
+                              </td>
+                              <td className="px-4 py-3 text-right font-bold text-blue-700">{fmtEur(it.line_total_incl ?? it.fee_incl_btw)}</td>
                               <td className="px-4 py-3 text-center">
                                 {it.invoiced
                                   ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Gefactureerd</span>

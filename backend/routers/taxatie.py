@@ -867,7 +867,8 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
          "customer_name": 1, "customer_phone": 1, "customer_email": 1,
          "customer_address": 1, "taxatie_inruil_waarde": 1,
          "bpm_meldcode": 1, "bpm_received_at": 1, "bpm_amount_received": 1,
-         "posted_at": 1, "invoiced": 1, "invoice_id": 1},
+         "posted_at": 1, "invoiced": 1, "invoice_id": 1,
+         "extra_fee_enabled": 1, "extra_fee_amount": 1},
     ).sort("bpm_received_at", -1).to_list(1000)
 
     # Group by year-month
@@ -889,10 +890,21 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
         d["fee_ex_btw"] = fee_ex
         d["fee_btw"] = fee_btw
         d["fee_incl_btw"] = fee_incl
+        # Optionele €60 extra fee (per regel)
+        extra_enabled = bool(d.get("extra_fee_enabled"))
+        extra_amount = float(d.get("extra_fee_amount") or 60.0) if extra_enabled else 0.0
+        d["extra_fee_enabled"] = extra_enabled
+        d["extra_fee_amount"] = extra_amount
+        # Totaal per regel ex en incl BTW (extra fee is BTW-vrij, conform bestaande factuurregel)
+        line_ex = fee_ex + extra_amount
+        line_incl = fee_incl + extra_amount
+        d["line_total_ex"] = line_ex
+        d["line_total_incl"] = line_incl
         bucket = months.setdefault(ym, {
             "month": ym, "label": ym_label, "items": [],
             "totaal_taxatiewaarde": 0.0, "totaal_bpm": 0.0,
             "totaal_te_factureren_ex": 0.0, "totaal_te_factureren_incl": 0.0,
+            "totaal_extra_fee": 0.0,
             "aantal": 0, "te_factureren": 0,
         })
         bucket["items"].append(d)
@@ -901,8 +913,9 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
         bucket["aantal"] += 1
         if not d.get("invoiced"):
             bucket["te_factureren"] += 1
-            bucket["totaal_te_factureren_ex"] += fee_ex
-            bucket["totaal_te_factureren_incl"] += fee_incl
+            bucket["totaal_te_factureren_ex"] += line_ex
+            bucket["totaal_te_factureren_incl"] += line_incl
+            bucket["totaal_extra_fee"] += extra_amount
     sorted_months = sorted(months.values(), key=lambda b: b["month"], reverse=True)
     return {
         "months": sorted_months,
@@ -1026,23 +1039,30 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         Paragraph("Voertuig / Taxatienr", white_b),
         Paragraph("Ontvangen", white_b),
         Paragraph("BPM bedrag", ParagraphStyle('WBR', parent=white_b, alignment=TA_RIGHT)),
-        Paragraph(f"Factuur ex {btw_pct_int}% BTW", ParagraphStyle('WBR2', parent=white_b, alignment=TA_RIGHT)),
-        Paragraph("Factuur incl", ParagraphStyle('WBR3', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph(f"Taxatie ex {btw_pct_int}%", ParagraphStyle('WBR2', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("Extra €60", ParagraphStyle('WBR4', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("Totaal incl", ParagraphStyle('WBR3', parent=white_b, alignment=TA_RIGHT)),
         Paragraph("Status", white_b),
     ]
     rows = [header_row]
     totaal_bpm = 0.0
     totaal_te_factureren_ex = 0.0
     totaal_te_factureren_incl = 0.0
+    totaal_extra = 0.0
     open_count = 0
     for idx, it in enumerate(items, start=1):
         bedrag = float(it.get("bpm_amount_received") or 0)
         totaal_bpm += bedrag
+        extra_enabled = bool(it.get("extra_fee_enabled"))
+        extra_amount = float(it.get("extra_fee_amount") or 60.0) if extra_enabled else 0.0
+        line_ex = fee_ex + extra_amount
+        line_incl = fee_incl + extra_amount
         is_open = not it.get("invoiced")
         if is_open:
             open_count += 1
-            totaal_te_factureren_ex += fee_ex
-            totaal_te_factureren_incl += fee_incl
+            totaal_te_factureren_ex += line_ex
+            totaal_te_factureren_incl += line_incl
+            totaal_extra += extra_amount
         klant_lines = []
         if it.get("customer_name"): klant_lines.append(f"<b>{it['customer_name']}</b>")
         if it.get("customer_phone"): klant_lines.append(it["customer_phone"])
@@ -1059,7 +1079,8 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
             Paragraph(fmt_date(it.get("bpm_received_at")), n),
             Paragraph(fmt_eur(bedrag), right_b),
             Paragraph(fmt_eur(fee_ex), right_b),
-            Paragraph(f"<b>{fmt_eur(fee_incl)}</b>", right_b),
+            Paragraph(fmt_eur(extra_amount) if extra_enabled else "\u2014", right_b),
+            Paragraph(f"<b>{fmt_eur(line_incl)}</b>", right_b),
             Paragraph("Gefactureerd" if it.get("invoiced") else "Open", n),
         ])
 
@@ -1068,12 +1089,13 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         "", "", "", "",
         Paragraph("<b>TOTAAL</b>", right_b),
         Paragraph(f"<b>{fmt_eur(totaal_bpm)}</b>", right_b),
-        Paragraph(f"<b>{fmt_eur(totaal_te_factureren_ex)}</b>", right_b),
+        Paragraph(f"<b>{fmt_eur(totaal_te_factureren_ex - totaal_extra)}</b>", right_b),
+        Paragraph(f"<b>{fmt_eur(totaal_extra)}</b>", right_b),
         Paragraph(f"<b>{fmt_eur(totaal_te_factureren_incl)}</b>", right_b),
         "",
     ])
 
-    col_widths = [9*mm, 26*mm, 44*mm, 50*mm, 22*mm, 26*mm, 26*mm, 28*mm, 22*mm]
+    col_widths = [8*mm, 24*mm, 40*mm, 46*mm, 20*mm, 24*mm, 22*mm, 20*mm, 26*mm, 20*mm]
     tbl = Table(rows, colWidths=col_widths, repeatRows=1)
     tbl.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#18181b')),
@@ -1099,11 +1121,12 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         n,
     ))
     elements.append(Spacer(1, 2 * mm))
+    extra_label = f" (incl. {fmt_eur(totaal_extra)} aan extra fees)" if totaal_extra > 0 else ""
     elements.append(Paragraph(
         f"<b>Te factureren bedrag deze maand:</b> "
         f"{fmt_eur(totaal_te_factureren_ex)} ex BTW \u2014 "
-        f"<b>{fmt_eur(totaal_te_factureren_incl)} incl. {btw_pct_int}% BTW</b> "
-        f"({open_count} \u00d7 {fmt_eur(fee_ex)} ex / {fmt_eur(fee_incl)} incl).",
+        f"<b>{fmt_eur(totaal_te_factureren_incl)} incl. {btw_pct_int}% BTW</b>"
+        f"{extra_label}.",
         n,
     ))
     elements.append(Spacer(1, 3 * mm))
@@ -1123,6 +1146,34 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/taxatie-programma/{taxatie_id}/toggle-extra-fee")
+async def toggle_extra_fee(
+    taxatie_id: str,
+    body: dict | None = None,
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Schakel de optionele €60 extra fee aan/uit voor deze taxatie.
+    Body: {enabled: bool, amount?: float}. Standaard €60 (zonder BTW)."""
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    body = body or {}
+    enabled = bool(body.get("enabled"))
+    amount = 60.0
+    try:
+        if body.get("amount") is not None:
+            amount = float(body["amount"])
+    except (TypeError, ValueError):
+        amount = 60.0
+    update = {"extra_fee_enabled": enabled, "extra_fee_amount": amount}
+    result = await db.taxatie_programma.update_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"$set": update}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return update
 
 
 @router.post("/taxatie-programma/{taxatie_id}/mark-invoiced")
