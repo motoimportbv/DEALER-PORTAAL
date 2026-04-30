@@ -1210,9 +1210,8 @@ async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_t
 
 @router.get("/taxatie-programma/{taxatie_id}/bundle-pdf")
 async def export_bundle_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
-    """Genereer één gecombineerde PDF met alle 3 rapporten achter elkaar:
-    BPM Rapport + Belastingdienst formulier + Taxatieverslag.
-    Gemakkelijk voor printen en archiveren in één bestand.
+    """Genereer één gecombineerde PDF met BPM Rapport + Taxatieverslag achter elkaar.
+    (Het Belastingdienst BPM 011 formulier wordt apart gedownload uit AutoTelex.)
     """
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
@@ -1224,11 +1223,10 @@ async def export_bundle_pdf(taxatie_id: str, current_user: dict = Depends(requir
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
 
-    # Roep de 3 bestaande handlers direct aan — zij retourneren Response-objecten
+    # Roep alleen de 2 relevante handlers aan (geen Belastingdienst formulier)
     try:
         r1 = await export_taxatie_pdf(taxatie_id, current_user)
-        r2 = await export_belastingdienst_pdf(taxatie_id, current_user)
-        r3 = await export_taxatieverslag_pdf(taxatie_id, current_user)
+        r2 = await export_taxatieverslag_pdf(taxatie_id, current_user)
     except HTTPException:
         raise
     except Exception as e:
@@ -1241,7 +1239,7 @@ async def export_bundle_pdf(taxatie_id: str, current_user: dict = Depends(requir
         raise HTTPException(status_code=500, detail="PyMuPDF (fitz) niet geïnstalleerd")
 
     merged = fitz.open()
-    for r in (r1, r2, r3):
+    for r in (r1, r2):
         pdf_bytes = r.body if hasattr(r, "body") else r.content
         src = fitz.open(stream=pdf_bytes, filetype="pdf")
         merged.insert_pdf(src)

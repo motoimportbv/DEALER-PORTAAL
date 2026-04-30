@@ -573,7 +573,7 @@ function BpmReport({ taxatie, onClose }) {
             xhr.onerror = function() { alert('Fout bij bundel-PDF: netwerk fout'); };
             xhr.send();
           }} className="bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="download-bundle-pdf-btn">
-            <Download className="w-4 h-4 mr-2" />Alle 3 in 1 PDF
+            <Download className="w-4 h-4 mr-2" />Rapport + Taxatieverslag
           </Button>
           <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen</Button>
         </div>
@@ -2483,7 +2483,7 @@ export default function TaxatieProgramma() {
                           xhr.send();
                         }}
                         className="p-2 rounded-lg hover:bg-emerald-100 text-emerald-600"
-                        title="Alle 3 rapporten in 1 PDF"
+                        title="Rapport + Taxatieverslag in 1 PDF"
                         data-testid={`bundle-pdf-${t.id}`}
                       ><Download className="w-4 h-4" /></button>
                       {t.status === 'concept' && <button onClick={() => openFinalizeModal(t)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="Definitief maken" data-testid={`finalize-${t.id}`}><FileCheck className="w-4 h-4" /></button>}
