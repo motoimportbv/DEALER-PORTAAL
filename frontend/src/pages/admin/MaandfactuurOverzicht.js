@@ -123,8 +123,13 @@ export default function MaandfactuurOverzicht() {
                     </button>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-xs text-zinc-500 font-bold uppercase">Totaal BPM ontvangen</p>
-                        <p className="text-xl font-black text-emerald-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(m.totaal_bpm)}</p>
+                        <p className="text-xs text-zinc-500 font-bold uppercase">Te factureren</p>
+                        <p className="text-xl font-black text-blue-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(m.totaal_te_factureren_incl)}</p>
+                        <p className="text-[10px] text-zinc-500">{fmtEur(m.totaal_te_factureren_ex)} ex BTW</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-zinc-500 font-bold uppercase">BPM ontvangen</p>
+                        <p className="text-lg font-black text-emerald-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(m.totaal_bpm)}</p>
                       </div>
                       <button
                         type="button"
@@ -151,6 +156,8 @@ export default function MaandfactuurOverzicht() {
                             <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Voertuig</th>
                             <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Ontvangen op</th>
                             <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">BPM bedrag</th>
+                            <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Factuur ex BTW</th>
+                            <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Factuur incl</th>
                             <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Status</th>
                             <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Actie</th>
                           </tr>
@@ -169,6 +176,8 @@ export default function MaandfactuurOverzicht() {
                               </td>
                               <td className="px-4 py-3 text-xs">{it.bpm_received_at ? new Date(it.bpm_received_at).toLocaleDateString('nl-NL') : '\u2014'}</td>
                               <td className="px-4 py-3 text-right font-bold text-emerald-700">{fmtEur(it.bpm_amount_received)}</td>
+                              <td className="px-4 py-3 text-right text-sm text-zinc-700">{fmtEur(it.fee_ex_btw)}</td>
+                              <td className="px-4 py-3 text-right font-bold text-blue-700">{fmtEur(it.fee_incl_btw)}</td>
                               <td className="px-4 py-3 text-center">
                                 {it.invoiced
                                   ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Gefactureerd</span>

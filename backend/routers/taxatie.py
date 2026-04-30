@@ -871,6 +871,11 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
     ).sort("bpm_received_at", -1).to_list(1000)
 
     # Group by year-month
+    fee_ex = float(TAXATIE_DEFAULT_FEE)  # €160 ex BTW (config)
+    btw_pct = float(TAXATIE_BTW_PERCENTAGE) / 100.0  # 21%
+    fee_btw = round(fee_ex * btw_pct, 2)
+    fee_incl = round(fee_ex + fee_btw, 2)
+
     months = {}
     for d in docs:
         try:
@@ -880,15 +885,32 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
         except Exception:
             ym = "0000-00"
             ym_label = "Onbekend"
-        bucket = months.setdefault(ym, {"month": ym, "label": ym_label, "items": [], "totaal_taxatiewaarde": 0.0, "totaal_bpm": 0.0, "aantal": 0, "te_factureren": 0})
+        # Verrijk per item met factuurbedrag
+        d["fee_ex_btw"] = fee_ex
+        d["fee_btw"] = fee_btw
+        d["fee_incl_btw"] = fee_incl
+        bucket = months.setdefault(ym, {
+            "month": ym, "label": ym_label, "items": [],
+            "totaal_taxatiewaarde": 0.0, "totaal_bpm": 0.0,
+            "totaal_te_factureren_ex": 0.0, "totaal_te_factureren_incl": 0.0,
+            "aantal": 0, "te_factureren": 0,
+        })
         bucket["items"].append(d)
         bucket["totaal_taxatiewaarde"] += float(d.get("taxatie_inruil_waarde") or 0)
         bucket["totaal_bpm"] += float(d.get("bpm_amount_received") or 0)
         bucket["aantal"] += 1
         if not d.get("invoiced"):
             bucket["te_factureren"] += 1
+            bucket["totaal_te_factureren_ex"] += fee_ex
+            bucket["totaal_te_factureren_incl"] += fee_incl
     sorted_months = sorted(months.values(), key=lambda b: b["month"], reverse=True)
-    return {"months": sorted_months}
+    return {
+        "months": sorted_months,
+        "fee_ex_btw": fee_ex,
+        "fee_btw": fee_btw,
+        "fee_incl_btw": fee_incl,
+        "btw_percentage": int(TAXATIE_BTW_PERCENTAGE),
+    }
 
 
 @router.get("/taxatie-programma-maandfactuur/{ym}/pdf")
@@ -974,11 +996,19 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
     elements.append(Paragraph(" \u2022 ".join(info_lines), sm))
     elements.append(Spacer(1, 5 * mm))
 
+    fee_ex = float(TAXATIE_DEFAULT_FEE)
+    btw_pct_int = int(TAXATIE_BTW_PERCENTAGE)
+    fee_btw = round(fee_ex * (btw_pct_int / 100.0), 2)
+    fee_incl = round(fee_ex + fee_btw, 2)
+    def fmt_eur_inline(v):
+        return f"\u20ac {float(v or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
     elements.append(Paragraph(
         f"Onderstaand overzicht bevat alle taxaties waarvan in <b>{ym_label}</b> "
         f"de BPM-vermindering door de Belastingdienst is uitgekeerd. "
-        f"Per regel staan de meldcode, klantgegevens, voertuig en het ontvangen bedrag "
-        f"\u2014 te gebruiken als basis voor de individuele klantfactuur.",
+        f"Het taxatietarief bedraagt <b>{fmt_eur_inline(fee_ex)} ex BTW</b> per regel "
+        f"(<b>{fmt_eur_inline(fee_incl)} incl. {btw_pct_int}% BTW</b>) — "
+        f"te gebruiken als basis voor de individuele klantfactuur.",
         n,
     ))
     elements.append(Spacer(1, 4 * mm))
@@ -994,19 +1024,25 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         Paragraph("Meldcode", white_b),
         Paragraph("Klant", white_b),
         Paragraph("Voertuig / Taxatienr", white_b),
-        Paragraph("Verzonden", white_b),
         Paragraph("Ontvangen", white_b),
         Paragraph("BPM bedrag", ParagraphStyle('WBR', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph(f"Factuur ex {btw_pct_int}% BTW", ParagraphStyle('WBR2', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("Factuur incl", ParagraphStyle('WBR3', parent=white_b, alignment=TA_RIGHT)),
         Paragraph("Status", white_b),
     ]
     rows = [header_row]
     totaal_bpm = 0.0
+    totaal_te_factureren_ex = 0.0
+    totaal_te_factureren_incl = 0.0
     open_count = 0
     for idx, it in enumerate(items, start=1):
         bedrag = float(it.get("bpm_amount_received") or 0)
         totaal_bpm += bedrag
-        if not it.get("invoiced"):
+        is_open = not it.get("invoiced")
+        if is_open:
             open_count += 1
+            totaal_te_factureren_ex += fee_ex
+            totaal_te_factureren_incl += fee_incl
         klant_lines = []
         if it.get("customer_name"): klant_lines.append(f"<b>{it['customer_name']}</b>")
         if it.get("customer_phone"): klant_lines.append(it["customer_phone"])
@@ -1020,21 +1056,24 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
                 f"<br/><font size=7 color='#666'>{it.get('taxatie_nummer','')}</font>",
                 n,
             ),
-            Paragraph(fmt_date(it.get("posted_at")), n),
             Paragraph(fmt_date(it.get("bpm_received_at")), n),
             Paragraph(fmt_eur(bedrag), right_b),
+            Paragraph(fmt_eur(fee_ex), right_b),
+            Paragraph(f"<b>{fmt_eur(fee_incl)}</b>", right_b),
             Paragraph("Gefactureerd" if it.get("invoiced") else "Open", n),
         ])
 
     # Totaal-rij
     rows.append([
-        "", "", "", "", "",
+        "", "", "", "",
         Paragraph("<b>TOTAAL</b>", right_b),
         Paragraph(f"<b>{fmt_eur(totaal_bpm)}</b>", right_b),
+        Paragraph(f"<b>{fmt_eur(totaal_te_factureren_ex)}</b>", right_b),
+        Paragraph(f"<b>{fmt_eur(totaal_te_factureren_incl)}</b>", right_b),
         "",
     ])
 
-    col_widths = [10*mm, 28*mm, 50*mm, 56*mm, 22*mm, 22*mm, 28*mm, 22*mm]
+    col_widths = [9*mm, 26*mm, 44*mm, 50*mm, 22*mm, 26*mm, 26*mm, 28*mm, 22*mm]
     tbl = Table(rows, colWidths=col_widths, repeatRows=1)
     tbl.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#18181b')),
@@ -1057,6 +1096,14 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         f"<b>Samenvatting:</b> {len(items)} taxatie(s) in {ym_label} \u2014 "
         f"totaal ontvangen BPM <b>{fmt_eur(totaal_bpm)}</b> \u2014 "
         f"<b>{open_count}</b> nog te factureren \u2022 <b>{len(items) - open_count}</b> reeds gefactureerd.",
+        n,
+    ))
+    elements.append(Spacer(1, 2 * mm))
+    elements.append(Paragraph(
+        f"<b>Te factureren bedrag deze maand:</b> "
+        f"{fmt_eur(totaal_te_factureren_ex)} ex BTW \u2014 "
+        f"<b>{fmt_eur(totaal_te_factureren_incl)} incl. {btw_pct_int}% BTW</b> "
+        f"({open_count} \u00d7 {fmt_eur(fee_ex)} ex / {fmt_eur(fee_incl)} incl).",
         n,
     ))
     elements.append(Spacer(1, 3 * mm))
