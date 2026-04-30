@@ -891,6 +891,193 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
     return {"months": sorted_months}
 
 
+@router.get("/taxatie-programma-maandfactuur/{ym}/pdf")
+async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_taxatie_access)):
+    """Genereer een verzamel-PDF voor een specifieke maand (ym = 'YYYY-MM').
+    Lijst van alle taxaties met ontvangen BPM in die maand, geschikt als basis voor klantfacturen.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    try:
+        datetime.strptime(ym, "%Y-%m")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ongeldig maandformaat (verwacht YYYY-MM)")
+
+    # Alle ontvangen items, daarna filter op maand
+    docs = await db.taxatie_programma.find(
+        {
+            **_owner_filter_for_user(current_user),
+            "bpm_received_at": {"$nin": [None, ""], "$exists": True},
+        },
+        {"_id": 0},
+    ).sort("bpm_received_at", 1).to_list(2000)
+    items = [d for d in docs if (d.get("bpm_received_at") or "").startswith(ym)]
+    if not items:
+        raise HTTPException(status_code=404, detail=f"Geen ontvangen BPM in {ym}")
+
+    from services.branding import get_branding
+    cb = get_branding(current_user)
+
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+    import io
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(
+        buffer, pagesize=landscape(A4),
+        leftMargin=15 * mm, rightMargin=15 * mm,
+        topMargin=12 * mm, bottomMargin=15 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+    n = ParagraphStyle('N', parent=styles['Normal'], fontSize=8.5, leading=11)
+    nb = ParagraphStyle('NB', parent=n, fontName='Helvetica-Bold')
+    sm = ParagraphStyle('SM', parent=n, fontSize=7.5, textColor=colors.HexColor('#666'))
+    right_b = ParagraphStyle('RB', parent=nb, alignment=TA_RIGHT)
+    white_b = ParagraphStyle('WB', parent=nb, textColor=colors.white)
+
+    elements = []
+
+    ym_dt = datetime.strptime(ym, "%Y-%m")
+    nl_months = ["januari", "februari", "maart", "april", "mei", "juni",
+                 "juli", "augustus", "september", "oktober", "november", "december"]
+    ym_label = f"{nl_months[ym_dt.month - 1].capitalize()} {ym_dt.year}"
+
+    # Header bar
+    hdr = [[
+        Paragraph(f"<b>{cb['name']}</b>", ParagraphStyle('CN', parent=n, fontSize=14, fontName='Helvetica-Bold', textColor=colors.white)),
+        Paragraph(f"<b>Maandoverzicht Facturatie</b><br/>{ym_label}", ParagraphStyle('CR', parent=n, fontSize=10, textColor=colors.HexColor('#ccc'), alignment=TA_RIGHT)),
+    ]]
+    t = Table(hdr, colWidths=[140 * mm, 130 * mm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#18181b')),
+        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 4 * mm))
+
+    # Bedrijfsinfo
+    info_lines = []
+    if cb.get('address'): info_lines.append(cb['address'])
+    if cb.get('kvk'): info_lines.append(f"KvK: {cb['kvk']}")
+    if cb.get('btw'): info_lines.append(f"BTW: {cb['btw']}")
+    if cb.get('phone'): info_lines.append(cb['phone'])
+    if cb.get('email'): info_lines.append(cb['email'])
+    elements.append(Paragraph(" \u2022 ".join(info_lines), sm))
+    elements.append(Spacer(1, 5 * mm))
+
+    elements.append(Paragraph(
+        f"Onderstaand overzicht bevat alle taxaties waarvan in <b>{ym_label}</b> "
+        f"de BPM-vermindering door de Belastingdienst is uitgekeerd. "
+        f"Per regel staan de meldcode, klantgegevens, voertuig en het ontvangen bedrag "
+        f"\u2014 te gebruiken als basis voor de individuele klantfactuur.",
+        n,
+    ))
+    elements.append(Spacer(1, 4 * mm))
+
+    # Tabel
+    def fmt_eur(v):
+        return f"\u20ac {float(v or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    def fmt_date(s):
+        return datetime.strptime(s, "%Y-%m-%d").strftime("%d-%m-%Y") if s else "-"
+
+    header_row = [
+        Paragraph("#", white_b),
+        Paragraph("Meldcode", white_b),
+        Paragraph("Klant", white_b),
+        Paragraph("Voertuig / Taxatienr", white_b),
+        Paragraph("Verzonden", white_b),
+        Paragraph("Ontvangen", white_b),
+        Paragraph("BPM bedrag", ParagraphStyle('WBR', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("Status", white_b),
+    ]
+    rows = [header_row]
+    totaal_bpm = 0.0
+    open_count = 0
+    for idx, it in enumerate(items, start=1):
+        bedrag = float(it.get("bpm_amount_received") or 0)
+        totaal_bpm += bedrag
+        if not it.get("invoiced"):
+            open_count += 1
+        klant_lines = []
+        if it.get("customer_name"): klant_lines.append(f"<b>{it['customer_name']}</b>")
+        if it.get("customer_phone"): klant_lines.append(it["customer_phone"])
+        if it.get("customer_email"): klant_lines.append(it["customer_email"])
+        rows.append([
+            Paragraph(str(idx), n),
+            Paragraph(it.get("bpm_meldcode") or "-", nb),
+            Paragraph("<br/>".join(klant_lines) or "-", n),
+            Paragraph(
+                f"<b>{(it.get('brand') or '') + ' ' + (it.get('model') or '')}</b>"
+                f"<br/><font size=7 color='#666'>{it.get('taxatie_nummer','')}</font>",
+                n,
+            ),
+            Paragraph(fmt_date(it.get("posted_at")), n),
+            Paragraph(fmt_date(it.get("bpm_received_at")), n),
+            Paragraph(fmt_eur(bedrag), right_b),
+            Paragraph("Gefactureerd" if it.get("invoiced") else "Open", n),
+        ])
+
+    # Totaal-rij
+    rows.append([
+        "", "", "", "", "",
+        Paragraph("<b>TOTAAL</b>", right_b),
+        Paragraph(f"<b>{fmt_eur(totaal_bpm)}</b>", right_b),
+        "",
+    ])
+
+    col_widths = [10*mm, 28*mm, 50*mm, 56*mm, 22*mm, 22*mm, 28*mm, 22*mm]
+    tbl = Table(rows, colWidths=col_widths, repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#18181b')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.6, colors.HexColor('#18181b')),
+        ('LINEBELOW', (0, 1), (-1, -2), 0.3, colors.HexColor('#e4e4e7')),
+        ('LINEABOVE', (0, -1), (-1, -1), 1.0, colors.HexColor('#18181b')),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#fafafa')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f9fafb')]),
+    ]))
+    elements.append(tbl)
+    elements.append(Spacer(1, 6 * mm))
+
+    elements.append(Paragraph(
+        f"<b>Samenvatting:</b> {len(items)} taxatie(s) in {ym_label} \u2014 "
+        f"totaal ontvangen BPM <b>{fmt_eur(totaal_bpm)}</b> \u2014 "
+        f"<b>{open_count}</b> nog te factureren \u2022 <b>{len(items) - open_count}</b> reeds gefactureerd.",
+        n,
+    ))
+    elements.append(Spacer(1, 3 * mm))
+    elements.append(Paragraph(
+        f"Gegenereerd op {datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M')} UTC \u2014 {cb['name']}",
+        sm,
+    ))
+
+    pdf.build(elements)
+    buffer.seek(0)
+    pdf_bytes = buffer.getvalue()
+
+    safe_name = cb['name'].replace(' ', '_').replace('.', '')
+    filename = f"Maandoverzicht_{safe_name}_{ym}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.post("/taxatie-programma/{taxatie_id}/mark-invoiced")
 async def mark_taxatie_invoiced(
     taxatie_id: str,

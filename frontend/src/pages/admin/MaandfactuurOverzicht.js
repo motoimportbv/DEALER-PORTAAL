@@ -3,7 +3,7 @@ import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, FileText, Check, Loader2, Calendar } from 'lucide-react';
+import { ArrowLeft, FileText, Check, Loader2, Calendar, Download } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -44,6 +44,39 @@ export default function MaandfactuurOverzicht() {
     }
   };
 
+  const [downloadingMonth, setDownloadingMonth] = useState(null);
+  const downloadMaandPdf = async (ym, label) => {
+    setDownloadingMonth(ym);
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `${API}/taxatie-programma-maandfactuur/${ym}/pdf`, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.responseType = 'blob';
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const blob = xhr.response;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Maandoverzicht_${ym}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success(`PDF gedownload voor ${label}`);
+        } else {
+          toast.error('PDF genereren mislukt (status ' + xhr.status + ')');
+        }
+        setDownloadingMonth(null);
+      };
+      xhr.onerror = () => { toast.error('Netwerkfout bij downloaden'); setDownloadingMonth(null); };
+      xhr.send();
+    } catch (e) {
+      toast.error('Fout: ' + e.message);
+      setDownloadingMonth(null);
+    }
+  };
+
   if (!isAllowed) {
     return <Layout><div className="flex items-center justify-center h-64 text-zinc-500">Geen toegang tot deze pagina.</div></Layout>;
   }
@@ -79,20 +112,35 @@ export default function MaandfactuurOverzicht() {
               const isOpen = !!expanded[m.month];
               return (
                 <div key={m.month} className="bg-white rounded-2xl border overflow-hidden" data-testid={`maand-${m.month}`}>
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(s => ({ ...s, [m.month]: !s[m.month] }))}
-                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-zinc-50 transition-colors"
-                  >
-                    <div className="text-left">
+                  <div className="w-full px-5 py-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(s => ({ ...s, [m.month]: !s[m.month] }))}
+                      className="text-left flex-1"
+                    >
                       <h2 className="font-bold text-lg capitalize">{m.label}</h2>
                       <p className="text-xs text-zinc-500">{m.aantal} taxatie{m.aantal === 1 ? '' : 's'} \u2014 {m.te_factureren} nog te factureren</p>
+                    </button>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-xs text-zinc-500 font-bold uppercase">Totaal BPM ontvangen</p>
+                        <p className="text-xl font-black text-emerald-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(m.totaal_bpm)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => downloadMaandPdf(m.month, m.label)}
+                        disabled={downloadingMonth === m.month}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold disabled:opacity-50"
+                        data-testid={`download-pdf-${m.month}`}
+                        title={`Download maandoverzicht PDF voor ${m.label}`}
+                      >
+                        {downloadingMonth === m.month
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Download className="w-4 h-4" />}
+                        PDF
+                      </button>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-zinc-500 font-bold uppercase">Totaal BPM ontvangen</p>
-                      <p className="text-xl font-black text-emerald-700" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(m.totaal_bpm)}</p>
-                    </div>
-                  </button>
+                  </div>
                   {isOpen && (
                     <div className="border-t border-zinc-200 overflow-x-auto">
                       <table className="w-full text-sm">
