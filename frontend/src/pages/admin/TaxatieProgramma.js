@@ -549,6 +549,32 @@ function BpmReport({ taxatie, onClose }) {
           }} variant="outline" className="border-red-300 text-red-700 hover:bg-red-50" data-testid="download-pdf-btn">
             <Download className="w-4 h-4 mr-2" />Rapport PDF
           </Button>
+          <Button onClick={() => {
+            const token = localStorage.getItem('token');
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${process.env.REACT_APP_BACKEND_URL}/api/taxatie-programma/${taxatie.id}/bundle-pdf`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.responseType = 'blob';
+            xhr.onload = function() {
+              if (xhr.status === 200) {
+                const blob = xhr.response;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Taxatie_Compleet_${taxatie.brand}_${taxatie.model}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } else {
+                alert('Fout bij bundel-PDF: server fout ' + xhr.status);
+              }
+            };
+            xhr.onerror = function() { alert('Fout bij bundel-PDF: netwerk fout'); };
+            xhr.send();
+          }} className="bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="download-bundle-pdf-btn">
+            <Download className="w-4 h-4 mr-2" />Alle 3 in 1 PDF
+          </Button>
           <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen</Button>
         </div>
       </div>
@@ -2432,6 +2458,34 @@ export default function TaxatieProgramma() {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button onClick={() => setSelectedTaxatie(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Rapport" data-testid={`view-${t.id}`}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Bewerken" data-testid={`edit-${t.id}`}><Edit2 className="w-4 h-4" /></button>
+                      <button
+                        onClick={() => {
+                          const xhr = new XMLHttpRequest();
+                          xhr.open('GET', `${API}/taxatie-programma/${t.id}/bundle-pdf`, true);
+                          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                          xhr.responseType = 'blob';
+                          xhr.onload = () => {
+                            if (xhr.status === 200) {
+                              const url = URL.createObjectURL(xhr.response);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `Taxatie_Compleet_${t.brand}_${t.model}.pdf`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                              toast.success('Bundel PDF gedownload');
+                            } else {
+                              toast.error('Bundel PDF mislukt (status ' + xhr.status + ')');
+                            }
+                          };
+                          xhr.onerror = () => toast.error('Netwerkfout bij bundel PDF');
+                          xhr.send();
+                        }}
+                        className="p-2 rounded-lg hover:bg-emerald-100 text-emerald-600"
+                        title="Alle 3 rapporten in 1 PDF"
+                        data-testid={`bundle-pdf-${t.id}`}
+                      ><Download className="w-4 h-4" /></button>
                       {t.status === 'concept' && <button onClick={() => openFinalizeModal(t)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="Definitief maken" data-testid={`finalize-${t.id}`}><FileCheck className="w-4 h-4" /></button>}
                       {t.status === 'definitief' && <button onClick={() => handleRevertToConcept(t.id)} className="p-2 rounded-lg hover:bg-amber-100 text-amber-600" title="Terug naar concept (datum aanpassen)" data-testid={`revert-${t.id}`}><RefreshCw className="w-4 h-4" /></button>}
                       {t.status === 'definitief' && !t.bpm_received_at && (

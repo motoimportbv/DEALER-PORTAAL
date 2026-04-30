@@ -1208,6 +1208,58 @@ async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_t
     return {"status": "deleted"}
 
 
+@router.get("/taxatie-programma/{taxatie_id}/bundle-pdf")
+async def export_bundle_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
+    """Genereer één gecombineerde PDF met alle 3 rapporten achter elkaar:
+    BPM Rapport + Belastingdienst formulier + Taxatieverslag.
+    Gemakkelijk voor printen en archiveren in één bestand.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    doc = await db.taxatie_programma.find_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"_id": 0, "brand": 1, "model": 1, "taxatie_nummer": 1},
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+
+    # Roep de 3 bestaande handlers direct aan — zij retourneren Response-objecten
+    try:
+        r1 = await export_taxatie_pdf(taxatie_id, current_user)
+        r2 = await export_belastingdienst_pdf(taxatie_id, current_user)
+        r3 = await export_taxatieverslag_pdf(taxatie_id, current_user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Bundle genereren mislukt bij deelrapport")
+        raise HTTPException(status_code=500, detail=f"Deelrapport mislukt: {str(e)}")
+
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        raise HTTPException(status_code=500, detail="PyMuPDF (fitz) niet geïnstalleerd")
+
+    merged = fitz.open()
+    for r in (r1, r2, r3):
+        pdf_bytes = r.body if hasattr(r, "body") else r.content
+        src = fitz.open(stream=pdf_bytes, filetype="pdf")
+        merged.insert_pdf(src)
+        src.close()
+    out_bytes = merged.tobytes()
+    merged.close()
+
+    brand = (doc.get("brand") or "Motor").replace(" ", "_")
+    model = (doc.get("model") or "").replace(" ", "_")
+    tnr = doc.get("taxatie_nummer") or taxatie_id[:8]
+    filename = f"Taxatie_Compleet_{brand}_{model}_{tnr}.pdf"
+    return Response(
+        content=out_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/taxatie-programma/{taxatie_id}/pdf")
 async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     """Generate a BPM Import Rapport PDF matching Belastingdienst format"""
