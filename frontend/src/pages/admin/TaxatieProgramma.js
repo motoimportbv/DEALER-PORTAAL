@@ -1192,7 +1192,19 @@ export default function TaxatieProgramma() {
       const dateStr = form.report_date
         ? new Date(form.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
         : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
-      const signed = `${text}\n\nVastgesteld door taxateur S. Milone op ${dateStr}.`;
+      // Bepaal taxateur-naam dynamisch op basis van ingelogde user
+      const buildTaxateurName = () => {
+        const fn = (user?.full_name || '').trim();
+        if (fn) {
+          const parts = fn.split(/\s+/);
+          if (parts.length >= 2) return `${parts[0][0].toUpperCase()}. ${parts[parts.length - 1]}`;
+          return fn;
+        }
+        // Fallback: admin (Moto Import) → S. Milone, anders email-prefix
+        if ((user?.email || '').toLowerCase() === 'motoimportbv@gmail.com') return 'S. Milone';
+        return user?.username || 'taxateur';
+      };
+      const signed = `${text}\n\nVastgesteld door taxateur ${buildTaxateurName()} op ${dateStr}.`;
       setAiTextDraft(signed);
       setAiModalOpen(true);
     } catch (err) {
