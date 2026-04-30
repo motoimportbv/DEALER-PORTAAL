@@ -1871,7 +1871,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     
     # Company header bar
     hdr_data = [[
-        Paragraph("<b>MOTO IMPORT B.V.</b>", ParagraphStyle('H1', parent=n, fontSize=14, fontName='Helvetica-Bold', textColor=colors.white)),
+        Paragraph(f"<b>{cb['name'].upper()}</b>", ParagraphStyle('H1', parent=n, fontSize=14, fontName='Helvetica-Bold', textColor=colors.white)),
         Paragraph(f"<b>Taxatierapport {cb['vehicle_label'].capitalize()}</b><br/>{taxatie_nr}", ParagraphStyle('H2', parent=n, fontSize=10, textColor=colors.HexColor('#ccc'), alignment=TA_RIGHT)),
     ]]
     t = Table(hdr_data, colWidths=[90*mm, 84*mm])
@@ -1887,7 +1887,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     elements.append(Spacer(1, 2*mm))
     
     # Company info block
-    taxateur_name = (current_user or {}).get("username") or (current_user or {}).get("company_name") or "S. Milone"
+    taxateur_name = cb.get('taxateur_name') or (current_user or {}).get("full_name") or (current_user or {}).get("username") or "S. Milone"
     info_data = [
         [Paragraph("<b>Naam:</b>", label_s), cb['name'], Paragraph("<b>Datum rapport:</b>", label_s), report_date_str],
         [Paragraph("<b>RSIN:</b>", label_s), cb.get('rsin') or "-", Paragraph("<b>KVK:</b>", label_s), cb.get('kvk') or "-"],
