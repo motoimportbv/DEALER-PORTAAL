@@ -88,7 +88,8 @@ const Layout = ({ children, requiredRole }) => {
   // Taxateur users can ONLY access /admin/taxatie and /admin/taxatie-programma routes
   if (user.role === 'taxateur') {
     const allowedTaxateur = location.pathname === '/admin/taxatie' || location.pathname.startsWith('/admin/taxatie/') ||
-      location.pathname === '/admin/taxatie-programma' || location.pathname.startsWith('/admin/taxatie-programma/');
+      location.pathname === '/admin/taxatie-programma' || location.pathname.startsWith('/admin/taxatie-programma/') ||
+      location.pathname === '/admin/taxatie-maandfactuur';
     if (!allowedTaxateur) {
       return <Navigate to="/admin/taxatie" replace />;
     }

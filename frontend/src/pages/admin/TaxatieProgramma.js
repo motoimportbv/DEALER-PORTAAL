@@ -8,7 +8,7 @@ import axios from 'axios';
 import {
   Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink, Download,
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
-  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles, RefreshCw
+  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles, RefreshCw, Send, Inbox
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -1239,6 +1239,59 @@ export default function TaxatieProgramma() {
 
   useEffect(() => { fetchTaxaties(); }, [fetchTaxaties]);
 
+  // ===== Verzending reminders (>5 dagen na post zonder BPM-ontvangst) =====
+  const [reminders, setReminders] = useState({ count: 0, items: [] });
+  const fetchReminders = useCallback(async () => {
+    if (!isAllowed) return;
+    try {
+      const res = await axios.get(`${API}/taxatie-programma-reminders`, { headers });
+      setReminders(res.data || { count: 0, items: [] });
+    } catch (e) { console.error('reminders', e); }
+  }, [token, isAllowed]);
+  useEffect(() => { fetchReminders(); }, [fetchReminders]);
+
+  // ===== Mark posted modal =====
+  const [postModal, setPostModal] = useState(null); // { id, brand, model, taxatie_nummer }
+  const [postDate, setPostDate] = useState('');
+  const submitPostMark = async () => {
+    if (!postModal) return;
+    try {
+      const body = postDate ? { posted_at: postDate } : {};
+      await axios.post(`${API}/taxatie-programma/${postModal.id}/mark-posted`, body, { headers });
+      toast.success('Verzending geregistreerd \u2014 reminder over 5 dagen');
+      setPostModal(null);
+      setPostDate('');
+      fetchTaxaties();
+      fetchReminders();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+  };
+
+  // ===== Mark BPM received modal =====
+  const [bpmModal, setBpmModal] = useState(null);
+  const [bpmMeldcode, setBpmMeldcode] = useState('');
+  const [bpmAmount, setBpmAmount] = useState('');
+  const [bpmReceivedDate, setBpmReceivedDate] = useState('');
+  const submitBpmReceived = async () => {
+    if (!bpmModal) return;
+    if (!bpmMeldcode.trim()) { toast.error('Meldcode is verplicht'); return; }
+    try {
+      const body = {
+        bpm_meldcode: bpmMeldcode.trim(),
+      };
+      if (bpmAmount) body.bpm_amount_received = Number(bpmAmount);
+      if (bpmReceivedDate) body.received_at = bpmReceivedDate;
+      await axios.post(`${API}/taxatie-programma/${bpmModal.id}/mark-bpm-received`, body, { headers });
+      toast.success('BPM-ontvangst geregistreerd');
+      setBpmModal(null); setBpmMeldcode(''); setBpmAmount(''); setBpmReceivedDate('');
+      fetchTaxaties();
+      fetchReminders();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+  };
+
   // Auto-refresh when tab/app becomes visible again
   useEffect(() => {
     const onVisible = () => { if (document.visibilityState === 'visible') fetchTaxaties(); };
@@ -2296,6 +2349,45 @@ export default function TaxatieProgramma() {
           </div>
         </div>
 
+        {/* Reminder banner: taxaties >5 dagen op de post zonder BPM-ontvangst */}
+        {reminders.count > 0 && (
+          <div className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-5" data-testid="bpm-reminder-banner">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
+                <span className="text-xl">{'\u23F0'}</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-orange-900 text-base">
+                  {reminders.count} taxatie{reminders.count === 1 ? '' : 's'} {'>'}5 dagen op de post \u2014 BPM ontvangen?
+                </h3>
+                <p className="text-xs text-orange-800 mt-1">
+                  Klik op een regel hieronder om de meldcode + ontvangstbedrag in te voeren.
+                </p>
+                <div className="mt-3 space-y-1.5">
+                  {reminders.items.map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => {
+                        const t = taxaties.find(x => x.id === r.id);
+                        setBpmModal({ id: r.id, brand: r.brand, model: r.model, customer_name: r.customer_name, taxatie_nummer: r.taxatie_nummer });
+                        setBpmReceivedDate(new Date().toISOString().slice(0, 10));
+                      }}
+                      className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-orange-200 hover:border-orange-400 transition-colors"
+                      data-testid={`reminder-item-${r.id}`}
+                    >
+                      <span className="text-xs font-mono text-zinc-500">{r.taxatie_nummer}</span>
+                      <span className="text-sm font-bold flex-1">{r.brand} {r.model}</span>
+                      {r.customer_name && <span className="text-xs text-zinc-600">\u2014 {r.customer_name}</span>}
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-200 text-orange-900">{r.dagen_open} dagen</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border p-10 text-center text-zinc-400">
             <Shield className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -2317,6 +2409,16 @@ export default function TaxatieProgramma() {
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === 'definitief' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                           {t.status === 'definitief' ? 'Definitief' : 'Concept'}
                         </span>
+                        {t.posted_at && !t.bpm_received_at && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700" title={`Op de post: ${t.posted_at}`}>
+                            Verzonden {new Date(t.posted_at).toLocaleDateString('nl-NL')}
+                          </span>
+                        )}
+                        {t.bpm_received_at && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700" title={`Meldcode: ${t.bpm_meldcode || '-'}`}>
+                            BPM ontvangen {t.bpm_amount_received ? `\u2014 \u20ac${Number(t.bpm_amount_received).toLocaleString('nl-NL')}` : ''}
+                          </span>
+                        )}
                         {dmgCount > 0 && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">{dmgCount} schade</span>}
                       </div>
                       <p className="text-sm text-zinc-500">{t.vin_number && <span className="font-mono">{t.vin_number}</span>}{t.vin_number && ' · '}{t.bouwjaar ? new Date(t.bouwjaar).toLocaleDateString('nl-NL') : ''}{(t.bouwjaar && t.mileage) ? ' · ' : ''}{t.mileage ? `${t.mileage.toLocaleString('nl-NL')} km` : ''}</p>
@@ -2332,6 +2434,22 @@ export default function TaxatieProgramma() {
                       <button onClick={() => handleEdit(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Bewerken" data-testid={`edit-${t.id}`}><Edit2 className="w-4 h-4" /></button>
                       {t.status === 'concept' && <button onClick={() => openFinalizeModal(t)} className="p-2 rounded-lg hover:bg-green-100 text-green-600" title="Definitief maken" data-testid={`finalize-${t.id}`}><FileCheck className="w-4 h-4" /></button>}
                       {t.status === 'definitief' && <button onClick={() => handleRevertToConcept(t.id)} className="p-2 rounded-lg hover:bg-amber-100 text-amber-600" title="Terug naar concept (datum aanpassen)" data-testid={`revert-${t.id}`}><RefreshCw className="w-4 h-4" /></button>}
+                      {t.status === 'definitief' && !t.bpm_received_at && (
+                        <button
+                          onClick={() => { setPostModal({ id: t.id, brand: t.brand, model: t.model, taxatie_nummer: t.taxatie_nummer }); setPostDate(new Date().toISOString().slice(0, 10)); }}
+                          className="p-2 rounded-lg hover:bg-blue-100 text-blue-600"
+                          title={t.posted_at ? `Op de post: ${t.posted_at} (klik om aan te passen)` : 'Op de post gedaan'}
+                          data-testid={`mark-posted-${t.id}`}
+                        ><Send className="w-4 h-4" /></button>
+                      )}
+                      {t.posted_at && !t.bpm_received_at && (
+                        <button
+                          onClick={() => { setBpmModal({ id: t.id, brand: t.brand, model: t.model, customer_name: t.customer_name, taxatie_nummer: t.taxatie_nummer }); setBpmReceivedDate(new Date().toISOString().slice(0, 10)); }}
+                          className="p-2 rounded-lg hover:bg-emerald-100 text-emerald-600"
+                          title="BPM ontvangen"
+                          data-testid={`mark-received-${t.id}`}
+                        ><Inbox className="w-4 h-4" /></button>
+                      )}
                       <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg hover:bg-red-100 text-red-500" title="Verwijderen" data-testid={`delete-${t.id}`}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -2402,6 +2520,71 @@ export default function TaxatieProgramma() {
                 >
                   Annuleren
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Op de post gedaan modal */}
+        {postModal && (
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPostModal(null)} data-testid="post-modal">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-zinc-200 bg-blue-50">
+                <div className="flex items-center gap-2">
+                  <Send className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-lg font-black text-zinc-900">Op de post gedaan</h2>
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">{postModal.brand} {postModal.model} \u2014 {postModal.taxatie_nummer}</p>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Verzenddatum</label>
+                  <input
+                    type="date"
+                    value={postDate}
+                    onChange={e => setPostDate(e.target.value)}
+                    className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    data-testid="post-date-input"
+                  />
+                  <p className="text-xs text-zinc-500 mt-2">Na 5 dagen verschijnt deze taxatie automatisch in de reminder-banner.</p>
+                </div>
+              </div>
+              <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50 flex justify-end gap-2">
+                <button type="button" onClick={() => setPostModal(null)} className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-zinc-300 hover:bg-zinc-100" data-testid="post-cancel-btn">Annuleren</button>
+                <button type="button" onClick={submitPostMark} disabled={!postDate} className="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50" data-testid="post-confirm-btn">Bevestigen</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BPM ontvangen modal */}
+        {bpmModal && (
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setBpmModal(null)} data-testid="bpm-received-modal">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="px-5 py-4 border-b border-zinc-200 bg-emerald-50">
+                <div className="flex items-center gap-2">
+                  <Inbox className="w-5 h-5 text-emerald-600" />
+                  <h2 className="text-lg font-black text-zinc-900">BPM ontvangen</h2>
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">{bpmModal.brand} {bpmModal.model}{bpmModal.customer_name ? ` \u2014 ${bpmModal.customer_name}` : ''}</p>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Meldcode Belastingdienst <span className="text-red-500">*</span></label>
+                  <input type="text" value={bpmMeldcode} onChange={e => setBpmMeldcode(e.target.value)} placeholder="bv. BD-2026-1234" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none" data-testid="bpm-meldcode-input" autoFocus />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Ontvangen BPM-bedrag (\u20ac)</label>
+                  <input type="number" step="0.01" value={bpmAmount} onChange={e => setBpmAmount(e.target.value)} placeholder="bv. 1450.00" className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none" data-testid="bpm-amount-input" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Ontvangstdatum</label>
+                  <input type="date" value={bpmReceivedDate} onChange={e => setBpmReceivedDate(e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none" data-testid="bpm-received-date-input" />
+                </div>
+              </div>
+              <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50 flex justify-end gap-2">
+                <button type="button" onClick={() => setBpmModal(null)} className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-zinc-300 hover:bg-zinc-100" data-testid="bpm-cancel-btn">Annuleren</button>
+                <button type="button" onClick={submitBpmReceived} disabled={!bpmMeldcode.trim()} className="px-4 py-2 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50" data-testid="bpm-confirm-btn">Registreren</button>
               </div>
             </div>
           </div>

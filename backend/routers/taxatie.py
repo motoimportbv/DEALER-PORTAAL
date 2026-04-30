@@ -759,6 +759,160 @@ async def revert_taxatie_to_concept(taxatie_id: str, current_user: dict = Depend
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return {"status": "concept"}
 
+
+# ==================== POST + BPM TRACKING + MAANDFACTUUR ====================
+# Workflow: concept → definitief → posted (verzonden naar Belastingdienst) → bpm_received
+# Reminder na 5 dagen: tonen in `/api/taxatie-programma/reminders`
+# Maandfactuur: groeperen per maand op `bpm_received_at` voor admin facturatie
+
+@router.post("/taxatie-programma/{taxatie_id}/mark-posted")
+async def mark_taxatie_posted(
+    taxatie_id: str,
+    body: dict | None = None,
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Markeer dat het taxatieverslag op de post is gedaan naar de Belastingdienst.
+    Body (optioneel): {posted_at: 'YYYY-MM-DD'} — anders vandaag.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    body = body or {}
+    posted_at = (body.get("posted_at") or "").strip() or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    result = await db.taxatie_programma.update_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"$set": {"posted_at": posted_at, "post_status": "verzonden"}, "$unset": {"bpm_received_at": "", "bpm_meldcode": ""}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return {"posted_at": posted_at, "post_status": "verzonden"}
+
+
+@router.post("/taxatie-programma/{taxatie_id}/mark-bpm-received")
+async def mark_bpm_received(
+    taxatie_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Markeer dat de BPM is ontvangen van de Belastingdienst.
+    Body: {bpm_meldcode: str (verplicht), bpm_amount_received: float (optioneel),
+           received_at: 'YYYY-MM-DD' (optioneel — anders vandaag)}.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    meldcode = (body.get("bpm_meldcode") or "").strip()
+    if not meldcode:
+        raise HTTPException(status_code=400, detail="Meldcode Belastingdienst is verplicht")
+    received_at = (body.get("received_at") or "").strip() or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    update = {
+        "bpm_received_at": received_at,
+        "bpm_meldcode": meldcode,
+        "post_status": "bpm_ontvangen",
+    }
+    if body.get("bpm_amount_received") is not None:
+        try:
+            update["bpm_amount_received"] = float(body["bpm_amount_received"])
+        except (TypeError, ValueError):
+            pass
+    result = await db.taxatie_programma.update_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"$set": update}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return update
+
+
+@router.get("/taxatie-programma-reminders")
+async def get_post_reminders(current_user: dict = Depends(require_taxatie_access)):
+    """Lijst van taxaties die >5 dagen geleden op de post zijn gedaan en waarvoor
+    nog geen BPM-ontvangst is geregistreerd. Wordt getoond als banner.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d")
+    docs = await db.taxatie_programma.find(
+        {
+            **_owner_filter_for_user(current_user),
+            "posted_at": {"$ne": None, "$lte": cutoff},
+            "$or": [{"bpm_received_at": {"$in": [None, ""]}}, {"bpm_received_at": {"$exists": False}}],
+        },
+        {"_id": 0, "id": 1, "taxatie_nummer": 1, "brand": 1, "model": 1,
+         "customer_name": 1, "posted_at": 1, "report_date": 1},
+    ).sort("posted_at", 1).to_list(200)
+    today = datetime.now(timezone.utc).date()
+    for d in docs:
+        try:
+            posted_d = datetime.strptime(d["posted_at"], "%Y-%m-%d").date()
+            d["dagen_open"] = (today - posted_d).days
+        except Exception:
+            d["dagen_open"] = 0
+    return {"count": len(docs), "items": docs}
+
+
+@router.get("/taxatie-programma-maandfactuur")
+async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxatie_access)):
+    """Overzicht voor maandelijkse facturatie naar klanten.
+    Toont alle taxaties met status `bpm_ontvangen`, gegroepeerd per maand (op bpm_received_at).
+    Per regel: meldcode, klantnaam, taxatiewaarde, BPM-bedrag, factuur-status.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    docs = await db.taxatie_programma.find(
+        {
+            **_owner_filter_for_user(current_user),
+            "bpm_received_at": {"$nin": [None, ""], "$exists": True},
+        },
+        {"_id": 0, "id": 1, "taxatie_nummer": 1, "brand": 1, "model": 1,
+         "license_plate": 1, "vin_number": 1, "first_registration_date": 1,
+         "customer_name": 1, "customer_phone": 1, "customer_email": 1,
+         "customer_address": 1, "taxatie_inruil_waarde": 1,
+         "bpm_meldcode": 1, "bpm_received_at": 1, "bpm_amount_received": 1,
+         "posted_at": 1, "invoiced": 1, "invoice_id": 1},
+    ).sort("bpm_received_at", -1).to_list(1000)
+
+    # Group by year-month
+    months = {}
+    for d in docs:
+        try:
+            recv = datetime.strptime(d["bpm_received_at"], "%Y-%m-%d")
+            ym = recv.strftime("%Y-%m")
+            ym_label = recv.strftime("%B %Y")
+        except Exception:
+            ym = "0000-00"
+            ym_label = "Onbekend"
+        bucket = months.setdefault(ym, {"month": ym, "label": ym_label, "items": [], "totaal_taxatiewaarde": 0.0, "totaal_bpm": 0.0, "aantal": 0, "te_factureren": 0})
+        bucket["items"].append(d)
+        bucket["totaal_taxatiewaarde"] += float(d.get("taxatie_inruil_waarde") or 0)
+        bucket["totaal_bpm"] += float(d.get("bpm_amount_received") or 0)
+        bucket["aantal"] += 1
+        if not d.get("invoiced"):
+            bucket["te_factureren"] += 1
+    sorted_months = sorted(months.values(), key=lambda b: b["month"], reverse=True)
+    return {"months": sorted_months}
+
+
+@router.post("/taxatie-programma/{taxatie_id}/mark-invoiced")
+async def mark_taxatie_invoiced(
+    taxatie_id: str,
+    body: dict | None = None,
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Markeer een (of de hele maand) als gefactureerd zodat het uit de te-doen lijst verdwijnt."""
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    body = body or {}
+    invoice_id = (body.get("invoice_id") or "").strip()
+    update = {"invoiced": True}
+    if invoice_id:
+        update["invoice_id"] = invoice_id
+    result = await db.taxatie_programma.update_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"$set": update}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    return update
+
 @router.delete("/taxatie-programma/{taxatie_id}")
 async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":

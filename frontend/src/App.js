@@ -71,6 +71,7 @@ import ParticulierSuccess from "./pages/particulier/ParticulierSuccess";
 import DealerGoogleMotors from "./pages/dealer/DealerGoogleMotors";
 import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
 import TaxatieProgramma from "./pages/admin/TaxatieProgramma";
+import MaandfactuurOverzicht from "./pages/admin/MaandfactuurOverzicht";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 import CustomerMotorView from "./pages/CustomerMotorView";
@@ -256,6 +257,7 @@ function App() {
             <Route path="/admin/wanted-requests" element={<AdminWantedRequests />} />
             <Route path="/admin/google-motors" element={<AdminGoogleMotors />} />
             <Route path="/admin/taxatie-programma" element={<TaxatieProgramma />} />
+            <Route path="/admin/taxatie-maandfactuur" element={<MaandfactuurOverzicht />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />

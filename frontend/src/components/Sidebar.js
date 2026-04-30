@@ -104,6 +104,7 @@ const Sidebar = () => {
       { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
       { path: '/admin/google-motors', icon: Globe, label: 'Google Motoren' },
       { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
+      { path: '/admin/taxatie-maandfactuur', icon: FileText, label: 'Maandfactuur Overzicht' },
     ] : []),
   ];
 
@@ -131,6 +132,7 @@ const Sidebar = () => {
   const taxateurNavItems = [
     { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
     { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
+    { path: '/admin/taxatie-maandfactuur', icon: FileText, label: 'Maandfactuur Overzicht' },
   ];
 
   // Determine nav items based on user type
