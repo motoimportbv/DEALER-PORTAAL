@@ -345,3 +345,12 @@ frontend/node_modules/.cache/default-development/73.pack
 frontend/node_modules/.cache/default-development/75.pack
 frontend/node_modules/.cache/default-development/76.pack
 frontend/node_modules/.cache/default-development/77.pack
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
