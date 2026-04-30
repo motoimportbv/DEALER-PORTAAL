@@ -1192,19 +1192,25 @@ export default function TaxatieProgramma() {
       const dateStr = form.report_date
         ? new Date(form.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
         : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
-      // Bepaal taxateur-naam dynamisch op basis van ingelogde user
-      const buildTaxateurName = () => {
+      // Bepaal taxateur-naam + bedrijf dynamisch op basis van ingelogde user
+      const buildSignature = () => {
         const fn = (user?.full_name || '').trim();
+        let naam;
         if (fn) {
           const parts = fn.split(/\s+/);
-          if (parts.length >= 2) return `${parts[0][0].toUpperCase()}. ${parts[parts.length - 1]}`;
-          return fn;
+          naam = parts.length >= 2 ? `${parts[0][0].toUpperCase()}. ${parts[parts.length - 1]}` : fn;
+        } else if ((user?.email || '').toLowerCase() === 'motoimportbv@gmail.com') {
+          naam = 'S. Milone';
+        } else {
+          naam = user?.username || 'taxateur';
         }
-        // Fallback: admin (Moto Import) → S. Milone, anders email-prefix
-        if ((user?.email || '').toLowerCase() === 'motoimportbv@gmail.com') return 'S. Milone';
-        return user?.username || 'taxateur';
+        const bedrijf = (user?.company_name || '').trim()
+          || ((user?.email || '').toLowerCase() === 'motoimportbv@gmail.com' ? 'Moto Import B.V.' : '');
+        return bedrijf
+          ? `Vastgesteld door taxateur ${naam} namens ${bedrijf} op ${dateStr}.`
+          : `Vastgesteld door taxateur ${naam} op ${dateStr}.`;
       };
-      const signed = `${text}\n\nVastgesteld door taxateur ${buildTaxateurName()} op ${dateStr}.`;
+      const signed = `${text}\n\n${buildSignature()}`;
       setAiTextDraft(signed);
       setAiModalOpen(true);
     } catch (err) {
