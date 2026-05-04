@@ -51,7 +51,7 @@ elements.append(Spacer(1, 5 * mm))
 elements.append(Paragraph(f"Schalkhaar, {today_it}", right))
 elements.append(Spacer(1, 5 * mm))
 
-elements.append(Paragraph("<b>Oggetto:</b> Richiesta di incontro — Moto Import B.V. cerca fornitori italiani per il mercato olandese", b))
+elements.append(Paragraph("<b>Oggetto:</b> Richiesta di incontro — accesso gratuito alla nostra rete di 120 concessionari olandesi", b))
 elements.append(Spacer(1, 6 * mm))
 
 # ==== Aanhef ====
@@ -61,53 +61,53 @@ elements.append(Spacer(1, 3 * mm))
 # ==== Wie we zijn ====
 elements.append(Paragraph(
     "con la presente desideriamo presentarci. <b>Moto Import B.V.</b> è una società "
-    "olandese specializzata nell'<b>importazione di motociclette usate</b> dal "
-    "resto d'Europa verso i Paesi Bassi. Acquistiamo motociclette presso fornitori "
-    "selezionati, ci occupiamo dell'intero processo di importazione, valutazione "
-    "fiscale (BPM), registrazione RDW e rivendita sul mercato olandese.",
+    "olandese che acquista <b>motociclette in Italia</b> per conto dei propri "
+    "concessionari nei Paesi Bassi. Disponiamo di una <b>rete consolidata di "
+    "120 dealer olandesi</b> che si rivolgono regolarmente a noi per ampliare "
+    "il proprio stock con motociclette italiane di qualità.",
     nj,
 ))
 elements.append(Spacer(1, 3 * mm))
 
 elements.append(Paragraph(
-    "Disponiamo di una <b>piattaforma digitale propria</b> sulla quale i nostri "
-    "numerosi rivenditori, concessionari e clienti privati olandesi consultano "
-    "quotidianamente lo stock disponibile. Questa rete consolidata ci permette di "
-    "rivendere i veicoli importati in tempi brevi, garantendo ai nostri fornitori "
-    "europei <b>volumi costanti</b> e <b>pagamenti rapidi</b>.",
+    "Per facilitare e velocizzare questo flusso, abbiamo sviluppato un "
+    "<b>portale digitale dedicato</b> sul quale i nostri 120 dealer consultano "
+    "ogni giorno le motociclette disponibili presso i fornitori italiani con cui "
+    "collaboriamo. Quando un dealer è interessato, l'acquisto avviene "
+    "<b>immediatamente e direttamente</b>, senza intermediazioni inutili.",
     nj,
 ))
 
 elements.append(Spacer(1, 4 * mm))
 
-# ==== Wat we doen — als koper ====
-elements.append(Paragraph("Perché collaborare con Moto Import B.V.", h2))
+# ==== Wat we bieden Mundimoto ====
+elements.append(Paragraph("Cosa offriamo a Mundimoto — gratuitamente", h2))
 elements.append(Paragraph(
-    "<b>1. Acquirenti seri e ricorrenti.</b> Acquistiamo regolarmente in lotti "
-    "(mensili o trimestrali) motociclette di marche europee, giapponesi e "
-    "americane. Cerchiamo continuità, non operazioni singole.",
+    "<b>1. Pubblicazione gratuita del vostro stock.</b> Voi caricate le motociclette "
+    "che desiderate vendere sul nostro portale (foto, prezzo, dati tecnici). "
+    "Nessun costo di iscrizione, nessuna commissione di pubblicazione.",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "<b>2. Pagamento immediato al ritiro.</b> Al momento del prelievo presso il "
-    "vostro deposito eseguiamo bonifico SEPA in EUR. Fatturazione "
-    "intracomunitaria (P.IVA NL867456982B01).",
+    "<b>2. Visibilità immediata su 120 concessionari olandesi.</b> Le vostre "
+    "motociclette diventano visibili istantaneamente alla nostra intera rete di "
+    "dealer professionali. Si tratta di acquirenti seri, abituati a transazioni "
+    "B2B rapide e trasparenti.",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "<b>3. Logistica a nostro carico.</b> Ci occupiamo del trasporto, "
-    "della documentazione doganale e dell'esportazione con targhe transit europee. "
-    "Voi consegnate semplicemente i veicoli; il resto lo facciamo noi.",
+    "<b>3. Vendita diretta e veloce.</b> I dealer interessati possono acquistare "
+    "subito tramite la piattaforma. Voi ricevete la conferma e il pagamento, "
+    "senza dover gestire trattative individuali.",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "<b>4. Ampia rete di rivendita olandese.</b> Le motociclette acquistate vengono "
-    "presentate sulla nostra piattaforma digitale, dove un'ampia base di rivenditori "
-    "e clienti olandesi consulta lo stock. Questo riduce i nostri tempi di rotazione "
-    "e si traduce in maggiore frequenza e volume di acquisto da parte nostra.",
+    "<b>4. Volumi costanti.</b> La domanda olandese è continua: i nostri dealer "
+    "rinnovano lo stock ogni mese. Per voi significa un <b>nuovo canale di vendita "
+    "stabile</b>, senza investimenti né rischi.",
     nj,
 ))
 
@@ -122,17 +122,18 @@ elements.append(Paragraph(
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; presentarci in modo approfondito e mostrarvi la nostra "
-    "piattaforma e i volumi che gestiamo;",
+    "&nbsp;&nbsp;•&nbsp; mostrarvi <b>dal vivo</b> il funzionamento del nostro portale "
+    "e la rete dei 120 dealer olandesi;",
     nj,
 ))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; visionare il vostro stock e selezionare un primo lotto di prova;",
+    "&nbsp;&nbsp;•&nbsp; spiegarvi nel dettaglio come pubblicare il vostro stock — "
+    "<b>è gratuito e richiede pochi minuti</b>;",
     nj,
 ))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; definire condizioni commerciali stabili (prezzi netti, "
-    "frequenza, modalità di pagamento) per una collaborazione duratura.",
+    "&nbsp;&nbsp;•&nbsp; conoscerci di persona e gettare le basi per una "
+    "collaborazione di lunga durata.",
     nj,
 ))
 elements.append(Spacer(1, 3 * mm))
