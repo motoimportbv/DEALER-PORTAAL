@@ -1040,7 +1040,7 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
         Paragraph("Ontvangen", white_b),
         Paragraph("BPM bedrag", ParagraphStyle('WBR', parent=white_b, alignment=TA_RIGHT)),
         Paragraph(f"Taxatie ex {btw_pct_int}%", ParagraphStyle('WBR2', parent=white_b, alignment=TA_RIGHT)),
-        Paragraph("Extra €60", ParagraphStyle('WBR4', parent=white_b, alignment=TA_RIGHT)),
+        Paragraph("Extra €60<br/><font size=6>(BTW-vrij)</font>", ParagraphStyle('WBR4', parent=white_b, alignment=TA_RIGHT)),
         Paragraph("Totaal incl", ParagraphStyle('WBR3', parent=white_b, alignment=TA_RIGHT)),
         Paragraph("Status", white_b),
     ]
@@ -1206,12 +1206,12 @@ async def export_maandfactuur_excel(ym: str, current_user: dict = Depends(requir
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=10)
     ws.cell(row=2, column=1, value=f"{ym_label} • {cb.get('address') or ''} • KvK {cb.get('kvk') or '-'}").font = sub_font
     ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=10)
-    ws.cell(row=3, column=1, value=f"Taxatietarief: € {fee_ex:.2f} ex BTW per regel • BTW {btw_pct_int}% • Extra fee per regel zelf in te vullen").font = sub_font
+    ws.cell(row=3, column=1, value=f"Taxatietarief: € {fee_ex:.2f} ex BTW per regel • BTW {btw_pct_int}% • Extra fee is BTW-vrij en per klant zelf aan te vinken").font = sub_font
     ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=10)
 
     headers = [
         "#", "Meldcode", "Klantnaam", "Telefoon", "E-mail", "Voertuig", "Taxatienummer",
-        "Ontvangen op", "Taxatie ex BTW (€)", "Extra fee ex BTW (€)",
+        "Ontvangen op", "Taxatie ex BTW (€)", "Extra fee — BTW-vrij (€)",
     ]
     header_row = 5
     for idx, h in enumerate(headers, start=1):
