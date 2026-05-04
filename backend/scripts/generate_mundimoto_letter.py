@@ -51,7 +51,7 @@ elements.append(Spacer(1, 5 * mm))
 elements.append(Paragraph(f"Schalkhaar, {today_it}", right))
 elements.append(Spacer(1, 5 * mm))
 
-elements.append(Paragraph("<b>Oggetto:</b> Proposta di collaborazione — importazione e taxazione motociclette nei Paesi Bassi", b))
+elements.append(Paragraph("<b>Oggetto:</b> Richiesta di incontro — Moto Import B.V. cerca fornitori italiani per il mercato olandese", b))
 elements.append(Spacer(1, 6 * mm))
 
 # ==== Aanhef ====
@@ -60,101 +60,93 @@ elements.append(Spacer(1, 3 * mm))
 
 # ==== Wie we zijn ====
 elements.append(Paragraph(
-    "con la presente desideriamo presentarci e proporre una collaborazione duratura "
-    "tra Mundimoto e <b>Moto Import B.V.</b>, società olandese specializzata "
-    "nell'<b>importazione, valutazione e regolarizzazione fiscale (BPM)</b> di motociclette "
-    "destinate al mercato dei Paesi Bassi.",
+    "con la presente desideriamo presentarci. <b>Moto Import B.V.</b> è una società "
+    "olandese specializzata nell'<b>importazione di motociclette usate</b> dal "
+    "resto d'Europa verso i Paesi Bassi. Acquistiamo motociclette presso fornitori "
+    "selezionati, ci occupiamo dell'intero processo di importazione, valutazione "
+    "fiscale (BPM), registrazione RDW e rivendita sul mercato olandese.",
     nj,
 ))
 elements.append(Spacer(1, 3 * mm))
 
 elements.append(Paragraph(
-    "Operiamo da anni nel settore con un approccio rigoroso e trasparente. "
-    "Il nostro team segue ogni motocicletta dall'acquisto in Europa fino alla "
-    "consegna al cliente finale olandese, garantendo conformità normativa e "
-    "tempi rapidi. Ci avvaliamo di una piattaforma digitale proprietaria che "
-    "automatizza i calcoli BPM, genera la documentazione ufficiale per la "
-    "Belastingdienst (Agenzia delle Entrate olandese) e produce perizie tecniche "
-    "complete con fotografie, schede tecniche e giustificazioni economiche.",
+    "Disponiamo di una <b>piattaforma digitale propria</b> sulla quale i nostri "
+    "numerosi rivenditori, concessionari e clienti privati olandesi consultano "
+    "quotidianamente lo stock disponibile. Questa rete consolidata ci permette di "
+    "rivendere i veicoli importati in tempi brevi, garantendo ai nostri fornitori "
+    "europei <b>volumi costanti</b> e <b>pagamenti rapidi</b>.",
     nj,
 ))
 
 elements.append(Spacer(1, 4 * mm))
 
-# ==== Wat we doen ====
-elements.append(Paragraph("I nostri servizi", h2))
+# ==== Wat we doen — als koper ====
+elements.append(Paragraph("Perché collaborare con Moto Import B.V.", h2))
 elements.append(Paragraph(
-    "<b>1. Acquisto e logistica internazionale.</b> Ritiriamo motociclette presso "
-    "il vostro deposito o presso terzi in tutta Europa. Gestiamo il trasporto, "
-    "la documentazione doganale e l'esportazione con targhe transit europee.",
+    "<b>1. Acquirenti seri e ricorrenti.</b> Acquistiamo regolarmente in lotti "
+    "(mensili o trimestrali) motociclette di marche europee, giapponesi e "
+    "americane. Cerchiamo continuità, non operazioni singole.",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "<b>2. Perizia BPM e riduzione fiscale.</b> Ogni motocicletta viene ispezionata "
-    "fisicamente e valutata da un perito ufficiale. Redigiamo il rapporto di perizia "
-    "(Taxatieverslag) conforme all'articolo 10, comma 7 della legge BPM, riducendo "
-    "in modo legittimo l'imposta dovuta sulla base dello stato reale del veicolo.",
+    "<b>2. Pagamento immediato al ritiro.</b> Al momento del prelievo presso il "
+    "vostro deposito eseguiamo bonifico SEPA in EUR. Fatturazione "
+    "intracomunitaria (P.IVA NL867456982B01).",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "<b>3. Registrazione RDW e immatricolazione olandese.</b> Curiamo la pratica "
-    "di omologazione, l'ispezione tecnica RDW e la consegna del documento di "
-    "immatricolazione olandese al cliente finale, completa di garanzia di "
-    "tracciabilità.",
+    "<b>3. Logistica a nostro carico.</b> Ci occupiamo del trasporto, "
+    "della documentazione doganale e dell'esportazione con targhe transit europee. "
+    "Voi consegnate semplicemente i veicoli; il resto lo facciamo noi.",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "<b>4. Pagamento sicuro e veloce.</b> Operiamo con bonifici SEPA in EUR, "
-    "fatturazione in regime intracomunitario (P.IVA NL867456982B01) e tempi di "
-    "saldo garantiti entro pochi giorni dalla consegna documentale.",
+    "<b>4. Ampia rete di rivendita olandese.</b> Le motociclette acquistate vengono "
+    "presentate sulla nostra piattaforma digitale, dove un'ampia base di rivenditori "
+    "e clienti olandesi consulta lo stock. Questo riduce i nostri tempi di rotazione "
+    "e si traduce in maggiore frequenza e volume di acquisto da parte nostra.",
     nj,
 ))
 
 elements.append(Spacer(1, 4 * mm))
 
-# ==== Voorstel ====
-elements.append(Paragraph("La nostra proposta a Mundimoto", h2))
+# ==== Voorstel: afspraak ====
+elements.append(Paragraph("Richiesta di incontro presso le vostre sedi", h2))
 elements.append(Paragraph(
-    "Riteniamo che la combinazione tra il vostro inventario di motociclette "
-    "selezionate e la nostra esperienza nell'importazione olandese possa generare "
-    "un canale di vendita aggiuntivo, stabile e a basso rischio. Concretamente "
-    "proponiamo:",
+    "Saremmo molto interessati a venire personalmente a trovarvi presso una delle "
+    "vostre sedi italiane per:",
     nj,
 ))
 elements.append(Spacer(1, 2 * mm))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; <b>Acquisti regolari</b> (mensili o trimestrali) di motociclette "
-    "selezionate dal vostro stock, in lotti concordati;",
+    "&nbsp;&nbsp;•&nbsp; presentarci in modo approfondito e mostrarvi la nostra "
+    "piattaforma e i volumi che gestiamo;",
     nj,
 ))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; <b>Prezzi netti franco vostro deposito</b>, con calcolo BPM e "
-    "logistica a nostro carico;",
+    "&nbsp;&nbsp;•&nbsp; visionare il vostro stock e selezionare un primo lotto di prova;",
     nj,
 ))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; <b>Visite periodiche</b> presso le vostre sedi italiane per "
-    "selezionare i veicoli, accompagnate da pagamento immediato al ritiro;",
+    "&nbsp;&nbsp;•&nbsp; definire condizioni commerciali stabili (prezzi netti, "
+    "frequenza, modalità di pagamento) per una collaborazione duratura.",
     nj,
 ))
+elements.append(Spacer(1, 3 * mm))
 elements.append(Paragraph(
-    "&nbsp;&nbsp;•&nbsp; <b>Trasparenza totale</b> sulla destinazione finale dei veicoli "
-    "e sui prezzi di rivendita, ove di vostro interesse statistico.",
+    "Siamo flessibili nelle date e disposti a viaggiare in Italia nelle prossime "
+    "settimane. Vi preghiamo di indicarci una giornata e una sede a voi comode; "
+    "saremo lieti di organizzare la visita di conseguenza.",
     nj,
 ))
-
 elements.append(Spacer(1, 4 * mm))
 
-# ==== Afsluiting ====
 elements.append(Paragraph(
-    "Saremmo lieti di organizzare un primo incontro — di persona presso le vostre "
-    "sedi o in videoconferenza — per illustrare nel dettaglio il nostro processo, "
-    "presentare casi concreti e definire insieme un eventuale primo lotto di prova. "
-    "Restiamo a disposizione per qualsiasi chiarimento e vi ringraziamo per "
-    "l'attenzione che vorrete dedicare a questa proposta.",
+    "Restiamo a disposizione per qualsiasi informazione preliminare e vi "
+    "ringraziamo sin d'ora per l'attenzione.",
     nj,
 ))
 elements.append(Spacer(1, 4 * mm))
