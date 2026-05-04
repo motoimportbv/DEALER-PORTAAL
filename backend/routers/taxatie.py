@@ -1148,6 +1148,149 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
     )
 
 
+@router.get("/taxatie-programma-maandfactuur/{ym}/excel")
+async def export_maandfactuur_excel(ym: str, current_user: dict = Depends(require_taxatie_access)):
+    """Excel-export voor één maand — bevat klantgegevens, meldcode, kosten ex BTW + extra fee."""
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    try:
+        datetime.strptime(ym, "%Y-%m")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ongeldig maandformaat (verwacht YYYY-MM)")
+
+    docs = await db.taxatie_programma.find(
+        {
+            **_owner_filter_for_user(current_user),
+            "bpm_received_at": {"$nin": [None, ""], "$exists": True},
+        },
+        {"_id": 0},
+    ).sort("bpm_received_at", 1).to_list(2000)
+    items = [d for d in docs if (d.get("bpm_received_at") or "").startswith(ym)]
+    if not items:
+        raise HTTPException(status_code=404, detail=f"Geen ontvangen BPM in {ym}")
+
+    from services.branding import get_branding
+    cb = get_branding(current_user)
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    import io
+
+    fee_ex = float(TAXATIE_DEFAULT_FEE)
+    btw_pct_int = int(TAXATIE_BTW_PERCENTAGE)
+
+    ym_dt = datetime.strptime(ym, "%Y-%m")
+    nl_months = ["januari", "februari", "maart", "april", "mei", "juni",
+                 "juli", "augustus", "september", "oktober", "november", "december"]
+    ym_label = f"{nl_months[ym_dt.month - 1].capitalize()} {ym_dt.year}"
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Facturatie {ym}"
+
+    header_fill = PatternFill(start_color="18181b", end_color="18181b", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    title_font = Font(name="Calibri", size=14, bold=True, color="18181b")
+    sub_font = Font(name="Calibri", size=10, italic=True, color="666666")
+    bold_font = Font(name="Calibri", size=11, bold=True)
+    money_fmt = '€ #,##0.00'
+    center = Alignment(horizontal="center", vertical="center")
+    left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center")
+    thin = Side(border_style="thin", color="CCCCCC")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # Titel + bedrijfsinfo
+    ws.cell(row=1, column=1, value=f"{cb['name']} — Maandoverzicht Facturatie").font = title_font
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=10)
+    ws.cell(row=2, column=1, value=f"{ym_label} • {cb.get('address') or ''} • KvK {cb.get('kvk') or '-'}").font = sub_font
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=10)
+    ws.cell(row=3, column=1, value=f"Taxatietarief: € {fee_ex:.2f} ex BTW per regel • BTW {btw_pct_int}% • Extra fee per regel zelf in te vullen").font = sub_font
+    ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=10)
+
+    headers = [
+        "#", "Meldcode", "Klantnaam", "Telefoon", "E-mail", "Voertuig", "Taxatienummer",
+        "Ontvangen op", "Taxatie ex BTW (€)", "Extra fee ex BTW (€)",
+    ]
+    header_row = 5
+    for idx, h in enumerate(headers, start=1):
+        c = ws.cell(row=header_row, column=idx, value=h)
+        c.fill = header_fill
+        c.font = header_font
+        c.alignment = center
+        c.border = border
+
+    for i, it in enumerate(items, start=1):
+        r = header_row + i
+        extra_amount = float(it.get("extra_fee_amount") or 60.0) if it.get("extra_fee_enabled") else 0.0
+        vehicle = f"{(it.get('brand') or '').strip()} {(it.get('model') or '').strip()}".strip()
+        recv = it.get("bpm_received_at") or ""
+        try:
+            recv_fmt = datetime.strptime(recv, "%Y-%m-%d").strftime("%d-%m-%Y") if recv else ""
+        except Exception:
+            recv_fmt = recv
+
+        values = [
+            i,
+            it.get("bpm_meldcode") or "",
+            it.get("customer_name") or "",
+            it.get("customer_phone") or "",
+            it.get("customer_email") or "",
+            vehicle,
+            it.get("taxatie_nummer") or "",
+            recv_fmt,
+            fee_ex,
+            extra_amount,
+        ]
+        for col, v in enumerate(values, start=1):
+            c = ws.cell(row=r, column=col, value=v)
+            c.border = border
+            if col in (9, 10):
+                c.alignment = right
+                c.number_format = money_fmt
+            elif col in (1, 8):
+                c.alignment = center
+            else:
+                c.alignment = left
+
+    # Totaal-rij
+    total_row = header_row + len(items) + 1
+    ws.cell(row=total_row, column=8, value="TOTAAL").font = bold_font
+    ws.cell(row=total_row, column=8).alignment = right
+    total_fee = fee_ex * len(items)
+    total_extra = sum(
+        float(it.get("extra_fee_amount") or 60.0) if it.get("extra_fee_enabled") else 0.0
+        for it in items
+    )
+    c9 = ws.cell(row=total_row, column=9, value=total_fee)
+    c10 = ws.cell(row=total_row, column=10, value=total_extra)
+    for c in (c9, c10):
+        c.font = bold_font
+        c.number_format = money_fmt
+        c.alignment = right
+        c.fill = PatternFill(start_color="fafafa", end_color="fafafa", fill_type="solid")
+        c.border = border
+
+    # Column widths
+    widths = {1: 5, 2: 18, 3: 22, 4: 15, 5: 26, 6: 22, 7: 20, 8: 14, 9: 18, 10: 20}
+    for col, w in widths.items():
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.row_dimensions[1].height = 22
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    safe_name = cb['name'].replace(' ', '_').replace('.', '')
+    filename = f"Maandfacturatie_{safe_name}_{ym}.xlsx"
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.post("/taxatie-programma/{taxatie_id}/toggle-extra-fee")
 async def toggle_extra_fee(
     taxatie_id: str,

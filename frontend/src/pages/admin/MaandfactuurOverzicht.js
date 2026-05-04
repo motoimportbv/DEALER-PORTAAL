@@ -3,7 +3,7 @@ import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, FileText, Check, Loader2, Calendar, Download } from 'lucide-react';
+import { ArrowLeft, FileText, Check, Loader2, Calendar, Download, FileSpreadsheet } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -58,27 +58,30 @@ export default function MaandfactuurOverzicht() {
   };
 
   const [downloadingMonth, setDownloadingMonth] = useState(null);
-  const downloadMaandPdf = async (ym, label) => {
-    setDownloadingMonth(ym);
+  const downloadMaand = async (ym, label, fmt /* 'pdf' | 'excel' */) => {
+    setDownloadingMonth(`${ym}-${fmt}`);
     try {
+      const endpoint = fmt === 'excel'
+        ? `${API}/taxatie-programma-maandfactuur/${ym}/excel`
+        : `${API}/taxatie-programma-maandfactuur/${ym}/pdf`;
+      const ext = fmt === 'excel' ? 'xlsx' : 'pdf';
       const xhr = new XMLHttpRequest();
-      xhr.open('GET', `${API}/taxatie-programma-maandfactuur/${ym}/pdf`, true);
+      xhr.open('GET', endpoint, true);
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.responseType = 'blob';
       xhr.onload = () => {
         if (xhr.status === 200) {
-          const blob = xhr.response;
-          const url = URL.createObjectURL(blob);
+          const url = URL.createObjectURL(xhr.response);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `Maandoverzicht_${ym}.pdf`;
+          a.download = `Maandoverzicht_${ym}.${ext}`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          toast.success(`PDF gedownload voor ${label}`);
+          toast.success(`${fmt.toUpperCase()} gedownload voor ${label}`);
         } else {
-          toast.error('PDF genereren mislukt (status ' + xhr.status + ')');
+          toast.error(`${fmt.toUpperCase()} genereren mislukt (status ${xhr.status})`);
         }
         setDownloadingMonth(null);
       };
@@ -146,13 +149,26 @@ export default function MaandfactuurOverzicht() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => downloadMaandPdf(m.month, m.label)}
-                        disabled={downloadingMonth === m.month}
+                        onClick={() => downloadMaand(m.month, m.label, 'excel')}
+                        disabled={downloadingMonth === `${m.month}-excel`}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold disabled:opacity-50"
+                        data-testid={`download-excel-${m.month}`}
+                        title={`Download Excel-overzicht voor ${m.label}`}
+                      >
+                        {downloadingMonth === `${m.month}-excel`
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <FileSpreadsheet className="w-4 h-4" />}
+                        Excel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadMaand(m.month, m.label, 'pdf')}
+                        disabled={downloadingMonth === `${m.month}-pdf`}
                         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold disabled:opacity-50"
                         data-testid={`download-pdf-${m.month}`}
                         title={`Download maandoverzicht PDF voor ${m.label}`}
                       >
-                        {downloadingMonth === m.month
+                        {downloadingMonth === `${m.month}-pdf`
                           ? <Loader2 className="w-4 h-4 animate-spin" />
                           : <Download className="w-4 h-4" />}
                         PDF
