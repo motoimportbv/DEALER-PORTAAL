@@ -1283,6 +1283,34 @@ export default function TaxatieProgramma() {
     setLoading(false);
   }, [token, isAllowed]);
 
+  // ===== Klantenbestand met autocomplete =====
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [customerSuggestions, setCustomerSuggestions] = useState([]);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  useEffect(() => {
+    let cancel = false;
+    const t = setTimeout(async () => {
+      const q = customerQuery.trim();
+      if (q.length < 2) { setCustomerSuggestions([]); return; }
+      try {
+        const res = await axios.get(`${API}/customers?q=${encodeURIComponent(q)}`, { headers });
+        if (!cancel) setCustomerSuggestions(res.data || []);
+      } catch { /* niet kritisch */ }
+    }, 200);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [customerQuery, token]);
+  const pickCustomer = (c) => {
+    setForm(f => ({
+      ...f,
+      customer_name: c.name || '',
+      customer_phone: c.phone || '',
+      customer_email: c.email || '',
+      customer_address: [c.address, c.city].filter(Boolean).join(', '),
+    }));
+    setCustomerQuery(c.name || '');
+    setShowCustomerSuggestions(false);
+  };
+
   useEffect(() => { fetchTaxaties(); }, [fetchTaxaties]);
 
   // ===== Verzending reminders (>5 dagen na post zonder BPM-ontvangst) =====
@@ -2162,8 +2190,48 @@ export default function TaxatieProgramma() {
           <div className="bg-white rounded-2xl border p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><User className="w-5 h-5 text-red-600" />Klant / Eigenaar</h2>
             <div className="grid sm:grid-cols-2 gap-4">
+              {/* Naam met autocomplete uit klantenbestand */}
+              <div className="relative">
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Naam</label>
+                <input
+                  type="text"
+                  value={form.customer_name}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    updateField('customer_name', v);
+                    setCustomerQuery(v);
+                    setShowCustomerSuggestions(true);
+                  }}
+                  onFocus={() => { if ((form.customer_name || '').length >= 2) setShowCustomerSuggestions(true); }}
+                  onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                  placeholder="Jan Jansen — type om bestaande klant te kiezen"
+                  className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+                  data-testid="field-customer_name"
+                  autoComplete="off"
+                />
+                {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-zinc-300 rounded-lg shadow-lg max-h-60 overflow-y-auto z-30" data-testid="customer-suggestions">
+                    {customerSuggestions.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); pickCustomer(c); }}
+                        className="w-full text-left px-3 py-2 hover:bg-red-50 border-b border-zinc-100 last:border-b-0"
+                        data-testid={`customer-suggestion-${c.id}`}
+                      >
+                        <div className="font-bold text-sm">{c.name}</div>
+                        <div className="text-xs text-zinc-500 flex flex-wrap gap-x-2">
+                          {c.phone && <span>{c.phone}</span>}
+                          {c.city && <span>· {c.city}</span>}
+                          {c.email && <span>· {c.email}</span>}
+                          {c.usage_count > 1 && <span className="ml-auto text-zinc-400">{c.usage_count}× gebruikt</span>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {[
-                { k: 'customer_name', l: 'Naam', p: 'Jan Jansen' },
                 { k: 'customer_phone', l: 'Telefoon', p: '+31612345678' },
                 { k: 'customer_email', l: 'Email', p: 'jan@email.nl' },
                 { k: 'customer_address', l: 'Adres', p: 'Straatnaam 1, 1234AB Stad' },

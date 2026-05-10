@@ -90,6 +90,12 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
     
     await db.taxatie_invoices.insert_one(invoice)
     del invoice["_id"]
+    # Upsert klant in customers-bestand zodat naam volgende keer auto-suggereert
+    try:
+        from routers.customers import upsert_customer_from_form
+        await upsert_customer_from_form(current_user, invoice)
+    except Exception:
+        logger.exception("upsert_customer faalde (taxatie factuur)")
     return invoice
 
 @router.get("/taxatie/invoices")
@@ -679,6 +685,12 @@ async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(requi
 
     await db.taxatie_programma.insert_one(doc)
     doc.pop("_id", None)
+    # Upsert klant in customers-bestand
+    try:
+        from routers.customers import upsert_customer_from_form
+        await upsert_customer_from_form(current_user, doc)
+    except Exception:
+        logger.exception("upsert_customer faalde (taxatie programma)")
     return doc
 
 @router.get("/taxatie-programma")

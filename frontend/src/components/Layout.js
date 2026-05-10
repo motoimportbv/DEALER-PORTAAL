@@ -89,7 +89,8 @@ const Layout = ({ children, requiredRole }) => {
   if (user.role === 'taxateur') {
     const allowedTaxateur = location.pathname === '/admin/taxatie' || location.pathname.startsWith('/admin/taxatie/') ||
       location.pathname === '/admin/taxatie-programma' || location.pathname.startsWith('/admin/taxatie-programma/') ||
-      location.pathname === '/admin/taxatie-maandfactuur';
+      location.pathname === '/admin/taxatie-maandfactuur' ||
+      location.pathname === '/admin/klanten';
     if (!allowedTaxateur) {
       return <Navigate to="/admin/taxatie" replace />;
     }
