@@ -18,6 +18,7 @@ import {
   Euro,
   Bike,
   User,
+  Edit,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -39,6 +40,7 @@ export default function TaxatieInvoices() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('list'); // 'list' | 'create' | 'detail'
   const [form, setForm] = useState({ ...emptyForm });
+  const [editingId, setEditingId] = useState(null);  // null = create, anders = edit modus
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [saving, setSaving] = useState(false);
   const printRef = useRef(null);
@@ -126,8 +128,15 @@ export default function TaxatieInvoices() {
         notes: form.notes,
         date: form.date,
       };
-      const res = await axios.post(`${API}/taxatie/invoices`, payload, { headers });
-      toast.success(`Factuur #${res.data.invoice_number} aangemaakt`);
+      const res = editingId
+        ? await axios.put(`${API}/taxatie/invoices/${editingId}`, payload, { headers })
+        : await axios.post(`${API}/taxatie/invoices`, payload, { headers });
+      if (editingId) {
+        toast.success('Factuur bijgewerkt');
+      } else {
+        toast.success(`Factuur #${res.data.invoice_number} aangemaakt`);
+      }
+      setEditingId(null);
       setForm({ ...emptyForm, taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }] });
       setView('list');
       fetchInvoices();
@@ -219,7 +228,7 @@ export default function TaxatieInvoices() {
             </h1>
             <p className="text-zinc-500 mt-1">Beheer uw taxatie facturen</p>
           </div>
-          <Button onClick={() => { setForm({ ...emptyForm }); setView('create'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="create-invoice-btn">
+          <Button onClick={() => { setForm({ ...emptyForm }); setEditingId(null); setView('create'); }} className="bg-red-600 hover:bg-red-700 text-white" data-testid="create-invoice-btn">
             <Plus className="w-4 h-4 mr-2" /> Nieuwe Factuur
           </Button>
         </div>
@@ -271,10 +280,10 @@ export default function TaxatieInvoices() {
   if (view === 'create') {
     return (
       <Layout>
-        <button onClick={() => setView('list')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 text-sm mb-6 transition-colors" data-testid="back-to-list">
+        <button onClick={() => { setEditingId(null); setView('list'); }} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 text-sm mb-6 transition-colors" data-testid="back-to-list">
           <ChevronLeft className="w-4 h-4" /> Terug naar overzicht
         </button>
-        <h1 className="font-barlow text-2xl font-bold uppercase tracking-tight text-zinc-900 mb-6">Nieuwe Taxatie Factuur</h1>
+        <h1 className="font-barlow text-2xl font-bold uppercase tracking-tight text-zinc-900 mb-6">{editingId ? 'Taxatie Factuur Bewerken' : 'Nieuwe Taxatie Factuur'}</h1>
 
         <form onSubmit={handleCreate} className="space-y-6 max-w-3xl" data-testid="taxatie-form">
           {/* Klantgegevens */}
@@ -509,7 +518,7 @@ export default function TaxatieInvoices() {
           </div>
 
           <Button type="submit" disabled={saving} data-testid="save-invoice" className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 font-semibold rounded-xl">
-            {saving ? 'Opslaan...' : 'Factuur Aanmaken'}
+            {saving ? 'Opslaan...' : (editingId ? 'Wijzigingen Opslaan' : 'Factuur Aanmaken')}
           </Button>
         </form>
       </Layout>
@@ -526,6 +535,46 @@ export default function TaxatieInvoices() {
             <ChevronLeft className="w-4 h-4" /> Terug
           </button>
           <div className="flex items-center gap-2">
+            <Button onClick={() => {
+              // Laad factuur in form voor bewerking
+              const items = (inv.taxatie_items && inv.taxatie_items.length > 0)
+                ? inv.taxatie_items.map(it => ({
+                    brand: it.brand || '',
+                    model: it.model || '',
+                    year: it.year || '',
+                    vin: it.vin || '',
+                    license_plate: it.license_plate || '',
+                    fee: it.fee ?? 160,
+                    taxatie_value: it.taxatie_value ?? '',
+                  }))
+                : [{
+                    brand: inv.motorcycle_brand || '',
+                    model: inv.motorcycle_model || '',
+                    year: inv.motorcycle_year || '',
+                    vin: inv.motorcycle_vin || '',
+                    license_plate: inv.motorcycle_license_plate || '',
+                    fee: inv.fee ?? 160,
+                    taxatie_value: inv.taxatie_value ?? '',
+                  }];
+              setForm({
+                customer_name: inv.customer_name || '',
+                customer_address: inv.customer_address || '',
+                customer_city: inv.customer_city || '',
+                customer_phone: inv.customer_phone || '',
+                customer_email: inv.customer_email || '',
+                taxatie_items: items,
+                notes: inv.notes || '',
+                btw_percentage: inv.btw_percentage ?? 21,
+                invoice_type: inv.invoice_type || 'taxatie_only',
+                extra_fee: inv.extra_fee ?? 60,
+                extra_fee_no_btw: inv.extra_fee_no_btw ?? true,
+                date: inv.date || new Date().toISOString().split('T')[0],
+              });
+              setEditingId(inv.id);
+              setView('create');
+            }} variant="outline" className="text-sm" data-testid="edit-invoice-btn">
+              <Edit className="w-4 h-4 mr-1" /> Bewerken
+            </Button>
             <Button onClick={() => handleStatusToggle(inv)} variant="outline" className="text-sm" data-testid="toggle-status-btn">
               {inv.status === 'concept' ? <><Clock className="w-4 h-4 mr-1" /> Naar Open</> : inv.status === 'open' ? <><CheckCircle className="w-4 h-4 mr-1" /> Markeer Betaald</> : <><Clock className="w-4 h-4 mr-1" /> Markeer Open</>}
             </Button>
