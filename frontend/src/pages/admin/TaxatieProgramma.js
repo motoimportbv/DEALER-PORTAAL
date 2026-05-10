@@ -10,6 +10,8 @@ import {
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
   Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles, RefreshCw, Send, Inbox
 } from 'lucide-react';
+import { SearchableSelect } from '../../components/ui/searchable-select';
+import { MOTORCYCLE_DATABASE, MOTORCYCLE_BRANDS } from '../../data/motorcycleDatabase';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmtEur = (p) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(p || 0);
@@ -1569,9 +1571,40 @@ export default function TaxatieProgramma() {
           <div className="bg-white rounded-2xl border p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Bike className="w-5 h-5 text-red-600" />Voertuiggegevens</h2>
             <div className="grid sm:grid-cols-3 gap-4">
+              {/* Merk dropdown */}
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Merk *</label>
+                <SearchableSelect
+                  options={MOTORCYCLE_BRANDS}
+                  value={form.brand}
+                  onValueChange={(v) => {
+                    updateField('brand', v);
+                    // Reset model wanneer merk wijzigt zodat geen ongeldige combinatie blijft
+                    if (form.model && !(MOTORCYCLE_DATABASE[v] || []).includes(form.model)) {
+                      updateField('model', '');
+                    }
+                  }}
+                  placeholder="Kies een merk"
+                  searchPlaceholder="Zoek merk... (bijv. Vespa)"
+                  emptyText="Geen merk gevonden"
+                  data-testid="field-brand"
+                />
+              </div>
+              {/* Model dropdown — afhankelijk van merk */}
+              <div>
+                <label className="text-xs font-bold text-zinc-600 block mb-1">Model *</label>
+                <SearchableSelect
+                  options={form.brand ? (MOTORCYCLE_DATABASE[form.brand] || []) : []}
+                  value={form.model}
+                  onValueChange={(v) => updateField('model', v)}
+                  placeholder={form.brand ? "Kies een model" : "Kies eerst een merk"}
+                  searchPlaceholder="Zoek model..."
+                  emptyText="Geen model gevonden"
+                  disabled={!form.brand}
+                  data-testid="field-model"
+                />
+              </div>
               {[
-                { k: 'brand', l: 'Merk *', p: 'Vespa' },
-                { k: 'model', l: 'Model *', p: 'GTS 300 HPE' },
                 { k: 'mileage', l: 'Km-stand', p: '25000', t: 'number' },
                 { k: 'color', l: 'Kleur', p: 'Zwart' },
                 { k: 'fuel_type', l: 'Brandstof', p: 'Benzine' },
