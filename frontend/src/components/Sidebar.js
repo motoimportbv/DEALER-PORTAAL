@@ -100,8 +100,8 @@ const Sidebar = () => {
     { path: '/admin/bulk-email', icon: Mail, label: 'Marketing E-mails' },
     { path: '/admin/sms', icon: MessageSquare, label: '📱 SMS Broadcast' },
     { path: '/admin/whatsapp', icon: MessageCircle, label: 'WhatsApp Broadcast' },
-    // Taxatie - only for info@motoimportbv.nl (filtered below)
-    ...(user?.email?.toLowerCase() === 'motoimportbv@gmail.com' ? [
+    // Taxatie + BPM — voor het hele Moto Import admin-team (jij + Daniel)
+    ...((['motoimportbv@gmail.com', 'daniel2002jay@hotmail.com'].includes((user?.email || '').toLowerCase())) ? [
       { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
       { path: '/admin/google-motors', icon: Globe, label: 'Google Motoren' },
       { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },

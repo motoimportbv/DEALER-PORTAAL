@@ -24,17 +24,45 @@ from models import *
 
 router = APIRouter(tags=["Taxatie"])
 
+# ============================================================
+# Moto Import admin-team — alle accounts hieronder delen dezelfde
+# BPM Vermindering + Taxatie Facturen data-pool.
+# Voeg een email toe om iemand toegang te geven.
+# ============================================================
+ADMIN_TEAM_EMAILS = [
+    "motoimportbv@gmail.com",
+    "daniel2002jay@hotmail.com",
+]
+
+
+def _is_admin_team(user: dict) -> bool:
+    """True als deze user lid is van het Moto Import admin-team OF een taxateur (Deniz)."""
+    if not user:
+        return False
+    if user.get("role") == "taxateur":
+        return True
+    email = (user.get("email") or "").lower()
+    return email in ADMIN_TEAM_EMAILS
+
 def _owner_filter_for_user(user: dict, owner_field: str = "owner_user_id") -> dict:
     """Returns Mongo filter so each user only sees their own records.
-    
-    - taxateur (DK Automotive etc.): only own records (owner_user_id == user.id)
-    - admin / Moto Import: own records + legacy records without owner field
+
+    - taxateur (DK Automotive etc.): alleen eigen records (owner_user_id == user.id)
+    - admin / Moto Import team: alle records van het admin-team gedeeld
+      (records aangemaakt door welke admin dan ook + legacy records zonder owner-veld)
     """
     user_id = user.get("id")
     if user.get("role") == "taxateur":
         return {owner_field: user_id}
-    # admin: owner is admin himself OR field missing/empty (legacy records)
-    return {"$or": [{owner_field: user_id}, {owner_field: {"$in": [None, ""]}}, {owner_field: {"$exists": False}}]}
+
+    # Admin: zie eigen + alle andere admin-records + legacy records (gedeelde team-bucket)
+    return {
+        "$or": [
+            {"owner_email": {"$in": ADMIN_TEAM_EMAILS}},
+            {owner_field: {"$in": [None, ""]}},
+            {owner_field: {"$exists": False}},
+        ]
+    }
 
 
 def _stamp_owner(doc: dict, user: dict) -> dict:
@@ -51,7 +79,7 @@ TAXATIE_BANK_IBAN = "NL84BUNQ2159356875"
 @router.post("/taxatie/invoices")
 async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = Depends(get_current_user)):
     """Create a taxatie invoice - only for motoimportbv@gmail.com"""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     
     last = await db.taxatie_invoices.find_one(sort=[("invoice_number", -1)], projection={"_id": 0, "invoice_number": 1})
@@ -100,14 +128,14 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
 
 @router.get("/taxatie/invoices")
 async def list_taxatie_invoices(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     invoices = await db.taxatie_invoices.find(_owner_filter_for_user(current_user), {"_id": 0}).sort("invoice_number", -1).to_list(500)
     return invoices
 
 @router.get("/taxatie/invoices/{invoice_id}")
 async def get_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     invoice = await db.taxatie_invoices.find_one({"id": invoice_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not invoice:
@@ -116,7 +144,7 @@ async def get_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_
 
 @router.put("/taxatie/invoices/{invoice_id}")
 async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     update_fields = {}
     for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "extra_fee_no_btw", "invoice_type", "taxatie_items", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
@@ -131,7 +159,7 @@ async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), curren
 
 @router.delete("/taxatie/invoices/{invoice_id}")
 async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != ALLOWED_ADMIN_EMAIL_TAXATIE:
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     result = await db.taxatie_invoices.delete_one({"id": invoice_id, **_owner_filter_for_user(current_user)})
     if result.deleted_count == 0:
@@ -651,7 +679,7 @@ def calculate_bpm_result(data_dict: dict) -> dict:
 
 @router.post("/taxatie-programma")
 async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(require_taxatie_access)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
 
     taxatie_id = str(uuid.uuid4())
@@ -695,13 +723,13 @@ async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(requi
 
 @router.get("/taxatie-programma")
 async def get_taxaties(current_user: dict = Depends(require_taxatie_access)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     return await db.taxatie_programma.find(_owner_filter_for_user(current_user), {"_id": 0}).sort("created_at", -1).to_list(500)
 
 @router.get("/taxatie-programma/{taxatie_id}")
 async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not doc:
@@ -710,7 +738,7 @@ async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxa
 
 @router.put("/taxatie-programma/{taxatie_id}")
 async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dict = Depends(require_taxatie_access)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
 
     data_dict = data.dict()
@@ -741,7 +769,7 @@ async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dic
 
 @router.post("/taxatie-programma/{taxatie_id}/finalize")
 async def finalize_taxatie(taxatie_id: str, body: dict | None = None, current_user: dict = Depends(require_taxatie_access)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     body = body or {}
     update_set = {"status": "definitief", "finalized_at": datetime.now(timezone.utc).isoformat()}
@@ -761,7 +789,7 @@ async def finalize_taxatie(taxatie_id: str, body: dict | None = None, current_us
 @router.post("/taxatie-programma/{taxatie_id}/revert-to-concept")
 async def revert_taxatie_to_concept(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     """Zet een definitief gemaakt rapport terug naar concept zodat datum/inhoud aangepast kan worden."""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     result = await db.taxatie_programma.update_one(
         {"id": taxatie_id, **_owner_filter_for_user(current_user)},
@@ -786,7 +814,7 @@ async def mark_taxatie_posted(
     """Markeer dat het taxatieverslag op de post is gedaan naar de Belastingdienst.
     Body (optioneel): {posted_at: 'YYYY-MM-DD'} — anders vandaag.
     """
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     body = body or {}
     posted_at = (body.get("posted_at") or "").strip() or datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -809,7 +837,7 @@ async def mark_bpm_received(
     Body: {bpm_meldcode: str (verplicht), bpm_amount_received: float (optioneel),
            received_at: 'YYYY-MM-DD' (optioneel — anders vandaag)}.
     """
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     meldcode = (body.get("bpm_meldcode") or "").strip()
     if not meldcode:
@@ -839,7 +867,7 @@ async def get_post_reminders(current_user: dict = Depends(require_taxatie_access
     """Lijst van taxaties die >5 dagen geleden op de post zijn gedaan en waarvoor
     nog geen BPM-ontvangst is geregistreerd. Wordt getoond als banner.
     """
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     cutoff = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d")
     docs = await db.taxatie_programma.find(
@@ -867,7 +895,7 @@ async def get_maandfactuur_overzicht(current_user: dict = Depends(require_taxati
     Toont alle taxaties met status `bpm_ontvangen`, gegroepeerd per maand (op bpm_received_at).
     Per regel: meldcode, klantnaam, taxatiewaarde, BPM-bedrag, factuur-status.
     """
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     docs = await db.taxatie_programma.find(
         {
@@ -943,7 +971,7 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
     """Genereer een verzamel-PDF voor een specifieke maand (ym = 'YYYY-MM').
     Lijst van alle taxaties met ontvangen BPM in die maand, geschikt als basis voor klantfacturen.
     """
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     try:
         datetime.strptime(ym, "%Y-%m")
@@ -1163,7 +1191,7 @@ async def export_maandfactuur_pdf(ym: str, current_user: dict = Depends(require_
 @router.get("/taxatie-programma-maandfactuur/{ym}/excel")
 async def export_maandfactuur_excel(ym: str, current_user: dict = Depends(require_taxatie_access)):
     """Excel-export voor één maand — bevat klantgegevens, meldcode, kosten ex BTW + extra fee."""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     try:
         datetime.strptime(ym, "%Y-%m")
@@ -1311,7 +1339,7 @@ async def toggle_extra_fee(
 ):
     """Schakel de optionele €60 extra fee aan/uit voor deze taxatie.
     Body: {enabled: bool, amount?: float}. Standaard €60 (zonder BTW)."""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     body = body or {}
     enabled = bool(body.get("enabled"))
@@ -1338,7 +1366,7 @@ async def mark_taxatie_invoiced(
     current_user: dict = Depends(require_taxatie_access),
 ):
     """Markeer een (of de hele maand) als gefactureerd zodat het uit de te-doen lijst verdwijnt."""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     body = body or {}
     invoice_id = (body.get("invoice_id") or "").strip()
@@ -1355,7 +1383,7 @@ async def mark_taxatie_invoiced(
 
 @router.delete("/taxatie-programma/{taxatie_id}")
 async def delete_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     result = await db.taxatie_programma.delete_one({"id": taxatie_id, **_owner_filter_for_user(current_user)})
     if result.deleted_count == 0:
@@ -1368,7 +1396,7 @@ async def export_bundle_pdf(taxatie_id: str, current_user: dict = Depends(requir
     """Genereer één gecombineerde PDF met BPM Rapport + Taxatieverslag achter elkaar.
     (Het Belastingdienst BPM 011 formulier wordt apart gedownload uit AutoTelex.)
     """
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
 
     doc = await db.taxatie_programma.find_one(
@@ -1416,7 +1444,7 @@ async def export_bundle_pdf(taxatie_id: str, current_user: dict = Depends(requir
 @router.get("/taxatie-programma/{taxatie_id}/pdf")
 async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     """Generate a BPM Import Rapport PDF matching Belastingdienst format"""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     
     doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
@@ -1702,7 +1730,7 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
 @router.get("/taxatie-programma/{taxatie_id}/belastingdienst-pdf")
 async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     """Fill the official Belastingdienst BPM form with taxatie data using PyMuPDF"""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     
     doc_data = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
@@ -1936,7 +1964,7 @@ COMPANY_KVK = "94622086"
 @router.get("/taxatie-programma/{taxatie_id}/taxatieverslag-pdf")
 async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     """Generate official Taxatieverslag PDF for Belastingdienst - AutoTelex style for motorcycles"""
-    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+    if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     
     doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})

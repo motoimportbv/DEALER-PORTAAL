@@ -1194,20 +1194,27 @@ export default function TaxatieProgramma() {
       const dateStr = form.report_date
         ? new Date(form.report_date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' })
         : new Date().toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
-      // Bepaal taxateur-naam + bedrijf dynamisch op basis van ingelogde user
+      // Bepaal taxateur-naam + bedrijf dynamisch op basis van ingelogde user.
+      // Het Moto Import admin-team (motoimportbv + daniel2002jay) onderschrijft als
+      // "S. Milone namens Moto Import B.V." — Deniz onderschrijft als zichzelf.
+      const MOTO_IMPORT_TEAM = ['motoimportbv@gmail.com', 'daniel2002jay@hotmail.com'];
+      const isMotoImportTeam = MOTO_IMPORT_TEAM.includes((user?.email || '').toLowerCase());
       const buildSignature = () => {
-        const fn = (user?.full_name || '').trim();
         let naam;
-        if (fn) {
-          const parts = fn.split(/\s+/);
-          naam = parts.length >= 2 ? `${parts[0][0].toUpperCase()}. ${parts[parts.length - 1]}` : fn;
-        } else if ((user?.email || '').toLowerCase() === 'motoimportbv@gmail.com') {
+        if (isMotoImportTeam) {
           naam = 'S. Milone';
         } else {
-          naam = user?.username || 'taxateur';
+          const fn = (user?.full_name || '').trim();
+          if (fn) {
+            const parts = fn.split(/\s+/);
+            naam = parts.length >= 2 ? `${parts[0][0].toUpperCase()}. ${parts[parts.length - 1]}` : fn;
+          } else {
+            naam = user?.username || 'taxateur';
+          }
         }
-        const bedrijf = (user?.company_name || '').trim()
-          || ((user?.email || '').toLowerCase() === 'motoimportbv@gmail.com' ? 'Moto Import B.V.' : '');
+        const bedrijf = isMotoImportTeam
+          ? 'Moto Import B.V.'
+          : (user?.company_name || '').trim();
         return bedrijf
           ? `Vastgesteld door taxateur ${naam} namens ${bedrijf} op ${dateStr}.`
           : `Vastgesteld door taxateur ${naam} op ${dateStr}.`;

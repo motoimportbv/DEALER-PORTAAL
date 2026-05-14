@@ -4,6 +4,15 @@
 - Email: motoimportbv@gmail.com
 - Password: Admin2024!
 
+## Admin Team Member (Daniel — gedeelde data-pool met motoimportbv)
+- Email: Daniel2002jay@hotmail.com
+- Password: Daniel2024!
+- Role: admin
+- Toegang: BPM Vermindering + Taxatie Facturen + Maandfactuur Overzicht + Mijn Klanten
+- Data: gedeelde Moto Import admin-bucket (ziet ALLE records van motoimportbv + eigen)
+- Branding: Moto Import B.V. (zelfde als motoimportbv)
+- AI ondertekening: "S. Milone namens Moto Import B.V."
+
 ## Dealer Account (Test)
 - Email: zoektest@dealer.nl
 - Password: Test2024!
