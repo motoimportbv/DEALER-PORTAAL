@@ -336,8 +336,9 @@ const Pakbon = () => {
               </div>
             </div>
 
-            {/* Leverancier gegevens (als motor van foreign dealer) */}
-            {(order.supplier_info || motorcycle.foreign_dealer_company) && (
+            {/* Leverancier gegevens (alleen zichtbaar voor admin & pakbon-rol — dealers mogen
+                NIET de inkoopprijs en leverancier-contactgegevens zien op hun eigen pakbon) */}
+            {(user?.role === 'admin' || user?.role === 'pakbon') && (order.supplier_info || motorcycle.foreign_dealer_company) && (
               <div className="mb-6 bg-purple-50 border border-purple-200 rounded-xl p-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-purple-700 mb-3">Leverancier</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
