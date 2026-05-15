@@ -56,12 +56,24 @@ async def upsert_customer_from_form(user: dict, data: dict) -> None:
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user.get("id"),
     }
-    # Optionele default_fee — handmatig in te stellen vanuit Mijn Klanten of het factuurformulier
-    if "default_fee" in data and data["default_fee"] not in (None, ""):
-        try:
-            update_set["default_fee"] = float(data["default_fee"])
-        except (TypeError, ValueError):
-            pass
+    # Optionele default_fee (extra fee, BTW-vrij) — voor Gielen/Wijma/Wilderman
+    if "default_fee" in data:
+        if data["default_fee"] in (None, ""):
+            update_set["default_fee"] = None
+        else:
+            try:
+                update_set["default_fee"] = float(data["default_fee"])
+            except (TypeError, ValueError):
+                pass
+    # Optionele default_taxatie_fee (taxatietarief, standaard €160) — per klant aanpasbaar
+    if "default_taxatie_fee" in data:
+        if data["default_taxatie_fee"] in (None, ""):
+            update_set["default_taxatie_fee"] = None
+        else:
+            try:
+                update_set["default_taxatie_fee"] = float(data["default_taxatie_fee"])
+            except (TypeError, ValueError):
+                pass
     update_set_on_insert = {
         "id": str(uuid.uuid4()),
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -96,7 +108,7 @@ async def list_customers(
 
     docs = await db.customers.find(
         query,
-        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1},
+        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1},
     ).sort([("usage_count", -1), ("updated_at", -1)]).to_list(200)
     return docs
 

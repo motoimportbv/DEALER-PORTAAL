@@ -86,7 +86,12 @@ export default function TaxatieInvoices() {
         customer_city: c.city || '',
         customer_email: c.email || '',
       };
-      // Als de klant een standaard fee heeft (Gielen / Wijma / Wilderman): fee + invoice_type
+      // Taxatietarief van klant overschrijven (default €160 → bv. €175)
+      if (c.default_taxatie_fee && Number(c.default_taxatie_fee) > 0) {
+        const ft = Number(c.default_taxatie_fee);
+        next.taxatie_items = (f.taxatie_items || []).map(it => ({ ...it, fee: ft }));
+      }
+      // Extra fee voor Gielen/Wijma/Wilderman
       if (c.default_fee && Number(c.default_fee) > 0) {
         next.extra_fee = Number(c.default_fee);
         next.extra_fee_no_btw = true;
@@ -96,9 +101,10 @@ export default function TaxatieInvoices() {
     });
     setCustomerQuery(c.name || '');
     setShowSuggestions(false);
-    if (c.default_fee && Number(c.default_fee) > 0) {
-      toast.success(`Standaard fee \u20ac${c.default_fee} ingevuld voor ${c.name}`);
-    }
+    const msg = [];
+    if (c.default_taxatie_fee) msg.push(`Taxatietarief \u20ac${c.default_taxatie_fee}`);
+    if (c.default_fee) msg.push(`extra fee \u20ac${c.default_fee}`);
+    if (msg.length) toast.success(`${msg.join(' + ')} ingevuld voor ${c.name}`);
   };
 
   // Auto-refresh when tab/app becomes visible again

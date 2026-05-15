@@ -11,12 +11,13 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Inline editor voor de standaard fee per klant. Klik op het bedrag, type nieuw bedrag, Enter
 // of focus-loss slaat op. Leeg = geen automatische fee.
-function CustomerFeeEditor({ customer, onSaved, token }) {
+function CustomerFeeEditor({ customer, onSaved, token, fieldKey, label }) {
+  const initial = customer[fieldKey];
   const [editing, setEditing] = React.useState(false);
-  const [value, setValue] = React.useState(customer.default_fee != null ? String(customer.default_fee) : '');
+  const [value, setValue] = React.useState(initial != null ? String(initial) : '');
   React.useEffect(() => {
-    setValue(customer.default_fee != null ? String(customer.default_fee) : '');
-  }, [customer.default_fee]);
+    setValue(customer[fieldKey] != null ? String(customer[fieldKey]) : '');
+  }, [customer, fieldKey]);
   const save = async () => {
     const n = value.trim() === '' ? null : Number(value);
     if (value.trim() !== '' && (Number.isNaN(n) || n < 0)) { toast.error('Ongeldig bedrag'); return; }
@@ -27,27 +28,28 @@ function CustomerFeeEditor({ customer, onSaved, token }) {
         email: customer.email || '',
         address: customer.address || '',
         city: customer.city || '',
-        default_fee: n,
+        [fieldKey]: n,
       }, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success(n != null ? `Standaard fee \u20ac${n} opgeslagen` : 'Fee verwijderd');
+      toast.success(n != null ? `${label} \u20ac${n} opgeslagen` : `${label} verwijderd`);
       setEditing(false);
       onSaved && onSaved();
     } catch (e) { toast.error('Mislukt: ' + e.message); }
   };
+  const current = customer[fieldKey];
   if (!editing) {
     return (
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className={`px-2 py-1 rounded text-xs font-bold ${customer.default_fee ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'text-zinc-400 hover:bg-zinc-100'}`}
-        data-testid={`fee-edit-${customer.id}`}
+        className={`px-2 py-1 rounded text-xs font-bold ${current ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'text-zinc-400 hover:bg-zinc-100'}`}
+        data-testid={`${fieldKey}-edit-${customer.id}`}
       >
-        {customer.default_fee ? `\u20ac ${customer.default_fee}` : '\u2014 instellen'}
+        {current ? `\u20ac ${current}` : '\u2014 instellen'}
       </button>
     );
   }
   return (
-    <div className="flex items-center gap-1 justify-end" data-testid={`fee-editor-${customer.id}`}>
+    <div className="flex items-center gap-1 justify-end" data-testid={`${fieldKey}-editor-${customer.id}`}>
       <span className="text-xs text-zinc-500">\u20ac</span>
       <input
         type="number"
@@ -71,7 +73,7 @@ export default function CustomerDirectory() {
   const [customers, setCustomers] = useState([]);
   const [q, setQ] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '' });
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
 
   const fetchCustomers = useCallback(async () => {
@@ -105,7 +107,7 @@ export default function CustomerDirectory() {
       await axios.post(`${API}/customers`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Klant opgeslagen');
       setShowAdd(false);
-      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '' });
+      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '' });
       fetchCustomers();
     } catch (e) { toast.error('Mislukt: ' + (e.response?.data?.detail || e.message)); }
   };
@@ -162,7 +164,8 @@ export default function CustomerDirectory() {
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">E-mail</th>
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Adres</th>
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Stad</th>
-                  <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Standaard fee</th>
+                  <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Taxatie tarief</th>
+                  <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Extra fee</th>
                   <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Gebruikt</th>
                   <th className="px-4 py-2"></th>
                 </tr>
@@ -176,7 +179,10 @@ export default function CustomerDirectory() {
                     <td className="px-4 py-3 text-zinc-700">{c.address || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.city || '\u2014'}</td>
                     <td className="px-4 py-3 text-right">
-                      <CustomerFeeEditor customer={c} onSaved={fetchCustomers} token={token} />
+                      <CustomerFeeEditor customer={c} onSaved={fetchCustomers} token={token} fieldKey="default_taxatie_fee" label="Taxatietarief" />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <CustomerFeeEditor customer={c} onSaved={fetchCustomers} token={token} fieldKey="default_fee" label="Extra fee" />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700">{c.usage_count || 0}\u00d7</span>
@@ -213,7 +219,8 @@ export default function CustomerDirectory() {
                   { k: 'email', l: 'E-mail', p: 'jan@email.nl' },
                   { k: 'address', l: 'Adres', p: 'Straatnaam 1' },
                   { k: 'city', l: 'Stad', p: 'Amsterdam' },
-                  { k: 'default_fee', l: 'Standaard fee (\u20ac, optioneel)', p: 'bv. 60 — leeg = geen automatische fee', type: 'number' },
+                  { k: 'default_taxatie_fee', l: 'Taxatietarief (\u20ac, optioneel)', p: 'standaard 160 — anders bv. 175', type: 'number' },
+                  { k: 'default_fee', l: 'Extra fee (\u20ac, optioneel)', p: 'bv. 60 — leeg = geen automatische fee', type: 'number' },
                 ].map(f => (
                   <div key={f.k}>
                     <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">{f.l}</label>
