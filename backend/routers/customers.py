@@ -142,3 +142,63 @@ async def delete_customer(
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Klant niet gevonden")
     return {"status": "deleted"}
+
+
+@router.get("/customers/{customer_id}/history")
+async def customer_history(
+    customer_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Toon alle BPM-taxaties + facturen voor één klant (gematcht op naam-slug)."""
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    cust = await db.customers.find_one({"id": customer_id, **_owner_filter(current_user)}, {"_id": 0})
+    if not cust:
+        raise HTTPException(status_code=404, detail="Klant niet gevonden")
+
+    name = cust.get("name") or ""
+
+    # Owner-filter voor taxatie/factuur — admin-team deelt data-pool. We importeren de helper lazy.
+    from routers.taxatie import _owner_filter_for_user
+    owner_q = _owner_filter_for_user(current_user)
+
+    # Match op customer_name case-insensitive
+    name_q = {"customer_name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
+
+    # Taxaties
+    taxatie_proj = {
+        "_id": 0, "id": 1, "taxatie_nummer": 1, "brand": 1, "model": 1,
+        "status": 1, "report_date": 1, "first_registration_date": 1,
+        "mileage": 1, "vin_number": 1, "netto_bpm": 1, "bpm_vermindering": 1,
+        "bpm_received_at": 1, "bpm_amount_received": 1, "bpm_meldcode": 1,
+        "created_at": 1,
+    }
+    taxaties = await db.taxatie_programma.find(
+        {"$and": [name_q, owner_q]}, taxatie_proj,
+    ).sort("created_at", -1).to_list(200)
+
+    # Facturen
+    invoice_proj = {
+        "_id": 0, "id": 1, "invoice_number": 1, "status": 1, "created_at": 1,
+        "total_incl_btw": 1, "fee_amount": 1, "extra_fee": 1, "invoice_type": 1,
+    }
+    invoices = await db.taxatie_invoices.find(
+        {"$and": [name_q, owner_q]}, invoice_proj,
+    ).sort("invoice_number", -1).to_list(200)
+
+    # Stats
+    total_bpm_received = sum((t.get("bpm_amount_received") or 0) for t in taxaties)
+    total_invoiced = sum((i.get("total_incl_btw") or 0) for i in invoices)
+
+    return {
+        "customer": cust,
+        "taxaties": taxaties,
+        "invoices": invoices,
+        "stats": {
+            "taxatie_count": len(taxaties),
+            "invoice_count": len(invoices),
+            "total_bpm_received": total_bpm_received,
+            "total_invoiced": total_invoiced,
+        },
+    }

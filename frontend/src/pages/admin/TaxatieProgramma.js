@@ -1462,6 +1462,34 @@ export default function TaxatieProgramma() {
 
   useEffect(() => { fetchTaxaties(); }, [fetchTaxaties]);
 
+  // ===== Prefill via ?prefill_customer={id} (vanaf Klantenbestand "Nieuwe taxatie") =====
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefId = params.get('prefill_customer');
+    if (!prefId || !isAllowed) return;
+    (async () => {
+      try {
+        const res = await axios.get(`${API}/customers?q=`, { headers });
+        const c = (res.data || []).find(x => x.id === prefId);
+        if (!c) { toast.error('Klant niet gevonden'); return; }
+        setForm(f => ({
+          ...f,
+          customer_name: c.name || '',
+          customer_phone: c.phone || '',
+          customer_email: c.email || '',
+          customer_address: [c.address, c.city].filter(Boolean).join(', '),
+        }));
+        setCustomerQuery(c.name || '');
+        setEditingId(null);
+        setView('form');
+        toast.success(`Nieuwe taxatie voor ${c.name}`);
+        // Schoonmaken URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (e) { console.error('prefill', e); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAllowed]);
+
   // ===== Verzending reminders (>5 dagen na post zonder BPM-ontvangst) =====
   const [reminders, setReminders] = useState({ count: 0, items: [] });
   const fetchReminders = useCallback(async () => {

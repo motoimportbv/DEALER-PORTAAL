@@ -3,9 +3,9 @@ import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Users, Loader2, Trash2, Search, Plus } from 'lucide-react';
+import { ArrowLeft, Users, Loader2, Trash2, Search, Plus, FileText, Receipt, Bike, X } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -118,6 +118,159 @@ function CustomerRsinEditor({ customer, onSaved, token }) {
   );
 }
 
+// Detail-modal: BPM-aangifte historie + facturen + "Nieuwe taxatie voor deze klant" knop
+function CustomerHistoryModal({ customerId, onClose, token }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    axios.get(`${API}/customers/${customerId}/history`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setData(r.data))
+      .catch(e => toast.error('Laden mislukt: ' + (e.response?.data?.detail || e.message)))
+      .finally(() => setLoading(false));
+  }, [customerId, token]);
+
+  const fmtEur = (n) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0);
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('nl-NL') : '\u2014';
+
+  const handleNewTaxatie = () => {
+    navigate(`/admin/taxatie-programma?prefill_customer=${customerId}`);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} data-testid="customer-history-modal">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {loading || !data ? (
+          <div className="p-10 flex items-center justify-center text-zinc-500"><Loader2 className="w-5 h-5 mr-2 animate-spin" />Laden\u2026</div>
+        ) : (
+          <>
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-zinc-900" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{data.customer.name}</h2>
+                <div className="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                  {data.customer.phone && <span>{data.customer.phone}</span>}
+                  {data.customer.email && <span>{data.customer.email}</span>}
+                  {data.customer.rsin && <span className="font-mono">RSIN: {data.customer.rsin}</span>}
+                  {data.customer.address && <span>{data.customer.address}{data.customer.city ? `, ${data.customer.city}` : ''}</span>}
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={onClose} data-testid="customer-history-close-btn"><X className="w-4 h-4" /></Button>
+            </div>
+
+            <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-50 border-b">
+              <div className="bg-white rounded-lg border p-3 text-center">
+                <p className="text-xs text-zinc-500 font-bold uppercase">BPM Taxaties</p>
+                <p className="text-2xl font-black text-red-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{data.stats.taxatie_count}</p>
+              </div>
+              <div className="bg-white rounded-lg border p-3 text-center">
+                <p className="text-xs text-zinc-500 font-bold uppercase">Facturen</p>
+                <p className="text-2xl font-black text-blue-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{data.stats.invoice_count}</p>
+              </div>
+              <div className="bg-white rounded-lg border p-3 text-center">
+                <p className="text-xs text-zinc-500 font-bold uppercase">BPM ontvangen</p>
+                <p className="text-lg font-black text-emerald-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(data.stats.total_bpm_received)}</p>
+              </div>
+              <div className="bg-white rounded-lg border p-3 text-center">
+                <p className="text-xs text-zinc-500 font-bold uppercase">Gefactureerd</p>
+                <p className="text-lg font-black text-amber-600" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{fmtEur(data.stats.total_invoiced)}</p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 space-y-5">
+              <section>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-700 mb-2 flex items-center gap-2"><Bike className="w-4 h-4" />BPM Taxaties ({data.taxaties.length})</h3>
+                {data.taxaties.length === 0 ? (
+                  <p className="text-sm text-zinc-400 italic">Nog geen BPM taxaties voor deze klant.</p>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-zinc-50">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Nummer</th>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Voertuig</th>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Rapportdatum</th>
+                          <th className="text-right px-3 py-2 font-bold text-zinc-500">BPM</th>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.taxaties.map(t => (
+                          <tr key={t.id} className="border-t hover:bg-zinc-50" data-testid={`history-taxatie-${t.id}`}>
+                            <td className="px-3 py-2 font-mono">{t.taxatie_nummer || '\u2014'}</td>
+                            <td className="px-3 py-2 font-bold">{t.brand} {t.model}</td>
+                            <td className="px-3 py-2">{fmtDate(t.report_date || t.created_at)}</td>
+                            <td className="px-3 py-2 text-right font-bold text-red-600">{fmtEur(t.netto_bpm)}</td>
+                            <td className="px-3 py-2">
+                              {t.bpm_received_at ? (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Ontvangen</span>
+                              ) : t.status === 'definitief' ? (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Definitief</span>
+                              ) : (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Concept</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              <section>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-700 mb-2 flex items-center gap-2"><Receipt className="w-4 h-4" />Taxatie Facturen ({data.invoices.length})</h3>
+                {data.invoices.length === 0 ? (
+                  <p className="text-sm text-zinc-400 italic">Nog geen facturen voor deze klant.</p>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-zinc-50">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Nummer</th>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Datum</th>
+                          <th className="text-right px-3 py-2 font-bold text-zinc-500">Bedrag</th>
+                          <th className="text-left px-3 py-2 font-bold text-zinc-500">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.invoices.map(i => (
+                          <tr key={i.id} className="border-t hover:bg-zinc-50" data-testid={`history-invoice-${i.id}`}>
+                            <td className="px-3 py-2 font-mono">{i.invoice_number || '\u2014'}</td>
+                            <td className="px-3 py-2">{fmtDate(i.created_at)}</td>
+                            <td className="px-3 py-2 text-right font-bold">{fmtEur(i.total_incl_btw)}</td>
+                            <td className="px-3 py-2">
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${i.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {i.status === 'paid' ? 'Betaald' : 'Open'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t px-6 py-3 flex items-center justify-between gap-2">
+              <p className="text-xs text-zinc-500">
+                {data.customer.default_taxatie_fee ? `Taxatietarief: \u20ac${data.customer.default_taxatie_fee}` : 'Standaard taxatietarief \u20ac160'}
+                {data.customer.default_fee ? ` \u2022 Extra fee: \u20ac${data.customer.default_fee}` : ''}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" onClick={onClose} data-testid="history-cancel-btn">Sluiten</Button>
+                <Button onClick={handleNewTaxatie} className="bg-red-600 hover:bg-red-700 text-white" data-testid="history-new-taxatie-btn">
+                  <FileText className="w-4 h-4 mr-2" />Nieuwe BPM Taxatie
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 
 export default function CustomerDirectory() {
@@ -127,6 +280,7 @@ export default function CustomerDirectory() {
   const [q, setQ] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '' });
+  const [historyCustomerId, setHistoryCustomerId] = useState(null);
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
 
   const fetchCustomers = useCallback(async () => {
@@ -227,7 +381,14 @@ export default function CustomerDirectory() {
               <tbody>
                 {customers.map(c => (
                   <tr key={c.id} className="border-t border-zinc-100 hover:bg-zinc-50" data-testid={`customer-row-${c.id}`}>
-                    <td className="px-4 py-3 font-bold">{c.name}</td>
+                    <td className="px-4 py-3 font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setHistoryCustomerId(c.id)}
+                        className="text-left hover:text-red-600 hover:underline transition-colors"
+                        data-testid={`customer-history-${c.id}`}
+                      >{c.name}</button>
+                    </td>
                     <td className="px-4 py-3 text-zinc-700">{c.phone || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.email || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.address || '\u2014'}</td>
@@ -301,6 +462,13 @@ export default function CustomerDirectory() {
               </div>
             </form>
           </div>
+        )}
+        {historyCustomerId && (
+          <CustomerHistoryModal
+            customerId={historyCustomerId}
+            token={token}
+            onClose={() => setHistoryCustomerId(null)}
+          />
         )}
       </div>
     </Layout>
