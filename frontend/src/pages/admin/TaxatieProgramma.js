@@ -981,6 +981,7 @@ export default function TaxatieProgramma() {
   const [atxSubstring, setAtxSubstring] = useState('');
   const [finalizeModal, setFinalizeModal] = useState(null); // { id, brand, model } or null
   const [finalizeDate, setFinalizeDate] = useState('');
+  const [aangifteListTaxatie, setAangifteListTaxatie] = useState(null); // open AangifteBpmEditor from list
 
   // ===== Auto-vink schadepunten op basis van gewenste BPM =====
   // ===== Cost tables / tier-systems — verschillend voor auto's en motoren =====
@@ -2726,6 +2727,12 @@ export default function TaxatieProgramma() {
                       <button onClick={() => setSelectedTaxatie(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Rapport" data-testid={`view-${t.id}`}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(t)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500" title="Bewerken" data-testid={`edit-${t.id}`}><Edit2 className="w-4 h-4" /></button>
                       <button
+                        onClick={() => setAangifteListTaxatie(t)}
+                        className="p-2 rounded-lg hover:bg-indigo-100 text-indigo-600"
+                        title="Aangifte BPM bewerken (pagina 1 & 6)"
+                        data-testid={`open-aangifte-${t.id}`}
+                      ><FileCheck className="w-4 h-4" /></button>
+                      <button
                         onClick={() => {
                           const xhr = new XMLHttpRequest();
                           xhr.open('GET', `${API}/taxatie-programma/${t.id}/bundle-pdf`, true);
@@ -2909,6 +2916,9 @@ export default function TaxatieProgramma() {
               </div>
             </div>
           </div>
+        )}
+        {aangifteListTaxatie && (
+          <AangifteBpmEditor taxatie={aangifteListTaxatie} onClose={() => setAangifteListTaxatie(null)} />
         )}
       </div>
     </Layout>

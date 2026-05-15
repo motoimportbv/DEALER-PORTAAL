@@ -74,6 +74,10 @@ async def upsert_customer_from_form(user: dict, data: dict) -> None:
                 update_set["default_taxatie_fee"] = float(data["default_taxatie_fee"])
             except (TypeError, ValueError):
                 pass
+    # Optionele RSIN — wordt automatisch ingevuld bij Aangifte BPM (veld 1.2_BSR)
+    if "rsin" in data:
+        rsin_val = (str(data["rsin"]) if data["rsin"] is not None else "").strip()
+        update_set["rsin"] = rsin_val
     update_set_on_insert = {
         "id": str(uuid.uuid4()),
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -108,7 +112,7 @@ async def list_customers(
 
     docs = await db.customers.find(
         query,
-        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1},
+        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1, "rsin": 1},
     ).sort([("usage_count", -1), ("updated_at", -1)]).to_list(200)
     return docs
 

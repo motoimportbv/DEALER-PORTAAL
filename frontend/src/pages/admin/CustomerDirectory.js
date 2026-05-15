@@ -67,13 +67,66 @@ function CustomerFeeEditor({ customer, onSaved, token, fieldKey, label }) {
   );
 }
 
+// Inline editor voor RSIN/BSN per klant. Wordt automatisch gebruikt bij Aangifte BPM (veld 1.2_BSR).
+function CustomerRsinEditor({ customer, onSaved, token }) {
+  const [editing, setEditing] = React.useState(false);
+  const [value, setValue] = React.useState(customer.rsin || '');
+  React.useEffect(() => { setValue(customer.rsin || ''); }, [customer]);
+  const save = async () => {
+    const v = value.trim();
+    try {
+      await axios.post(`${API}/customers`, {
+        name: customer.name,
+        phone: customer.phone || '',
+        email: customer.email || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        rsin: v,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(v ? `RSIN ${v} opgeslagen` : 'RSIN verwijderd');
+      setEditing(false);
+      onSaved && onSaved();
+    } catch (e) { toast.error('Mislukt: ' + e.message); }
+  };
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className={`px-2 py-1 rounded text-xs ${customer.rsin ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 font-mono' : 'text-zinc-400 hover:bg-zinc-100'}`}
+        data-testid={`rsin-edit-${customer.id}`}
+      >
+        {customer.rsin || '\u2014 instellen'}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1" data-testid={`rsin-editor-${customer.id}`}>
+      <input
+        type="text"
+        maxLength={9}
+        autoFocus
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+        placeholder="9 cijfers"
+        className="w-24 border border-zinc-300 rounded px-2 py-1 text-xs font-mono"
+      />
+      <button type="button" onClick={save} className="text-emerald-600 hover:text-emerald-800 text-xs font-bold">OK</button>
+      <button type="button" onClick={() => setEditing(false)} className="text-zinc-400 hover:text-zinc-600 text-xs">×</button>
+    </div>
+  );
+}
+
+
+
 export default function CustomerDirectory() {
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [q, setQ] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '' });
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
 
   const fetchCustomers = useCallback(async () => {
@@ -107,7 +160,7 @@ export default function CustomerDirectory() {
       await axios.post(`${API}/customers`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Klant opgeslagen');
       setShowAdd(false);
-      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '' });
+      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '' });
       fetchCustomers();
     } catch (e) { toast.error('Mislukt: ' + (e.response?.data?.detail || e.message)); }
   };
@@ -164,6 +217,7 @@ export default function CustomerDirectory() {
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">E-mail</th>
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Adres</th>
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Stad</th>
+                  <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">RSIN</th>
                   <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Taxatie tarief</th>
                   <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Extra fee</th>
                   <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Gebruikt</th>
@@ -178,6 +232,9 @@ export default function CustomerDirectory() {
                     <td className="px-4 py-3 text-zinc-700">{c.email || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.address || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.city || '\u2014'}</td>
+                    <td className="px-4 py-3 text-zinc-700 font-mono text-xs">
+                      <CustomerRsinEditor customer={c} onSaved={fetchCustomers} token={token} />
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <CustomerFeeEditor customer={c} onSaved={fetchCustomers} token={token} fieldKey="default_taxatie_fee" label="Taxatietarief" />
                     </td>
@@ -219,6 +276,7 @@ export default function CustomerDirectory() {
                   { k: 'email', l: 'E-mail', p: 'jan@email.nl' },
                   { k: 'address', l: 'Adres', p: 'Straatnaam 1' },
                   { k: 'city', l: 'Stad', p: 'Amsterdam' },
+                  { k: 'rsin', l: 'RSIN / BSN (Belastingdienst)', p: 'bv. 866851525 — auto-invullen op Aangifte BPM' },
                   { k: 'default_taxatie_fee', l: 'Taxatietarief (\u20ac, optioneel)', p: 'standaard 160 — anders bv. 175', type: 'number' },
                   { k: 'default_fee', l: 'Extra fee (\u20ac, optioneel)', p: 'bv. 60 — leeg = geen automatische fee', type: 'number' },
                 ].map(f => (

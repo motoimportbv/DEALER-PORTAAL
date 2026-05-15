@@ -2026,7 +2026,8 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
         raise HTTPException(status_code=403, detail="Geen toegang")
     doc = await db.taxatie_programma.find_one(
         {"id": taxatie_id, **_owner_filter_for_user(current_user)},
-        {"_id": 0, "vin_number": 1, "report_date": 1, "herstelkosten": 1, "aangifte_overrides": 1},
+        {"_id": 0, "vin_number": 1, "report_date": 1, "herstelkosten": 1,
+         "aangifte_overrides": 1, "customer_name": 1, "customer_phone": 1, "customer_email": 1},
     )
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
@@ -2040,6 +2041,17 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
             except Exception:
                 pass
     defaults = _aangifte_default_overrides(doc, report_dt)
+    # Klant-RSIN auto-prefill: zoek klant op naam bij deze user, gebruik opgeslagen RSIN als 1.2_BSR default
+    customer_name = (doc.get("customer_name") or "").strip()
+    if customer_name:
+        import re as _re
+        name_slug = _re.sub(r"\s+", " ", customer_name.lower()).strip()
+        cust = await db.customers.find_one(
+            {"created_by": current_user.get("id"), "name_slug": name_slug},
+            {"_id": 0, "rsin": 1},
+        )
+        if cust and (cust.get("rsin") or "").strip():
+            defaults["1.2_BSR"] = cust["rsin"].strip()
     saved = doc.get("aangifte_overrides") or {}
     # Merge: saved overrules defaults
     current = {**defaults, **saved}
@@ -2047,6 +2059,7 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
         "fields_page1": AANGIFTE_FIELDS_P1,
         "fields_page6": AANGIFTE_FIELDS_P6,
         "values": current,
+        "customer_name": customer_name,
     }
 
 
@@ -2079,6 +2092,22 @@ async def export_aangifte_bpm_pdf(
             {"$set": {"aangifte_overrides": overrides,
                       "aangifte_overrides_updated_at": datetime.now(timezone.utc).isoformat()}},
         )
+
+    # Sla RSIN op bij de klant (zodat hij volgende keer automatisch wordt ingevuld)
+    rsin_val = (str(overrides.get("1.2_BSR", "")) or "").strip()
+    customer_name = (doc_data.get("customer_name") or "").strip()
+    if rsin_val and customer_name:
+        try:
+            from routers.customers import upsert_customer_from_form
+            await upsert_customer_from_form(current_user, {
+                "customer_name": customer_name,
+                "customer_phone": doc_data.get("customer_phone") or "",
+                "customer_email": doc_data.get("customer_email") or "",
+                "customer_address": doc_data.get("customer_address") or "",
+                "rsin": rsin_val,
+            })
+        except Exception as ce:
+            logger.warning(f"Could not upsert customer RSIN: {ce}")
 
     blank_form = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf')
     if not os.path.exists(blank_form):
