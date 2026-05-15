@@ -458,6 +458,142 @@ function DamageChecklist({ items, onChange }) {
   );
 }
 
+/* ── Aangifte BPM Editor (pagina 1 + pagina 6 volledig bewerkbaar) ── */
+function AangifteBpmEditor({ taxatie, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [fieldsP1, setFieldsP1] = useState([]);
+  const [fieldsP6, setFieldsP6] = useState([]);
+  const [values, setValues] = useState({});
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    axios.get(`${API}/taxatie-programma/${taxatie.id}/aangifte-overrides`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        setFieldsP1(res.data.fields_page1 || []);
+        setFieldsP6(res.data.fields_page6 || []);
+        setValues(res.data.values || {});
+      })
+      .catch(() => toast.error('Kon aangifte-velden niet laden'))
+      .finally(() => setLoading(false));
+  }, [taxatie.id]);
+
+  const setVal = (k, v) => setValues(prev => ({ ...prev, [k]: v }));
+
+  const handleDownload = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${API}/taxatie-programma/${taxatie.id}/aangifte-bpm-pdf`,
+        { overrides: values },
+        { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Aangifte_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Aangifte BPM PDF gedownload');
+      onClose();
+    } catch (e) {
+      toast.error('PDF generatie mislukt');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderField = (f) => {
+    const v = values[f.name];
+    if (f.type === 'text') {
+      return (
+        <div key={f.name} className="space-y-1">
+          <label className="text-xs font-semibold text-zinc-700 block">{f.label}</label>
+          <input
+            type="text"
+            maxLength={f.max || undefined}
+            value={v ?? ''}
+            onChange={e => setVal(f.name, e.target.value)}
+            className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            data-testid={`aangifte-field-${f.name}`}
+          />
+        </div>
+      );
+    }
+    if (f.type === 'radio') {
+      return (
+        <div key={f.name} className="space-y-1">
+          <label className="text-xs font-semibold text-zinc-700 block">{f.label}</label>
+          <div className="space-y-1">
+            {(f.options || []).map(opt => (
+              <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name={f.name}
+                  checked={v === opt.value}
+                  onChange={() => setVal(f.name, opt.value)}
+                  data-testid={`aangifte-radio-${f.name}-${opt.value.slice(0, 8)}`}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (f.type === 'checkbox') {
+      return (
+        <label key={f.name} className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!v}
+            onChange={e => setVal(f.name, e.target.checked)}
+            data-testid={`aangifte-checkbox-${f.name}`}
+          />
+          <span>{f.label}</span>
+        </label>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4 print:hidden" data-testid="aangifte-editor-modal">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-zinc-900">Aangifte BPM — Pagina 1 &amp; 6 bewerken</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">{taxatie.brand} {taxatie.model}{taxatie.taxatie_nummer ? ` — ${taxatie.taxatie_nummer}` : ''}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} data-testid="aangifte-close-btn"><X className="w-4 h-4" /></Button>
+        </div>
+        {loading ? (
+          <div className="p-10 flex items-center justify-center text-zinc-500"><Loader2 className="w-5 h-5 mr-2 animate-spin" />Laden…</div>
+        ) : (
+          <div className="p-6 space-y-6">
+            <section>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-blue-700 mb-3 pb-2 border-b border-blue-200">Pagina 1 van 21 — Identificatie</h3>
+              <div className="space-y-3">{fieldsP1.map(renderField)}</div>
+            </section>
+            <section>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-blue-700 mb-3 pb-2 border-b border-blue-200">Pagina 6 van 21 — Bijzondere omstandigheden &amp; Ondertekening</h3>
+              <div className="space-y-3">{fieldsP6.map(renderField)}</div>
+            </section>
+          </div>
+        )}
+        <div className="sticky bottom-0 bg-white border-t px-6 py-3 flex items-center justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={saving} data-testid="aangifte-cancel-btn">Annuleren</Button>
+          <Button onClick={handleDownload} disabled={loading || saving} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="aangifte-download-btn">
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+            Genereer PDF
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Print / Report view ── */
 function BpmReport({ taxatie, onClose }) {
   const { user } = useAuth();
@@ -467,6 +603,7 @@ function BpmReport({ taxatie, onClose }) {
   const ml = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
   const checkedDamage = (taxatie.damage_items || []).filter(d => d.checked);
   const totalHerstel = checkedDamage.reduce((s, i) => s + (i.cost || 0), 0);
+  const [aangifteOpen, setAangifteOpen] = useState(false);
 
   return (
     <div className="fixed inset-0 z-50 bg-white overflow-auto print:relative" data-testid="bpm-report">
@@ -498,6 +635,9 @@ function BpmReport({ taxatie, onClose }) {
             xhr.send();
           }} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="download-bd-pdf-btn">
             <Download className="w-4 h-4 mr-2" />Belastingdienst
+          </Button>
+          <Button onClick={() => setAangifteOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white" data-testid="open-aangifte-editor-btn">
+            <Edit2 className="w-4 h-4 mr-2" />Aangifte BPM (bewerken)
           </Button>
           <Button onClick={() => {
             const token = localStorage.getItem('token');
@@ -809,6 +949,7 @@ function BpmReport({ taxatie, onClose }) {
         </div>
       </div>
       <style>{`@media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .print\\:hidden { display: none !important; } }`}</style>
+      {aangifteOpen && <AangifteBpmEditor taxatie={taxatie} onClose={() => setAangifteOpen(false)} />}
     </div>
   );
 }

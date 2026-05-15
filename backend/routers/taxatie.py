@@ -1957,6 +1957,315 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
         raise HTTPException(status_code=500, detail=f"PDF generatie mislukt: {str(e)}")
 
 
+# ============================================================
+# Aangifte BPM — Pagina 1 + Pagina 6 volledig bewerkbaar
+# ============================================================
+# Veld-definities voor de UI (gebruikt door GET overrides endpoint).
+# Volgorde = volgorde in formulier. type: text | radio | checkbox.
+AANGIFTE_FIELDS_P1 = [
+    {"name": "1.0.VIN", "label": "Voertuig identificatienummer (VIN)", "type": "text", "max": 17},
+    {"name": "1.1.VIN._C7.1", "label": "Document kenmerk (1c — 7 tekens)", "type": "text", "max": 7},
+    {"name": "1.2_BSR", "label": "BSN / RSIN aangever", "type": "text", "max": 9},
+]
+AANGIFTE_FIELDS_P6 = [
+    {"name": "1.1.VIN._C7.6", "label": "Document kenmerk (kop pagina 6)", "type": "text", "max": 7},
+    {"name": "9.0", "label": "Vraag 9 — Bijzondere omstandigheid?", "type": "radio",
+     "options": [
+         {"value": "Ja. Vul het nummer van de vrijstellingsvergunning of invoeraangifte in.",
+          "label": "Ja — vul nummer vrijstellingsvergunning / invoeraangifte in"},
+         {"value": " Nee", "label": "Nee"},
+     ]},
+    {"name": "9.1", "label": "Toelichting / nummer vrijstellingsvergunning (vraag 9)", "type": "text"},
+    {"name": "9.2", "label": "Vraag 9.2 — Akkoord?", "type": "radio",
+     "options": [
+         {"value": "Ja", "label": "Ja"},
+         {"value": " Nee", "label": "Nee"},
+     ]},
+    {"name": "10.0", "label": "Naam ondertekenaar", "type": "text"},
+    {"name": "10.date05.d_CF", "label": "Datum — dag", "type": "text", "max": 2},
+    {"name": "10.date05.m_CF", "label": "Datum — maand", "type": "text", "max": 2},
+    {"name": "10.date05.y_CF", "label": "Datum — jaar", "type": "text", "max": 4},
+    {"name": "10.3", "label": "Bijlage — Koerslijst", "type": "checkbox", "on": "Koerslijst"},
+    {"name": "10.4", "label": "Bijlage — Taxatierapport (incl. inkoopfactuur/verklaring)", "type": "checkbox",
+     "on": "Taxatierapport, inclusief inkoopfactuur of inkoopverklaring"},
+    {"name": "10.5", "label": "Bijlage — Volmacht", "type": "checkbox", "on": "Volmacht"},
+    {"name": "10.6", "label": "Bijlage — Toelichting berekening bruto bpm", "type": "checkbox",
+     "on": "Toelichting berekening bruto bpm"},
+]
+# Set van veldnamen die door pagina 1+6 overrides beïnvloed worden (page 6 has '9.0' radio = 2 widgets met zelfde naam)
+AANGIFTE_OVERRIDE_FIELD_NAMES = {f["name"] for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P6}
+
+
+def _aangifte_default_overrides(doc_data: dict, report_dt: datetime) -> dict:
+    """Bouw de default-waardes voor pagina 1 + pagina 6 overrides."""
+    vin = doc_data.get("vin_number", "") or ""
+    doc_kenmerk = vin[-7:] if len(vin) >= 7 else vin
+    return {
+        "1.0.VIN": vin,
+        "1.1.VIN._C7.1": doc_kenmerk,
+        "1.2_BSR": "866851525",
+        "1.1.VIN._C7.6": doc_kenmerk,
+        "9.0": " Nee",
+        "9.1": "",
+        "9.2": "Ja",
+        "10.0": "Sandro Milone",
+        "10.date05.d_CF": f"{report_dt.day:02d}",
+        "10.date05.m_CF": f"{report_dt.month:02d}",
+        "10.date05.y_CF": str(report_dt.year),
+        "10.3": False,
+        "10.4": bool((doc_data.get("herstelkosten") or 0) > 0),
+        "10.5": False,
+        "10.6": False,
+    }
+
+
+@router.get("/taxatie-programma/{taxatie_id}/aangifte-overrides")
+async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
+    """Haal de opgeslagen aangifte-overrides + veld-definities op voor de UI."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    doc = await db.taxatie_programma.find_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"_id": 0, "vin_number": 1, "report_date": 1, "herstelkosten": 1, "aangifte_overrides": 1},
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    report_dt = datetime.now(timezone.utc)
+    if doc.get("report_date"):
+        try:
+            report_dt = datetime.fromisoformat(doc["report_date"])
+        except Exception:
+            try:
+                report_dt = datetime.strptime(doc["report_date"], "%Y-%m-%d")
+            except Exception:
+                pass
+    defaults = _aangifte_default_overrides(doc, report_dt)
+    saved = doc.get("aangifte_overrides") or {}
+    # Merge: saved overrules defaults
+    current = {**defaults, **saved}
+    return {
+        "fields_page1": AANGIFTE_FIELDS_P1,
+        "fields_page6": AANGIFTE_FIELDS_P6,
+        "values": current,
+    }
+
+
+@router.post("/taxatie-programma/{taxatie_id}/aangifte-bpm-pdf")
+async def export_aangifte_bpm_pdf(
+    taxatie_id: str,
+    body: dict = Body(default={}),
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Genereer de Aangifte BPM PDF met door de gebruiker bewerkbare pagina 1 + pagina 6.
+    Body: { "overrides": { field_name: value, ... } }. Wordt opgeslagen op de taxatie voor hergebruik.
+    """
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    doc_data = await db.taxatie_programma.find_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0}
+    )
+    if not doc_data:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+
+    overrides_in = body.get("overrides") or {}
+    # Filter naar alleen toegestane velden (pagina 1 + pagina 6)
+    overrides = {k: v for k, v in overrides_in.items() if k in AANGIFTE_OVERRIDE_FIELD_NAMES}
+
+    # Persist op de taxatie
+    if overrides:
+        await db.taxatie_programma.update_one(
+            {"id": taxatie_id},
+            {"$set": {"aangifte_overrides": overrides,
+                      "aangifte_overrides_updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+
+    blank_form = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf')
+    if not os.path.exists(blank_form):
+        from config import ROOT_DIR
+        blank_form = os.path.join(str(ROOT_DIR), 'uploads', 'bpm_form_blank.pdf')
+    if not os.path.exists(blank_form):
+        raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden.")
+
+    try:
+        import fitz
+    except ImportError:
+        raise HTTPException(status_code=500, detail="PDF bibliotheek niet beschikbaar")
+
+    # Reuse the full field_map logic from export_belastingdienst_pdf so non-edited pages stay correct.
+    now = datetime.now(timezone.utc)
+    report_dt = now
+    if doc_data.get("report_date"):
+        try:
+            report_dt = datetime.fromisoformat(doc_data["report_date"])
+        except Exception:
+            try:
+                report_dt = datetime.strptime(doc_data["report_date"], "%Y-%m-%d")
+            except Exception:
+                pass
+
+    vin = doc_data.get("vin_number", "") or ""
+    doc_kenmerk = vin[-7:] if len(vin) >= 7 else vin
+    first_reg = doc_data.get("first_registration_date", "")
+    reg_day, reg_month, reg_year = "", "", ""
+    if first_reg:
+        try:
+            d = datetime.fromisoformat(first_reg)
+            reg_day, reg_month, reg_year = f"{d.day:02d}", f"{d.month:02d}", str(d.year)
+        except Exception:
+            pass
+
+    bruto_bpm = doc_data.get("bruto_bpm", 0) or 0
+    netto_cat = doc_data.get("netto_catalogusprijs", 0) or 0
+    forfaitair_pct = doc_data.get("forfaitair_percentage", 0) or 0
+    beste = doc_data.get("beste_methode", "forfaitair")
+    if beste == "forfaitair":
+        afschr_pct = forfaitair_pct
+    elif beste == "koerslijst":
+        afschr_pct = doc_data.get("koerslijst_percentage", 0)
+    else:
+        afschr_pct = doc_data.get("taxatie_percentage", 0)
+    afschr_bedrag = round(bruto_bpm * afschr_pct / 100, 2)
+    berekende_bpm = round(bruto_bpm - afschr_bedrag, 2)
+    herstelkosten = doc_data.get("herstelkosten", 0) or 0
+    schade_aftrek = doc_data.get("schade_aftrek", 0) or 0
+    te_betalen = int(max(0, berekende_bpm - schade_aftrek))
+
+    # Volledige field_map (zelfde als export_belastingdienst_pdf) — pagina 1 + 6 velden zullen
+    # later door de overrides overschreven worden.
+    field_map = {
+        '1.0.VIN': vin,
+        '1.1.VIN._C7.1': doc_kenmerk,
+        '1.2_BSR': '866851525',
+        '1.1.VIN._C7.2': doc_kenmerk,
+        '4.2.0': 'Motoimport B.V.',
+        '4.2.1': 'Sandro Milone',
+        '4.4': 'Horsterhoekweg',
+        '4.5_HN': '11',
+        '4.7_PC': '7433 SV',
+        '4.8': 'Schalkhaar',
+        '4.9_TEL': '0681792660',
+        '4.10_EM': 'motoimportbv@gmail.com',
+        '3.date01.d_CF': f"{report_dt.day:02d}",
+        '3.date01.m_CF': f"{report_dt.month:02d}",
+        '3.date01.y_CF': str(report_dt.year),
+        '1.1.VIN._C7.3': doc_kenmerk,
+        '6.4': doc_data.get("brand", ""),
+        '6.5': doc_data.get("model", ""),
+        '6.6': doc_data.get("model", ""),
+        '6.date02.d_C': reg_day, '6.date02.m_C': reg_month, '6.date02.y_C': reg_year,
+        '1.1.VIN._C7.4': doc_kenmerk,
+        '7.0_A7': str(int(netto_cat)),
+        '7.1_A7': '0',
+        '7.2_A7': str(int(netto_cat)),
+        '8b.3.date03.d_C': '01', '8b.3.date03.m_C': '01', '8b.3.date03.y_C': '2026',
+        '8b.4_A7': str(int(bruto_bpm)),
+        '1.1.VIN._C7.5': doc_kenmerk,
+        '8d.0_A7': str(te_betalen),
+        '8e._A7': str(te_betalen),
+        '1.1.VIN._C7.6': doc_kenmerk,
+        '10.0': 'Sandro Milone',
+        '10.date05.d_CF': f"{report_dt.day:02d}",
+        '10.date05.m_CF': f"{report_dt.month:02d}",
+        '10.date05.y_CF': str(report_dt.year),
+        'B.A.0': 'Motoimport B.V.',
+        'B.A.1_BSR': '866851525',
+        'B.A.VIN.17': vin,
+        'B.A.date01.d_F': reg_day, 'B.A.date01.m_F': reg_month, 'B.A.date01.y_F': reg_year,
+        'B.D.3.0_A7': str(int(bruto_bpm)),
+        'B.D.3.1_AD33': f"{afschr_pct:.3f}".replace('.', ','),
+        'B.D.3.2_A7': str(int(afschr_bedrag)),
+        'B.D.3.3_A7': str(int(berekende_bpm)),
+        '8c.3._AD33': f"{afschr_pct:.3f}".replace('.', ','),
+    }
+    if herstelkosten > 0:
+        consumentenprijs = doc_data.get("consumentenprijs", 0) or 0
+        koerslijst_waarde = doc_data.get("koerslijst_waarde", 0) or 0
+        hist_nieuwprijs = consumentenprijs if consumentenprijs > 0 else int(netto_cat + bruto_bpm)
+        handelswaarde_onbesch = koerslijst_waarde if koerslijst_waarde > 0 else 0
+        waardevermin_pct = round((herstelkosten / hist_nieuwprijs) * 100, 2) if hist_nieuwprijs > 0 else 0
+        overig_vermin = int(schade_aftrek)
+        handelswaarde_besch = max(0, handelswaarde_onbesch - int(herstelkosten * waardevermin_pct / 100) - overig_vermin) if handelswaarde_onbesch > 0 else 0
+        field_map.update({
+            '8c.2.1': 'Sandro Milone',
+            '8c.2.2': 'Schalkhaar',
+            '8c.2.3': 'Motoimport',
+            '8c.2.4.date06.d': f"{report_dt.day:02d}",
+            '8c.2.4.date06.m': f"{report_dt.month:02d}",
+            '8c.2.4.date06.y': str(report_dt.year),
+            '8c.2.6_A7': str(hist_nieuwprijs),
+            '8c.2.7_A7': str(handelswaarde_onbesch) if handelswaarde_onbesch > 0 else '',
+            '8c.2.8_A7': str(int(herstelkosten)),
+            '8c.2.9_AD3': f"{waardevermin_pct:.2f}".replace('.', ','),
+            '8c.2.10_A7': str(overig_vermin),
+            '8c.2.11_A7': str(handelswaarde_besch) if handelswaarde_besch > 0 else '',
+            '8c.2.13_A7': '',
+        })
+
+    # Bouw nu een lookup van overrides per (field_name, type). Voor radio/checkbox is value de target state.
+    field_meta: dict = {}
+    for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P6:
+        field_meta[f["name"]] = f
+
+    # Defaults (zodat we radio/checkbox state ook zonder user input op page 1+6 zetten)
+    defaults_p1p6 = _aangifte_default_overrides(doc_data, report_dt)
+    p1p6_values = {**defaults_p1p6, **overrides}
+
+    try:
+        pdf_doc = fitz.open(blank_form)
+        for page_num in range(len(pdf_doc)):
+            page = pdf_doc[page_num]
+            for widget in page.widgets():
+                fname = widget.field_name or ''
+                # Pagina 1 en 6 — overrides volgens type
+                if fname in field_meta:
+                    meta = field_meta[fname]
+                    val = p1p6_values.get(fname)
+                    try:
+                        if meta["type"] == "text":
+                            widget.field_value = str(val or "")
+                            widget.update()
+                        elif meta["type"] == "radio":
+                            # Radio buttons delen field-naam: zet alleen het matchende widget
+                            # op zijn 'on'-state. Andere widgets blijven 'Off'.
+                            target = str(val) if val is not None else ""
+                            states = (widget.button_states() or {}).get("normal", []) or []
+                            # PyMuPDF retourneert states met '#20' i.p.v. spaties — decode.
+                            decoded = [s.replace("#20", " ") for s in states]
+                            if target in decoded:
+                                widget.field_value = target
+                                widget.update()
+                            # else: bewust niet aanraken
+                        elif meta["type"] == "checkbox":
+                            if bool(val):
+                                widget.field_value = meta.get("on", "Yes")
+                            else:
+                                widget.field_value = "Off"
+                            widget.update()
+                    except Exception as we:
+                        logger.warning(f"Could not set page1/6 field '{fname}': {we}")
+                    continue
+                # Andere pagina's: normale auto-fill
+                if fname in field_map and field_map[fname]:
+                    try:
+                        widget.field_value = str(field_map[fname])
+                        widget.update()
+                    except Exception as we:
+                        logger.warning(f"Could not set field '{fname}': {we}")
+
+        pdf_bytes = pdf_doc.tobytes()
+        pdf_doc.close()
+        filename = f"Aangifte_BPM_{doc_data.get('brand', 'Motor')}_{doc_data.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        logger.error(f"Failed to generate Aangifte BPM PDF: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PDF generatie mislukt: {str(e)}")
+
+
 TAXATIE_LABOR_RATE = 65.0  # €65 per uur excl. BTW
 COMPANY_RSIN = "866851525"
 COMPANY_KVK = "94622086"
