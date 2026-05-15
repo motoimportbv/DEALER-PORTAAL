@@ -504,6 +504,27 @@ function AangifteBpmEditor({ taxatie, onClose }) {
     }
   };
 
+  const handleVolmacht = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(
+        `${API}/taxatie-programma/${taxatie.id}/volmacht-pdf`,
+        { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Volmacht_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      // Auto-vink 10.5 in lokale state — backend heeft het al opgeslagen
+      setValues(prev => ({ ...prev, '10.5': true }));
+      toast.success('Volmacht-PDF gedownload \u2014 vakje 10.5 automatisch aangevinkt');
+    } catch (e) {
+      toast.error('Volmacht PDF mislukt');
+    }
+  };
+
   const renderField = (f) => {
     const v = values[f.name];
     if (f.type === 'text') {
@@ -582,12 +603,17 @@ function AangifteBpmEditor({ taxatie, onClose }) {
             </section>
           </div>
         )}
-        <div className="sticky bottom-0 bg-white border-t px-6 py-3 flex items-center justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={saving} data-testid="aangifte-cancel-btn">Annuleren</Button>
-          <Button onClick={handleDownload} disabled={loading || saving} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="aangifte-download-btn">
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-            Genereer PDF
+        <div className="sticky bottom-0 bg-white border-t px-6 py-3 flex items-center justify-between gap-2">
+          <Button onClick={handleVolmacht} disabled={loading || saving} variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50" data-testid="aangifte-volmacht-btn">
+            <FileCheck className="w-4 h-4 mr-2" />Volmacht PDF
           </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={saving} data-testid="aangifte-cancel-btn">Annuleren</Button>
+            <Button onClick={handleDownload} disabled={loading || saving} className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="aangifte-download-btn">
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              Genereer PDF
+            </Button>
+          </div>
         </div>
       </div>
     </div>
