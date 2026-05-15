@@ -2295,6 +2295,305 @@ async def export_aangifte_bpm_pdf(
         raise HTTPException(status_code=500, detail=f"PDF generatie mislukt: {str(e)}")
 
 
+@router.get("/taxatie-programma/{taxatie_id}/volmacht-overrides")
+async def get_volmacht_overrides(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
+    """Haal de bewerkbare Volmacht-velden + opgeslagen overrides op."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    doc = await db.taxatie_programma.find_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+
+    # Auto-fill defaults vanuit taxatie + customer + branding
+    from services.branding import get_branding
+    cb = get_branding(current_user)
+
+    customer_rsin = ""
+    customer_name = (doc.get("customer_name") or "").strip()
+    if customer_name:
+        import re as _re
+        slug = _re.sub(r"\s+", " ", customer_name.lower()).strip()
+        cust = await db.customers.find_one(
+            {"created_by": current_user.get("id"), "name_slug": slug},
+            {"_id": 0, "rsin": 1},
+        )
+        if cust:
+            customer_rsin = (cust.get("rsin") or "").strip()
+
+    now = datetime.now(timezone.utc)
+    report_dt = now
+    if doc.get("report_date"):
+        try:
+            report_dt = datetime.fromisoformat(doc["report_date"])
+        except Exception:
+            pass
+
+    first_reg = doc.get("first_registration_date", "")
+    reg_str = ""
+    if first_reg:
+        try:
+            d = datetime.fromisoformat(first_reg)
+            reg_str = d.strftime("%d-%m-%Y")
+        except Exception:
+            pass
+
+    defaults = {
+        # Volmachtgever (klant)
+        "vg_name": customer_name,
+        "vg_rsin": customer_rsin,
+        "vg_address": doc.get("customer_address") or "",
+        "vg_phone": doc.get("customer_phone") or "",
+        "vg_email": doc.get("customer_email") or "",
+        # Gemachtigde (jij)
+        "gm_name": cb.get("name", "Moto Import B.V."),
+        "gm_kvk": cb.get("kvk", "94622086"),
+        "gm_address": cb.get("address", "Horsterhoekweg 11, 7433 SV Schalkhaar"),
+        "gm_phone": cb.get("phone", "06-81792660"),
+        "gm_email": cb.get("email", "motoimportbv@gmail.com"),
+        # Voertuig
+        "v_brand_model": f"{doc.get('brand', '')} {doc.get('model', '')}".strip(),
+        "v_vin": doc.get("vin_number") or "",
+        "v_first_reg": reg_str,
+        "v_mileage": str(int(doc.get('mileage') or 0)) if doc.get('mileage') else "",
+        "v_taxatie_nummer": doc.get("taxatie_nummer") or "",
+        # Ondertekening
+        "sign_place": "",
+        "sign_date": report_dt.strftime("%d-%m-%Y"),
+        "sign_name": customer_name,
+        # Extra clausule (optioneel)
+        "extra_clause": "",
+    }
+
+    saved = doc.get("volmacht_overrides") or {}
+    values = {**defaults, **saved}
+
+    fields = [
+        # Volmachtgever
+        {"key": "vg_name", "label": "Naam / bedrijf volmachtgever", "section": "Volmachtgever (klant)"},
+        {"key": "vg_rsin", "label": "RSIN / KvK", "section": "Volmachtgever (klant)"},
+        {"key": "vg_address", "label": "Adres", "section": "Volmachtgever (klant)"},
+        {"key": "vg_phone", "label": "Telefoon", "section": "Volmachtgever (klant)"},
+        {"key": "vg_email", "label": "E-mail", "section": "Volmachtgever (klant)"},
+        # Gemachtigde
+        {"key": "gm_name", "label": "Bedrijfsnaam gemachtigde", "section": "Gemachtigde (u)"},
+        {"key": "gm_kvk", "label": "KvK-nummer", "section": "Gemachtigde (u)"},
+        {"key": "gm_address", "label": "Adres", "section": "Gemachtigde (u)"},
+        {"key": "gm_phone", "label": "Telefoon", "section": "Gemachtigde (u)"},
+        {"key": "gm_email", "label": "E-mail", "section": "Gemachtigde (u)"},
+        # Voertuig
+        {"key": "v_brand_model", "label": "Merk + model", "section": "Voertuig"},
+        {"key": "v_vin", "label": "Voertuigidentificatienummer (VIN)", "section": "Voertuig"},
+        {"key": "v_first_reg", "label": "Datum eerste toelating", "section": "Voertuig"},
+        {"key": "v_mileage", "label": "Kilometerstand", "section": "Voertuig"},
+        {"key": "v_taxatie_nummer", "label": "Taxatienummer", "section": "Voertuig"},
+        # Ondertekening
+        {"key": "sign_place", "label": "Plaats van ondertekening", "section": "Ondertekening"},
+        {"key": "sign_date", "label": "Datum (dd-mm-jjjj)", "section": "Ondertekening"},
+        {"key": "sign_name", "label": "Naam ondertekenaar", "section": "Ondertekening"},
+        # Extra
+        {"key": "extra_clause", "label": "Extra clausule (optioneel — verschijnt onder de strekkings­clausule)", "section": "Extra", "multiline": True},
+    ]
+
+    return {"fields": fields, "values": values}
+
+
+@router.post("/taxatie-programma/{taxatie_id}/volmacht-pdf")
+async def export_volmacht_pdf_v2(
+    taxatie_id: str,
+    body: dict = Body(default={}),
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Genereer Volmacht-PDF met bewerkbare velden. Body: { overrides: {...} }.
+    Slaat overrides op de taxatie op + vinkt 10.5 'Volmacht' aan op de Aangifte BPM PDF.
+    """
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    doc = await db.taxatie_programma.find_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+
+    overrides_in = body.get("overrides") or {}
+    # Persist
+    if overrides_in:
+        await db.taxatie_programma.update_one(
+            {"id": taxatie_id},
+            {"$set": {"volmacht_overrides": overrides_in,
+                      "volmacht_overrides_updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+
+    # Auto-vink 10.5 Volmacht aan op Aangifte BPM PDF
+    existing_aang = doc.get("aangifte_overrides") or {}
+    if not existing_aang.get("10.5"):
+        existing_aang["10.5"] = True
+        await db.taxatie_programma.update_one(
+            {"id": taxatie_id},
+            {"$set": {"aangifte_overrides": existing_aang}},
+        )
+
+    # Get final values (defaults + overrides) — re-use GET endpoint logic
+    overrides_data = await get_volmacht_overrides(taxatie_id, current_user)
+    v = {**overrides_data["values"], **overrides_in}
+
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+    import io
+
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        leftMargin=22 * mm, rightMargin=22 * mm,
+        topMargin=18 * mm, bottomMargin=18 * mm,
+        title="Volmacht BPM-aangifte",
+    )
+    styles = getSampleStyleSheet()
+    title_s = ParagraphStyle('TITLE', parent=styles['Normal'], fontSize=20, fontName='Helvetica-Bold',
+                             textColor=colors.HexColor('#18181b'), alignment=TA_CENTER, spaceAfter=4 * mm)
+    sub_s = ParagraphStyle('SUB', parent=styles['Normal'], fontSize=9,
+                           textColor=colors.HexColor('#666'), alignment=TA_CENTER, spaceAfter=6 * mm)
+    h_s = ParagraphStyle('H', parent=styles['Normal'], fontSize=11, fontName='Helvetica-Bold',
+                         textColor=colors.HexColor('#18181b'), spaceBefore=4 * mm, spaceAfter=2 * mm)
+    body_s = ParagraphStyle('B', parent=styles['Normal'], fontSize=10, leading=14,
+                            alignment=TA_JUSTIFY, spaceAfter=2 * mm)
+    label_s = ParagraphStyle('L', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#555'))
+    val_s = ParagraphStyle('V', parent=styles['Normal'], fontSize=10, fontName='Helvetica-Bold')
+    small_s = ParagraphStyle('S', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#888'),
+                             alignment=TA_LEFT)
+
+    def _v(key, fallback="................................................"):
+        val = (v.get(key) or "").strip()
+        return val if val else fallback
+
+    elements = []
+    now = datetime.now(timezone.utc)
+
+    elements.append(Paragraph("VOLMACHT", title_s))
+    elements.append(Paragraph("ten behoeve van indienen aangifte BPM bij de Belastingdienst", sub_s))
+    elements.append(HRFlowable(width="100%", color=colors.HexColor('#18181b'), thickness=1.5))
+    elements.append(Spacer(1, 6 * mm))
+
+    elements.append(Paragraph("Ondergetekende (volmachtgever):", h_s))
+    cust_lines = [
+        ["Naam / bedrijf:", _v("vg_name")],
+        ["RSIN / KvK:", _v("vg_rsin")],
+        ["Adres:", _v("vg_address")],
+        ["Telefoon:", _v("vg_phone")],
+        ["E-mail:", _v("vg_email")],
+    ]
+    t = Table([[Paragraph(k, label_s), Paragraph(val, val_s)] for k, val in cust_lines],
+              colWidths=[45 * mm, 115 * mm])
+    t.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                           ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                           ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                           ('BOTTOMPADDING', (0, 0), (-1, -1), 3)]))
+    elements.append(t)
+    elements.append(Spacer(1, 4 * mm))
+
+    elements.append(Paragraph("Verleent hierbij volmacht aan (gemachtigde):", h_s))
+    gem_lines = [
+        ["Bedrijfsnaam:", _v("gm_name")],
+        ["KvK-nummer:", _v("gm_kvk")],
+        ["Adres:", _v("gm_address")],
+        ["Telefoon:", _v("gm_phone")],
+        ["E-mail:", _v("gm_email")],
+    ]
+    t2 = Table([[Paragraph(k, label_s), Paragraph(val, val_s)] for k, val in gem_lines],
+               colWidths=[45 * mm, 115 * mm])
+    t2.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                            ('BOTTOMPADDING', (0, 0), (-1, -1), 3)]))
+    elements.append(t2)
+    elements.append(Spacer(1, 4 * mm))
+
+    elements.append(Paragraph("Voor het voertuig:", h_s))
+    mileage_v = v.get("v_mileage", "").strip()
+    if mileage_v.isdigit():
+        mileage_v = f"{int(mileage_v):,} km".replace(",", ".")
+    veh_lines = [
+        ["Merk + model:", _v("v_brand_model", "-")],
+        ["Voertuigidentificatienummer (VIN):", _v("v_vin", "-")],
+        ["Datum eerste toelating:", _v("v_first_reg", "-")],
+        ["Kilometerstand:", mileage_v or "-"],
+        ["Taxatienummer:", _v("v_taxatie_nummer", "-")],
+    ]
+    t3 = Table([[Paragraph(k, label_s), Paragraph(val, val_s)] for k, val in veh_lines],
+               colWidths=[60 * mm, 100 * mm])
+    t3.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                            ('BOTTOMPADDING', (0, 0), (-1, -1), 3)]))
+    elements.append(t3)
+    elements.append(Spacer(1, 5 * mm))
+
+    elements.append(Paragraph("Strekking van deze volmacht:", h_s))
+    elements.append(Paragraph(
+        "De volmachtgever machtigt hierbij de hierboven genoemde gemachtigde om <b>namens de volmachtgever</b> "
+        "de aangifte voor de Belasting van Personenauto's en Motorrijwielen (BPM) bij de Belastingdienst in "
+        "te dienen voor het bovengenoemde voertuig. Deze volmacht omvat tevens het indienen van het "
+        "bijbehorende taxatierapport, het ondertekenen van de aangifte (vak 10 van het formulier "
+        "<i>Aangifte vermindering BPM</i>) en het voeren van eventuele correspondentie met de "
+        "Belastingdienst betreffende deze aangifte.",
+        body_s,
+    ))
+    elements.append(Paragraph(
+        "De volmachtgever blijft te allen tijde verantwoordelijk voor de juistheid van de aangifte en de "
+        "verschuldigde BPM. Een kopie van deze volmacht wordt als bijlage bij de aangifte gevoegd "
+        "(vakje 10.5 van het aangifteformulier).",
+        body_s,
+    ))
+    extra = (v.get("extra_clause") or "").strip()
+    if extra:
+        elements.append(Spacer(1, 2 * mm))
+        for para in extra.split("\n\n"):
+            if para.strip():
+                elements.append(Paragraph(para.strip().replace("\n", "<br/>"), body_s))
+    elements.append(Spacer(1, 8 * mm))
+
+    elements.append(Paragraph("Ondertekening volmachtgever:", h_s))
+    sign_data = [
+        [Paragraph("Plaats:", label_s), Paragraph(_v("sign_place"), val_s),
+         Paragraph("Datum:", label_s), Paragraph(_v("sign_date"), val_s)],
+        ["", "", "", ""],
+        [Paragraph("Naam:", label_s), Paragraph(_v("sign_name"), val_s), "", ""],
+        ["", "", "", ""],
+        [Paragraph("Handtekening:", label_s),
+         Paragraph("<br/><br/>______________________________________", val_s), "", ""],
+    ]
+    t4 = Table(sign_data, colWidths=[28 * mm, 60 * mm, 22 * mm, 50 * mm])
+    t4.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                            ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]))
+    elements.append(t4)
+    elements.append(Spacer(1, 10 * mm))
+
+    elements.append(HRFlowable(width="100%", color=colors.HexColor('#aaa'), thickness=0.3))
+    elements.append(Paragraph(
+        f"Dit document is gegenereerd door {v.get('gm_name', 'Moto Import B.V.')} op {now.strftime('%d-%m-%Y')} en dient ondertekend te worden door de volmachtgever voordat het als bijlage bij de BPM-aangifte wordt ingediend.",
+        small_s,
+    ))
+
+    pdf.build(elements)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+
+    filename = f"Volmacht_BPM_{doc.get('brand', 'Voertuig')}_{doc.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/taxatie-programma/{taxatie_id}/volmacht-pdf")
 async def export_volmacht_pdf(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
     """Genereer een Volmacht-PDF: klant machtigt Motoimport / DK Automotive om

@@ -458,6 +458,115 @@ function DamageChecklist({ items, onChange }) {
   );
 }
 
+/* ── Volmacht Editor — alle velden bewerkbaar vóór PDF download ── */
+function VolmachtEditor({ taxatie, onClose, onSaved }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [fields, setFields] = useState([]);
+  const [values, setValues] = useState({});
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    axios.get(`${API}/taxatie-programma/${taxatie.id}/volmacht-overrides`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        setFields(res.data.fields || []);
+        setValues(res.data.values || {});
+      })
+      .catch(() => toast.error('Kon volmacht-velden niet laden'))
+      .finally(() => setLoading(false));
+  }, [taxatie.id]);
+
+  const setVal = (k, v) => setValues(prev => ({ ...prev, [k]: v }));
+
+  const handleDownload = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${API}/taxatie-programma/${taxatie.id}/volmacht-pdf`,
+        { overrides: values },
+        { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Volmacht_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Volmacht-PDF gedownload — vakje 10.5 automatisch aangevinkt');
+      onSaved && onSaved();
+      onClose();
+    } catch {
+      toast.error('Volmacht PDF mislukt');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Groep velden per sectie
+  const sections = fields.reduce((acc, f) => {
+    if (!acc[f.section]) acc[f.section] = [];
+    acc[f.section].push(f);
+    return acc;
+  }, {});
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-black/60 flex items-center justify-center p-4 print:hidden" data-testid="volmacht-editor-modal">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-zinc-900">Volmacht BPM — bewerken &amp; genereren</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">{taxatie.brand} {taxatie.model}{taxatie.taxatie_nummer ? ` — ${taxatie.taxatie_nummer}` : ''}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} data-testid="volmacht-close-btn"><X className="w-4 h-4" /></Button>
+        </div>
+        {loading ? (
+          <div className="p-10 flex items-center justify-center text-zinc-500"><Loader2 className="w-5 h-5 mr-2 animate-spin" />Laden…</div>
+        ) : (
+          <div className="p-6 space-y-5">
+            {Object.entries(sections).map(([section, items]) => (
+              <section key={section}>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-purple-700 mb-3 pb-2 border-b border-purple-200">{section}</h3>
+                <div className="space-y-3">
+                  {items.map(f => (
+                    <div key={f.key} className="space-y-1">
+                      <label className="text-xs font-semibold text-zinc-700 block">{f.label}</label>
+                      {f.multiline ? (
+                        <textarea
+                          rows={3}
+                          value={values[f.key] || ''}
+                          onChange={e => setVal(f.key, e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y"
+                          data-testid={`volmacht-field-${f.key}`}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={values[f.key] || ''}
+                          onChange={e => setVal(f.key, e.target.value)}
+                          className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          data-testid={`volmacht-field-${f.key}`}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+        <div className="sticky bottom-0 bg-white border-t px-6 py-3 flex items-center justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={saving} data-testid="volmacht-cancel-btn">Annuleren</Button>
+          <Button onClick={handleDownload} disabled={loading || saving} className="bg-purple-600 hover:bg-purple-700 text-white" data-testid="volmacht-download-btn">
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+            Genereer Volmacht PDF
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Aangifte BPM Editor (pagina 1 + pagina 6 volledig bewerkbaar) ── */
 function AangifteBpmEditor({ taxatie, onClose }) {
   const [loading, setLoading] = useState(true);
@@ -465,6 +574,7 @@ function AangifteBpmEditor({ taxatie, onClose }) {
   const [fieldsP1, setFieldsP1] = useState([]);
   const [fieldsP6, setFieldsP6] = useState([]);
   const [values, setValues] = useState({});
+  const [volmachtOpen, setVolmachtOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -504,25 +614,8 @@ function AangifteBpmEditor({ taxatie, onClose }) {
     }
   };
 
-  const handleVolmacht = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(
-        `${API}/taxatie-programma/${taxatie.id}/volmacht-pdf`,
-        { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
-      );
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Volmacht_BPM_${taxatie.brand}_${taxatie.model}.pdf`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      // Auto-vink 10.5 in lokale state — backend heeft het al opgeslagen
-      setValues(prev => ({ ...prev, '10.5': true }));
-      toast.success('Volmacht-PDF gedownload \u2014 vakje 10.5 automatisch aangevinkt');
-    } catch (e) {
-      toast.error('Volmacht PDF mislukt');
-    }
+  const handleVolmacht = () => {
+    setVolmachtOpen(true);
   };
 
   const renderField = (f) => {
@@ -616,6 +709,13 @@ function AangifteBpmEditor({ taxatie, onClose }) {
           </div>
         </div>
       </div>
+      {volmachtOpen && (
+        <VolmachtEditor
+          taxatie={taxatie}
+          onClose={() => setVolmachtOpen(false)}
+          onSaved={() => setValues(prev => ({ ...prev, '10.5': true }))}
+        />
+      )}
     </div>
   );
 }
