@@ -9,13 +9,69 @@ import { Link } from 'react-router-dom';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Inline editor voor de standaard fee per klant. Klik op het bedrag, type nieuw bedrag, Enter
+// of focus-loss slaat op. Leeg = geen automatische fee.
+function CustomerFeeEditor({ customer, onSaved, token }) {
+  const [editing, setEditing] = React.useState(false);
+  const [value, setValue] = React.useState(customer.default_fee != null ? String(customer.default_fee) : '');
+  React.useEffect(() => {
+    setValue(customer.default_fee != null ? String(customer.default_fee) : '');
+  }, [customer.default_fee]);
+  const save = async () => {
+    const n = value.trim() === '' ? null : Number(value);
+    if (value.trim() !== '' && (Number.isNaN(n) || n < 0)) { toast.error('Ongeldig bedrag'); return; }
+    try {
+      await axios.post(`${API}/customers`, {
+        name: customer.name,
+        phone: customer.phone || '',
+        email: customer.email || '',
+        address: customer.address || '',
+        city: customer.city || '',
+        default_fee: n,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(n != null ? `Standaard fee \u20ac${n} opgeslagen` : 'Fee verwijderd');
+      setEditing(false);
+      onSaved && onSaved();
+    } catch (e) { toast.error('Mislukt: ' + e.message); }
+  };
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className={`px-2 py-1 rounded text-xs font-bold ${customer.default_fee ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'text-zinc-400 hover:bg-zinc-100'}`}
+        data-testid={`fee-edit-${customer.id}`}
+      >
+        {customer.default_fee ? `\u20ac ${customer.default_fee}` : '\u2014 instellen'}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1 justify-end" data-testid={`fee-editor-${customer.id}`}>
+      <span className="text-xs text-zinc-500">\u20ac</span>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        autoFocus
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+        className="w-20 border border-zinc-300 rounded px-2 py-1 text-xs"
+      />
+      <button type="button" onClick={save} className="text-emerald-600 hover:text-emerald-800 text-xs font-bold">OK</button>
+      <button type="button" onClick={() => setEditing(false)} className="text-zinc-400 hover:text-zinc-600 text-xs">×</button>
+    </div>
+  );
+}
+
 export default function CustomerDirectory() {
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [q, setQ] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '' });
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
 
   const fetchCustomers = useCallback(async () => {
@@ -49,7 +105,7 @@ export default function CustomerDirectory() {
       await axios.post(`${API}/customers`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Klant opgeslagen');
       setShowAdd(false);
-      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '' });
+      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '' });
       fetchCustomers();
     } catch (e) { toast.error('Mislukt: ' + (e.response?.data?.detail || e.message)); }
   };
@@ -106,6 +162,7 @@ export default function CustomerDirectory() {
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">E-mail</th>
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Adres</th>
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">Stad</th>
+                  <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Standaard fee</th>
                   <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Gebruikt</th>
                   <th className="px-4 py-2"></th>
                 </tr>
@@ -118,6 +175,9 @@ export default function CustomerDirectory() {
                     <td className="px-4 py-3 text-zinc-700">{c.email || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.address || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.city || '\u2014'}</td>
+                    <td className="px-4 py-3 text-right">
+                      <CustomerFeeEditor customer={c} onSaved={fetchCustomers} token={token} />
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700">{c.usage_count || 0}\u00d7</span>
                     </td>
@@ -153,11 +213,14 @@ export default function CustomerDirectory() {
                   { k: 'email', l: 'E-mail', p: 'jan@email.nl' },
                   { k: 'address', l: 'Adres', p: 'Straatnaam 1' },
                   { k: 'city', l: 'Stad', p: 'Amsterdam' },
+                  { k: 'default_fee', l: 'Standaard fee (\u20ac, optioneel)', p: 'bv. 60 — leeg = geen automatische fee', type: 'number' },
                 ].map(f => (
                   <div key={f.k}>
                     <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">{f.l}</label>
                     <input
-                      type="text"
+                      type={f.type || 'text'}
+                      step={f.type === 'number' ? '0.01' : undefined}
+                      min={f.type === 'number' ? '0' : undefined}
                       value={newCustomer[f.k]}
                       onChange={e => setNewCustomer({ ...newCustomer, [f.k]: e.target.value })}
                       placeholder={f.p}

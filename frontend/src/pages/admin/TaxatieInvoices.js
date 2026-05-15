@@ -77,16 +77,28 @@ export default function TaxatieInvoices() {
     return () => { cancel = true; clearTimeout(t); };
   }, [customerQuery, token]);
   const pickCustomer = (c) => {
-    setForm(f => ({
-      ...f,
-      customer_name: c.name || '',
-      customer_phone: c.phone || '',
-      customer_address: c.address || '',
-      customer_city: c.city || '',
-      customer_email: c.email || '',
-    }));
+    setForm(f => {
+      const next = {
+        ...f,
+        customer_name: c.name || '',
+        customer_phone: c.phone || '',
+        customer_address: c.address || '',
+        customer_city: c.city || '',
+        customer_email: c.email || '',
+      };
+      // Als de klant een standaard fee heeft (Gielen / Wijma / Wilderman): fee + invoice_type
+      if (c.default_fee && Number(c.default_fee) > 0) {
+        next.extra_fee = Number(c.default_fee);
+        next.extra_fee_no_btw = true;
+        if (f.invoice_type === 'taxatie_only') next.invoice_type = 'both';
+      }
+      return next;
+    });
     setCustomerQuery(c.name || '');
     setShowSuggestions(false);
+    if (c.default_fee && Number(c.default_fee) > 0) {
+      toast.success(`Standaard fee \u20ac${c.default_fee} ingevuld voor ${c.name}`);
+    }
   };
 
   // Auto-refresh when tab/app becomes visible again
