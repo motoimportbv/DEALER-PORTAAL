@@ -446,12 +446,32 @@ export default function TaxatieInvoices() {
           {(form.invoice_type === 'fee_only' || form.invoice_type === 'both') && (
             <Card><CardContent className="pt-6">
               <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider mb-4"><Euro className="w-4 h-4" /> Fee Kosten</h3>
+              {/* Snelkeuze-knoppen voor veelgebruikte bedragen */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {[60, 75, 100, 125, 150, 200].map(amt => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setForm({ ...form, extra_fee: amt })}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-colors ${
+                      parseFloat(form.extra_fee) === amt
+                        ? 'bg-red-600 border-red-600 text-white'
+                        : 'bg-white border-zinc-300 text-zinc-700 hover:border-red-400'
+                    }`}
+                    data-testid={`fee-preset-${amt}`}
+                  >
+                    € {amt}
+                  </button>
+                ))}
+              </div>
               <div className="flex items-center gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-600 mb-1">Fee bedrag</label>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">Eigen bedrag</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs text-zinc-400">€</span>
-                    <input type="number" value={form.extra_fee} onChange={(e) => setForm({ ...form, extra_fee: e.target.value })}
+                    <input type="number" step="0.01" min="0" value={form.extra_fee}
+                      onChange={(e) => setForm({ ...form, extra_fee: e.target.value })}
+                      placeholder="bv. 85,50"
                       className="w-40 border border-zinc-300 rounded-lg pl-7 pr-3 py-2 text-sm font-bold focus:outline-none focus:border-red-500" data-testid="fee-amount" />
                   </div>
                 </div>
