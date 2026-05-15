@@ -1,0 +1,51 @@
+{
+  "summary": "Tested new default_taxatie_fee + existing default_fee feature on /api/customers and the Klantenbestand + Taxatie Facturen UI flow. 11/11 backend tests pass and the full frontend integration flow works as expected: customer creation with both fees, inline edit, auto-fill of taxatie_items.fee and extra_fee on customer pick, combined toast message, and default €160 retention when customer has no override.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_customer_default_fees.py",
+    "/app/test_reports/pytest/pytest_customer_default_fees.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "customers.py upsert match-key: when an existing customer is edited via POST with the SAME phone, match works; but if phone changes between calls a new doc is upserted instead of updating the original (low risk since UI sends the original phone with the inline editor).",
+    "Inline editor in CustomerDirectory sends the full customer payload (name, phone, email, address, city) — fine because backend upsert uses (created_by, name_slug, phone) for matching, so the existing record is correctly updated.",
+    "Frontend `pickCustomer` uses `if (c.default_taxatie_fee && Number(c.default_taxatie_fee) > 0)` which is correct — a cleared (null/0) fee will not overwrite items.",
+    "Minor UX: when invoice_type === 'fee_only' the taxatie_items fee is not visible in UI, but pickCustomer still overwrites it. Harmless because totalFee is forced to 0 in handleCreate for fee_only."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_customer_default_fees.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! and Taxateur: denizkabakolak10@hotmail.com / Kabakolakdeniz! (both used successfully).",
+  "seed_data_creation": "Created and cleaned up TEST_-prefixed customers during the run (verified via cleanup script — 2 leftovers removed).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend route is /api/customers (mounted in routers/customers.py). Login token field is `access_token`. Field projection in GET /api/customers explicitly returns default_taxatie_fee + default_fee. Frontend autocomplete uses onMouseDown — dispatch 'mousedown' to trigger pickCustomer in Playwright. Toast message format: 'Taxatietarief €X + extra fee €Y ingevuld voor <name>'.",
+  "rca of the issue": "N/A — feature works correctly end-to-end.",
+  "verified_flows": [
+    "GET /api/customers returns default_taxatie_fee field",
+    "POST /api/customers saves default_taxatie_fee (175.0, 200.0) and clears via null/empty string",
+    "POST /api/customers saves default_fee (regression OK)",
+    "POST /api/customers saves both fees combined",
+    "GET /api/customers?q=... filters correctly",
+    "DELETE /api/customers/{id} returns 200; 404 for unknown id",
+    "POST without name returns 400; no auth returns 401",
+    "Taxateur role can access endpoints",
+    "Frontend /admin/klanten: add modal contains both fee inputs (data-testid new-customer-default_taxatie_fee, new-customer-default_fee)",
+    "Frontend inline CustomerFeeEditor: changed 175 -> 185 persisted via POST /api/customers",
+    "Frontend /admin/taxatie pickCustomer auto-filled item-fee-0 = 185 and fee-amount = 60",
+    "Toast 'Taxatietarief €185 + extra fee €60 ingevuld voor TEST_UI_Both_...' shown",
+    "Customer without default_taxatie_fee → item-fee-0 stays at 160"
+  ]
+}
