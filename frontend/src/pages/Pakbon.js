@@ -479,8 +479,9 @@ const Pakbon = () => {
               </div>
             )}
 
-            {/* Betalingsinstructies voor Ellen (CHF overmaken) */}
-            {(order.payment_instructions || user?.role === 'admin') && (
+            {/* Betalingsinstructies voor Ellen (CHF overmaken) — alleen admin & pakbon-rol
+                mogen dit zien. Dealers zien NOOIT de inkoopprijs / leverancier-bankgegevens. */}
+            {(user?.role === 'admin' || user?.role === 'pakbon') && (order.payment_instructions || user?.role === 'admin') && (
               <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-xl p-5" data-testid="payment-instructions">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-blue-800 mb-3 flex items-center gap-2">
                   💳 Betalingsinstructie

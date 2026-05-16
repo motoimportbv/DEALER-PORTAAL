@@ -104,14 +104,19 @@ async def get_orders(user: dict = Depends(require_approved_dealer)):
     
     # Enrich orders with motorcycle data (use snapshot as fallback)
     result = []
+    is_admin_or_pakbon = user["role"] in ("admin", "pakbon")
     for order in valid_orders:
         # Try to get live motorcycle data, fallback to snapshot
         motorcycle_data = motorcycles_map.get(order["motorcycle_id"])
         if not motorcycle_data:
             motorcycle_data = order.get("motorcycle_snapshot")
         order["motorcycle"] = motorcycle_data
+        # Defense-in-depth: dealers mogen NOOIT inkoopprijs/leverancier-gegevens zien
+        if not is_admin_or_pakbon:
+            order.pop("payment_instructions", None)
+            order.pop("supplier_info", None)
         result.append(order)
-    
+
     return result
 
 @router.put("/orders/{order_id}/status")
