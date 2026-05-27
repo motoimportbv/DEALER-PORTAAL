@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **A4 dealer-flyer voor /taxatie** (Feb 2026): Strakke zakelijke A4 PDF gegenereerd via `fpdf2` + QR-code naar motoimportbv.nl/taxatie. Bevat hoofdkop "Officieel BPM-taxatieverslag. Binnen 48 uur.", introductietarief €60 ex BTW prominent in grijze box, 3-staps "Zo werkt het", USP-bar, volledige contactgegevens. Generator: `/app/backend/generate_taxatie_flyer.py`. Endpoint `GET /api/public/taxatie-flyer` (regenereert on-the-fly). Knop "Download flyer" in `/admin/taxatie-aanvragen` topbar. Klaar om uit te printen + naar motorzaken te sturen.
 - **Introductietarief €60 voor nieuwe /taxatie-klanten + standaard verzenden/uitprinten regels** (Feb 2026): Drie prijslagen op `/admin/taxatie` facturen, afhankelijk van klant-bron:
   - **Bestaande klanten** (handmatig aangemaakt of pre-/taxatie): **€160 ex BTW** (ongewijzigd)
   - **Nieuwe klanten via `/taxatie`** (source="taxatie_aanvraag"):

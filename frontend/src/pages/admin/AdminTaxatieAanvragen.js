@@ -107,11 +107,21 @@ export default function AdminTaxatieAanvragen() {
             </h1>
             <p className="text-zinc-500 mt-1">Binnengekomen aanvragen via motoimportbv.nl/taxatie</p>
           </div>
-          <Link to="/admin/taxatie-programma">
-            <Button variant="outline" data-testid="back-to-bpm-btn">
-              <ArrowLeft className="w-4 h-4 mr-2" />Terug naar BPM Vermindering
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => window.open(`${API}/public/taxatie-flyer`, '_blank')}
+              variant="outline"
+              data-testid="download-flyer-btn"
+              title="Download A4 flyer (PDF) om dealers te werven"
+            >
+              <FileText className="w-4 h-4 mr-2" />Download flyer
             </Button>
-          </Link>
+            <Link to="/admin/taxatie-programma">
+              <Button variant="outline" data-testid="back-to-bpm-btn">
+                <ArrowLeft className="w-4 h-4 mr-2" />Terug naar BPM Vermindering
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Filter tabs */}

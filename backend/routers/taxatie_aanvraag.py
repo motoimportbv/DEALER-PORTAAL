@@ -358,3 +358,30 @@ async def delete_aanvraag(aanvraag_id: str, current_user: dict = Depends(get_cur
             logger.warning(f"Could not delete file {f.get('filename')}: {e}")
     await db.taxatie_aanvragen.delete_one({"id": aanvraag_id})
     return {"status": "deleted"}
+
+
+# ============ FLYER DOWNLOAD ============
+
+FLYER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static", "flyers")
+
+
+@router.get("/public/taxatie-flyer")
+async def download_taxatie_flyer():
+    """Publieke download van de A4 dealer-flyer (PDF). Genereert opnieuw als die mist."""
+    flyer_path = os.path.join(FLYER_DIR, "taxatie_flyer_a4.pdf")
+    if not os.path.exists(flyer_path):
+        try:
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+            from generate_taxatie_flyer import create_flyer
+            create_flyer()
+        except Exception as e:
+            logger.error(f"Kon flyer niet genereren: {e}")
+            raise HTTPException(status_code=500, detail="Flyer niet beschikbaar")
+    if not os.path.exists(flyer_path):
+        raise HTTPException(status_code=404, detail="Flyer niet gevonden")
+    return FileResponse(
+        flyer_path,
+        media_type="application/pdf",
+        filename="moto-import-taxatie-flyer.pdf",
+    )
