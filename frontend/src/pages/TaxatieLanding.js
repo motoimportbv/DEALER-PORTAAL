@@ -25,6 +25,7 @@ const FIXED_SLOTS = [
 export default function TaxatieLanding() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [refNr, setRefNr] = useState('');
   const formRef = useRef(null);
   const [form, setForm] = useState({
     bedrijfsnaam: '', contactpersoon: '', email: '', telefoon: '',
@@ -61,6 +62,7 @@ export default function TaxatieLanding() {
       const res = await axios.post(`${API}/public/taxatie-aanvraag`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      setRefNr(res.data?.ref_nr || '');
       toast.success(res.data.message);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -167,8 +169,15 @@ export default function TaxatieLanding() {
             <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-8 text-center" data-testid="aanvraag-success">
               <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
               <h3 className="text-2xl font-black text-emerald-900 mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Bedankt voor uw aanvraag!</h3>
-              <p className="text-emerald-700 mb-6">We hebben uw aanvraag goed ontvangen. We nemen binnen 24 uur contact met u op via {form.email}.</p>
-              <Button onClick={() => { setSubmitted(false); setForm({ bedrijfsnaam: '', contactpersoon: '', email: '', telefoon: '', adres: '', woonplaats: '', rsin: '', opmerking: '' }); setFiles({}); setDetails([]); }} variant="outline">Nog een aanvraag</Button>
+              {refNr && (
+                <div className="inline-block bg-white border-2 border-emerald-400 rounded-xl px-5 py-3 mb-4" data-testid="aanvraag-ref-nr">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Uw referentienummer</p>
+                  <p className="text-2xl font-black text-emerald-900 tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{refNr}</p>
+                </div>
+              )}
+              <p className="text-emerald-700 mb-2">We hebben uw aanvraag goed ontvangen. U ontvangt direct een bevestigingsmail op <strong>{form.email}</strong>.</p>
+              <p className="text-emerald-700 mb-6 text-sm">Onze taxateur stuurt u het taxatieverslag binnen 48 uur.</p>
+              <Button onClick={() => { setSubmitted(false); setRefNr(''); setForm({ bedrijfsnaam: '', contactpersoon: '', email: '', telefoon: '', adres: '', woonplaats: '', rsin: '', opmerking: '' }); setFiles({}); setDetails([]); }} variant="outline">Nog een aanvraag</Button>
             </div>
           ) : (
           <form onSubmit={submit} className="bg-white rounded-2xl border border-zinc-200 p-6 lg:p-8 space-y-6">

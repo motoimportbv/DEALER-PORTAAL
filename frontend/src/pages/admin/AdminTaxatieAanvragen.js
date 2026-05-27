@@ -163,7 +163,8 @@ export default function AdminTaxatieAanvragen() {
                   return (
                     <tr key={a.id} className="border-t hover:bg-zinc-50 cursor-pointer" onClick={() => setSelected(a)} data-testid={`row-${a.id}`}>
                       <td className="px-4 py-3 text-zinc-600 text-xs">
-                        {new Date(a.created_at).toLocaleString('nl-NL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        <div>{new Date(a.created_at).toLocaleString('nl-NL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        {a.ref_nr && <div className="text-[10px] font-bold text-red-600 mt-0.5">{a.ref_nr}</div>}
                       </td>
                       <td className="px-4 py-3 font-bold">{a.bedrijfsnaam}</td>
                       <td className="px-4 py-3 text-zinc-600">
@@ -219,9 +220,10 @@ function DetailModal({ aanvraag, onClose, onUpdateStatus, onDelete, onStartBpm, 
         <div className="flex items-start justify-between p-6 border-b">
           <div>
             <h2 className="text-2xl font-black" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{a.bedrijfsnaam}</h2>
-            <p className="text-sm text-zinc-500 mt-1 flex items-center gap-2">
+            <p className="text-sm text-zinc-500 mt-1 flex items-center gap-2 flex-wrap">
               <Calendar className="w-4 h-4" />
               {new Date(a.created_at).toLocaleString('nl-NL', { dateStyle: 'long', timeStyle: 'short' })}
+              {a.ref_nr && <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 rounded font-bold text-xs">{a.ref_nr}</span>}
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-lg" data-testid="close-modal">

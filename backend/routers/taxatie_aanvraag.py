@@ -183,15 +183,19 @@ async def submit_taxatie_aanvraag(
     if customer_id:
         record["customer_id"] = customer_id
 
+    # Kort, leesbaar referentienummer voor de dealer (bv. "TX-A1B2C3D4")
+    ref_nr = f"TX-{aanvraag_id[:8].upper()}"
+    record["ref_nr"] = ref_nr
+
     await db.taxatie_aanvragen.insert_one(record)
 
-    # Notificatie-email
+    # 1) Admin notificatie-email
     try:
         html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #18181b; color: white; padding: 20px;">
             <h2 style="margin: 0; color: #f87171;">Nieuwe taxatie-aanvraag</h2>
-            <p style="margin: 4px 0 0; color: #a1a1aa; font-size: 13px;">via motoimportbv.nl/taxatie</p>
+            <p style="margin: 4px 0 0; color: #a1a1aa; font-size: 13px;">via motoimportbv.nl/taxatie — ref. {ref_nr}</p>
           </div>
           <div style="padding: 20px; background: #fff;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
@@ -213,18 +217,83 @@ async def submit_taxatie_aanvraag(
         """
         await send_email(
             to_email=ADMIN_OWNER_EMAIL,
-            subject=f"📄 Nieuwe taxatie-aanvraag: {bedrijfsnaam}",
+            subject=f"📄 Nieuwe taxatie-aanvraag {ref_nr}: {bedrijfsnaam}",
             html_content=html,
         )
     except Exception as ee:
-        logger.warning(f"Could not send notification email: {ee}")
+        logger.warning(f"Could not send admin notification email: {ee}")
+
+    # 2) Dealer bevestigingsmail (met referentienummer + overzicht)
+    try:
+        dealer_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafafa;">
+          <div style="background: linear-gradient(135deg, #18181b, #7f1d1d); color: white; padding: 28px 24px;">
+            <h1 style="margin: 0 0 6px; font-size: 22px;">Bedankt voor uw aanvraag!</h1>
+            <p style="margin: 0; color: #fecaca; font-size: 14px;">Uw taxatieverslag is onderweg.</p>
+          </div>
+          <div style="background: white; padding: 24px;">
+            <p style="font-size: 15px; color: #18181b; margin: 0 0 12px;">Beste {contactpersoon or bedrijfsnaam},</p>
+            <p style="font-size: 14px; color: #3f3f46; line-height: 1.6;">
+              Wij hebben uw taxatie-aanvraag goed ontvangen. Onze taxateur gaat er binnen
+              <strong>48 uur</strong> mee aan de slag en stuurt u het officiële taxatieverslag
+              (PDF) plus de BPM-berekening per e-mail toe.
+            </p>
+
+            <div style="margin: 20px 0; padding: 16px; background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 6px;">
+              <p style="margin: 0; font-size: 12px; color: #991b1b; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Uw referentienummer</p>
+              <p style="margin: 4px 0 0; font-size: 22px; font-weight: bold; color: #18181b; letter-spacing: 1px;">{ref_nr}</p>
+              <p style="margin: 6px 0 0; font-size: 12px; color: #71717a;">Vermeld dit nummer bij vragen of contact.</p>
+            </div>
+
+            <h3 style="font-size: 14px; color: #18181b; margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.5px;">Overzicht van uw aanvraag</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr><td style="padding: 5px 0; color: #71717a; width: 35%;">Bedrijf</td><td style="padding: 5px 0; color: #18181b;"><strong>{bedrijfsnaam}</strong></td></tr>
+              <tr><td style="padding: 5px 0; color: #71717a;">Contactpersoon</td><td style="padding: 5px 0; color: #18181b;">{contactpersoon or '—'}</td></tr>
+              <tr><td style="padding: 5px 0; color: #71717a;">E-mail</td><td style="padding: 5px 0; color: #18181b;">{email}</td></tr>
+              <tr><td style="padding: 5px 0; color: #71717a;">Telefoon</td><td style="padding: 5px 0; color: #18181b;">{telefoon or '—'}</td></tr>
+              <tr><td style="padding: 5px 0; color: #71717a;">Adres</td><td style="padding: 5px 0; color: #18181b;">{adres}, {woonplaats}</td></tr>
+              <tr><td style="padding: 5px 0; color: #71717a;">RSIN/BSN</td><td style="padding: 5px 0; color: #18181b;">{rsin}</td></tr>
+              <tr><td style="padding: 5px 0; color: #71717a;">Foto's ontvangen</td><td style="padding: 5px 0; color: #18181b;"><strong>{aantal_vast} vaste foto's</strong> + {aantal_detail} detailfoto's</td></tr>
+            </table>
+
+            {'<p style="margin: 16px 0 0; padding: 12px; background: #f4f4f5; border-radius: 6px; font-size: 13px; color: #3f3f46;"><strong>Uw opmerking:</strong><br>' + opmerking.replace(chr(10), '<br>') + '</p>' if opmerking else ''}
+
+            <h3 style="font-size: 14px; color: #18181b; margin: 24px 0 8px; text-transform: uppercase; letter-spacing: 0.5px;">Wat gebeurt er nu?</h3>
+            <ol style="font-size: 13px; color: #3f3f46; line-height: 1.7; padding-left: 18px; margin: 0;">
+              <li>Onze taxateur controleert uw foto's en gegevens</li>
+              <li>Hij stelt het officiële taxatieverslag op (Belastingdienst-proof)</li>
+              <li>U ontvangt het PDF-rapport en factuur binnen 48 uur op <a href="mailto:{email}" style="color: #dc2626;">{email}</a></li>
+            </ol>
+
+            <div style="margin: 28px 0 8px; padding: 16px; background: #18181b; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 8px; color: #fafafa; font-size: 13px;">Vragen? Bel of mail Sandro direct:</p>
+              <p style="margin: 0;">
+                <a href="tel:+31681792660" style="color: #fca5a5; font-weight: bold; text-decoration: none; margin-right: 16px;">📞 06-81792660</a>
+                <a href="mailto:motoimportbv@gmail.com" style="color: #fca5a5; font-weight: bold; text-decoration: none;">✉️ motoimportbv@gmail.com</a>
+              </p>
+            </div>
+          </div>
+          <div style="background: #18181b; padding: 16px; text-align: center; color: #a1a1aa; font-size: 11px;">
+            <p style="margin: 2px 0;"><strong style="color: white;">Moto Import B.V.</strong> — gespecialiseerd in motorfiets-taxaties</p>
+            <p style="margin: 2px 0;">www.motoimportbv.nl</p>
+          </div>
+        </div>
+        """
+        await send_email(
+            to_email=email.strip(),
+            subject=f"Bevestiging taxatie-aanvraag {ref_nr} — Moto Import",
+            html_content=dealer_html,
+        )
+    except Exception as ee:
+        logger.warning(f"Could not send dealer confirmation email: {ee}")
 
     return {
         "status": "ok",
         "id": aanvraag_id,
+        "ref_nr": ref_nr,
         "files_uploaded": len(saved_files),
         "customer_id": customer_id,
-        "message": "Bedankt! We nemen binnen 24 uur contact met u op.",
+        "message": f"Bedankt! Uw referentienummer is {ref_nr}. We nemen binnen 24 uur contact met u op.",
     }
 
 
