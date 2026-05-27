@@ -2262,6 +2262,19 @@ async def export_aangifte_bpm_pdf(
         overrides["1.1.VIN._C7.2"] = dk
         overrides["1.1.VIN._C7.6"] = dk
 
+    # Art.8 vergunning auto-split: als user "12345BPM01" of "12345 BPM" invoert,
+    # split naar 4.3._BN.1 (nummer-deel) en 4.3._BN.2 (BPM-suffix). PDF heeft 2 velden.
+    art8_raw = (overrides.get("4.3._BN.1") or "").strip()
+    if art8_raw and not (overrides.get("4.3._BN.2") or "").strip():
+        # Detecteer "BPM" of "BPM01" achteraan
+        import re as _re_split
+        m = _re_split.match(r"^(.*?)\s*(BPM\d*)$", art8_raw, _re_split.IGNORECASE)
+        if m:
+            overrides["4.3._BN.1"] = m.group(1).strip()
+            overrides["4.3._BN.2"] = m.group(2).upper()
+        else:
+            overrides["4.3._BN.2"] = "BPM"
+
     # Persist op de taxatie
     if overrides:
         await db.taxatie_programma.update_one(
@@ -2459,7 +2472,9 @@ async def export_aangifte_bpm_pdf(
                         val = p1p6_values.get(fname)
                         if meta["type"] == "text":
                             text_val = str(val or "")
-                            widget.field_value = text_val
+                            # Leeg de widget-waarde om dubbele rendering te voorkomen
+                            # (de overlay-tekst is altijd zichtbaar, ook op mobiel)
+                            widget.field_value = ""
                             widget.update()
                             if text_val:
                                 overlay_texts.append((page_num, widget.rect, text_val))
@@ -2480,12 +2495,11 @@ async def export_aangifte_bpm_pdf(
                                 widget.field_value = "Off"
                                 widget.update()
                         continue
-                    # Andere pagina's: normale auto-fill
+                    # Andere pagina's: normale auto-fill (deze worden weggeknipt door select())
                     if fname in field_map and field_map[fname]:
                         text_val = str(field_map[fname])
-                        widget.field_value = text_val
+                        widget.field_value = ""
                         widget.update()
-                        # Ook deze velden als permanente tekst tekenen (voor pagina 3-5)
                         overlay_texts.append((page_num, widget.rect, text_val))
                 except Exception as we:
                     widget_errors.append(f"{fname}: {we}")
