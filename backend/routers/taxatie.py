@@ -2407,6 +2407,13 @@ async def export_aangifte_bpm_pdf(
         if widget_errors:
             logger.warning(f"PDF generation completed with {len(widget_errors)} widget errors: {widget_errors[:5]}")
 
+        # Behoud alleen pagina 1, 2 en 6 — de overige pagina's (3-5, 7-21) zijn voor deze
+        # aangifte BPM niet nodig en mogen weg.
+        try:
+            pdf_doc.select([0, 1, 5])
+        except Exception as se:
+            logger.warning(f"Could not trim PDF to pages 1/2/6: {se}")
+
         pdf_bytes = pdf_doc.tobytes()
         pdf_doc.close()
         filename = f"Aangifte_BPM_{doc_data.get('brand', 'Motor')}_{doc_data.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
