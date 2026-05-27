@@ -2115,17 +2115,53 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
             except Exception:
                 pass
     defaults = _aangifte_default_overrides(doc, report_dt)
-    # Klant-RSIN auto-prefill: zoek klant op naam bij deze user, gebruik opgeslagen RSIN als 1.2_BSR default
+    # Auto-prefill pagina 2 + 1.2_BSR vanuit klant + taxatie
     customer_name = (doc.get("customer_name") or "").strip()
     if customer_name:
         import re as _re
         name_slug = _re.sub(r"\s+", " ", customer_name.lower()).strip()
         cust = await db.customers.find_one(
             {"created_by": current_user.get("id"), "name_slug": name_slug},
-            {"_id": 0, "rsin": 1},
+            {"_id": 0, "rsin": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1},
         )
-        if cust and (cust.get("rsin") or "").strip():
-            defaults["1.2_BSR"] = cust["rsin"].strip()
+        if cust:
+            # 1.2_BSR vanuit klant.rsin
+            if (cust.get("rsin") or "").strip():
+                defaults["1.2_BSR"] = cust["rsin"].strip()
+            # Pagina 2 aangever-gegevens: klant overschrijft de Motoimport-defaults
+            defaults["4.0"] = "2 - Ondernemer"
+            defaults["4.2.0"] = cust.get("name") or customer_name
+            # Tekenbevoegde naam-velden leegmaken (we kennen die niet voor de klant)
+            defaults["4.2.1"] = ""
+            defaults["4.2.2"] = ""
+            defaults["4.2.3"] = ""
+            # Telefoon + email
+            phone = (cust.get("phone") or "").strip()
+            email = (cust.get("email") or "").strip()
+            if phone: defaults["4.9_TEL"] = phone
+            if email: defaults["4.10_EM"] = email
+            # Adres parsen: laatste cijfer-blok = huisnummer, rest = straat
+            address = (cust.get("address") or "").strip()
+            if address:
+                m = _re.match(r"^(.+?)\s+(\d+[a-zA-Z]*)\s*(.*)$", address)
+                if m:
+                    defaults["4.4"] = m.group(1).strip()
+                    defaults["4.5_HN"] = m.group(2).strip()
+                    extra = m.group(3).strip()
+                    if extra: defaults["4.6"] = extra
+                else:
+                    defaults["4.4"] = address
+                    defaults["4.5_HN"] = ""
+                    defaults["4.6"] = ""
+            # Plaats
+            if cust.get("city"):
+                defaults["4.8"] = cust["city"]
+            # Postcode kennen we niet → leeg laten zodat gebruiker invult
+            defaults["4.7_PC"] = ""
+
+    # Ondertekenaar pagina 6 default = klantnaam ipv Sandro Milone wanneer er een klant is
+    if customer_name:
+        defaults["10.0"] = customer_name
     saved = doc.get("aangifte_overrides") or {}
     # Merge: saved overrules defaults
     current = {**defaults, **saved}

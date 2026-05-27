@@ -19,6 +19,18 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Auto-fill Aangifte BPM pagina 2 vanuit klantgegevens** (Feb 2026): Wanneer er een klant aan de taxatie hangt, worden de Aangever-velden op pagina 2 automatisch gevuld met klant-data:
+  - `4.0` → "Ondernemer" (default)
+  - `4.2.0` → klant.name (bedrijfsnaam)
+  - `4.4` + `4.5_HN` → klant.address (smart-parsed: straat + huisnummer via regex `^(.+?)\s+(\d+[a-zA-Z]*)\s*(.*)$`)
+  - `4.6` → eventuele toevoeging
+  - `4.8` → klant.city
+  - `4.9_TEL` → klant.phone
+  - `4.10_EM` → klant.email
+  - `1.2_BSR` → klant.rsin (al actief)
+  - `10.0` (ondertekenaar pag.6) → klant.name
+  - `4.7_PC` → leeg (postcode niet in klant — gebruiker vult zelf in)
+  Tekenbevoegde-naamvelden (4.2.1-4.2.3) worden leeggemaakt zodat de gebruiker dat per aangifte invult. Getest met curl: complete klant (Keizersgracht 123, Amsterdam) levert correct geparseerde adresvelden.
 - **Aangifte BPM editor — Pagina 2 (Aangever) ook bewerkbaar** (Feb 2026): 22 nieuwe velden op pagina 2 toegevoegd in `AANGIFTE_FIELDS_P2`: soort aangifte (vraag 2 radio), RDW-vragen (3a radio + datum), aangever-type (4a Particulier/Ondernemer radio), bedrijfsnaam + tekenbevoegde, OF particulier naam, straatnaam + huisnummer + toevoeging + postcode + plaats + telefoon + e-mail. Defaults blijven Motoimport B.V. zodat bestaande flow ongewijzigd is, maar admin kan nu compleet de aangever wijzigen wanneer hij voor een ander bedrijf taxeert. Getest met curl: alle 16 page-2 velden komen correct in de output-PDF + radio's tonen correct exclusive state.
 - **🔒 Beveiligingsfix: dealers zien GEEN inkoopprijs / leverancier-IBAN meer op Pakbon** (Feb 2026): Twee lekken gedicht:
   1. Frontend `Pakbon.js` toonde de "Betalingsinstructie"-kaart (CHF-bedrag, leverancier, IBAN, referentie) zodra `order.payment_instructions` aanwezig was — ongeacht rol. Nu alleen voor `admin` en `pakbon` rollen.
