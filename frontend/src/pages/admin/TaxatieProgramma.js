@@ -610,7 +610,18 @@ function AangifteBpmEditor({ taxatie, onClose }) {
       toast.success('Aangifte BPM PDF gedownload');
       onClose();
     } catch (e) {
-      toast.error('PDF generatie mislukt');
+      // Server detail teruglezen uit blob response zodat de gebruiker de echte fout ziet
+      let detail = 'PDF generatie mislukt';
+      try {
+        if (e.response?.data instanceof Blob) {
+          const txt = await e.response.data.text();
+          const j = JSON.parse(txt);
+          if (j.detail) detail = `Fout: ${j.detail}`;
+        } else if (e.response?.data?.detail) {
+          detail = `Fout: ${e.response.data.detail}`;
+        }
+      } catch { /* negeer parse-fout */ }
+      toast.error(detail, { duration: 10000 });
     } finally {
       setSaving(false);
     }

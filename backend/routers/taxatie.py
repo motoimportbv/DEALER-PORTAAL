@@ -2359,50 +2359,53 @@ async def export_aangifte_bpm_pdf(
         field_meta[f["name"]] = f
 
     # Defaults (zodat we radio/checkbox state ook zonder user input op page 1+6 zetten)
-    defaults_p1p6 = await _aangifte_defaults_with_customer(doc_data, current_user, report_dt)
+    try:
+        defaults_p1p6 = await _aangifte_defaults_with_customer(doc_data, current_user, report_dt)
+    except Exception as e:
+        logger.error(f"Failed to build defaults_p1p6: {e}", exc_info=True)
+        defaults_p1p6 = _aangifte_default_overrides(doc_data, report_dt)
     p1p6_values = {**defaults_p1p6, **overrides}
 
     try:
         pdf_doc = fitz.open(blank_form)
+        widget_errors = []
         for page_num in range(len(pdf_doc)):
             page = pdf_doc[page_num]
             for widget in page.widgets():
                 fname = widget.field_name or ''
-                # Pagina 1 en 6 — overrides volgens type
-                if fname in field_meta:
-                    meta = field_meta[fname]
-                    val = p1p6_values.get(fname)
-                    try:
+                try:
+                    # Pagina 1, 2 en 6 — overrides volgens type
+                    if fname in field_meta:
+                        meta = field_meta[fname]
+                        val = p1p6_values.get(fname)
                         if meta["type"] == "text":
                             widget.field_value = str(val or "")
                             widget.update()
                         elif meta["type"] == "radio":
-                            # Radio buttons delen field-naam: zet alleen het matchende widget
-                            # op zijn 'on'-state. Andere widgets blijven 'Off'.
                             target = str(val) if val is not None else ""
                             states = (widget.button_states() or {}).get("normal", []) or []
-                            # PyMuPDF retourneert states met '#20' i.p.v. spaties — decode.
                             decoded = [s.replace("#20", " ") for s in states]
                             if target in decoded:
                                 widget.field_value = target
                                 widget.update()
-                            # else: bewust niet aanraken
                         elif meta["type"] == "checkbox":
                             if bool(val):
                                 widget.field_value = meta.get("on", "Yes")
                             else:
                                 widget.field_value = "Off"
                             widget.update()
-                    except Exception as we:
-                        logger.warning(f"Could not set page1/6 field '{fname}': {we}")
-                    continue
-                # Andere pagina's: normale auto-fill
-                if fname in field_map and field_map[fname]:
-                    try:
+                        continue
+                    # Andere pagina's: normale auto-fill
+                    if fname in field_map and field_map[fname]:
                         widget.field_value = str(field_map[fname])
                         widget.update()
-                    except Exception as we:
-                        logger.warning(f"Could not set field '{fname}': {we}")
+                except Exception as we:
+                    widget_errors.append(f"{fname}: {we}")
+                    logger.warning(f"Could not set widget '{fname}' (page {page_num+1}): {we}")
+                    continue
+
+        if widget_errors:
+            logger.warning(f"PDF generation completed with {len(widget_errors)} widget errors: {widget_errors[:5]}")
 
         pdf_bytes = pdf_doc.tobytes()
         pdf_doc.close()
