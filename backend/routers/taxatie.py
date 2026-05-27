@@ -2240,6 +2240,14 @@ async def export_aangifte_bpm_pdf(
     # Filter naar alleen toegestane velden (pagina 1 + pagina 6)
     overrides = {k: v for k, v in overrides_in.items() if k in AANGIFTE_OVERRIDE_FIELD_NAMES}
 
+    # Documentkenmerk synchroniseren: 1c op pagina 1 -> alle andere pagina's (2, 3, 4, 5, 6)
+    # Veld '1.1.VIN._C7.1' is het hoofd-veld (1c op pagina 1).
+    dk = (overrides.get("1.1.VIN._C7.1") or "").strip()
+    if dk:
+        # Op pagina 2 en 6 staan deze in field_meta — overschrijf in overrides
+        overrides["1.1.VIN._C7.2"] = dk
+        overrides["1.1.VIN._C7.6"] = dk
+
     # Persist op de taxatie
     if overrides:
         await db.taxatie_programma.update_one(
@@ -2285,6 +2293,10 @@ async def export_aangifte_bpm_pdf(
 
     vin = doc_data.get("vin_number", "") or ""
     doc_kenmerk = vin[-7:] if len(vin) >= 7 else vin
+    # Als gebruiker handmatig een documentkenmerk heeft ingevoerd (1.1.VIN._C7.1), gebruik die
+    # ook voor alle andere pagina's (3, 4, 5) zodat de hele PDF consistent is.
+    if (overrides.get("1.1.VIN._C7.1") or "").strip():
+        doc_kenmerk = overrides["1.1.VIN._C7.1"].strip()
     first_reg = doc_data.get("first_registration_date", "")
     reg_day, reg_month, reg_year = "", "", ""
     if first_reg:
