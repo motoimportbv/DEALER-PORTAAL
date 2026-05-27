@@ -221,8 +221,14 @@ async def customer_intro_pricing(
     customer_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """Bepaal of deze klant in aanmerking komt voor de introductie-prijs (€60 i.p.v. €120).
-    Eligible = source == 'taxatie_aanvraag' AND geen eerdere taxatie-factuur.
+    """Bepaal welk taxatietarief van toepassing is voor deze klant.
+
+    Logica:
+      - Klant heeft `default_taxatie_fee` ingesteld → die wint (override per klant)
+      - Klant kwam binnen via `/taxatie` (source == "taxatie_aanvraag"):
+          * 1e taxatie → €60 (intro, is_eligible=true)
+          * volgende    → €120 ex BTW (nieuwe-klant tarief)
+      - Alle andere klanten (bestaande / handmatig) → €160 ex BTW (default)
     """
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
@@ -238,20 +244,40 @@ async def customer_intro_pricing(
 
     invoice_count = await db.taxatie_invoices.count_documents({"$and": [name_q, owner_q]})
 
+    is_via_aanvraag = cust.get("source") == "taxatie_aanvraag"
     is_eligible = (
-        cust.get("source") == "taxatie_aanvraag"
+        is_via_aanvraag
         and not cust.get("intro_used", False)
         and invoice_count == 0
     )
+
+    # Bepaal applicable fee
+    cust_default = cust.get("default_taxatie_fee")
+    if cust_default and float(cust_default) > 0:
+        applicable_fee = float(cust_default)
+        source_label = "klant-default"
+    elif is_eligible:
+        applicable_fee = 60.0
+        source_label = "intro"
+    elif is_via_aanvraag:
+        applicable_fee = 120.0
+        source_label = "nieuwe-klant"
+    else:
+        applicable_fee = 160.0
+        source_label = "vaste-klant"
 
     return {
         "customer_id": customer_id,
         "is_eligible": is_eligible,
         "source": cust.get("source"),
+        "is_via_aanvraag": is_via_aanvraag,
         "intro_used": bool(cust.get("intro_used", False)),
         "invoice_count": invoice_count,
+        "applicable_fee_ex_btw": applicable_fee,
+        "applicable_fee_source": source_label,
         "intro_fee_ex_btw": 60.0,
-        "default_fee_ex_btw": 120.0,
+        "new_customer_fee_ex_btw": 120.0,
+        "regular_fee_ex_btw": 160.0,
         "shipping_fee_ex_btw": 10.0,
         "print_fee_ex_btw": 10.0,
     }

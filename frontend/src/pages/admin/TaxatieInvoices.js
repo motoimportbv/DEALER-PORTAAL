@@ -25,8 +25,9 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const BRANDS = ['BMW', 'Ducati', 'Honda', 'Kawasaki', 'KTM', 'Triumph', 'Yamaha', 'Suzuki', 'Harley-Davidson', 'Aprilia', 'Moto Guzzi', 'Brixton', 'Overig'];
 
-const DEFAULT_TAXATIE_FEE = 120;  // Vaste prijs per taxatie ex BTW (was 160)
-const INTRO_TAXATIE_FEE = 60;     // Introductietarief 1e taxatie ex BTW
+const DEFAULT_TAXATIE_FEE = 160;  // Standaard tarief voor bestaande klanten (€160 ex BTW)
+const NEW_CUSTOMER_FEE = 120;     // Vaste prijs voor nieuwe klanten (via /taxatie aanmelding) na intro
+const INTRO_TAXATIE_FEE = 60;     // Introductietarief 1e taxatie voor nieuwe klanten ex BTW
 const DEFAULT_EXTRA_LINES = [
   { description: 'Verzendkosten', amount: 10, btw_pct: 21 },
   { description: 'Uitprinten / drukwerk', amount: 10, btw_pct: 21 },
@@ -125,16 +126,23 @@ export default function TaxatieInvoices() {
     if (c.id) {
       try {
         const r = await axios.get(`${API}/customers/${c.id}/intro-pricing`, { headers });
-        if (r.data?.is_eligible) {
-          const introFee = Number(r.data.intro_fee_ex_btw) || INTRO_TAXATIE_FEE;
+        const data = r.data || {};
+        const fee = Number(data.applicable_fee_ex_btw) || DEFAULT_TAXATIE_FEE;
+        // Klant-default override telt al elders, dus alleen toepassen als het backend resultaat afwijkt
+        // EN er nog geen klant-default is ingesteld (anders heeft de vorige pickCustomer-logica al gewerkt).
+        if (!(c.default_taxatie_fee && Number(c.default_taxatie_fee) > 0)) {
           setForm(f => ({
             ...f,
-            is_intro: true,
-            taxatie_items: (f.taxatie_items || []).map(it => ({ ...it, fee: introFee })),
+            is_intro: !!data.is_eligible,
+            taxatie_items: (f.taxatie_items || []).map(it => ({ ...it, fee })),
           }));
-          toast.success(`🎉 Introductietarief: eerste taxatie €${introFee} ex BTW`);
         } else {
-          setForm(f => ({ ...f, is_intro: false }));
+          setForm(f => ({ ...f, is_intro: !!data.is_eligible }));
+        }
+        if (data.is_eligible) {
+          toast.success(`🎉 Introductietarief: eerste taxatie €${fee} ex BTW`);
+        } else if (data.applicable_fee_source === 'nieuwe-klant') {
+          toast.info(`Nieuwe-klant tarief: €${fee} ex BTW`);
         }
       } catch { /* niet kritisch */ }
     }
@@ -440,12 +448,12 @@ export default function TaxatieInvoices() {
               <div className="flex-1">
                 <h3 className="font-bold text-blue-900 text-sm">🎉 Introductietarief — eerste taxatie</h3>
                 <p className="text-xs text-blue-700 mt-1">
-                  Deze klant heeft zich aangemeld via <code className="bg-blue-100 px-1 rounded">/taxatie</code> en krijgt eenmalig het introductietarief van <strong>€{INTRO_TAXATIE_FEE} ex BTW</strong> (i.p.v. €{DEFAULT_TAXATIE_FEE}). Volgende taxaties gaan automatisch tegen het normale tarief.
+                  Deze klant heeft zich aangemeld via <code className="bg-blue-100 px-1 rounded">/taxatie</code> en krijgt eenmalig het introductietarief van <strong>€{INTRO_TAXATIE_FEE} ex BTW</strong>. Volgende taxaties voor deze nieuwe klant gaan automatisch tegen <strong>€{NEW_CUSTOMER_FEE} ex BTW</strong> (bestaande klanten betalen het normale tarief €{DEFAULT_TAXATIE_FEE}).
                 </p>
               </div>
               <button type="button" onClick={() => setForm(f => ({
                 ...f, is_intro: false,
-                taxatie_items: (f.taxatie_items || []).map(it => ({ ...it, fee: DEFAULT_TAXATIE_FEE })),
+                taxatie_items: (f.taxatie_items || []).map(it => ({ ...it, fee: NEW_CUSTOMER_FEE })),
               }))} className="text-blue-400 hover:text-blue-700 text-xs underline">
                 Niet toepassen
               </button>
