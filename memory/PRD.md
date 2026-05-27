@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Art.8-vergunning fix: nummer komt nu in juist veld op pagina 2 + PDF generatie werkt voor art.8-klanten** (Feb 2026): Het Art.8-nummer werd eerder verkeerd in veld `9.1` (pagina 6) geplaatst, terwijl het Belastingdienst-formulier het verwacht in `4.3._BN.1` (nummer) + `4.3._BN.2` (BPM-suffix) op pagina 2. Gefixt: art8_nummer wordt nu in 4.3 ingevuld met "BPM" suffix. Ook gerefactord: PDF-generatie endpoint (`POST .../aangifte-bpm-pdf`) gebruikt nu dezelfde defaults-met-klant-merging logica als GET endpoint via nieuwe helper `_aangifte_defaults_with_customer()` — voorheen miste het de klant-auto-fill (adres, telefoon, art.8) in de PDF. Getest: art.8 klant met Singel 12 Utrecht → PDF heeft correct 2.0 = art.8 optie, 4.3._BN.1 = nummer, 4.4 = "Singel", 4.5_HN = "12", 4.8 = "Utrecht".
 - **Artikel 8-vergunning per klant** (Feb 2026): Klanten met BPM-vrijstelling via art. 8 kunnen nu in het Klantenbestand worden gemarkeerd met checkbox `art8_vergunning` + tekstveld `art8_nummer`. Wanneer zo'n klant aan een taxatie hangt, vult de Aangifte BPM editor automatisch:
   - `2.0` → "2 — Melding BPM met artikel 8-vergunning" (i.p.v. normale aangifte)
   - `9.0` → "Ja. Vul het nummer..."

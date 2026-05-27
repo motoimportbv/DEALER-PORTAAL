@@ -2010,6 +2010,8 @@ AANGIFTE_FIELDS_P2 = [
     {"name": "4.4", "label": "Straatnaam", "type": "text"},
     {"name": "4.5_HN", "label": "Huisnummer", "type": "text"},
     {"name": "4.6", "label": "Huisnummer toevoeging", "type": "text"},
+    {"name": "4.3._BN.1", "label": "Nummer art. 8-vergunning (indien van toepassing)", "type": "text"},
+    {"name": "4.3._BN.2", "label": "Art. 8-vergunning suffix (bv. BPM)", "type": "text", "max": 5},
     {"name": "4.7_PC", "label": "Postcode", "type": "text", "max": 7},
     {"name": "4.8", "label": "Plaats", "type": "text"},
     {"name": "4.9_TEL", "label": "Telefoon", "type": "text"},
@@ -2073,6 +2075,8 @@ def _aangifte_default_overrides(doc_data: dict, report_dt: datetime) -> dict:
         "4.4": "Horsterhoekweg",
         "4.5_HN": "11",
         "4.6": "",
+        "4.3._BN.1": "",
+        "4.3._BN.2": "",
         "4.7_PC": "7433 SV",
         "4.8": "Schalkhaar",
         "4.9_TEL": "0681792660",
@@ -2093,29 +2097,9 @@ def _aangifte_default_overrides(doc_data: dict, report_dt: datetime) -> dict:
     }
 
 
-@router.get("/taxatie-programma/{taxatie_id}/aangifte-overrides")
-async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
-    """Haal de opgeslagen aangifte-overrides + veld-definities op voor de UI."""
-    if not _is_admin_team(current_user):
-        raise HTTPException(status_code=403, detail="Geen toegang")
-    doc = await db.taxatie_programma.find_one(
-        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
-        {"_id": 0, "vin_number": 1, "report_date": 1, "herstelkosten": 1,
-         "aangifte_overrides": 1, "customer_name": 1, "customer_phone": 1, "customer_email": 1},
-    )
-    if not doc:
-        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
-    report_dt = datetime.now(timezone.utc)
-    if doc.get("report_date"):
-        try:
-            report_dt = datetime.fromisoformat(doc["report_date"])
-        except Exception:
-            try:
-                report_dt = datetime.strptime(doc["report_date"], "%Y-%m-%d")
-            except Exception:
-                pass
+async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report_dt: datetime) -> dict:
+    """Bouw defaults + merge klant-data (RSIN, adres, naam, art.8-vergunning, etc.)."""
     defaults = _aangifte_default_overrides(doc, report_dt)
-    # Auto-prefill pagina 2 + 1.2_BSR vanuit klant + taxatie
     customer_name = (doc.get("customer_name") or "").strip()
     if customer_name:
         import re as _re
@@ -2125,22 +2109,17 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
             {"_id": 0, "rsin": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "art8_vergunning": 1, "art8_nummer": 1},
         )
         if cust:
-            # 1.2_BSR vanuit klant.rsin
             if (cust.get("rsin") or "").strip():
                 defaults["1.2_BSR"] = cust["rsin"].strip()
-            # Pagina 2 aangever-gegevens: klant overschrijft de Motoimport-defaults
             defaults["4.0"] = "2 - Ondernemer"
             defaults["4.2.0"] = cust.get("name") or customer_name
-            # Tekenbevoegde naam-velden leegmaken (we kennen die niet voor de klant)
             defaults["4.2.1"] = ""
             defaults["4.2.2"] = ""
             defaults["4.2.3"] = ""
-            # Telefoon + email
             phone = (cust.get("phone") or "").strip()
             email = (cust.get("email") or "").strip()
             if phone: defaults["4.9_TEL"] = phone
             if email: defaults["4.10_EM"] = email
-            # Adres parsen: laatste cijfer-blok = huisnummer, rest = straat
             address = (cust.get("address") or "").strip()
             if address:
                 m = _re.match(r"^(.+?)\s+(\d+[a-zA-Z]*)\s*(.*)$", address)
@@ -2153,25 +2132,49 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
                     defaults["4.4"] = address
                     defaults["4.5_HN"] = ""
                     defaults["4.6"] = ""
-            # Plaats
             if cust.get("city"):
                 defaults["4.8"] = cust["city"]
-            # Postcode kennen we niet → leeg laten zodat gebruiker invult
             defaults["4.7_PC"] = ""
-            # Artikel 8-vergunning: selecteer vraag 2 optie 2 + nummer in 9.1
             if cust.get("art8_vergunning"):
                 defaults["2.0"] = "2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning"
                 art8_num = (cust.get("art8_nummer") or "").strip()
                 if art8_num:
-                    defaults["9.1"] = art8_num
-                    # Vraag 9 — Bijzondere omstandigheid → "Ja" + nummer
-                    defaults["9.0"] = "Ja. Vul het nummer van de vrijstellingsvergunning of invoeraangifte in."
-
-    # Ondertekenaar pagina 6 default = klantnaam ipv Sandro Milone wanneer er een klant is
-    if customer_name:
+                    parts = art8_num.rsplit(" ", 1)
+                    if len(parts) == 2 and parts[1].upper() in ("BPM", "B P M"):
+                        defaults["4.3._BN.1"] = parts[0].strip()
+                        defaults["4.3._BN.2"] = "BPM"
+                    else:
+                        defaults["4.3._BN.1"] = art8_num
+                        defaults["4.3._BN.2"] = "BPM"
         defaults["10.0"] = customer_name
+    return defaults
+
+
+@router.get("/taxatie-programma/{taxatie_id}/aangifte-overrides")
+async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
+    """Haal de opgeslagen aangifte-overrides + veld-definities op voor de UI."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    doc = await db.taxatie_programma.find_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"_id": 0, "vin_number": 1, "report_date": 1, "herstelkosten": 1,
+         "aangifte_overrides": 1, "customer_name": 1, "customer_phone": 1, "customer_email": 1,
+         "customer_address": 1},
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    report_dt = datetime.now(timezone.utc)
+    if doc.get("report_date"):
+        try:
+            report_dt = datetime.fromisoformat(doc["report_date"])
+        except Exception:
+            try:
+                report_dt = datetime.strptime(doc["report_date"], "%Y-%m-%d")
+            except Exception:
+                pass
+    defaults = await _aangifte_defaults_with_customer(doc, current_user, report_dt)
+    customer_name = (doc.get("customer_name") or "").strip()
     saved = doc.get("aangifte_overrides") or {}
-    # Merge: saved overrules defaults
     current = {**defaults, **saved}
     return {
         "fields_page1": AANGIFTE_FIELDS_P1,
@@ -2356,7 +2359,7 @@ async def export_aangifte_bpm_pdf(
         field_meta[f["name"]] = f
 
     # Defaults (zodat we radio/checkbox state ook zonder user input op page 1+6 zetten)
-    defaults_p1p6 = _aangifte_default_overrides(doc_data, report_dt)
+    defaults_p1p6 = await _aangifte_defaults_with_customer(doc_data, current_user, report_dt)
     p1p6_values = {**defaults_p1p6, **overrides}
 
     try:
