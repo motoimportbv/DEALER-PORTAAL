@@ -2154,12 +2154,33 @@ async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report
             if phone: defaults["4.9_TEL"] = phone
             if email: defaults["4.10_EM"] = email
             address = (cust.get("address") or "").strip()
-            if address:
+            # Smart adres-parsing: detecteer ook postcode + plaats in vol adres
+            # Voorbeeld: "Rollecate 55, 7711 GG Nieuwleusen" → straat/hnr/postcode/plaats
+            pc_match = _re.search(r"(\d{4})\s*([A-Z]{2})\b", address)
+            if pc_match:
+                # Postcode gevonden in adres
+                defaults["4.7_PC"] = f"{pc_match.group(1)} {pc_match.group(2)}"
+                # Tekst NA de postcode = plaats
+                after_pc = address[pc_match.end():].strip(" ,;").strip()
+                if after_pc:
+                    defaults["4.8"] = after_pc
+                # Tekst VOOR de postcode = straat + huisnummer
+                pre_pc = address[:pc_match.start()].strip(" ,;").strip()
+                m2 = _re.match(r"^(.+?)\s+(\d+[a-zA-Z]*)\s*(.*)$", pre_pc)
+                if m2:
+                    defaults["4.4"] = m2.group(1).strip()
+                    defaults["4.5_HN"] = m2.group(2).strip()
+                    extra = m2.group(3).strip()
+                    if extra: defaults["4.6"] = extra
+                else:
+                    defaults["4.4"] = pre_pc
+            else:
+                # Geen postcode in adres: probeer alleen straat + huisnummer
                 m = _re.match(r"^(.+?)\s+(\d+[a-zA-Z]*)\s*(.*)$", address)
                 if m:
                     defaults["4.4"] = m.group(1).strip()
                     defaults["4.5_HN"] = m.group(2).strip()
-                    extra = m.group(3).strip()
+                    extra = m.group(3).strip(" ,;")
                     if extra: defaults["4.6"] = extra
                 else:
                     defaults["4.4"] = address
@@ -2167,11 +2188,11 @@ async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report
                     defaults["4.6"] = ""
             if cust.get("city"):
                 defaults["4.8"] = cust["city"]
-            # Postcode — als bekend bij klant, gebruik die
+            # Postcode — klant.postcode overschrijft auto-detected
             postcode = (cust.get("postcode") or "").strip()
             if postcode:
                 defaults["4.7_PC"] = postcode
-            else:
+            elif not defaults.get("4.7_PC"):
                 defaults["4.7_PC"] = ""
             # Tekenbevoegde / contactpersoon
             contact = (cust.get("contact_person") or "").strip()
@@ -2186,10 +2207,11 @@ async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report
                 defaults["2.0"] = "2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning"
                 art8_num = (cust.get("art8_nummer") or "").strip()
                 if art8_num:
-                    parts = art8_num.rsplit(" ", 1)
-                    if len(parts) == 2 and parts[1].upper() in ("BPM", "B P M"):
-                        defaults["4.3._BN.1"] = parts[0].strip()
-                        defaults["4.3._BN.2"] = "BPM"
+                    # Detecteer "BPM" (optioneel met cijfers) achteraan, met of zonder spatie
+                    m_b = _re.match(r"^(.*?)\s*(BPM\d*)$", art8_num, _re.IGNORECASE)
+                    if m_b:
+                        defaults["4.3._BN.1"] = m_b.group(1).strip()
+                        defaults["4.3._BN.2"] = m_b.group(2).upper()
                     else:
                         defaults["4.3._BN.1"] = art8_num
                         defaults["4.3._BN.2"] = "BPM"
