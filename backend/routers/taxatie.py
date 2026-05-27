@@ -2139,7 +2139,7 @@ async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report
         name_slug = _re.sub(r"\s+", " ", customer_name.lower()).strip()
         cust = await db.customers.find_one(
             {"created_by": current_user.get("id"), "name_slug": name_slug},
-            {"_id": 0, "rsin": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "art8_vergunning": 1, "art8_nummer": 1},
+            {"_id": 0, "rsin": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "art8_vergunning": 1, "art8_nummer": 1, "postcode": 1, "contact_person": 1},
         )
         if cust:
             if (cust.get("rsin") or "").strip():
@@ -2167,7 +2167,21 @@ async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report
                     defaults["4.6"] = ""
             if cust.get("city"):
                 defaults["4.8"] = cust["city"]
-            defaults["4.7_PC"] = ""
+            # Postcode — als bekend bij klant, gebruik die
+            postcode = (cust.get("postcode") or "").strip()
+            if postcode:
+                defaults["4.7_PC"] = postcode
+            else:
+                defaults["4.7_PC"] = ""
+            # Tekenbevoegde / contactpersoon
+            contact = (cust.get("contact_person") or "").strip()
+            if contact:
+                parts = contact.split()
+                if len(parts) >= 2:
+                    defaults["4.2.1"] = parts[0]
+                    defaults["4.2.3"] = " ".join(parts[1:])
+                else:
+                    defaults["4.2.3"] = contact
             if cust.get("art8_vergunning"):
                 defaults["2.0"] = "2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning"
                 art8_num = (cust.get("art8_nummer") or "").strip()
@@ -2256,21 +2270,41 @@ async def export_aangifte_bpm_pdf(
                       "aangifte_overrides_updated_at": datetime.now(timezone.utc).isoformat()}},
         )
 
-    # Sla RSIN op bij de klant (zodat hij volgende keer automatisch wordt ingevuld)
-    rsin_val = (str(overrides.get("1.2_BSR", "")) or "").strip()
+    # Sla relevante velden op bij de klant (zodat ze volgende keer automatisch worden ingevuld)
     customer_name = (doc_data.get("customer_name") or "").strip()
-    if rsin_val and customer_name:
+    if customer_name:
+        # Reconstrueer adres van straat + huisnummer + toevoeging
+        street = (overrides.get("4.4") or "").strip()
+        hnr = (overrides.get("4.5_HN") or "").strip()
+        toev = (overrides.get("4.6") or "").strip()
+        full_addr = " ".join(filter(None, [street, hnr, toev])).strip()
+        upsert_payload = {
+            "customer_name": customer_name,
+            "customer_phone": (overrides.get("4.9_TEL") or doc_data.get("customer_phone") or "").strip(),
+            "customer_email": (overrides.get("4.10_EM") or doc_data.get("customer_email") or "").strip(),
+            "customer_address": full_addr or (doc_data.get("customer_address") or ""),
+        }
+        rsin_val = (str(overrides.get("1.2_BSR", "")) or "").strip()
+        if rsin_val and rsin_val != "866851525":  # niet de Motoimport default opslaan op klant
+            upsert_payload["rsin"] = rsin_val
+        city = (overrides.get("4.8") or "").strip()
+        if city and city.lower() != "schalkhaar":
+            upsert_payload["city"] = city
+        postcode = (overrides.get("4.7_PC") or "").strip()
+        if postcode and postcode != "7433 SV":
+            upsert_payload["postcode"] = postcode
+        # Tekenbevoegde: alleen opslaan als anders dan default (Sandro Milone)
+        teken_v = (overrides.get("4.2.1") or "").strip()
+        teken_t = (overrides.get("4.2.2") or "").strip()
+        teken_a = (overrides.get("4.2.3") or "").strip()
+        teken_full = " ".join(filter(None, [teken_v, teken_t, teken_a])).strip()
+        if teken_full and teken_full.lower() != "sandro milone":
+            upsert_payload["contact_person"] = teken_full
         try:
             from routers.customers import upsert_customer_from_form
-            await upsert_customer_from_form(current_user, {
-                "customer_name": customer_name,
-                "customer_phone": doc_data.get("customer_phone") or "",
-                "customer_email": doc_data.get("customer_email") or "",
-                "customer_address": doc_data.get("customer_address") or "",
-                "rsin": rsin_val,
-            })
+            await upsert_customer_from_form(current_user, upsert_payload)
         except Exception as ce:
-            logger.warning(f"Could not upsert customer RSIN: {ce}")
+            logger.warning(f"Could not upsert customer data: {ce}")
 
     blank_form = _find_bpm_form_template_or_raise()
 

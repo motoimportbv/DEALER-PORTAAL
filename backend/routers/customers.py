@@ -83,6 +83,12 @@ async def upsert_customer_from_form(user: dict, data: dict) -> None:
         update_set["art8_vergunning"] = bool(data["art8_vergunning"])
     if "art8_nummer" in data:
         update_set["art8_nummer"] = (str(data["art8_nummer"]) if data["art8_nummer"] is not None else "").strip()
+    # Postcode (auto-fill voor Aangifte BPM veld 4.7_PC)
+    if "postcode" in data:
+        update_set["postcode"] = (str(data["postcode"]) if data["postcode"] is not None else "").strip()
+    # Contact-persoon / tekenbevoegde (Aangifte BPM velden 4.2.1-3)
+    if "contact_person" in data:
+        update_set["contact_person"] = (str(data["contact_person"]) if data["contact_person"] is not None else "").strip()
     update_set_on_insert = {
         "id": str(uuid.uuid4()),
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -117,7 +123,7 @@ async def list_customers(
 
     docs = await db.customers.find(
         query,
-        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1, "rsin": 1, "art8_vergunning": 1, "art8_nummer": 1},
+        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1, "rsin": 1, "art8_vergunning": 1, "art8_nummer": 1, "postcode": 1, "contact_person": 1},
     ).sort([("usage_count", -1), ("updated_at", -1)]).to_list(200)
     return docs
 
