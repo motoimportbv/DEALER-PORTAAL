@@ -67,6 +67,37 @@ function CustomerFeeEditor({ customer, onSaved, token, fieldKey, label }) {
   );
 }
 
+// Toont een badge die laat zien of een klant alle data heeft die nodig is voor een
+// vlotte Aangifte BPM (geen handmatig invullen vereist).
+function BpmCompletenessBadge({ customer }) {
+  const required = [
+    { key: 'rsin', label: 'RSIN' },
+    { key: 'address', label: 'Adres' },
+    { key: 'city', label: 'Stad' },
+    { key: 'postcode', label: 'Postcode' },
+    { key: 'contact_person', label: 'Tekenbevoegde' },
+  ];
+  const missing = required.filter(f => !((customer[f.key] || '').toString().trim()));
+  if (missing.length === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700" title="Alle BPM-velden compleet">
+        ✓ Compleet
+      </span>
+    );
+  }
+  const tooltip = `Ontbreekt: ${missing.map(m => m.label).join(', ')}`;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700"
+      title={tooltip}
+    >
+      {missing.length} ontbr.
+    </span>
+  );
+}
+
+
+
 // Inline editor voor RSIN/BSN per klant. Wordt automatisch gebruikt bij Aangifte BPM (veld 1.2_BSR).
 function CustomerRsinEditor({ customer, onSaved, token }) {
   const [editing, setEditing] = React.useState(false);
@@ -379,6 +410,7 @@ export default function CustomerDirectory() {
                   <th className="text-left px-4 py-2 text-xs font-bold uppercase text-zinc-500">RSIN</th>
                   <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Taxatie tarief</th>
                   <th className="text-right px-4 py-2 text-xs font-bold uppercase text-zinc-500">Extra fee</th>
+                  <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">BPM klaar?</th>
                   <th className="text-center px-4 py-2 text-xs font-bold uppercase text-zinc-500">Gebruikt</th>
                   <th className="px-4 py-2"></th>
                 </tr>
@@ -406,6 +438,9 @@ export default function CustomerDirectory() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <CustomerFeeEditor customer={c} onSaved={fetchCustomers} token={token} fieldKey="default_fee" label="Extra fee" />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <BpmCompletenessBadge customer={c} />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700">{c.usage_count || 0}\u00d7</span>
