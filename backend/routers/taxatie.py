@@ -2409,6 +2409,11 @@ async def export_aangifte_bpm_pdf(
     try:
         pdf_doc = fitz.open(blank_form)
         widget_errors = []
+        # Text overlays die we als permanente content op de pages willen tekenen
+        # (zodat mobiele PDF viewers ze ook tonen). [(page_num, rect, text), ...]
+        overlay_texts: list = []
+        # Verzamel checkbox/radio "X" marks voor permanente weergave op deze pages
+        checkmarks: list = []
         for page_num in range(len(pdf_doc)):
             page = pdf_doc[page_num]
             for widget in page.widgets():
@@ -2419,8 +2424,11 @@ async def export_aangifte_bpm_pdf(
                         meta = field_meta[fname]
                         val = p1p6_values.get(fname)
                         if meta["type"] == "text":
-                            widget.field_value = str(val or "")
+                            text_val = str(val or "")
+                            widget.field_value = text_val
                             widget.update()
+                            if text_val:
+                                overlay_texts.append((page_num, widget.rect, text_val))
                         elif meta["type"] == "radio":
                             target = str(val) if val is not None else ""
                             states = (widget.button_states() or {}).get("normal", []) or []
@@ -2428,17 +2436,23 @@ async def export_aangifte_bpm_pdf(
                             if target in decoded:
                                 widget.field_value = target
                                 widget.update()
+                                checkmarks.append((page_num, widget.rect))
                         elif meta["type"] == "checkbox":
                             if bool(val):
                                 widget.field_value = meta.get("on", "Yes")
+                                widget.update()
+                                checkmarks.append((page_num, widget.rect))
                             else:
                                 widget.field_value = "Off"
-                            widget.update()
+                                widget.update()
                         continue
                     # Andere pagina's: normale auto-fill
                     if fname in field_map and field_map[fname]:
-                        widget.field_value = str(field_map[fname])
+                        text_val = str(field_map[fname])
+                        widget.field_value = text_val
                         widget.update()
+                        # Ook deze velden als permanente tekst tekenen (voor pagina 3-5)
+                        overlay_texts.append((page_num, widget.rect, text_val))
                 except Exception as we:
                     widget_errors.append(f"{fname}: {we}")
                     logger.warning(f"Could not set widget '{fname}' (page {page_num+1}): {we}")
@@ -2453,6 +2467,39 @@ async def export_aangifte_bpm_pdf(
             pdf_doc.select([0, 1, 5])
         except Exception as se:
             logger.warning(f"Could not trim PDF to pages 1/2/6: {se}")
+
+        # Nu de tekst als permanente content op de pages tekenen
+        # (na select zijn page indices: 0=oud-0, 1=oud-1, 2=oud-5)
+        page_remap = {0: 0, 1: 1, 5: 2}
+        for orig_page, rect, text in overlay_texts:
+            if orig_page in page_remap:
+                new_page = pdf_doc[page_remap[orig_page]]
+                try:
+                    # Plaats tekst met insert_text op baseline (linksonder met font-height marge)
+                    x = rect.x0 + 2
+                    y = rect.y0 + rect.height * 0.7 + 2  # baseline iets onder midden
+                    new_page.insert_text(
+                        (x, y), text,
+                        fontsize=9,
+                        fontname='helv',
+                        color=(0, 0, 0),
+                    )
+                except Exception as oe:
+                    logger.warning(f"Could not draw overlay text {text!r}: {oe}")
+        for orig_page, rect in checkmarks:
+            if orig_page in page_remap:
+                new_page = pdf_doc[page_remap[orig_page]]
+                try:
+                    # Teken een "X" in het vak (gecentreerd in widget rect)
+                    cx = (rect.x0 + rect.x1) / 2 - 3
+                    cy = (rect.y0 + rect.y1) / 2 + 3
+                    new_page.insert_text(
+                        (cx, cy), "X",
+                        fontsize=11, fontname='helv',
+                        color=(0, 0, 0),
+                    )
+                except Exception as oe:
+                    logger.warning(f"Could not draw checkmark: {oe}")
 
         pdf_bytes = pdf_doc.tobytes()
         pdf_doc.close()
