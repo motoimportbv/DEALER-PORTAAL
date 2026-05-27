@@ -274,7 +274,7 @@ export default function TaxatieLanding() {
       {/* CONTACT FOOTER */}
       <section className="bg-zinc-900 text-white py-12">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h3 className="text-3xl font-black mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Vragen? Bel of mail Sandro.</h3>
+          <h3 className="text-3xl font-black mb-3" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Vragen? Bel of mail ons.</h3>
           <div className="flex flex-wrap justify-center gap-4 mt-6">
             <a href="tel:+31624264861" className="inline-flex items-center gap-2 px-5 py-3 bg-red-600 rounded-xl font-bold hover:bg-red-700"><Phone className="w-4 h-4" />06-24264861</a>
             <a href="mailto:motoimportbv@gmail.com" className="inline-flex items-center gap-2 px-5 py-3 bg-white/10 rounded-xl font-bold hover:bg-white/20"><Mail className="w-4 h-4" />motoimportbv@gmail.com</a>
