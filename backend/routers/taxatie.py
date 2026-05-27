@@ -2207,14 +2207,14 @@ async def _aangifte_defaults_with_customer(doc: dict, current_user: dict, report
                 defaults["2.0"] = "2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning"
                 art8_num = (cust.get("art8_nummer") or "").strip()
                 if art8_num:
-                    # Detecteer "BPM" (optioneel met cijfers) achteraan, met of zonder spatie
-                    m_b = _re.match(r"^(.*?)\s*(BPM\d*)$", art8_num, _re.IGNORECASE)
+                    # PDF heeft "BPM" voorgedrukt in 4.3._BN.2 — alleen het volgnummer (bv. "01") daarin
+                    m_b = _re.match(r"^(.*?)\s*BPM\s*(\d*)\s*$", art8_num, _re.IGNORECASE)
                     if m_b:
                         defaults["4.3._BN.1"] = m_b.group(1).strip()
-                        defaults["4.3._BN.2"] = m_b.group(2).upper()
+                        defaults["4.3._BN.2"] = m_b.group(2).strip()
                     else:
                         defaults["4.3._BN.1"] = art8_num
-                        defaults["4.3._BN.2"] = "BPM"
+                        defaults["4.3._BN.2"] = ""
         defaults["10.0"] = customer_name
     return defaults
 
@@ -2251,17 +2251,19 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
     saved_changed = False
     art8_in1 = (saved.get("4.3._BN.1") or "").strip()
     if art8_in1:
-        m = _re_clean.match(r"^(.*?)\s*(BPM\d*)\s*$", art8_in1, _re_clean.IGNORECASE)
-        if m and m.group(2):
+        m = _re_clean.match(r"^(.*?)\s*BPM\s*(\d*)\s*$", art8_in1, _re_clean.IGNORECASE)
+        if m:
             new_v1 = m.group(1).strip()
-            new_v2 = m.group(2).upper()
-            old_v2 = (saved.get("4.3._BN.2") or "").strip()
-            # Behoud langste suffix
-            if old_v2 and len(old_v2) > len(new_v2) and old_v2.upper().startswith("BPM"):
-                pass  # keep old_v2
-            else:
-                saved["4.3._BN.2"] = new_v2
+            new_v2 = m.group(2).strip()  # alleen volgnummer, geen "BPM"
             saved["4.3._BN.1"] = new_v1
+            saved["4.3._BN.2"] = new_v2
+            saved_changed = True
+    # Aparte cleanup: 4.3._BN.2 mag geen "BPM" tekst meer bevatten (staat voorgedrukt)
+    b2_old = (saved.get("4.3._BN.2") or "").strip()
+    if b2_old:
+        cleaned = _re_clean.sub(r"^BPM\s*", "", b2_old, flags=_re_clean.IGNORECASE).strip()
+        if cleaned != b2_old:
+            saved["4.3._BN.2"] = cleaned
             saved_changed = True
     toev_old = (saved.get("4.6") or "").strip()
     if toev_old:
@@ -2320,22 +2322,23 @@ async def export_aangifte_bpm_pdf(
         overrides["1.1.VIN._C7.2"] = dk
         overrides["1.1.VIN._C7.6"] = dk
 
-    # ALTIJD Art.8 vergunning re-split — fix voor oude saved overrides waar 4.3._BN.1
-    # nog "810691103 BPM" of "810691103BPM01" bevat
+    # ALTIJD Art.8 vergunning re-split — het PDF-template heeft "BPM" al voorgedrukt in 4.3._BN.2.
+    # We zetten alleen het volgnummer (cijfers na BPM) in 4.3._BN.2, NIET "BPM" zelf.
     import re as _re_split
     art8_combined = (overrides.get("4.3._BN.1") or "").strip()
-    art8_suffix = (overrides.get("4.3._BN.2") or "").strip()
     if art8_combined:
-        m = _re_split.match(r"^(.*?)\s*(BPM\d*)\s*$", art8_combined, _re_split.IGNORECASE)
+        # Detecteer "BPM" + optionele cijfers achteraan
+        m = _re_split.match(r"^(.*?)\s*BPM\s*(\d*)\s*$", art8_combined, _re_split.IGNORECASE)
         if m:
             overrides["4.3._BN.1"] = m.group(1).strip()
-            new_suffix = m.group(2).upper()
-            # Behoud bestaande suffix als die ALS deze meer info heeft (bv. "BPM01" boven "BPM")
-            if not art8_suffix or art8_suffix.upper() == "BPM":
-                overrides["4.3._BN.2"] = new_suffix
-            elif art8_suffix.upper() != new_suffix:
-                # Als suffix verschilt en niet leeg, gebruik de langste
-                overrides["4.3._BN.2"] = new_suffix if len(new_suffix) > len(art8_suffix) else art8_suffix
+            # Alleen volgnummer (bv. "01") in 4.3._BN.2 — NIET "BPM" want dat staat voorgedrukt
+            overrides["4.3._BN.2"] = m.group(2).strip()
+        else:
+            # Geen BPM-suffix gevonden — laat 4.3._BN.2 zoals het is (maar als het "BPM" bevat, leeg)
+            existing_b2 = (overrides.get("4.3._BN.2") or "").strip().upper()
+            if existing_b2 == "BPM" or existing_b2.startswith("BPM"):
+                # Strip "BPM" prefix, hou alleen cijfers
+                overrides["4.3._BN.2"] = _re_split.sub(r"^BPM\s*", "", existing_b2, flags=_re_split.IGNORECASE).strip()
 
     # ALTIJD adres-toevoeging (4.6) opschonen — fix voor oude saved overrides met
     # ", 7711 GG Nieuwleusen" in toevoeging
