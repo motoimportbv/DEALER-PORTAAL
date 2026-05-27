@@ -2276,26 +2276,43 @@ async def export_aangifte_bpm_pdf(
     # Filter naar alleen toegestane velden (pagina 1 + pagina 6)
     overrides = {k: v for k, v in overrides_in.items() if k in AANGIFTE_OVERRIDE_FIELD_NAMES}
 
-    # Documentkenmerk synchroniseren: 1c op pagina 1 -> alle andere pagina's (2, 3, 4, 5, 6)
-    # Veld '1.1.VIN._C7.1' is het hoofd-veld (1c op pagina 1).
+    # Documentkenmerk synchroniseren: 1c op pagina 1 -> alle andere pagina's
     dk = (overrides.get("1.1.VIN._C7.1") or "").strip()
     if dk:
-        # Op pagina 2 en 6 staan deze in field_meta — overschrijf in overrides
         overrides["1.1.VIN._C7.2"] = dk
         overrides["1.1.VIN._C7.6"] = dk
 
-    # Art.8 vergunning auto-split: als user "12345BPM01" of "12345 BPM" invoert,
-    # split naar 4.3._BN.1 (nummer-deel) en 4.3._BN.2 (BPM-suffix). PDF heeft 2 velden.
-    art8_raw = (overrides.get("4.3._BN.1") or "").strip()
-    if art8_raw and not (overrides.get("4.3._BN.2") or "").strip():
-        # Detecteer "BPM" of "BPM01" achteraan
-        import re as _re_split
-        m = _re_split.match(r"^(.*?)\s*(BPM\d*)$", art8_raw, _re_split.IGNORECASE)
+    # ALTIJD Art.8 vergunning re-split — fix voor oude saved overrides waar 4.3._BN.1
+    # nog "810691103 BPM" of "810691103BPM01" bevat
+    import re as _re_split
+    art8_combined = (overrides.get("4.3._BN.1") or "").strip()
+    art8_suffix = (overrides.get("4.3._BN.2") or "").strip()
+    if art8_combined:
+        m = _re_split.match(r"^(.*?)\s*(BPM\d*)\s*$", art8_combined, _re_split.IGNORECASE)
         if m:
             overrides["4.3._BN.1"] = m.group(1).strip()
-            overrides["4.3._BN.2"] = m.group(2).upper()
-        else:
-            overrides["4.3._BN.2"] = "BPM"
+            new_suffix = m.group(2).upper()
+            # Behoud bestaande suffix als die ALS deze meer info heeft (bv. "BPM01" boven "BPM")
+            if not art8_suffix or art8_suffix.upper() == "BPM":
+                overrides["4.3._BN.2"] = new_suffix
+            elif art8_suffix.upper() != new_suffix:
+                # Als suffix verschilt en niet leeg, gebruik de langste
+                overrides["4.3._BN.2"] = new_suffix if len(new_suffix) > len(art8_suffix) else art8_suffix
+
+    # ALTIJD adres-toevoeging (4.6) opschonen — fix voor oude saved overrides met
+    # ", 7711 GG Nieuwleusen" in toevoeging
+    toev = (overrides.get("4.6") or "").strip()
+    if toev:
+        pc_m = _re_split.search(r"(\d{4})\s*([A-Z]{2})\b", toev, _re_split.IGNORECASE)
+        if pc_m:
+            # Postcode + plaats zaten ten onrechte in toevoeging — verplaats ze
+            overrides["4.7_PC"] = f"{pc_m.group(1)} {pc_m.group(2).upper()}"
+            after = toev[pc_m.end():].strip(" ,;").strip()
+            if after:
+                overrides["4.8"] = after
+            # Hou alleen tekst VOOR de postcode over in 4.6 (zonder lege/komma's)
+            before = toev[:pc_m.start()].strip(" ,;").strip()
+            overrides["4.6"] = before
 
     # Persist op de taxatie
     if overrides:
