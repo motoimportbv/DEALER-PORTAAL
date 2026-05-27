@@ -572,6 +572,7 @@ function AangifteBpmEditor({ taxatie, onClose }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fieldsP1, setFieldsP1] = useState([]);
+  const [fieldsP2, setFieldsP2] = useState([]);
   const [fieldsP6, setFieldsP6] = useState([]);
   const [values, setValues] = useState({});
   const [volmachtOpen, setVolmachtOpen] = useState(false);
@@ -581,6 +582,7 @@ function AangifteBpmEditor({ taxatie, onClose }) {
     axios.get(`${API}/taxatie-programma/${taxatie.id}/aangifte-overrides`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => {
         setFieldsP1(res.data.fields_page1 || []);
+        setFieldsP2(res.data.fields_page2 || []);
         setFieldsP6(res.data.fields_page6 || []);
         setValues(res.data.values || {});
       })
@@ -689,6 +691,11 @@ function AangifteBpmEditor({ taxatie, onClose }) {
             <section>
               <h3 className="text-sm font-bold uppercase tracking-wide text-blue-700 mb-3 pb-2 border-b border-blue-200">Pagina 1 van 21 — Identificatie</h3>
               <div className="space-y-3">{fieldsP1.map(renderField)}</div>
+            </section>
+            <section>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-blue-700 mb-3 pb-2 border-b border-blue-200">Pagina 2 van 21 — Aangever &amp; RDW</h3>
+              <p className="text-xs text-zinc-500 mb-3">Bedrijfsnaam, KvK/RSIN, adres en contactgegevens. Pas aan als de aangifte op naam van een ander bedrijf staat.</p>
+              <div className="space-y-3">{fieldsP2.map(renderField)}</div>
             </section>
             <section>
               <h3 className="text-sm font-bold uppercase tracking-wide text-blue-700 mb-3 pb-2 border-b border-blue-200">Pagina 6 van 21 — Bijzondere omstandigheden &amp; Ondertekening</h3>

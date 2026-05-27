@@ -1967,6 +1967,55 @@ AANGIFTE_FIELDS_P1 = [
     {"name": "1.1.VIN._C7.1", "label": "Document kenmerk (1c — 7 tekens)", "type": "text", "max": 7},
     {"name": "1.2_BSR", "label": "BSN / RSIN aangever", "type": "text", "max": 9},
 ]
+AANGIFTE_FIELDS_P2 = [
+    {"name": "1.1.VIN._C7.2", "label": "Document kenmerk (kop pagina 2)", "type": "text", "max": 7},
+    # Vraag 2 — Soort aangifte
+    {"name": "2.0", "label": "Vraag 2 — Soort aangifte", "type": "radio",
+     "options": [
+         {"value": "1 - aangifte bpm voor een personenauto of motor",
+          "label": "1 — Aangifte BPM voor personenauto of motor"},
+         {"value": "2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning",
+          "label": "2 — Melding BPM (artikel 8-vergunning)"},
+         {"value": "4 - aangifte bpm wegens ombouw van het motorrijtuig",
+          "label": "4 — Aangifte BPM wegens ombouw"},
+     ]},
+    # Vraag 3a — RDW kenteken aangevraagd
+    {"name": "3.0", "label": "Vraag 3a — RDW gevraagd kenteken te registreren?", "type": "radio",
+     "options": [
+         {"value": "Ja", "label": "Ja"},
+     ]},
+    {"name": "3.1", "label": "Vraag 3a — Wie heeft kenteken aangevraagd?", "type": "radio",
+     "options": [
+         {"value": "1 - U hebt het kenteken van een personenauto, bestelauto of motor zelf aangevraagd.",
+          "label": "1 — Zelf aangevraagd"},
+         {"value": "2 - U hebt iemand anders gemachtigd om het kenteken aan te vragen en u hebt een machtiging afgegeven zoals genoemd bij vraag 5.",
+          "label": "2 — Iemand anders gemachtigd (zie vraag 5)"},
+     ]},
+    {"name": "3.date01.d_CF", "label": "RDW goedkeuringsdatum — dag", "type": "text", "max": 2},
+    {"name": "3.date01.m_CF", "label": "RDW goedkeuringsdatum — maand", "type": "text", "max": 2},
+    {"name": "3.date01.y_CF", "label": "RDW goedkeuringsdatum — jaar", "type": "text", "max": 4},
+    # Vraag 4 — Aangever
+    {"name": "4.0", "label": "Vraag 4a — De aangever is:", "type": "radio",
+     "options": [
+         {"value": "1 - Particulier", "label": "1 — Particulier"},
+         {"value": "2 - Ondernemer", "label": "2 — Ondernemer"},
+     ]},
+    {"name": "4.1.0", "label": "Particulier — Voorletters", "type": "text"},
+    {"name": "4.1.1", "label": "Particulier — Tussenvoegsel", "type": "text"},
+    {"name": "4.1.2", "label": "Particulier — Achternaam", "type": "text"},
+    {"name": "4.2.0", "label": "Ondernemer — Naam onderneming", "type": "text"},
+    {"name": "4.2.1", "label": "Ondernemer — Tekenbevoegde voorletters", "type": "text"},
+    {"name": "4.2.2", "label": "Ondernemer — Tekenbevoegde tussenvoegsel", "type": "text"},
+    {"name": "4.2.3", "label": "Ondernemer — Tekenbevoegde achternaam", "type": "text"},
+    {"name": "4.4", "label": "Straatnaam", "type": "text"},
+    {"name": "4.5_HN", "label": "Huisnummer", "type": "text"},
+    {"name": "4.6", "label": "Huisnummer toevoeging", "type": "text"},
+    {"name": "4.7_PC", "label": "Postcode", "type": "text", "max": 7},
+    {"name": "4.8", "label": "Plaats", "type": "text"},
+    {"name": "4.9_TEL", "label": "Telefoon", "type": "text"},
+    {"name": "4.10_EM", "label": "E-mailadres", "type": "text"},
+]
+
 AANGIFTE_FIELDS_P6 = [
     {"name": "1.1.VIN._C7.6", "label": "Document kenmerk (kop pagina 6)", "type": "text", "max": 7},
     {"name": "9.0", "label": "Vraag 9 — Bijzondere omstandigheid?", "type": "radio",
@@ -1992,18 +2041,43 @@ AANGIFTE_FIELDS_P6 = [
     {"name": "10.6", "label": "Bijlage — Toelichting berekening bruto bpm", "type": "checkbox",
      "on": "Toelichting berekening bruto bpm"},
 ]
-# Set van veldnamen die door pagina 1+6 overrides beïnvloed worden (page 6 has '9.0' radio = 2 widgets met zelfde naam)
-AANGIFTE_OVERRIDE_FIELD_NAMES = {f["name"] for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P6}
+# Set van veldnamen die door pagina 1+2+6 overrides beïnvloed worden
+AANGIFTE_OVERRIDE_FIELD_NAMES = {f["name"] for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P2 + AANGIFTE_FIELDS_P6}
 
 
 def _aangifte_default_overrides(doc_data: dict, report_dt: datetime) -> dict:
-    """Bouw de default-waardes voor pagina 1 + pagina 6 overrides."""
+    """Bouw de default-waardes voor pagina 1 + pagina 2 + pagina 6 overrides."""
     vin = doc_data.get("vin_number", "") or ""
     doc_kenmerk = vin[-7:] if len(vin) >= 7 else vin
+    # RDW datum default = report_dt
+    rdw_dt = report_dt
     return {
+        # Pagina 1
         "1.0.VIN": vin,
         "1.1.VIN._C7.1": doc_kenmerk,
         "1.2_BSR": "866851525",
+        # Pagina 2
+        "1.1.VIN._C7.2": doc_kenmerk,
+        "2.0": "1 - aangifte bpm voor een personenauto of motor",
+        "3.0": "Ja",
+        "3.1": "1 - U hebt het kenteken van een personenauto, bestelauto of motor zelf aangevraagd.",
+        "3.date01.d_CF": f"{rdw_dt.day:02d}",
+        "3.date01.m_CF": f"{rdw_dt.month:02d}",
+        "3.date01.y_CF": str(rdw_dt.year),
+        "4.0": "2 - Ondernemer",
+        "4.1.0": "", "4.1.1": "", "4.1.2": "",
+        "4.2.0": "Motoimport B.V.",
+        "4.2.1": "Sandro",
+        "4.2.2": "",
+        "4.2.3": "Milone",
+        "4.4": "Horsterhoekweg",
+        "4.5_HN": "11",
+        "4.6": "",
+        "4.7_PC": "7433 SV",
+        "4.8": "Schalkhaar",
+        "4.9_TEL": "0681792660",
+        "4.10_EM": "motoimportbv@gmail.com",
+        # Pagina 6
         "1.1.VIN._C7.6": doc_kenmerk,
         "9.0": " Nee",
         "9.1": "",
@@ -2057,6 +2131,7 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
     current = {**defaults, **saved}
     return {
         "fields_page1": AANGIFTE_FIELDS_P1,
+        "fields_page2": AANGIFTE_FIELDS_P2,
         "fields_page6": AANGIFTE_FIELDS_P6,
         "values": current,
         "customer_name": customer_name,
@@ -2233,7 +2308,7 @@ async def export_aangifte_bpm_pdf(
 
     # Bouw nu een lookup van overrides per (field_name, type). Voor radio/checkbox is value de target state.
     field_meta: dict = {}
-    for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P6:
+    for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P2 + AANGIFTE_FIELDS_P6:
         field_meta[f["name"]] = f
 
     # Defaults (zodat we radio/checkbox state ook zonder user input op page 1+6 zetten)

@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Aangifte BPM editor — Pagina 2 (Aangever) ook bewerkbaar** (Feb 2026): 22 nieuwe velden op pagina 2 toegevoegd in `AANGIFTE_FIELDS_P2`: soort aangifte (vraag 2 radio), RDW-vragen (3a radio + datum), aangever-type (4a Particulier/Ondernemer radio), bedrijfsnaam + tekenbevoegde, OF particulier naam, straatnaam + huisnummer + toevoeging + postcode + plaats + telefoon + e-mail. Defaults blijven Motoimport B.V. zodat bestaande flow ongewijzigd is, maar admin kan nu compleet de aangever wijzigen wanneer hij voor een ander bedrijf taxeert. Getest met curl: alle 16 page-2 velden komen correct in de output-PDF + radio's tonen correct exclusive state.
 - **🔒 Beveiligingsfix: dealers zien GEEN inkoopprijs / leverancier-IBAN meer op Pakbon** (Feb 2026): Twee lekken gedicht:
   1. Frontend `Pakbon.js` toonde de "Betalingsinstructie"-kaart (CHF-bedrag, leverancier, IBAN, referentie) zodra `order.payment_instructions` aanwezig was — ongeacht rol. Nu alleen voor `admin` en `pakbon` rollen.
   2. Backend `GET /api/orders` stuurde `payment_instructions` en `supplier_info` mee in de respons voor álle rollen. Defense-in-depth: deze velden worden nu actief gestript bij niet-admin/pakbon. Getest met curl: dealer ziet 0 leaks, admin behoudt normale toegang.
