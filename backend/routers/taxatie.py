@@ -1737,31 +1737,8 @@ async def export_belastingdienst_pdf(taxatie_id: str, current_user: dict = Depen
     if not doc_data:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     
-    blank_form = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf')
-    if not os.path.exists(blank_form):
-        from config import ROOT_DIR
-        blank_form = os.path.join(str(ROOT_DIR), 'uploads', 'bpm_form_blank.pdf')
-    
-    # Auto-download the official form if not present
-    if not os.path.exists(blank_form):
-        try:
-            import httpx
-            logger.info("Downloading Belastingdienst BPM form template...")
-            os.makedirs(os.path.dirname(blank_form), exist_ok=True)
-            resp = httpx.get("https://download.belastingdienst.nl/belastingdienst/docs/aang-meld-opg-bpm-bpm0111z13fol.pdf", timeout=30, follow_redirects=True)
-            if resp.status_code == 200:
-                with open(blank_form, 'wb') as f:
-                    f.write(resp.content)
-                logger.info(f"BPM form template downloaded: {len(resp.content)} bytes")
-            else:
-                logger.error(f"Failed to download BPM form: HTTP {resp.status_code}")
-        except Exception as dl_err:
-            logger.error(f"Failed to download BPM form template: {dl_err}")
-    
-    if not os.path.exists(blank_form):
-        logger.error(f"BPM form template not found at: {blank_form}")
-        raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden. Probeer het later opnieuw.")
-    
+    blank_form = _find_bpm_form_template_or_raise()
+
     try:
         import fitz
     except ImportError:
@@ -2047,6 +2024,62 @@ AANGIFTE_FIELDS_P6 = [
 AANGIFTE_OVERRIDE_FIELD_NAMES = {f["name"] for f in AANGIFTE_FIELDS_P1 + AANGIFTE_FIELDS_P2 + AANGIFTE_FIELDS_P6}
 
 
+def _find_bpm_form_template() -> str:
+    """Lokaliseer het Belastingdienst BPM form template.
+    Probeert achtereenvolgens: assets/ (deployment-safe), uploads/ (legacy local),
+    en download als laatste redmiddel automatisch van belastingdienst.nl.
+    Returnt het absolute pad, of een lege string als alles faalt.
+    """
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'bpm_form_blank.pdf'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf'),
+    ]
+    try:
+        from config import ROOT_DIR
+        candidates += [
+            os.path.join(str(ROOT_DIR), 'assets', 'bpm_form_blank.pdf'),
+            os.path.join(str(ROOT_DIR), 'uploads', 'bpm_form_blank.pdf'),
+        ]
+    except Exception:
+        pass
+
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+
+    # Auto-download fallback — probeer naar assets/ te schrijven
+    target = candidates[0]
+    try:
+        import httpx
+        logger.info("Downloading Belastingdienst BPM form template...")
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        resp = httpx.get(
+            "https://download.belastingdienst.nl/belastingdienst/docs/aang-meld-opg-bpm-bpm0111z13fol.pdf",
+            timeout=30, follow_redirects=True
+        )
+        if resp.status_code == 200:
+            with open(target, 'wb') as f:
+                f.write(resp.content)
+            logger.info(f"BPM form template gedownload: {len(resp.content)} bytes -> {target}")
+            return target
+        logger.error(f"Failed to download BPM form: HTTP {resp.status_code}")
+    except Exception as dl_err:
+        logger.error(f"Auto-download BPM form failed: {dl_err}")
+
+    return ""
+
+
+def _find_bpm_form_template_or_raise() -> str:
+    path = _find_bpm_form_template()
+    if not path:
+        raise HTTPException(
+            status_code=500,
+            detail="Belastingdienst formulier template niet gevonden en kon ook niet automatisch worden gedownload. Neem contact op met de beheerder.",
+        )
+    return path
+
+
+
 def _aangifte_default_overrides(doc_data: dict, report_dt: datetime) -> dict:
     """Bouw de default-waardes voor pagina 1 + pagina 2 + pagina 6 overrides."""
     vin = doc_data.get("vin_number", "") or ""
@@ -2231,12 +2264,7 @@ async def export_aangifte_bpm_pdf(
         except Exception as ce:
             logger.warning(f"Could not upsert customer RSIN: {ce}")
 
-    blank_form = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads', 'bpm_form_blank.pdf')
-    if not os.path.exists(blank_form):
-        from config import ROOT_DIR
-        blank_form = os.path.join(str(ROOT_DIR), 'uploads', 'bpm_form_blank.pdf')
-    if not os.path.exists(blank_form):
-        raise HTTPException(status_code=500, detail="Belastingdienst formulier template niet gevonden.")
+    blank_form = _find_bpm_form_template_or_raise()
 
     try:
         import fitz
