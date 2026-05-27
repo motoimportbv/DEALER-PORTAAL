@@ -19,6 +19,17 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Publieke /taxatie aanmeldpagina + admin dashboard** (Feb 2026): Nieuwe publieke landingspagina `/taxatie` voor externe motordealers om taxatieverslagen aan te vragen. Dealers vullen bedrijfsgegevens in (Bedrijfsnaam, Contact, E-mail, Tel, Adres, Woonplaats, RSIN, Opmerking) en uploaden 9 verplichte foto's (voorwiel, achterwiel, km-stand, chassisnummer, motorfiets L/R, inkoopverklaring, kenteken voor/achter) + max 20 optionele detailfoto's van schade. Bij submit:
+  - Record opgeslagen in `taxatie_aanvragen` collectie
+  - Customer **auto-aangemaakt/upserted** gekoppeld aan motoimportbv@gmail.com (zodat 'Start BPM Taxatie' direct werkt)
+  - Notificatie-email naar motoimportbv@gmail.com (HTML-template met alle details)
+  - Foto's opgeslagen in `/app/backend/uploads/taxatie_aanvragen/` en geserveerd via `/api/uploads/taxatie_aanvragen/*`
+  
+  Admin dashboard `/admin/taxatie-aanvragen` (toegankelijk voor admin + taxateur) toont alle aanvragen met:
+  - Filter tabs (alle/nieuw/in_behandeling/afgerond/afgewezen) met counts
+  - Klik-rij opent detail-modal met bedrijfsgegevens, foto-galerij (klikbare thumbnails), status-select, "Start BPM Taxatie" knop (navigeert naar `/admin/taxatie-programma?prefill_customer={id}`), Verwijderen knop (cleant bestanden van disk + DB)
+  
+  Endpoints: `POST /api/public/taxatie-aanvraag` (publiek), `GET /api/admin/taxatie-aanvragen`, `GET /api/admin/taxatie-aanvragen/{id}`, `POST /api/admin/taxatie-aanvragen/{id}/status`, `DELETE /api/admin/taxatie-aanvragen/{id}` (allen admin-only). 15/15 backend pytest cases ✅, frontend e2e ✅. Pytest: `/app/backend/tests/test_taxatie_aanvraag.py`.
 - **Art.8-vergunning fix: nummer komt nu in juist veld op pagina 2 + PDF generatie werkt voor art.8-klanten** (Feb 2026): Het Art.8-nummer werd eerder verkeerd in veld `9.1` (pagina 6) geplaatst, terwijl het Belastingdienst-formulier het verwacht in `4.3._BN.1` (nummer) + `4.3._BN.2` (BPM-suffix) op pagina 2. Gefixt: art8_nummer wordt nu in 4.3 ingevuld met "BPM" suffix. Ook gerefactord: PDF-generatie endpoint (`POST .../aangifte-bpm-pdf`) gebruikt nu dezelfde defaults-met-klant-merging logica als GET endpoint via nieuwe helper `_aangifte_defaults_with_customer()` — voorheen miste het de klant-auto-fill (adres, telefoon, art.8) in de PDF. Getest: art.8 klant met Singel 12 Utrecht → PDF heeft correct 2.0 = art.8 optie, 4.3._BN.1 = nummer, 4.4 = "Singel", 4.5_HN = "12", 4.8 = "Utrecht".
 - **Artikel 8-vergunning per klant** (Feb 2026): Klanten met BPM-vrijstelling via art. 8 kunnen nu in het Klantenbestand worden gemarkeerd met checkbox `art8_vergunning` + tekstveld `art8_nummer`. Wanneer zo'n klant aan een taxatie hangt, vult de Aangifte BPM editor automatisch:
   - `2.0` → "2 — Melding BPM met artikel 8-vergunning" (i.p.v. normale aangifte)

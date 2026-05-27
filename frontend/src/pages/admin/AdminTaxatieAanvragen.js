@@ -283,9 +283,7 @@ function DetailModal({ aanvraag, onClose, onUpdateStatus, onDelete, onStartBpm, 
             <h3 className="text-sm font-bold uppercase text-zinc-600 mb-3 pb-2 border-b">Vereiste foto's ({fixedFiles.length}/9)</h3>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
               {fixedFiles.map(f => {
-                // Achterhaal het veld: bv. {id}_voorwiel_xxx_orig.jpg → "voorwiel"
-                const parts = f.filename.split('_');
-                const fieldKey = parts.slice(5, parts.length - 2).join('_') || f.field || 'foto';
+                const fieldKey = f.field || 'foto';
                 return (
                   <a key={f.filename} href={`${backend}${f.url}`} target="_blank" rel="noopener noreferrer" className="block group" data-testid={`photo-${fieldKey}`}>
                     <div className="aspect-square bg-zinc-100 rounded-lg overflow-hidden border hover:border-red-400">

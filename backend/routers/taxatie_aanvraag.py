@@ -28,7 +28,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 ADMIN_OWNER_EMAIL = "motoimportbv@gmail.com"  # Aanvragen koppelen aan dit admin-account
 
 
-def _save_file(prefix: str, upload: UploadFile) -> dict:
+def _save_file(prefix: str, upload: UploadFile, field_key: str = "") -> dict:
     """Sla een uploadbestand op en retourneer metadata."""
     safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", upload.filename or "upload")
     fname = f"{prefix}_{uuid.uuid4().hex[:8]}_{safe_name}"
@@ -37,7 +37,7 @@ def _save_file(prefix: str, upload: UploadFile) -> dict:
         content = upload.file.read()
         f.write(content)
     return {
-        "field": prefix.split("_", maxsplit=5)[-1] if "_" in prefix else prefix,
+        "field": field_key,
         "filename": fname,
         "url": f"/api/uploads/taxatie_aanvragen/{fname}",
         "original_name": upload.filename,
@@ -145,7 +145,7 @@ async def submit_taxatie_aanvraag(
         if not upload:
             continue
         try:
-            saved_files.append(_save_file(f"{aanvraag_id}_{field}", upload))
+            saved_files.append(_save_file(f"{aanvraag_id}_{field}", upload, field_key=field))
         except Exception as e:
             logger.error(f"Failed to save {field}: {e}")
             raise HTTPException(status_code=500, detail=f"Foto '{field}' opslaan mislukt")
@@ -155,7 +155,7 @@ async def submit_taxatie_aanvraag(
         if not upload or not upload.filename:
             continue
         try:
-            saved_files.append(_save_file(f"{aanvraag_id}_detail_{idx:02d}", upload))
+            saved_files.append(_save_file(f"{aanvraag_id}_detail_{idx:02d}", upload, field_key=f"detail_{idx:02d}"))
         except Exception as e:
             logger.warning(f"Failed to save detail photo {idx}: {e}")
 
