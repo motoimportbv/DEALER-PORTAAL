@@ -19,6 +19,11 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Artikel 8-vergunning per klant** (Feb 2026): Klanten met BPM-vrijstelling via art. 8 kunnen nu in het Klantenbestand worden gemarkeerd met checkbox `art8_vergunning` + tekstveld `art8_nummer`. Wanneer zo'n klant aan een taxatie hangt, vult de Aangifte BPM editor automatisch:
+  - `2.0` → "2 — Melding BPM met artikel 8-vergunning" (i.p.v. normale aangifte)
+  - `9.0` → "Ja. Vul het nummer..."
+  - `9.1` → het opgeslagen vergunningnummer
+  Klant-detail modal toont een amber "Art.8-vergunning: {nummer}" badge. Klanten zonder art.8 vlag krijgen de standaard "aangifte BPM" optie. Getest met curl: complete flow werkt incl. defaults voor andere klanten.
 - **Auto-fill Aangifte BPM pagina 2 vanuit klantgegevens** (Feb 2026): Wanneer er een klant aan de taxatie hangt, worden de Aangever-velden op pagina 2 automatisch gevuld met klant-data:
   - `4.0` → "Ondernemer" (default)
   - `4.2.0` → klant.name (bedrijfsnaam)

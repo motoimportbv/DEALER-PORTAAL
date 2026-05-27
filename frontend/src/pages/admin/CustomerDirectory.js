@@ -152,6 +152,11 @@ function CustomerHistoryModal({ customerId, onClose, token }) {
                   {data.customer.phone && <span>{data.customer.phone}</span>}
                   {data.customer.email && <span>{data.customer.email}</span>}
                   {data.customer.rsin && <span className="font-mono">RSIN: {data.customer.rsin}</span>}
+                  {data.customer.art8_vergunning && (
+                    <span className="font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                      Art.8-vergunning{data.customer.art8_nummer ? `: ${data.customer.art8_nummer}` : ''}
+                    </span>
+                  )}
                   {data.customer.address && <span>{data.customer.address}{data.customer.city ? `, ${data.customer.city}` : ''}</span>}
                 </div>
               </div>
@@ -279,7 +284,7 @@ export default function CustomerDirectory() {
   const [customers, setCustomers] = useState([]);
   const [q, setQ] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', art8_vergunning: false, art8_nummer: '' });
   const [historyCustomerId, setHistoryCustomerId] = useState(null);
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
 
@@ -314,7 +319,7 @@ export default function CustomerDirectory() {
       await axios.post(`${API}/customers`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Klant opgeslagen');
       setShowAdd(false);
-      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '' });
+      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', art8_vergunning: false, art8_nummer: '' });
       fetchCustomers();
     } catch (e) { toast.error('Mislukt: ' + (e.response?.data?.detail || e.message)); }
   };
@@ -455,6 +460,30 @@ export default function CustomerDirectory() {
                     />
                   </div>
                 ))}
+                <div className="border-t border-zinc-200 pt-3 mt-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!newCustomer.art8_vergunning}
+                      onChange={e => setNewCustomer({ ...newCustomer, art8_vergunning: e.target.checked })}
+                      data-testid="new-customer-art8_vergunning"
+                    />
+                    <span className="text-sm font-semibold text-zinc-700">Klant heeft Artikel 8-vergunning (BPM-melding i.p.v. aangifte)</span>
+                  </label>
+                  {newCustomer.art8_vergunning && (
+                    <div className="mt-2">
+                      <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Artikel 8-vergunning nummer</label>
+                      <input
+                        type="text"
+                        value={newCustomer.art8_nummer}
+                        onChange={e => setNewCustomer({ ...newCustomer, art8_nummer: e.target.value })}
+                        placeholder="bv. 8-AB-12345 — auto-invullen op Aangifte BPM (vraag 9)"
+                        className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+                        data-testid="new-customer-art8_nummer"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50 flex justify-end gap-2">
                 <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-zinc-300 hover:bg-zinc-100">Annuleren</button>

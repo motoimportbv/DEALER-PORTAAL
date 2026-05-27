@@ -2122,7 +2122,7 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
         name_slug = _re.sub(r"\s+", " ", customer_name.lower()).strip()
         cust = await db.customers.find_one(
             {"created_by": current_user.get("id"), "name_slug": name_slug},
-            {"_id": 0, "rsin": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1},
+            {"_id": 0, "rsin": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "art8_vergunning": 1, "art8_nummer": 1},
         )
         if cust:
             # 1.2_BSR vanuit klant.rsin
@@ -2158,6 +2158,14 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
                 defaults["4.8"] = cust["city"]
             # Postcode kennen we niet → leeg laten zodat gebruiker invult
             defaults["4.7_PC"] = ""
+            # Artikel 8-vergunning: selecteer vraag 2 optie 2 + nummer in 9.1
+            if cust.get("art8_vergunning"):
+                defaults["2.0"] = "2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning"
+                art8_num = (cust.get("art8_nummer") or "").strip()
+                if art8_num:
+                    defaults["9.1"] = art8_num
+                    # Vraag 9 — Bijzondere omstandigheid → "Ja" + nummer
+                    defaults["9.0"] = "Ja. Vul het nummer van de vrijstellingsvergunning of invoeraangifte in."
 
     # Ondertekenaar pagina 6 default = klantnaam ipv Sandro Milone wanneer er een klant is
     if customer_name:
