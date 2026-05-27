@@ -2519,26 +2519,74 @@ async def export_aangifte_bpm_pdf(
         # Nu de tekst als permanente content op de pages tekenen
         # (na select zijn page indices: 0=oud-0, 1=oud-1, 2=oud-5)
         page_remap = {0: 0, 1: 1, 5: 2}
+        # Character-grid velden: één vakje per teken — tekenen we karakter voor karakter
+        # verdeeld over de volle widget-breedte
+        CHAR_GRID_FIELDS = {
+            "1.0.VIN", "1.1.VIN._C7.1", "1.1.VIN._C7.2", "1.1.VIN._C7.3",
+            "1.1.VIN._C7.4", "1.1.VIN._C7.5", "1.1.VIN._C7.6",
+            "1.2_BSR", "4.3._BN.1", "4.3._BN.2", "4.5_HN", "4.6",
+            "4.7_PC", "4.9_TEL",
+            "3.date01.d_CF", "3.date01.m_CF", "3.date01.y_CF",
+            "10.date05.d_CF", "10.date05.m_CF", "10.date05.y_CF",
+        }
+        # Bouw een lookup: (orig_page, rect-tuple) -> field_name
+        rect_to_field: dict = {}
         for orig_page, rect, text in overlay_texts:
-            if orig_page in page_remap:
-                new_page = pdf_doc[page_remap[orig_page]]
-                try:
-                    # Plaats tekst met insert_text op baseline (linksonder met font-height marge)
+            rect_to_field[(orig_page, round(rect.x0, 1), round(rect.y0, 1))] = None
+        # Itereer opnieuw door pages om de field_name vast te leggen via rect-match
+        # Eenvoudiger: pass de fname mee tijdens collect — refactor:
+        # We hadden tijdens collection geen fname meegestuurd; we doen het hier op basis van rect+page lookup
+        # Open opnieuw original pages voor widget-naam mapping
+        try:
+            tpl_doc = fitz.open(blank_form)
+            for p_idx in [0, 1, 5]:
+                for w in tpl_doc[p_idx].widgets():
+                    key = (p_idx, round(w.rect.x0, 1), round(w.rect.y0, 1))
+                    if key in rect_to_field:
+                        rect_to_field[key] = w.field_name or ""
+            tpl_doc.close()
+        except Exception as me:
+            logger.warning(f"Could not build rect->field map: {me}")
+
+        for orig_page, rect, text in overlay_texts:
+            if orig_page not in page_remap:
+                continue
+            new_page = pdf_doc[page_remap[orig_page]]
+            fname = rect_to_field.get((orig_page, round(rect.x0, 1), round(rect.y0, 1)), "")
+            try:
+                if fname in CHAR_GRID_FIELDS and text:
+                    # Verdeel karakters gelijkmatig over de widget-breedte
+                    chars = list(str(text))
+                    if not chars:
+                        continue
+                    # Bereken pitch — gemiddelde celbreedte
+                    rect_w = rect.width - 4  # kleine padding
+                    pitch = rect_w / len(chars) if len(chars) > 0 else 8
+                    y = rect.y0 + rect.height * 0.7 + 1
+                    for i, ch in enumerate(chars):
+                        x = rect.x0 + 2 + i * pitch + (pitch - 5) / 2  # centreer per cell
+                        new_page.insert_text(
+                            (x, y), ch,
+                            fontsize=9.5,
+                            fontname='helv',
+                            color=(0, 0, 0),
+                        )
+                else:
+                    # Vrije tekst — gewoon links in box
                     x = rect.x0 + 2
-                    y = rect.y0 + rect.height * 0.7 + 2  # baseline iets onder midden
+                    y = rect.y0 + rect.height * 0.7 + 2
                     new_page.insert_text(
                         (x, y), text,
                         fontsize=9,
                         fontname='helv',
                         color=(0, 0, 0),
                     )
-                except Exception as oe:
-                    logger.warning(f"Could not draw overlay text {text!r}: {oe}")
+            except Exception as oe:
+                logger.warning(f"Could not draw overlay text {text!r}: {oe}")
         for orig_page, rect in checkmarks:
             if orig_page in page_remap:
                 new_page = pdf_doc[page_remap[orig_page]]
                 try:
-                    # Teken een "X" in het vak (gecentreerd in widget rect)
                     cx = (rect.x0 + rect.x1) / 2 - 3
                     cy = (rect.y0 + rect.y1) / 2 + 3
                     new_page.insert_text(
