@@ -640,7 +640,7 @@ function AangifteBpmEditor({ taxatie, onClose }) {
       '4.4': 'Horsterhoekweg', '4.5_HN': '11', '4.6': '',
       '4.7_PC': '7433 SV',
       '4.8': 'Schalkhaar',
-      '4.9_TEL': '0681792660',
+      '4.9_TEL': '0624264861',
       '4.10_EM': 'motoimportbv@gmail.com',
       '1.2_BSR': '866851525',
       '10.0': 'Sandro Milone',
