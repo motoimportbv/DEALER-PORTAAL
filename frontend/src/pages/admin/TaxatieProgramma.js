@@ -576,6 +576,9 @@ function AangifteBpmEditor({ taxatie, onClose }) {
   const [fieldsP6, setFieldsP6] = useState([]);
   const [values, setValues] = useState({});
   const [volmachtOpen, setVolmachtOpen] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustList, setShowCustList] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -588,7 +591,69 @@ function AangifteBpmEditor({ taxatie, onClose }) {
       })
       .catch(() => toast.error('Kon aangifte-velden niet laden'))
       .finally(() => setLoading(false));
+    // Laad klantenlijst voor "Klant kiezen" dropdown
+    axios.get(`${API}/customers`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setCustomers(res.data || []))
+      .catch(() => {});
   }, [taxatie.id]);
+
+  // Vul pagina 2 + 1.2_BSR + 10.0 in vanuit gekozen klant
+  const applyCustomer = (c) => {
+    const addr = (c.address || '').trim();
+    let street = addr, hnr = '', toev = '';
+    const m = addr.match(/^(.+?)\s+(\d+[a-zA-Z]*)\s*(.*)$/);
+    if (m) { street = m[1].trim(); hnr = m[2].trim(); toev = (m[3] || '').trim(); }
+    const updates = {
+      '4.0': '2 - Ondernemer',
+      '4.1.0': '', '4.1.1': '', '4.1.2': '',
+      '4.2.0': c.name || '',
+      '4.2.1': '', '4.2.2': '', '4.2.3': '',
+      '4.4': street, '4.5_HN': hnr, '4.6': toev,
+      '4.7_PC': '',
+      '4.8': c.city || '',
+      '4.9_TEL': c.phone || '',
+      '4.10_EM': c.email || '',
+      '1.2_BSR': (c.rsin || '').trim(),
+      '10.0': c.name || '',
+    };
+    if (c.art8_vergunning && c.art8_nummer) {
+      updates['2.0'] = '2 - melding bpm voor een personenauto, bestelauto of motor met een artikel 8-vergunning';
+      const parts = c.art8_nummer.split(/\s+/);
+      const num = parts.filter(p => /^\d/.test(p)).join('');
+      updates['4.3._BN.1'] = num || c.art8_nummer;
+      updates['4.3._BN.2'] = 'BPM';
+    }
+    setValues(prev => ({ ...prev, ...updates }));
+    setCustomerSearch(c.name);
+    setShowCustList(false);
+    toast.success(`Klant gegevens overgenomen: ${c.name}`);
+  };
+
+  // Reset naar Motoimport defaults (jij doet de aangifte zelf)
+  const resetToOwnCompany = () => {
+    setValues(prev => ({
+      ...prev,
+      '4.0': '2 - Ondernemer',
+      '4.1.0': '', '4.1.1': '', '4.1.2': '',
+      '4.2.0': 'Motoimport B.V.',
+      '4.2.1': 'Sandro', '4.2.2': '', '4.2.3': 'Milone',
+      '4.4': 'Horsterhoekweg', '4.5_HN': '11', '4.6': '',
+      '4.7_PC': '7433 SV',
+      '4.8': 'Schalkhaar',
+      '4.9_TEL': '0681792660',
+      '4.10_EM': 'motoimportbv@gmail.com',
+      '1.2_BSR': '866851525',
+      '10.0': 'Sandro Milone',
+      '4.3._BN.1': '', '4.3._BN.2': '',
+      '2.0': '1 - aangifte bpm voor een personenauto of motor',
+    }));
+    setCustomerSearch('');
+    toast.success('Teruggezet naar Motoimport B.V.');
+  };
+
+  const filteredCustomers = customers.filter(c =>
+    !customerSearch || c.name?.toLowerCase().includes(customerSearch.toLowerCase())
+  ).slice(0, 8);
 
   const setVal = (k, v) => setValues(prev => ({ ...prev, [k]: v }));
 
@@ -699,6 +764,48 @@ function AangifteBpmEditor({ taxatie, onClose }) {
           <div className="p-10 flex items-center justify-center text-zinc-500"><Loader2 className="w-5 h-5 mr-2 animate-spin" />Laden…</div>
         ) : (
           <div className="p-6 space-y-6">
+            {/* Klant-kiezen sectie — vult automatisch pagina 2 in */}
+            <section className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-amber-900">Aangever — klant kiezen of zelf invullen</h3>
+                <Button size="sm" variant="outline" onClick={resetToOwnCompany} data-testid="aangifte-reset-own" className="text-xs">
+                  Reset naar Motoimport B.V.
+                </Button>
+              </div>
+              <p className="text-xs text-amber-800 mb-3">Kies een klant uit je klantenbestand om pagina 2 automatisch in te vullen. Of vul de velden handmatig in (onder pagina 2).</p>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Zoek klant op naam..."
+                  value={customerSearch}
+                  onChange={e => { setCustomerSearch(e.target.value); setShowCustList(true); }}
+                  onFocus={() => setShowCustList(true)}
+                  onBlur={() => setTimeout(() => setShowCustList(false), 200)}
+                  className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                  data-testid="aangifte-customer-search"
+                />
+                {showCustList && filteredCustomers.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-amber-300 rounded-lg shadow-lg max-h-72 overflow-y-auto">
+                    {filteredCustomers.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); applyCustomer(c); }}
+                        className="w-full text-left px-3 py-2 hover:bg-amber-50 border-b border-amber-100 last:border-0"
+                        data-testid={`aangifte-customer-${c.id}`}
+                      >
+                        <div className="font-bold text-sm text-zinc-900">{c.name}</div>
+                        <div className="text-xs text-zinc-500 flex gap-2 flex-wrap">
+                          {c.city && <span>{c.city}</span>}
+                          {c.rsin && <span className="font-mono">RSIN {c.rsin}</span>}
+                          {c.art8_vergunning && <span className="font-bold text-amber-700">Art.8</span>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
             <section>
               <h3 className="text-sm font-bold uppercase tracking-wide text-blue-700 mb-3 pb-2 border-b border-blue-200">Pagina 1 van 21 — Identificatie</h3>
               <div className="space-y-3">{fieldsP1.map(renderField)}</div>
