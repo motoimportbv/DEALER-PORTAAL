@@ -73,6 +73,8 @@ import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
 import TaxatieProgramma from "./pages/admin/TaxatieProgramma";
 import MaandfactuurOverzicht from "./pages/admin/MaandfactuurOverzicht";
 import CustomerDirectory from "./pages/admin/CustomerDirectory";
+import TaxatieLanding from "./pages/TaxatieLanding";
+import AdminTaxatieAanvragen from "./pages/admin/AdminTaxatieAanvragen";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 import CustomerMotorView from "./pages/CustomerMotorView";
@@ -224,6 +226,7 @@ function App() {
             <Route path="/suppliers" element={<SupplierLandingPage />} />
             <Route path="/dealers" element={<DealerLandingPage />} />
             <Route path="/particulier-verkopen" element={<ParticulierLandingPage />} />
+            <Route path="/taxatie" element={<TaxatieLanding />} />
             <Route path="/motoren" element={<PublicMotorListing />} />
             <Route path="/motor/:id/:slug?" element={<PublicMotorDetail />} />
             <Route path="/klant/motor/:id" element={<CustomerMotorView />} />
@@ -260,6 +263,7 @@ function App() {
             <Route path="/admin/taxatie-programma" element={<TaxatieProgramma />} />
             <Route path="/admin/taxatie-maandfactuur" element={<MaandfactuurOverzicht />} />
             <Route path="/admin/klanten" element={<CustomerDirectory />} />
+            <Route path="/admin/taxatie-aanvragen" element={<AdminTaxatieAanvragen />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />

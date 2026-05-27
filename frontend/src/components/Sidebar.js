@@ -32,7 +32,8 @@ import {
   Search,
   Printer,
   FileText,
-  Users
+  Users,
+  Inbox
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -106,6 +107,7 @@ const Sidebar = () => {
       { path: '/admin/google-motors', icon: Globe, label: 'Google Motoren' },
       { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
       { path: '/admin/taxatie-maandfactuur', icon: FileText, label: 'Maandfactuur Overzicht' },
+      { path: '/admin/taxatie-aanvragen', icon: Inbox, label: 'Taxatie-aanvragen' },
       { path: '/admin/klanten', icon: Users, label: 'Mijn Klanten' },
     ] : []),
   ];
@@ -135,6 +137,7 @@ const Sidebar = () => {
     { path: '/admin/taxatie', icon: FileText, label: 'Taxatie Facturen' },
     { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
     { path: '/admin/taxatie-maandfactuur', icon: FileText, label: 'Maandfactuur Overzicht' },
+    { path: '/admin/taxatie-aanvragen', icon: Inbox, label: 'Taxatie-aanvragen' },
     { path: '/admin/klanten', icon: Users, label: 'Mijn Klanten' },
   ];
 
