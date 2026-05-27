@@ -2416,6 +2416,23 @@ async def export_aangifte_bpm_pdf(
 
         pdf_bytes = pdf_doc.tobytes()
         pdf_doc.close()
+
+        # Als veld 10.5 (Volmacht) aangevinkt is, plak de Volmacht-PDF erachter aan
+        if bool(p1p6_values.get("10.5")):
+            try:
+                volmacht_resp = await export_volmacht_pdf_v2(taxatie_id, body={}, current_user=current_user)
+                volmacht_bytes = volmacht_resp.body if hasattr(volmacht_resp, 'body') else None
+                if volmacht_bytes:
+                    combined = fitz.open("pdf", pdf_bytes)
+                    volmacht_doc = fitz.open("pdf", volmacht_bytes)
+                    combined.insert_pdf(volmacht_doc)
+                    pdf_bytes = combined.tobytes()
+                    combined.close()
+                    volmacht_doc.close()
+                    logger.info(f"Volmacht-PDF samengevoegd met aangifte voor taxatie {taxatie_id}")
+            except Exception as merge_err:
+                logger.warning(f"Could not merge Volmacht into aangifte: {merge_err}")
+
         filename = f"Aangifte_BPM_{doc_data.get('brand', 'Motor')}_{doc_data.get('model', '')}_{now.strftime('%Y%m%d')}.pdf"
         return Response(
             content=pdf_bytes,
