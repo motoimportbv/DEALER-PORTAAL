@@ -25,11 +25,21 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const BRANDS = ['BMW', 'Ducati', 'Honda', 'Kawasaki', 'KTM', 'Triumph', 'Yamaha', 'Suzuki', 'Harley-Davidson', 'Aprilia', 'Moto Guzzi', 'Brixton', 'Overig'];
 
+const DEFAULT_TAXATIE_FEE = 120;  // Vaste prijs per taxatie ex BTW (was 160)
+const INTRO_TAXATIE_FEE = 60;     // Introductietarief 1e taxatie ex BTW
+const DEFAULT_EXTRA_LINES = [
+  { description: 'Verzendkosten', amount: 10, btw_pct: 21 },
+  { description: 'Uitprinten / drukwerk', amount: 10, btw_pct: 21 },
+];
+
 const emptyForm = {
   customer_name: '', customer_address: '', customer_city: '', customer_phone: '', customer_email: '',
+  customer_id: '',
   invoice_type: 'both', // 'taxatie_only', 'fee_only', 'both'
-  taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }],
+  taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: DEFAULT_TAXATIE_FEE, taxatie_value: '' }],
+  extra_lines: [...DEFAULT_EXTRA_LINES.map(l => ({ ...l }))],
   extra_fee: 60, extra_fee_no_btw: true,
+  is_intro: false,
   notes: '', date: new Date().toISOString().split('T')[0],
 };
 
@@ -76,17 +86,18 @@ export default function TaxatieInvoices() {
     }, 200);
     return () => { cancel = true; clearTimeout(t); };
   }, [customerQuery, token]);
-  const pickCustomer = (c) => {
+  const pickCustomer = async (c) => {
     setForm(f => {
       const next = {
         ...f,
+        customer_id: c.id || '',
         customer_name: c.name || '',
         customer_phone: c.phone || '',
         customer_address: c.address || '',
         customer_city: c.city || '',
         customer_email: c.email || '',
       };
-      // Taxatietarief van klant overschrijven (default €160 → bv. €175)
+      // Taxatietarief van klant overschrijven (default €120 → bv. €175)
       if (c.default_taxatie_fee && Number(c.default_taxatie_fee) > 0) {
         const ft = Number(c.default_taxatie_fee);
         next.taxatie_items = (f.taxatie_items || []).map(it => ({ ...it, fee: ft }));
@@ -97,6 +108,10 @@ export default function TaxatieInvoices() {
         next.extra_fee_no_btw = true;
         if (f.invoice_type === 'taxatie_only') next.invoice_type = 'both';
       }
+      // Standaard altijd verzenden + uitprinten regels als die nog niet bestaan
+      if (!next.extra_lines || next.extra_lines.length === 0) {
+        next.extra_lines = [...DEFAULT_EXTRA_LINES.map(l => ({ ...l }))];
+      }
       return next;
     });
     setCustomerQuery(c.name || '');
@@ -105,6 +120,24 @@ export default function TaxatieInvoices() {
     if (c.default_taxatie_fee) msg.push(`Taxatietarief \u20ac${c.default_taxatie_fee}`);
     if (c.default_fee) msg.push(`extra fee \u20ac${c.default_fee}`);
     if (msg.length) toast.success(`${msg.join(' + ')} ingevuld voor ${c.name}`);
+
+    // Check intro-pricing (alleen als klant via /taxatie aanmelding is binnengekomen)
+    if (c.id) {
+      try {
+        const r = await axios.get(`${API}/customers/${c.id}/intro-pricing`, { headers });
+        if (r.data?.is_eligible) {
+          const introFee = Number(r.data.intro_fee_ex_btw) || INTRO_TAXATIE_FEE;
+          setForm(f => ({
+            ...f,
+            is_intro: true,
+            taxatie_items: (f.taxatie_items || []).map(it => ({ ...it, fee: introFee })),
+          }));
+          toast.success(`🎉 Introductietarief: eerste taxatie €${introFee} ex BTW`);
+        } else {
+          setForm(f => ({ ...f, is_intro: false }));
+        }
+      } catch { /* niet kritisch */ }
+    }
   };
 
   // Auto-refresh when tab/app becomes visible again
@@ -143,6 +176,8 @@ export default function TaxatieInvoices() {
         extra_fee_no_btw: form.extra_fee_no_btw,
         invoice_type: form.invoice_type,
         taxatie_items: items,
+        extra_lines: (form.extra_lines || []).filter(l => (l.description || '').trim() && Number(l.amount) > 0),
+        is_intro: !!form.is_intro,
         notes: form.notes,
         date: form.date,
       };
@@ -155,7 +190,7 @@ export default function TaxatieInvoices() {
         toast.success(`Factuur #${res.data.invoice_number} aangemaakt`);
       }
       setEditingId(null);
-      setForm({ ...emptyForm, taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }] });
+      setForm({ ...emptyForm, taxatie_items: [{ brand: '', model: '', year: '', vin: '', license_plate: '', fee: DEFAULT_TAXATIE_FEE, taxatie_value: '' }], extra_lines: [...DEFAULT_EXTRA_LINES.map(l => ({ ...l }))] });
       setView('list');
       fetchInvoices();
     } catch (err) {
@@ -396,13 +431,34 @@ export default function TaxatieInvoices() {
             </div>
           </CardContent></Card>
 
+          {/* INTRO banner */}
+          {form.is_intro && (
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 flex items-start gap-3" data-testid="intro-banner">
+              <div className="bg-blue-600 text-white rounded-lg p-2 flex-shrink-0">
+                <Euro className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-blue-900 text-sm">🎉 Introductietarief — eerste taxatie</h3>
+                <p className="text-xs text-blue-700 mt-1">
+                  Deze klant heeft zich aangemeld via <code className="bg-blue-100 px-1 rounded">/taxatie</code> en krijgt eenmalig het introductietarief van <strong>€{INTRO_TAXATIE_FEE} ex BTW</strong> (i.p.v. €{DEFAULT_TAXATIE_FEE}). Volgende taxaties gaan automatisch tegen het normale tarief.
+                </p>
+              </div>
+              <button type="button" onClick={() => setForm(f => ({
+                ...f, is_intro: false,
+                taxatie_items: (f.taxatie_items || []).map(it => ({ ...it, fee: DEFAULT_TAXATIE_FEE })),
+              }))} className="text-blue-400 hover:text-blue-700 text-xs underline">
+                Niet toepassen
+              </button>
+            </div>
+          )}
+
           {/* Taxatie regels (motoren) */}
           {form.invoice_type !== 'fee_only' && (
             <Card><CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider"><Bike className="w-4 h-4" /> Taxatie Regels ({form.taxatie_items.length})</h3>
                 <Button type="button" size="sm" variant="outline" className="text-xs" data-testid="add-taxatie-item"
-                  onClick={() => setForm({ ...form, taxatie_items: [...form.taxatie_items, { brand: '', model: '', year: '', vin: '', license_plate: '', fee: 160, taxatie_value: '' }] })}>
+                  onClick={() => setForm({ ...form, taxatie_items: [...form.taxatie_items, { brand: '', model: '', year: '', vin: '', license_plate: '', fee: DEFAULT_TAXATIE_FEE, taxatie_value: '' }] })}>
                   <Plus className="w-3 h-3 mr-1" /> Motor toevoegen
                 </Button>
               </div>
@@ -504,6 +560,53 @@ export default function TaxatieInvoices() {
             </CardContent></Card>
           )}
 
+          {/* Extra factuurregels (verzenden + uitprinten, standaard altijd toegevoegd) */}
+          <Card><CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="flex items-center gap-2 font-bold text-zinc-700 text-sm uppercase tracking-wider"><FileText className="w-4 h-4" /> Extra Regels ({(form.extra_lines || []).length})</h3>
+              <Button type="button" size="sm" variant="outline" className="text-xs" data-testid="add-extra-line"
+                onClick={() => setForm({ ...form, extra_lines: [...(form.extra_lines || []), { description: '', amount: 0, btw_pct: 21 }] })}>
+                <Plus className="w-3 h-3 mr-1" /> Regel toevoegen
+              </Button>
+            </div>
+            <p className="text-xs text-zinc-500 mb-3">Standaard toegevoegd: verzenden + uitprinten (elk €10 ex BTW).</p>
+            {(form.extra_lines || []).map((line, idx) => (
+              <div key={idx} className="grid grid-cols-12 gap-2 mb-2 items-center" data-testid={`extra-line-${idx}`}>
+                <input
+                  value={line.description}
+                  onChange={(e) => { const next = [...form.extra_lines]; next[idx] = { ...line, description: e.target.value }; setForm({ ...form, extra_lines: next }); }}
+                  placeholder="Omschrijving"
+                  className="col-span-6 border border-zinc-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-red-500"
+                  data-testid={`extra-line-desc-${idx}`}
+                />
+                <div className="col-span-3 relative">
+                  <span className="absolute left-2 top-1.5 text-xs text-zinc-400">€</span>
+                  <input
+                    type="number" step="0.01" min="0"
+                    value={line.amount}
+                    onChange={(e) => { const next = [...form.extra_lines]; next[idx] = { ...line, amount: e.target.value }; setForm({ ...form, extra_lines: next }); }}
+                    className="w-full border border-zinc-300 rounded-lg pl-6 pr-2 py-1.5 text-sm font-bold focus:outline-none focus:border-red-500"
+                    data-testid={`extra-line-amount-${idx}`}
+                  />
+                </div>
+                <select
+                  value={line.btw_pct ?? 21}
+                  onChange={(e) => { const next = [...form.extra_lines]; next[idx] = { ...line, btw_pct: parseInt(e.target.value) }; setForm({ ...form, extra_lines: next }); }}
+                  className="col-span-2 border border-zinc-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-red-500"
+                  data-testid={`extra-line-btw-${idx}`}
+                >
+                  <option value={21}>21% BTW</option>
+                  <option value={9}>9% BTW</option>
+                  <option value={0}>0% BTW</option>
+                </select>
+                <button type="button" onClick={() => { const next = form.extra_lines.filter((_, i) => i !== idx); setForm({ ...form, extra_lines: next }); }}
+                  className="col-span-1 text-red-400 hover:text-red-600 flex justify-center" data-testid={`extra-line-remove-${idx}`}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </CardContent></Card>
+
           {/* Totaaloverzicht */}
           {(() => {
             const items = form.taxatie_items || [];
@@ -512,7 +615,10 @@ export default function TaxatieInvoices() {
             const showFee = form.invoice_type === 'fee_only' || form.invoice_type === 'both';
             const taxatieBtw = showTaxatie ? taxatieFee * 0.21 : 0;
             const feeAmount = showFee ? (parseFloat(form.extra_fee) || 0) : 0;
-            const total = (showTaxatie ? taxatieFee + taxatieBtw : 0) + feeAmount;
+            const extraLines = (form.extra_lines || []).filter(l => (l.description || '').trim() && Number(l.amount) > 0);
+            const extraLinesEx = extraLines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+            const extraLinesBtw = extraLines.reduce((s, l) => s + (parseFloat(l.amount) || 0) * ((parseFloat(l.btw_pct) || 0) / 100), 0);
+            const total = (showTaxatie ? taxatieFee + taxatieBtw : 0) + feeAmount + extraLinesEx + extraLinesBtw;
             return (
               <div className="bg-zinc-900 rounded-xl p-5 text-white">
                 {showTaxatie && items.map((item, idx) => (
@@ -531,6 +637,18 @@ export default function TaxatieInvoices() {
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-zinc-400">Fee kosten{form.extra_fee_no_btw ? ' (zonder BTW)' : ''}</span>
                     <span>{formatCurrency(feeAmount)}</span>
+                  </div>
+                )}
+                {extraLines.map((l, idx) => (
+                  <div key={`xl-${idx}`} className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">{l.description}{l.btw_pct ? '' : ' (zonder BTW)'}</span>
+                    <span>{formatCurrency(parseFloat(l.amount) || 0)}</span>
+                  </div>
+                ))}
+                {extraLinesBtw > 0 && (
+                  <div className="flex justify-between text-xs mb-1 text-zinc-500">
+                    <span>BTW extra regels</span>
+                    <span>{formatCurrency(extraLinesBtw)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-zinc-700">
@@ -582,7 +700,7 @@ export default function TaxatieInvoices() {
                     year: it.year || '',
                     vin: it.vin || '',
                     license_plate: it.license_plate || '',
-                    fee: it.fee ?? 160,
+                    fee: it.fee ?? DEFAULT_TAXATIE_FEE,
                     taxatie_value: it.taxatie_value ?? '',
                   }))
                 : [{
@@ -591,7 +709,7 @@ export default function TaxatieInvoices() {
                     year: inv.motorcycle_year || '',
                     vin: inv.motorcycle_vin || '',
                     license_plate: inv.motorcycle_license_plate || '',
-                    fee: inv.fee ?? 160,
+                    fee: inv.fee ?? DEFAULT_TAXATIE_FEE,
                     taxatie_value: inv.taxatie_value ?? '',
                   }];
               setForm({
@@ -600,7 +718,12 @@ export default function TaxatieInvoices() {
                 customer_city: inv.customer_city || '',
                 customer_phone: inv.customer_phone || '',
                 customer_email: inv.customer_email || '',
+                customer_id: inv.customer_id || '',
                 taxatie_items: items,
+                extra_lines: (inv.extra_lines && inv.extra_lines.length > 0)
+                  ? inv.extra_lines.map(l => ({ ...l }))
+                  : [...DEFAULT_EXTRA_LINES.map(l => ({ ...l }))],
+                is_intro: !!inv.is_intro,
                 notes: inv.notes || '',
                 btw_percentage: inv.btw_percentage ?? 21,
                 invoice_type: inv.invoice_type || 'taxatie_only',
@@ -682,10 +805,18 @@ export default function TaxatieInvoices() {
               const taxatieFee = showTaxatie ? (items.length > 0 ? items.reduce((s, i) => s + (parseFloat(i.fee) || 0), 0) : (parseFloat(inv.fee) || 0)) : 0;
               const taxatieBtw = taxatieFee * ((inv.btw_percentage || 21) / 100);
               const feeAmount = showFee ? (parseFloat(inv.extra_fee) || 0) : 0;
-              const total = taxatieFee + taxatieBtw + feeAmount;
+              const extraLines = (inv.extra_lines || []).filter(l => (l.description || '').trim() && Number(l.amount) > 0);
+              const extraLinesEx = extraLines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+              const extraLinesBtw = extraLines.reduce((s, l) => s + (parseFloat(l.amount) || 0) * ((parseFloat(l.btw_pct) || 0) / 100), 0);
+              const total = taxatieFee + taxatieBtw + feeAmount + extraLinesEx + extraLinesBtw;
 
               return (
                 <>
+                  {inv.is_intro && (
+                    <div style={{ background: '#dbeafe', border: '1px solid #3b82f6', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#1e40af' }}>
+                      <strong>🎉 Introductietarief eerste taxatie</strong> — eenmalige actie voor nieuwe klanten.
+                    </div>
+                  )}
                   <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
                     <thead>
                       <tr>
@@ -719,6 +850,18 @@ export default function TaxatieInvoices() {
                         <tr>
                           <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>Fee kosten{inv.extra_fee_no_btw ? ' (zonder BTW)' : ''}</td>
                           <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(feeAmount)}</td>
+                        </tr>
+                      )}
+                      {extraLines.map((l, idx) => (
+                        <tr key={`xl-${idx}`}>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>{l.description}{!l.btw_pct ? ' (zonder BTW)' : ''}</td>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(parseFloat(l.amount) || 0)}</td>
+                        </tr>
+                      ))}
+                      {extraLinesBtw > 0 && (
+                        <tr>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px' }}>BTW extra regels</td>
+                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #eee', fontSize: '14px', textAlign: 'right' }}>{formatCurrency(extraLinesBtw)}</td>
                         </tr>
                       )}
                       <tr>

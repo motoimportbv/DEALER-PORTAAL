@@ -123,7 +123,7 @@ async def list_customers(
 
     docs = await db.customers.find(
         query,
-        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1, "rsin": 1, "art8_vergunning": 1, "art8_nummer": 1, "postcode": 1, "contact_person": 1},
+        {"_id": 0, "id": 1, "name": 1, "phone": 1, "email": 1, "address": 1, "city": 1, "usage_count": 1, "updated_at": 1, "default_fee": 1, "default_taxatie_fee": 1, "rsin": 1, "art8_vergunning": 1, "art8_nummer": 1, "postcode": 1, "contact_person": 1, "source": 1, "intro_used": 1},
     ).sort([("usage_count", -1), ("updated_at", -1)]).to_list(200)
     return docs
 
@@ -213,3 +213,56 @@ async def customer_history(
             "total_invoiced": total_invoiced,
         },
     }
+
+
+
+@router.get("/customers/{customer_id}/intro-pricing")
+async def customer_intro_pricing(
+    customer_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Bepaal of deze klant in aanmerking komt voor de introductie-prijs (€60 i.p.v. €120).
+    Eligible = source == 'taxatie_aanvraag' AND geen eerdere taxatie-factuur.
+    """
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    cust = await db.customers.find_one({"id": customer_id, **_owner_filter(current_user)}, {"_id": 0})
+    if not cust:
+        raise HTTPException(status_code=404, detail="Klant niet gevonden")
+
+    from routers.taxatie import _owner_filter_for_user
+    owner_q = _owner_filter_for_user(current_user)
+    name = cust.get("name") or ""
+    name_q = {"customer_name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
+
+    invoice_count = await db.taxatie_invoices.count_documents({"$and": [name_q, owner_q]})
+
+    is_eligible = (
+        cust.get("source") == "taxatie_aanvraag"
+        and not cust.get("intro_used", False)
+        and invoice_count == 0
+    )
+
+    return {
+        "customer_id": customer_id,
+        "is_eligible": is_eligible,
+        "source": cust.get("source"),
+        "intro_used": bool(cust.get("intro_used", False)),
+        "invoice_count": invoice_count,
+        "intro_fee_ex_btw": 60.0,
+        "default_fee_ex_btw": 120.0,
+        "shipping_fee_ex_btw": 10.0,
+        "print_fee_ex_btw": 10.0,
+    }
+
+
+async def mark_intro_used(current_user: dict, customer_name: str) -> None:
+    """Markeer intro_used=true voor de klant na hun eerste taxatie-factuur."""
+    if not customer_name:
+        return
+    name_slug = re.sub(r"\s+", " ", customer_name.strip().lower())
+    await db.customers.update_one(
+        {"created_by": current_user.get("id"), "name_slug": name_slug, "source": "taxatie_aanvraag"},
+        {"$set": {"intro_used": True}},
+    )

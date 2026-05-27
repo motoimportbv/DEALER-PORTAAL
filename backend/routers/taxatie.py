@@ -107,6 +107,8 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
         "extra_fee_no_btw": body.get("extra_fee_no_btw", True),
         "invoice_type": body.get("invoice_type", "both"),
         "taxatie_items": body.get("taxatie_items", []),
+        "extra_lines": body.get("extra_lines", []),
+        "is_intro": bool(body.get("is_intro", False)),
         "notes": body.get("notes", ""),
         "bank_name": TAXATIE_BANK_NAME,
         "bank_iban": TAXATIE_BANK_IBAN,
@@ -120,8 +122,11 @@ async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = De
     del invoice["_id"]
     # Upsert klant in customers-bestand zodat naam volgende keer auto-suggereert
     try:
-        from routers.customers import upsert_customer_from_form
+        from routers.customers import upsert_customer_from_form, mark_intro_used
         await upsert_customer_from_form(current_user, invoice)
+        # Indien deze factuur het intro-tarief gebruikte → markeer klant als 'intro_used'
+        if invoice.get("is_intro"):
+            await mark_intro_used(current_user, invoice.get("customer_name", ""))
     except Exception:
         logger.exception("upsert_customer faalde (taxatie factuur)")
     return invoice
@@ -147,7 +152,7 @@ async def update_taxatie_invoice(invoice_id: str, body: dict = Body(...), curren
     if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
     update_fields = {}
-    for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "extra_fee_no_btw", "invoice_type", "taxatie_items", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
+    for field in ["status", "notes", "fee", "btw_percentage", "include_extra_fee", "extra_fee", "extra_fee_no_btw", "invoice_type", "taxatie_items", "extra_lines", "is_intro", "taxatie_value", "customer_name", "customer_address", "customer_city", "customer_phone", "customer_email", "motorcycle_brand", "motorcycle_model", "motorcycle_year", "motorcycle_license_plate", "motorcycle_vin", "date"]:
         if field in body:
             update_fields[field] = body[field]
     if not update_fields:
