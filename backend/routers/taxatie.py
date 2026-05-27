@@ -2244,6 +2244,44 @@ async def get_aangifte_overrides(taxatie_id: str, current_user: dict = Depends(r
     defaults = await _aangifte_defaults_with_customer(doc, current_user, report_dt)
     customer_name = (doc.get("customer_name") or "").strip()
     saved = doc.get("aangifte_overrides") or {}
+
+    # Auto-migratie: schoon vuile saved overrides op (oude format met BPM in 4.3._BN.1
+    # of postcode/plaats in 4.6). Schrijf opgeschoonde versie terug naar DB.
+    import re as _re_clean
+    saved_changed = False
+    art8_in1 = (saved.get("4.3._BN.1") or "").strip()
+    if art8_in1:
+        m = _re_clean.match(r"^(.*?)\s*(BPM\d*)\s*$", art8_in1, _re_clean.IGNORECASE)
+        if m and m.group(2):
+            new_v1 = m.group(1).strip()
+            new_v2 = m.group(2).upper()
+            old_v2 = (saved.get("4.3._BN.2") or "").strip()
+            # Behoud langste suffix
+            if old_v2 and len(old_v2) > len(new_v2) and old_v2.upper().startswith("BPM"):
+                pass  # keep old_v2
+            else:
+                saved["4.3._BN.2"] = new_v2
+            saved["4.3._BN.1"] = new_v1
+            saved_changed = True
+    toev_old = (saved.get("4.6") or "").strip()
+    if toev_old:
+        pc_m = _re_clean.search(r"(\d{4})\s*([A-Z]{2})\b", toev_old, _re_clean.IGNORECASE)
+        if pc_m:
+            saved["4.7_PC"] = f"{pc_m.group(1)} {pc_m.group(2).upper()}"
+            after = toev_old[pc_m.end():].strip(" ,;").strip()
+            if after:
+                saved["4.8"] = after
+            saved["4.6"] = toev_old[:pc_m.start()].strip(" ,;").strip()
+            saved_changed = True
+    if saved_changed:
+        try:
+            await db.taxatie_programma.update_one(
+                {"id": taxatie_id},
+                {"$set": {"aangifte_overrides": saved}},
+            )
+        except Exception as me:
+            logger.warning(f"Could not persist cleaned overrides: {me}")
+
     current = {**defaults, **saved}
     return {
         "fields_page1": AANGIFTE_FIELDS_P1,
