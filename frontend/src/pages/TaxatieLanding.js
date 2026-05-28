@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -33,6 +33,15 @@ export default function TaxatieLanding() {
   });
   const [files, setFiles] = useState({});  // {foto_voorwiel: File, ...}
   const [details, setDetails] = useState([]);  // File[]
+
+  // Track page view (1× per browser-sessie om spam te voorkomen)
+  useEffect(() => {
+    const KEY = 'taxatie_view_tracked';
+    if (sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY, '1');
+    axios.post(`${API}/public/taxatie-view`, { referrer: document.referrer || '' })
+      .catch(() => { /* niet kritisch */ });
+  }, []);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setFile = (k, f) => setFiles(prev => ({ ...prev, [k]: f }));

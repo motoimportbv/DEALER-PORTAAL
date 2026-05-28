@@ -34,15 +34,18 @@ export default function AdminTaxatieAanvragen() {
   const [aanvragen, setAanvragen] = useState([]);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState('alle');
+  const [views, setViews] = useState({ views: [], today: 0, week: 0, total: 0 });
   const isAllowed = user?.role === 'admin' || user?.role === 'taxateur' || user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
 
   const fetchData = useCallback(async () => {
     if (!isAllowed) { setLoading(false); return; }
     try {
-      const res = await axios.get(`${API}/admin/taxatie-aanvragen`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setAanvragen(res.data?.aanvragen || []);
+      const [resA, resV] = await Promise.all([
+        axios.get(`${API}/admin/taxatie-aanvragen`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/taxatie-views`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      setAanvragen(resA.data?.aanvragen || []);
+      setViews(resV.data || { views: [], today: 0, week: 0, total: 0 });
     } catch (e) {
       toast.error('Laden mislukt: ' + (e.response?.data?.detail || e.message));
     }
@@ -123,6 +126,38 @@ export default function AdminTaxatieAanvragen() {
             </Link>
           </div>
         </div>
+
+        {/* Bezoekers stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="views-stats">
+          <StatTile label="Vandaag" value={views.today} accent="bg-blue-600" />
+          <StatTile label="Laatste 7 dagen" value={views.week} accent="bg-emerald-600" />
+          <StatTile label="Totaal bezoekers" value={views.total} accent="bg-zinc-900" />
+          <StatTile label="Aanvragen totaal" value={aanvragen.length} accent="bg-red-600" />
+        </div>
+
+        {/* Recente bezoekers (collapsible) */}
+        {views.views.length > 0 && (
+          <details className="bg-white rounded-2xl border" data-testid="views-list">
+            <summary className="cursor-pointer px-5 py-3 font-bold text-sm hover:bg-zinc-50 select-none">
+              👁️ Laatste {Math.min(views.views.length, 10)} bezoekers op /taxatie
+              <span className="text-zinc-400 text-xs font-normal ml-2">(klik om te openen)</span>
+            </summary>
+            <div className="border-t divide-y">
+              {views.views.slice(0, 10).map(v => (
+                <div key={v.id} className="px-5 py-3 grid grid-cols-12 gap-3 text-sm">
+                  <div className="col-span-3 text-zinc-600 text-xs">
+                    {new Date(v.created_at).toLocaleString('nl-NL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div className="col-span-4 font-semibold">
+                    {[v.city, v.country].filter(Boolean).join(', ') || <span className="text-zinc-400">Onbekend</span>}
+                  </div>
+                  <div className="col-span-3 text-zinc-500 text-xs">{v.device}</div>
+                  <div className="col-span-2 text-zinc-400 text-xs truncate" title={v.isp}>{v.isp}</div>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
 
         {/* Filter tabs */}
         <div className="flex gap-2 flex-wrap">
@@ -214,6 +249,18 @@ export default function AdminTaxatieAanvragen() {
         />
       )}
     </Layout>
+  );
+}
+
+function StatTile({ label, value, accent }) {
+  return (
+    <div className="bg-white rounded-xl border p-4 flex items-center gap-3" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className={`${accent} w-1.5 h-10 rounded-full`} />
+      <div>
+        <p className="text-xs font-bold uppercase text-zinc-500 tracking-wide">{label}</p>
+        <p className="text-2xl font-black text-zinc-900" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{value}</p>
+      </div>
+    </div>
   );
 }
 

@@ -5,9 +5,9 @@ Verzamelt bedrijfsgegevens + 9 vaste motor-foto's + max 20 detail-foto's van sch
 - Verstuurt een notificatie-email naar motoimportbv@gmail.com
 - Admin endpoints om aanvragen te bekijken / status te wijzigen
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Body
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Body, Request
 from fastapi.responses import FileResponse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 import os
 import re
@@ -358,6 +358,138 @@ async def delete_aanvraag(aanvraag_id: str, current_user: dict = Depends(get_cur
             logger.warning(f"Could not delete file {f.get('filename')}: {e}")
     await db.taxatie_aanvragen.delete_one({"id": aanvraag_id})
     return {"status": "deleted"}
+
+
+# ============ PAGE VIEW TRACKING ============
+
+def _parse_user_agent(ua: str) -> str:
+    """Extract een korte apparaat-omschrijving uit een user-agent string."""
+    ua_lower = (ua or "").lower()
+    if "iphone" in ua_lower:
+        return "iPhone"
+    if "ipad" in ua_lower:
+        return "iPad"
+    if "android" in ua_lower:
+        return "Android"
+    if "macintosh" in ua_lower or "mac os" in ua_lower:
+        return "Mac"
+    if "windows" in ua_lower:
+        return "Windows"
+    if "linux" in ua_lower:
+        return "Linux"
+    return "Onbekend apparaat"
+
+
+async def _lookup_geo(ip: str) -> dict:
+    """Probeer een ruwe locatie te bepalen via ip-api.com (gratis, geen key)."""
+    if not ip or ip.startswith(("127.", "10.", "192.168.", "172.")) or ip == "::1":
+        return {"country": "", "city": "", "isp": ""}
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            r = await client.get(f"http://ip-api.com/json/{ip}?fields=status,country,city,isp")
+            if r.status_code == 200:
+                data = r.json()
+                if data.get("status") == "success":
+                    return {
+                        "country": data.get("country", ""),
+                        "city": data.get("city", ""),
+                        "isp": data.get("isp", ""),
+                    }
+    except Exception:
+        pass
+    return {"country": "", "city": "", "isp": ""}
+
+
+@router.post("/public/taxatie-view")
+async def track_taxatie_view(request: Request, body: dict = Body(default={})):
+    """Log een bezoek aan /taxatie en stuur een email-notificatie (max 1× per IP per uur)."""
+    # Haal IP en user-agent op (achter proxy: X-Forwarded-For of X-Real-IP)
+    ip = (
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or request.headers.get("x-real-ip", "")
+        or (request.client.host if request.client else "")
+    )
+    ua = request.headers.get("user-agent", "")
+    referrer = request.headers.get("referer", "") or body.get("referrer", "")
+    device = _parse_user_agent(ua)
+
+    geo = await _lookup_geo(ip)
+    location = ", ".join(p for p in [geo.get("city"), geo.get("country")] if p) or "Onbekende locatie"
+
+    now = datetime.now(timezone.utc)
+    view_doc = {
+        "id": str(uuid.uuid4()),
+        "ip": ip,
+        "user_agent": ua[:200],
+        "device": device,
+        "country": geo.get("country", ""),
+        "city": geo.get("city", ""),
+        "isp": geo.get("isp", ""),
+        "referrer": referrer[:200],
+        "created_at": now.isoformat(),
+    }
+    await db.taxatie_views.insert_one(view_doc)
+
+    # Stuur notificatie max 1× per IP per uur (anti-spam) — alleen als IP bekend is
+    notif_sent = False
+    if ip:
+        last_notif = await db.taxatie_views.find_one(
+            {"ip": ip, "notif_sent": True, "created_at": {"$gte": (now - timedelta(hours=1)).isoformat()}},
+            sort=[("created_at", -1)],
+        )
+        if not last_notif:
+            try:
+                html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto;">
+                  <div style="background: #18181b; color: white; padding: 18px 20px;">
+                    <h2 style="margin: 0; font-size: 18px;">Bezoeker op /taxatie</h2>
+                    <p style="margin: 4px 0 0; color: #a1a1aa; font-size: 12px;">Iemand bekijkt nu uw aanmeldpagina</p>
+                  </div>
+                  <div style="padding: 20px; background: #fff;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                      <tr><td style="padding: 5px 0; color: #71717a; width: 32%;">Tijdstip</td><td style="padding: 5px 0;"><strong>{now.strftime('%H:%M')}</strong> &middot; {now.strftime('%d-%m-%Y')}</td></tr>
+                      <tr><td style="padding: 5px 0; color: #71717a;">Locatie</td><td style="padding: 5px 0;"><strong>{location}</strong></td></tr>
+                      <tr><td style="padding: 5px 0; color: #71717a;">Apparaat</td><td style="padding: 5px 0;">{device}</td></tr>
+                      {f'<tr><td style="padding: 5px 0; color: #71717a;">Provider</td><td style="padding: 5px 0;">{geo.get("isp")}</td></tr>' if geo.get("isp") else ''}
+                      {f'<tr><td style="padding: 5px 0; color: #71717a;">Verwijzer</td><td style="padding: 5px 0; font-size: 11px; color: #555;">{referrer[:80]}</td></tr>' if referrer else ''}
+                    </table>
+                    <p style="margin: 18px 0 0; padding: 12px; background: #f4f4f5; border-radius: 6px; font-size: 12px; color: #71717a;">
+                      Tip: u krijgt max 1× per uur een mail per bezoeker (anti-spam). Volledig overzicht in <a href="https://www.motoimportbv.nl/admin/taxatie-aanvragen" style="color: #dc2626;">admin</a>.
+                    </p>
+                  </div>
+                </div>
+                """
+                await send_email(
+                    to_email=ADMIN_OWNER_EMAIL,
+                    subject=f"Bezoeker op /taxatie — {location}",
+                    html_content=html,
+                )
+                notif_sent = True
+                await db.taxatie_views.update_one({"id": view_doc["id"]}, {"$set": {"notif_sent": True}})
+            except Exception as ee:
+                logger.warning(f"Kon view-notificatie niet sturen: {ee}")
+
+    return {"status": "ok", "tracked": True, "notif_sent": notif_sent}
+
+
+@router.get("/admin/taxatie-views")
+async def list_taxatie_views(current_user: dict = Depends(get_current_user)):
+    """Admin-only: laatste 200 bezoeken aan /taxatie + dag/totaal-tellers."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    views = await db.taxatie_views.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_count = sum(1 for v in views if v.get("created_at", "").startswith(today))
+    week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    week_count = sum(1 for v in views if v.get("created_at", "") >= week_ago)
+    total_count = await db.taxatie_views.count_documents({})
+    return {
+        "views": views,
+        "today": today_count,
+        "week": week_count,
+        "total": total_count,
+    }
 
 
 # ============ FLYER DOWNLOAD ============
