@@ -38,24 +38,28 @@ async def upsert_customer_from_form(user: dict, data: dict) -> None:
     address = (data.get("customer_address") or data.get("address") or "").strip()
     city = (data.get("customer_city") or data.get("city") or "").strip()
 
-    # Match op (naam_slug, telefoon) of (naam_slug, email) per gebruiker
+    # Match strict op (created_by, name_slug) — een klant met dezelfde naam is dezelfde klant.
+    # (Vroeger werd phone/email óók in de match meegenomen, dat zorgde voor dubbele records
+    # wanneer je achteraf een telefoon/email toevoegde aan een bestaande klant.)
     name_slug = _slug(name)
     match: dict = {"created_by": user.get("id"), "name_slug": name_slug}
-    if phone:
-        match["phone"] = phone
-    elif email:
-        match["email"] = email.lower()
 
     update_set = {
         "name": name,
         "name_slug": name_slug,
-        "phone": phone,
-        "email": email.lower() if email else "",
-        "address": address,
-        "city": city,
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user.get("id"),
     }
+    # Alleen niet-lege waarden updaten — anders wist je per ongeluk gegevens
+    # bij hergebruik (bv. PDF-generation pad geeft soms lege strings door).
+    if phone:
+        update_set["phone"] = phone
+    if email:
+        update_set["email"] = email.lower()
+    if address:
+        update_set["address"] = address
+    if city:
+        update_set["city"] = city
     # Optionele default_fee (extra fee, BTW-vrij) — voor Gielen/Wijma/Wilderman
     if "default_fee" in data:
         if data["default_fee"] in (None, ""):
