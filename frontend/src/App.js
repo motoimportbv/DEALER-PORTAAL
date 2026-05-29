@@ -80,6 +80,7 @@ import TaxatieDealerDashboard from "./pages/TaxatieDealerDashboard";
 import TaxatieDealerForgotPassword from "./pages/TaxatieDealerForgotPassword";
 import TaxatieDealerResetPassword from "./pages/TaxatieDealerResetPassword";
 import AdminTaxatieAanvragen from "./pages/admin/AdminTaxatieAanvragen";
+import TaxatieSalesMail from "./pages/admin/TaxatieSalesMail";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 import CustomerMotorView from "./pages/CustomerMotorView";
@@ -274,6 +275,7 @@ function App() {
             <Route path="/admin/taxatie-maandfactuur" element={<MaandfactuurOverzicht />} />
             <Route path="/admin/klanten" element={<CustomerDirectory />} />
             <Route path="/admin/taxatie-aanvragen" element={<AdminTaxatieAanvragen />} />
+            <Route path="/admin/taxatie-sales-mail" element={<TaxatieSalesMail />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />

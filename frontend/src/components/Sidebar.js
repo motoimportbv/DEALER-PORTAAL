@@ -108,6 +108,7 @@ const Sidebar = () => {
       { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
       { path: '/admin/taxatie-maandfactuur', icon: FileText, label: 'Maandfactuur Overzicht' },
       { path: '/admin/taxatie-aanvragen', icon: Inbox, label: 'Taxatie-aanvragen' },
+      { path: '/admin/taxatie-sales-mail', icon: Mail, label: 'Sales-mail dealers' },
       { path: '/admin/klanten', icon: Users, label: 'Mijn Klanten' },
     ] : []),
   ];
@@ -138,6 +139,7 @@ const Sidebar = () => {
     { path: '/admin/taxatie-programma', icon: ClipboardCheck, label: 'BPM Vermindering' },
     { path: '/admin/taxatie-maandfactuur', icon: FileText, label: 'Maandfactuur Overzicht' },
     { path: '/admin/taxatie-aanvragen', icon: Inbox, label: 'Taxatie-aanvragen' },
+    { path: '/admin/taxatie-sales-mail', icon: Mail, label: 'Sales-mail dealers' },
     { path: '/admin/klanten', icon: Users, label: 'Mijn Klanten' },
   ];
 
