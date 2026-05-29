@@ -44,3 +44,4 @@
 - Profile API: GET /api/dealer/me
 - Eigen aanvragen API: GET /api/dealer/aanvragen (gefilterd op email match)
 - Tested register: jan@dealertest.nl / test12345 (was cleaned up after test)
+- **Role isolation (Feb 2026)**: TaxatieDealerGuard component in `frontend/src/components/TaxatieDealerGuard.js` blokkeert deze rol van /admin/*, /dealer/*, /particulier/*, /foreign-dealer/* routes. Allowed paths: /taxatie-dealer/*, /taxatie, public motor pages, /login. Backend: /auth/register weigert role=taxatie_dealer (alleen via /public/taxatie-dealer-register).

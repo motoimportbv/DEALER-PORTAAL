@@ -83,6 +83,7 @@ import AdminTaxatieAanvragen from "./pages/admin/AdminTaxatieAanvragen";
 import TaxatieSalesMail from "./pages/admin/TaxatieSalesMail";
 import LeadScraper from "./pages/admin/LeadScraper";
 import CampaignResults from "./pages/admin/CampaignResults";
+import TaxatieDealerGuard from "./components/TaxatieDealerGuard";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 import CustomerMotorView from "./pages/CustomerMotorView";
@@ -223,6 +224,7 @@ function App() {
           <BrowserRouter>
             <PreviewRedirect />
             <NotificationHandler />
+            <TaxatieDealerGuard />
             <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />

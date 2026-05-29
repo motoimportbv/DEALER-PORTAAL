@@ -153,6 +153,8 @@ const LoginPage = () => {
               redirectUrl = '/admin/taxatie';
             } else if (role === 'particulier') {
               redirectUrl = '/particulier';
+            } else if (role === 'taxatie_dealer') {
+              redirectUrl = '/taxatie-dealer/dashboard';
             } else if (isForeignDealer) {
               redirectUrl = '/foreign-dealer';
             }
@@ -258,6 +260,8 @@ const LoginPage = () => {
         redirectPath = '/admin/taxatie';
       } else if (loggedInUser.role === 'particulier') {
         redirectPath = '/particulier';
+      } else if (loggedInUser.role === 'taxatie_dealer') {
+        redirectPath = '/taxatie-dealer/dashboard';
       } else if (loggedInUser.is_foreign_dealer) {
         redirectPath = '/foreign-dealer';
       }

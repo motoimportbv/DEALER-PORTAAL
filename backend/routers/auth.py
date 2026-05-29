@@ -35,6 +35,10 @@ async def register(user_data: UserCreate):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Blokkeer rol-misbruik: `taxatie_dealer` registreer alleen via /auth/taxatie-dealer-register
+    if user_data.role not in ("dealer", "particulier", "admin"):
+        raise HTTPException(status_code=400, detail="Ongeldige rol voor deze registratie")
+    
     # Check KVK for dealers
     if user_data.role == "dealer" and not user_data.kvk_number:
         raise HTTPException(status_code=400, detail="KVK nummer is verplicht voor dealers")
