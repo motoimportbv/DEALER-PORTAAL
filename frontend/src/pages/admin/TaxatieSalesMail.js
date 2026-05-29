@@ -3,7 +3,7 @@ import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Copy, Check, FileText, Mail, Eye, FileCode, Type, Send, Loader2, History, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Copy, Check, FileText, Mail, Eye, FileCode, Type, Send, Loader2, History, AlertCircle, CheckCircle2, Globe } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 
@@ -173,6 +173,22 @@ export default function TaxatieSalesMail() {
     if (showHistory) fetchHistory();
   }, [showHistory, fetchHistory]);
 
+  // Auto-import e-mails vanuit Lead Scraper (sessionStorage)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('import') === 'leads') {
+      const stored = sessionStorage.getItem('lead_import_emails');
+      if (stored) {
+        setRecipientText(stored);
+        setView('send');
+        toast.success(`${stored.split(/\s+/).filter(Boolean).length} adressen geïmporteerd vanuit Lead-scraper`);
+        sessionStorage.removeItem('lead_import_emails');
+        // ids worden bewaard zodat we ze na verzending kunnen markeren
+        // (zie sendBulk)
+      }
+    }
+  }, []);
+
   const copyTo = (label, content) => {
     navigator.clipboard.writeText(content).then(() => {
       setCopied(label);
@@ -199,6 +215,18 @@ export default function TaxatieSalesMail() {
       if (d.failed > 0) {
         toast.warning(`Mislukt: ${d.failed_addresses.join(', ')}`);
       }
+      // Markeer leads als 'sent' in lead-scraper DB (best-effort)
+      const leadIds = sessionStorage.getItem('lead_import_ids');
+      if (leadIds) {
+        try {
+          await axios.post(
+            `${API}/admin/leads/mark-sent`,
+            { emails: recipients },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          sessionStorage.removeItem('lead_import_ids');
+        } catch { /* niet kritisch */ }
+      }
       setRecipientText('');
       if (showHistory) fetchHistory();
     } catch (e) {
@@ -222,11 +250,18 @@ export default function TaxatieSalesMail() {
             </h1>
             <p className="text-zinc-500 mt-1 text-sm">Kant-en-klare e-mail om dealers binnen te halen — kopiëer naar Gmail/Outlook of stuur in bulk.</p>
           </div>
-          <Link to="/admin/taxatie-aanvragen">
-            <Button variant="outline" data-testid="back-btn">
-              <ArrowLeft className="w-4 h-4 mr-2" />Terug
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/admin/lead-scraper">
+              <Button variant="outline" data-testid="lead-scraper-link">
+                <Globe className="w-4 h-4 mr-2" />Lead-scraper
+              </Button>
+            </Link>
+            <Link to="/admin/taxatie-aanvragen">
+              <Button variant="outline" data-testid="back-btn">
+                <ArrowLeft className="w-4 h-4 mr-2" />Terug
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Onderwerp regel + acties */}

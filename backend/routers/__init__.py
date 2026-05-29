@@ -23,6 +23,7 @@ from routers.autotelex import router as autotelex_router
 from routers.bpm_ai import router as bpm_ai_router
 from routers.customers import router as customers_router
 from routers.taxatie_aanvraag import router as taxatie_aanvraag_router
+from routers.leads import router as leads_router
 
 all_routers = [
     exchange_router,
@@ -47,4 +48,5 @@ all_routers = [
     bpm_ai_router,
     customers_router,
     taxatie_aanvraag_router,
+    leads_router,
 ]
