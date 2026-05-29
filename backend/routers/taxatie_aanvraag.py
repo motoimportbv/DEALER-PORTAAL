@@ -26,6 +26,7 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'upl
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ADMIN_OWNER_EMAIL = "motoimportbv@gmail.com"  # Aanvragen koppelen aan dit admin-account
+TAXATIE_DEALER_ROLE = "taxatie_dealer"
 
 
 def _save_file(prefix: str, upload: UploadFile, field_key: str = "") -> dict:
@@ -121,8 +122,16 @@ async def submit_taxatie_aanvraag(
     foto_kenteken_achter: UploadFile = File(...),
     # Optionele detail-foto's (max 20)
     detail_fotos: List[UploadFile] = File(default=[]),
+    # AUTH: alleen ingelogde dealers / admin / taxateur mogen aanvragen indienen
+    current_user: dict = Depends(get_current_user),
 ):
-    """Verwerk een nieuwe taxatie-aanvraag van een dealer."""
+    """Verwerk een nieuwe taxatie-aanvraag van een ingelogde dealer (of admin/taxateur intern)."""
+    role = (current_user or {}).get("role")
+    if role not in (TAXATIE_DEALER_ROLE, "admin", "taxateur"):
+        raise HTTPException(
+            status_code=403,
+            detail="U moet inloggen als dealer om een taxatie-aanvraag in te dienen.",
+        )
     if len(detail_fotos) > 20:
         raise HTTPException(status_code=400, detail="Maximaal 20 detailfoto's toegestaan")
 
@@ -493,9 +502,6 @@ async def list_taxatie_views(current_user: dict = Depends(get_current_user)):
 
 
 # ============ TAXATIE DEALER ACCOUNTS (self-registration) ============
-
-# Rol-naam zodat we ze kunnen onderscheiden van de "echte" dealer-rol (Moto Import shop)
-TAXATIE_DEALER_ROLE = "taxatie_dealer"
 
 
 async def _require_taxatie_dealer(current_user: dict = Depends(get_current_user)) -> dict:

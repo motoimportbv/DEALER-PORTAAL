@@ -33,6 +33,37 @@ export default function TaxatieLanding() {
   });
   const [files, setFiles] = useState({});  // {foto_voorwiel: File, ...}
   const [details, setDetails] = useState([]);  // File[]
+  const [me, setMe] = useState(null);  // ingelogde dealer/admin info
+  const [authChecking, setAuthChecking] = useState(true);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+
+  // Check auth + autofill profile-data van ingelogde dealer
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!token) { if (mounted) setAuthChecking(false); return; }
+      try {
+        const r = await axios.get(`${API}/dealer/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!mounted) return;
+        setMe(r.data);
+        setForm(f => ({
+          ...f,
+          bedrijfsnaam: r.data.company_name || '',
+          contactpersoon: r.data.contact_person || '',
+          email: r.data.email || '',
+          telefoon: r.data.phone || '',
+          adres: r.data.address || '',
+          woonplaats: r.data.city || '',
+          rsin: r.data.rsin || '',
+        }));
+      } catch {
+        // Niet-dealer token (bv. admin/taxateur of expired) — laat me=null staan
+        // en behandel als niet-ingelogde dealer.
+      }
+      if (mounted) setAuthChecking(false);
+    })();
+    return () => { mounted = false; };
+  }, [token]);
 
   // Track page view (1× per browser-sessie om spam te voorkomen)
   useEffect(() => {
@@ -69,7 +100,10 @@ export default function TaxatieLanding() {
       FIXED_SLOTS.forEach(s => fd.append(s.key, files[s.key]));
       details.forEach(d => fd.append('detail_fotos', d));
       const res = await axios.post(`${API}/public/taxatie-aanvraag`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
       setRefNr(res.data?.ref_nr || '');
       toast.success(res.data.message);
@@ -192,10 +226,51 @@ export default function TaxatieLanding() {
               )}
               <p className="text-emerald-700 mb-2">We hebben uw aanvraag goed ontvangen. U ontvangt direct een bevestigingsmail op <strong>{form.email}</strong>.</p>
               <p className="text-emerald-700 mb-6 text-sm">Onze taxateur stuurt u het taxatieverslag binnen 48 uur.</p>
-              <Button onClick={() => { setSubmitted(false); setRefNr(''); setForm({ bedrijfsnaam: '', contactpersoon: '', email: '', telefoon: '', adres: '', woonplaats: '', rsin: '', opmerking: '' }); setFiles({}); setDetails([]); }} variant="outline">Nog een aanvraag</Button>
+              <div className="flex gap-2 justify-center flex-wrap">
+                <Button onClick={() => { setSubmitted(false); setRefNr(''); setFiles({}); setDetails([]); }} variant="outline" data-testid="new-aanvraag-btn">Nog een aanvraag</Button>
+                {me && (
+                  <a href="/taxatie-dealer/dashboard">
+                    <Button className="bg-red-600 hover:bg-red-700 text-white" data-testid="goto-dashboard-btn">Naar mijn dashboard</Button>
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : authChecking ? (
+            <div className="bg-white rounded-2xl border border-zinc-200 p-10 text-center">
+              <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto" />
+            </div>
+          ) : !me ? (
+            <div className="bg-white rounded-2xl border-2 border-red-200 p-8 sm:p-10 text-center" data-testid="auth-required-block">
+              <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-black text-zinc-900 mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Log in om een taxatie aan te vragen</h3>
+              <p className="text-sm text-zinc-600 mb-2">Alleen geregistreerde dealers kunnen taxatieverslagen aanvragen.</p>
+              <p className="text-sm text-zinc-500 mb-6">Het kost u 30 seconden — éénmalig — en uw bedrijfsgegevens worden automatisch onthouden voor volgende aanvragen.</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/taxatie-dealer/register" className="inline-block">
+                  <Button className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3" data-testid="cta-register-btn">
+                    <Sparkles className="w-4 h-4 mr-2" />Nu account aanmaken — gratis
+                  </Button>
+                </a>
+                <a href="/taxatie-dealer/login" className="inline-block">
+                  <Button variant="outline" className="w-full sm:w-auto font-bold px-6 py-3" data-testid="cta-login-btn">
+                    Al een account? Inloggen
+                  </Button>
+                </a>
+              </div>
+              <p className="text-xs text-zinc-400 mt-6">€60 introductietarief voor uw eerste taxatie · daarna €120 ex BTW per verslag · binnen 48 uur in uw mailbox</p>
             </div>
           ) : (
-          <form onSubmit={submit} className="bg-white rounded-2xl border border-zinc-200 p-6 lg:p-8 space-y-6">
+          <form onSubmit={submit} className="bg-white rounded-2xl border border-zinc-200 p-6 lg:p-8 space-y-6" data-testid="taxatie-aanvraag-form">
+            {/* Welkomstbalkje voor ingelogde dealer */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3" data-testid="logged-in-banner">
+              <p className="text-sm text-emerald-900">
+                <CheckCircle className="w-4 h-4 inline mr-1 -mt-0.5" />
+                Ingelogd als <strong>{me.company_name || me.email}</strong> — bedrijfsgegevens automatisch ingevuld
+              </p>
+              <a href="/taxatie-dealer/dashboard" className="text-xs font-bold text-emerald-700 hover:underline whitespace-nowrap">Naar dashboard →</a>
+            </div>
             {/* Bedrijfsgegevens */}
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-700 mb-4 pb-2 border-b">Bedrijfsgegevens</h3>
