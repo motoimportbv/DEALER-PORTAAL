@@ -423,6 +423,10 @@ async def track_taxatie_view(request: Request, body: dict = Body(default={})):
     )
     ua = request.headers.get("user-agent", "")
     referrer = request.headers.get("referer", "") or body.get("referrer", "")
+    # Bron-tracking: ?ref= query parameter (flyer, email, ...) — komt mee uit frontend
+    source = (body.get("source") or "").strip().lower()[:30]
+    if not source:
+        source = "direct"
     device = _parse_user_agent(ua)
 
     geo = await _lookup_geo(ip)
@@ -438,6 +442,7 @@ async def track_taxatie_view(request: Request, body: dict = Body(default={})):
         "city": geo.get("city", ""),
         "isp": geo.get("isp", ""),
         "referrer": referrer[:200],
+        "source": source,
         "created_at": now.isoformat(),
     }
     await db.taxatie_views.insert_one(view_doc)
@@ -462,6 +467,7 @@ async def track_taxatie_view(request: Request, body: dict = Body(default={})):
                       <tr><td style="padding: 5px 0; color: #71717a; width: 32%;">Tijdstip</td><td style="padding: 5px 0;"><strong>{now.strftime('%H:%M')}</strong> &middot; {now.strftime('%d-%m-%Y')}</td></tr>
                       <tr><td style="padding: 5px 0; color: #71717a;">Locatie</td><td style="padding: 5px 0;"><strong>{location}</strong></td></tr>
                       <tr><td style="padding: 5px 0; color: #71717a;">Apparaat</td><td style="padding: 5px 0;">{device}</td></tr>
+                      <tr><td style="padding: 5px 0; color: #71717a;">Bron</td><td style="padding: 5px 0;"><strong style="color: {'#dc2626' if source != 'direct' else '#71717a'};">{source}</strong></td></tr>
                       {f'<tr><td style="padding: 5px 0; color: #71717a;">Provider</td><td style="padding: 5px 0;">{geo.get("isp")}</td></tr>' if geo.get("isp") else ''}
                       {f'<tr><td style="padding: 5px 0; color: #71717a;">Verwijzer</td><td style="padding: 5px 0; font-size: 11px; color: #555;">{referrer[:80]}</td></tr>' if referrer else ''}
                     </table>
@@ -495,11 +501,20 @@ async def list_taxatie_views(current_user: dict = Depends(get_current_user)):
     week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     week_count = sum(1 for v in views if v.get("created_at", "") >= week_ago)
     total_count = await db.taxatie_views.count_documents({})
+
+    # Aggregatie per source (flyer, email, direct, ...)
+    by_source_raw = await db.taxatie_views.aggregate([
+        {"$group": {"_id": {"$ifNull": ["$source", "direct"]}, "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+    ]).to_list(20)
+    by_source = [{"source": x["_id"] or "direct", "count": x["count"]} for x in by_source_raw]
+
     return {
         "views": views,
         "today": today_count,
         "week": week_count,
         "total": total_count,
+        "by_source": by_source,
     }
 
 

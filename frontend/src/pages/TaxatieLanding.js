@@ -70,8 +70,12 @@ export default function TaxatieLanding() {
     const KEY = 'taxatie_view_tracked';
     if (sessionStorage.getItem(KEY)) return;
     sessionStorage.setItem(KEY, '1');
-    axios.post(`${API}/public/taxatie-view`, { referrer: document.referrer || '' })
-      .catch(() => { /* niet kritisch */ });
+    const params = new URLSearchParams(window.location.search);
+    const source = (params.get('ref') || '').trim().toLowerCase();
+    axios.post(`${API}/public/taxatie-view`, {
+      referrer: document.referrer || '',
+      source: source || 'direct',
+    }).catch(() => { /* niet kritisch */ });
   }, []);
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));

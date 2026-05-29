@@ -17,7 +17,7 @@ from fpdf.enums import XPos, YPos
 OUTPUT_DIR = Path(__file__).parent / "static" / "flyers"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-TAXATIE_URL = "https://www.motoimportbv.nl/taxatie"
+TAXATIE_URL = "https://www.motoimportbv.nl/taxatie?ref=flyer"
 
 
 class TaxatieFlyer(FPDF):
