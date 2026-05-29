@@ -1,0 +1,3071 @@
+[
+  {
+    "name": "Zwaan Motorsport",
+    "email": "info@zwaanmotorsport.nl",
+    "address": "eco park 21 h",
+    "postcode": "8305BJ",
+    "city": "Emmeloord",
+    "website": "https://zwaanmotorsport.nl",
+    "dealer_id": "99412"
+  },
+  {
+    "name": "Zuurbier Motoren Zaltbommel",
+    "email": "info@zuurbiermotoren.nl",
+    "address": "Dorpsstraat 20",
+    "postcode": "5314AE",
+    "city": "Bruchem",
+    "website": "https://zuurbiermotoren.nl",
+    "dealer_id": "99411"
+  },
+  {
+    "name": "Wim ter Braake Motoren",
+    "email": "info@wimterbraake.nl",
+    "address": "Nijverheidsweg 8",
+    "postcode": "7948NE",
+    "city": "Nijeveen",
+    "website": "https://wimterbraake.nl",
+    "dealer_id": "99410"
+  },
+  {
+    "name": "Wildeman Motoren Zwolle",
+    "email": "info@wildemanmotoren.nl",
+    "address": "Meenteweg 30",
+    "postcode": "8041AV",
+    "city": "Zwolle",
+    "website": "https://wildemanmotoren.nl",
+    "dealer_id": "99409"
+  },
+  {
+    "name": "West Coast Motors",
+    "email": "info@westcoastmotors.nl",
+    "address": "Madame Curiestraat 6",
+    "postcode": "1821BM",
+    "city": "Alkmaar",
+    "website": "https://westcoastmotors.nl",
+    "dealer_id": "99408"
+  },
+  {
+    "name": "Wesdorp Motoren",
+    "email": "info@wesdorpmotoren.nl",
+    "address": "Kattendijk 43 E7",
+    "postcode": "2831AA",
+    "city": "Gouderak",
+    "website": "https://wesdorpmotoren.nl",
+    "dealer_id": "99407"
+  },
+  {
+    "name": "VP Motorsport",
+    "email": "info@vpmotorsport.nl",
+    "address": "West Achterweg 53",
+    "postcode": "3245BJ",
+    "city": "Sommelsdijk",
+    "website": "https://vpmotorsport.nl",
+    "dealer_id": "99406"
+  },
+  {
+    "name": "Vos Oss Motoren",
+    "email": "info@vossossmotoren.nl",
+    "address": "Singel 1940 1945 320",
+    "postcode": "5348PV",
+    "city": "Oss",
+    "website": "https://vossossmotoren.nl",
+    "dealer_id": "99405"
+  },
+  {
+    "name": "VN Motoren",
+    "email": "info@vnmotoren.nl",
+    "address": "De Slof 24-A",
+    "postcode": "5107RJ",
+    "city": "Dongen",
+    "website": "https://vnmotoren.nl",
+    "dealer_id": "99404"
+  },
+  {
+    "name": "Versteeg Motoren",
+    "email": "info@versteegmotoren.nl",
+    "address": "De Houtakker 8A",
+    "postcode": "6681CW",
+    "city": "Bemmel",
+    "website": "https://versteegmotoren.nl",
+    "dealer_id": "99403"
+  },
+  {
+    "name": "Verhoeven Motoren",
+    "email": "info@verhoevenmotoren.nl",
+    "address": "Nijverheidsweg 1-D",
+    "postcode": "6651KS",
+    "city": "Druten",
+    "website": "https://verhoevenmotoren.nl",
+    "dealer_id": "99402"
+  },
+  {
+    "name": "Verduyn Ducati Specialist",
+    "email": "info@verduyn.nl",
+    "address": "Hoofdweg 328",
+    "postcode": "2908LC",
+    "city": "Capelle aan den IJssel",
+    "website": "https://verduyn.nl",
+    "dealer_id": "99401"
+  },
+  {
+    "name": "Veenstra Motorsport / Bike Equipment",
+    "email": "info@bike-equipment.nl",
+    "address": "Prikwei 32",
+    "postcode": "8495NG",
+    "city": "Aldeboarn",
+    "website": "https://bike-equipment.nl",
+    "dealer_id": "99400"
+  },
+  {
+    "name": "VDH Motoren",
+    "email": "info@vdhmotoren.nl",
+    "address": "Industrieweg 21 A",
+    "postcode": "6651KR",
+    "city": "Druten",
+    "website": "https://vdhmotoren.nl",
+    "dealer_id": "99394"
+  },
+  {
+    "name": "VBM Motoren",
+    "email": "info@vbmmotoren.nl",
+    "address": "Industrieweg 46",
+    "postcode": "5688DP",
+    "city": "Oirschot",
+    "website": "https://vbmmotoren.nl",
+    "dealer_id": "99393"
+  },
+  {
+    "name": "Van Vuuren Motoren",
+    "email": "info@vanvuurenmotoren.nl",
+    "address": "Gijbelandsedijk 74-C",
+    "postcode": "2974VE",
+    "city": "Brandwijk",
+    "website": "https://vanvuurenmotoren.nl",
+    "dealer_id": "99392"
+  },
+  {
+    "name": "Van Vliet Motorsport",
+    "email": "info@vanvlietmotorsport.nl",
+    "address": "Vlotlaan 117",
+    "postcode": "2681TW",
+    "city": "Monster",
+    "website": "https://vanvlietmotorsport.nl",
+    "dealer_id": "99391"
+  },
+  {
+    "name": "Van Sleeuwen Motoren",
+    "email": "info@vansleeuwen.nl",
+    "address": "Antoniusstraat 60",
+    "postcode": "5408RD",
+    "city": "Volkel",
+    "website": "https://vansleeuwen.nl",
+    "dealer_id": "99390"
+  },
+  {
+    "name": "Van Melis Motoren",
+    "email": "info@vanmelismotoren.nl",
+    "address": "Burgemeester Rietmanstraat 2",
+    "postcode": "5421JX",
+    "city": "Gemert",
+    "website": "https://vanmelismotoren.nl",
+    "dealer_id": "99389"
+  },
+  {
+    "name": "Van Meel Motoren",
+    "email": "info@vanmeelmotoren.nl",
+    "address": "Brieltjenspolder 26",
+    "postcode": "4921PJ",
+    "city": "Made",
+    "website": "https://vanmeelmotoren.nl",
+    "dealer_id": "99388"
+  },
+  {
+    "name": "Van Kleef Motoren",
+    "email": "info@vankleefmotoren.nl",
+    "address": "Dorsvloerweg 419",
+    "postcode": "2661MN",
+    "city": "Bergschenhoek",
+    "website": "https://vankleefmotoren.nl",
+    "dealer_id": "99387"
+  },
+  {
+    "name": "van Hoeijen Motoren",
+    "email": "info@vanhoeijenmotoren.nl",
+    "address": "Klettersteeg 7-A",
+    "postcode": "3791PA",
+    "city": "Achterveld",
+    "website": "https://vanhoeijenmotoren.nl",
+    "dealer_id": "99386"
+  },
+  {
+    "name": "Van Heerdt Motoren",
+    "email": "info@vanheerdtmotoren.nl",
+    "address": "Oosterengweg 8-A",
+    "postcode": "1221JV",
+    "city": "Hilversum",
+    "website": "https://vanheerdtmotoren.nl",
+    "dealer_id": "99385"
+  },
+  {
+    "name": "van Harten Automotive",
+    "email": "info@vanhartenautomotive.nl",
+    "address": "Molenstraat 32",
+    "postcode": "3927AC",
+    "city": "Renswoude",
+    "website": "https://vanhartenautomotive.nl",
+    "dealer_id": "99384"
+  },
+  {
+    "name": "Van Harten Amersfoort",
+    "email": "info@vanharten.nl",
+    "address": "Hanzeboulevard 24",
+    "postcode": "3825PH",
+    "city": "Amersfoort",
+    "website": "https://vanharten.nl",
+    "dealer_id": "99383"
+  },
+  {
+    "name": "Van Gerven Motoren",
+    "email": "info@vangervenmotoren.nl",
+    "address": "Stokskesweg 21",
+    "postcode": "5571TJ",
+    "city": "Bergeyk",
+    "website": "https://vangervenmotoren.nl",
+    "dealer_id": "99382"
+  },
+  {
+    "name": "van Doorn Motors",
+    "email": "info@vandoornmotors.nl",
+    "address": "Kraaivenstraat 23-05",
+    "postcode": "5048AB",
+    "city": "Tilburg",
+    "website": "https://vandoornmotors.nl",
+    "dealer_id": "99381"
+  },
+  {
+    "name": "Van der Weerd Motoren",
+    "email": "info@vdweerdmotoren.nl",
+    "address": "Ardeschstraat 15",
+    "postcode": "3861KX",
+    "city": "Nijkerk",
+    "website": "https://vdweerdmotoren.nl",
+    "dealer_id": "99380"
+  },
+  {
+    "name": "Van Der Veen Motoren",
+    "email": "info@vanderveenmotoren.nl",
+    "address": "Oude Rijksweg 525a",
+    "postcode": "7954GL",
+    "city": "Rouveen",
+    "website": "https://vanderveenmotoren.nl",
+    "dealer_id": "99379"
+  },
+  {
+    "name": "Van den Burg Eindhoven",
+    "email": "info@vandenburgeindhoven.nl",
+    "address": "Bisschop Bekkerslaan 8",
+    "postcode": "5628RA",
+    "city": "Eindhoven",
+    "website": "https://vandenburgeindhoven.nl",
+    "dealer_id": "99378"
+  },
+  {
+    "name": "Van de Pol Motoren",
+    "email": "info@vandepolmotoren.nl",
+    "address": "Wolfstraat 74",
+    "postcode": "5701JG",
+    "city": "Helmond",
+    "website": "https://vandepolmotoren.nl",
+    "dealer_id": "99377"
+  },
+  {
+    "name": "Van de Kuinder Motoren",
+    "email": "info@vandekuinder.nl",
+    "address": "Verlengde Zuiderloswal 27",
+    "postcode": "1216BW",
+    "city": "Hilversum",
+    "website": "https://vandekuinder.nl",
+    "dealer_id": "99376"
+  },
+  {
+    "name": "Van de Kolk Motoren",
+    "email": "info@vandekolkmotoren.nl",
+    "address": "Einsteinstraat 9A",
+    "postcode": "7701SB",
+    "city": "Dedemsvaart",
+    "website": "https://vandekolkmotoren.nl",
+    "dealer_id": "99375"
+  },
+  {
+    "name": "van Andel Motorsport",
+    "email": "info@vanandelmotorsport.nl",
+    "address": "Dominee Bleekerstraat 11-1",
+    "postcode": "8316CV",
+    "city": "Marknesse",
+    "website": "https://vanandelmotorsport.nl",
+    "dealer_id": "99374"
+  },
+  {
+    "name": "USA Motorbike Shop",
+    "email": "info@usamotorbikeshop.nl",
+    "address": "Boerendijk 11",
+    "postcode": "7693PK",
+    "city": "Sibculo",
+    "website": "https://usamotorbikeshop.nl",
+    "dealer_id": "99373"
+  },
+  {
+    "name": "US Bikes",
+    "email": "info@usbikes.nl",
+    "address": "Industrielaan 11",
+    "postcode": "5405AA",
+    "city": "Uden",
+    "website": "https://usbikes.nl",
+    "dealer_id": "99372"
+  },
+  {
+    "name": "Twin Performance Ommen",
+    "email": "info@twin-performance.nl",
+    "address": "Strangeweg 19",
+    "postcode": "7731GV",
+    "city": "Ommen",
+    "website": "https://twin-performance.nl",
+    "dealer_id": "99371"
+  },
+  {
+    "name": "TT Motoren Zwolle",
+    "email": "info@ttmotoren.nl",
+    "address": "Marsweg 1",
+    "postcode": "8013PD",
+    "city": "Zwolle",
+    "website": "https://ttmotoren.nl",
+    "dealer_id": "99370"
+  },
+  {
+    "name": "Triumph Motorcycles Groningen",
+    "email": "info@triumphgroningen.nl",
+    "address": "Oeverkruid 6",
+    "postcode": "9738AK",
+    "city": "Groningen",
+    "website": "https://triumphgroningen.nl",
+    "dealer_id": "99369"
+  },
+  {
+    "name": "Track Support",
+    "email": "info@tracksupport.nl",
+    "address": "Ketellaperstraat 19",
+    "postcode": "9403VS",
+    "city": "Assen",
+    "website": "https://tracksupport.nl",
+    "dealer_id": "99368"
+  },
+  {
+    "name": "Total Drive Motorcycles",
+    "email": "info@totaldrivemotorcycles.nl",
+    "address": "Doctor Huub van Doorneweg 26C",
+    "postcode": "5753PM",
+    "city": "Deurne",
+    "website": "https://totaldrivemotorcycles.nl",
+    "dealer_id": "99367"
+  },
+  {
+    "name": "TopMoto Apeldoorn",
+    "email": "info@topmoto.nl",
+    "address": "Molenstraat 153",
+    "postcode": "7321BD",
+    "city": "Apeldoorn",
+    "website": "https://topmoto.nl",
+    "dealer_id": "99366"
+  },
+  {
+    "name": "TLM Nijmegen",
+    "email": "info@tlmnijmegen.nl",
+    "address": "Lagelandseweg 66",
+    "postcode": "6545CG",
+    "city": "Nijmegen",
+    "website": "https://tlmnijmegen.nl",
+    "dealer_id": "99365"
+  },
+  {
+    "name": "Thalen Motortrading",
+    "email": "info@thalenmotortrading.nl",
+    "address": "Rheezerend 54",
+    "postcode": "7701BG",
+    "city": "Dedemsvaart",
+    "website": "https://thalenmotortrading.nl",
+    "dealer_id": "99364"
+  },
+  {
+    "name": "Termaat Motoren",
+    "email": "info@termaatmotoren.nl",
+    "address": "Hertogstraat 74",
+    "postcode": "6511SE",
+    "city": "Nijmegen",
+    "website": "https://termaatmotoren.nl",
+    "dealer_id": "99363"
+  },
+  {
+    "name": "Ten Kate Motoren",
+    "email": "info@tenkatemotoren.nl",
+    "address": "Rollecate 55",
+    "postcode": "7711GG",
+    "city": "Nieuwleusen",
+    "website": "https://www.tenkatemotoren.nl",
+    "dealer_id": "99362"
+  },
+  {
+    "name": "Techmoto",
+    "email": "info@techmoto.nl",
+    "address": "Pieter Braaijweg 113",
+    "postcode": "1114AJ",
+    "city": "Amsterdam-Duivendrecht",
+    "website": "https://techmoto.nl",
+    "dealer_id": "99361"
+  },
+  {
+    "name": "T.D.K. Exclusive",
+    "email": "info@tdk-exclusive.nl",
+    "address": "Pallasstraat 42",
+    "postcode": "5048CJ",
+    "city": "Tilburg",
+    "website": "https://tdk-exclusive.nl",
+    "dealer_id": "99360"
+  },
+  {
+    "name": "Swinkels Motoren Tilburg",
+    "email": "info@swinkelsmotoren.nl",
+    "address": "Goirkestraat 106",
+    "postcode": "5046GP",
+    "city": "Tilburg",
+    "website": "https://swinkelsmotoren.nl",
+    "dealer_id": "99359"
+  },
+  {
+    "name": "SW Motoren",
+    "email": "info@swmotoren.nl",
+    "address": "It Spyk 10E",
+    "postcode": "9111HT",
+    "city": "Burdaard",
+    "website": "https://swmotoren.nl",
+    "dealer_id": "99358"
+  },
+  {
+    "name": "Suur Motoren",
+    "email": "info@suurmotoren.nl",
+    "address": "Laurens Jzn Costerstraat 7-A",
+    "postcode": "3261LH",
+    "city": "Oud-Beijerland",
+    "website": "https://suurmotoren.nl",
+    "dealer_id": "99357"
+  },
+  {
+    "name": "Streetbikes",
+    "email": "info@streetbikes.nl",
+    "address": "Patrijsstraat 2-A",
+    "postcode": "4793HV",
+    "city": "Fijnaart",
+    "website": "https://streetbikes.nl",
+    "dealer_id": "99356"
+  },
+  {
+    "name": "Straver Motoren",
+    "email": "info@stravermotoren.nl",
+    "address": "Lopikerweg West 115-B",
+    "postcode": "3411AV",
+    "city": "Lopik",
+    "website": "https://stravermotoren.nl",
+    "dealer_id": "99355"
+  },
+  {
+    "name": "Strada Motoren",
+    "email": "info@stradamotoren.nl",
+    "address": "Kardinaal van Rossumstraat 44-A",
+    "postcode": "5104HN",
+    "city": "Dongen",
+    "website": "https://stradamotoren.nl",
+    "dealer_id": "99354"
+  },
+  {
+    "name": "Stella Motoren",
+    "email": "info@stellamotoren.nl",
+    "address": "Hommel 9",
+    "postcode": "7317BL",
+    "city": "Apeldoorn",
+    "website": "https://stellamotoren.nl",
+    "dealer_id": "99353"
+  },
+  {
+    "name": "Stein Motoren",
+    "email": "info@steinmotoren.nl",
+    "address": "De Lange Ring 24-i",
+    "postcode": "1761AS",
+    "city": "Anna Paulowna",
+    "website": "https://steinmotoren.nl",
+    "dealer_id": "99352"
+  },
+  {
+    "name": "Star Twin Motors",
+    "email": "info@startwinmotors.nl",
+    "address": "Kanaal Zuid 484",
+    "postcode": "7371GL",
+    "city": "Loenen",
+    "website": "https://startwinmotors.nl",
+    "dealer_id": "99351"
+  },
+  {
+    "name": "Speedservice Motorshop",
+    "email": "info@speedservice.nl",
+    "address": "Guido Gezellelaan 40",
+    "postcode": "4624GM",
+    "city": "Bergen op Zoom",
+    "website": "https://speedservice.nl",
+    "dealer_id": "99350"
+  },
+  {
+    "name": "South-East Motorcycles",
+    "email": "info@southeastmotorcycles.nl",
+    "address": "Provinciale weg 7",
+    "postcode": "5835CZ",
+    "city": "Beugen",
+    "website": "https://southeastmotorcycles.nl",
+    "dealer_id": "99331"
+  },
+  {
+    "name": "Sonnemans Motorservice",
+    "email": "info@sonnemansmotorservice.nl",
+    "address": "Mariastraat 24 Hal 2",
+    "postcode": "5953NL",
+    "city": "Reuver",
+    "website": "https://sonnemansmotorservice.nl",
+    "dealer_id": "99330"
+  },
+  {
+    "name": "Snoek Motoren",
+    "email": "info@snoekmotoren.nl",
+    "address": "Middenweg 480",
+    "postcode": "1704BM",
+    "city": "Heerhugowaard",
+    "website": "https://snoekmotoren.nl",
+    "dealer_id": "99329"
+  },
+  {
+    "name": "Sipma Motoren",
+    "email": "info@sipmamotoren.nl",
+    "address": "Haadwei 98",
+    "postcode": "9104BJ",
+    "city": "Damwald",
+    "website": "https://sipmamotoren.nl",
+    "dealer_id": "99328"
+  },
+  {
+    "name": "Simako-BDM Elst",
+    "email": "elst@simako-bdm.nl",
+    "address": "Industrieweg 28",
+    "postcode": "6662PA",
+    "city": "Elst",
+    "website": "https://simako-bdm.nl",
+    "dealer_id": "99327"
+  },
+  {
+    "name": "Simako-BDM Apeldoorn",
+    "email": "apeldoorn@simako-bdm.nl",
+    "address": "Stadhoudermolenweg 99",
+    "postcode": "7317BP",
+    "city": "Apeldoorn",
+    "website": "https://simako-bdm.nl",
+    "dealer_id": "99326"
+  },
+  {
+    "name": "Serto Motoren",
+    "email": "info@sertomotoren.nl",
+    "address": "Bosschenhoofdsestraat 19",
+    "postcode": "4744RP",
+    "city": "Bosschenhoofd",
+    "website": "https://sertomotoren.nl",
+    "dealer_id": "99325"
+  },
+  {
+    "name": "Selling Motorbikes",
+    "email": "info@sellingmotorbikes.nl",
+    "address": "Spaklerweg 91",
+    "postcode": "1099CX",
+    "city": "Amsterdam",
+    "website": "https://sellingmotorbikes.nl",
+    "dealer_id": "99324"
+  },
+  {
+    "name": "Select Motors Apeldoorn",
+    "email": "info@selectmotors.nl",
+    "address": "Loudonstraat 75",
+    "postcode": "7332BA",
+    "city": "Apeldoorn",
+    "website": "https://selectmotors.nl",
+    "dealer_id": "99323"
+  },
+  {
+    "name": "SDF Motoren",
+    "email": "info@sdfmotoren.nl",
+    "address": "Goirkestraat 122",
+    "postcode": "5046GP",
+    "city": "Tilburg",
+    "website": "https://sdfmotoren.nl",
+    "dealer_id": "99322"
+  },
+  {
+    "name": "Schotpoort Motordeals",
+    "email": "info@schotpoortmotordeals.nl",
+    "address": "Veldkantweg 10A",
+    "postcode": "6961HJ",
+    "city": "Eerbeek",
+    "website": "https://schotpoortmotordeals.nl",
+    "dealer_id": "99321"
+  },
+  {
+    "name": "Schepers Motoren Design",
+    "email": "info@schepersmotoren.nl",
+    "address": "Haefland 31-C",
+    "postcode": "6441PA",
+    "city": "Brunssum",
+    "website": "https://schepersmotoren.nl",
+    "dealer_id": "99320"
+  },
+  {
+    "name": "RV Betaalbare Motoren",
+    "email": "info@rvbetaalbaremotoren.nl",
+    "address": "Lijtweg 56",
+    "postcode": "1861VB",
+    "city": "Bergen",
+    "website": "https://rvbetaalbaremotoren.nl",
+    "dealer_id": "99319"
+  },
+  {
+    "name": "RSE Racing",
+    "email": "info@rseracing.nl",
+    "address": "Houtmolenstraat 12",
+    "postcode": "7008AR",
+    "city": "Doetinchem",
+    "website": "https://rseracing.nl",
+    "dealer_id": "99318"
+  },
+  {
+    "name": "RR Motoren",
+    "email": "info@rrmotoren.nl",
+    "address": "Nijverheidsstraat 5",
+    "postcode": "1704RA",
+    "city": "Heerhugowaard",
+    "website": "https://rrmotoren.nl",
+    "dealer_id": "99317"
+  },
+  {
+    "name": "RR Motor Company",
+    "email": "info@rrmotorcompany.nl",
+    "address": "Argon 1",
+    "postcode": "4751XC",
+    "city": "Oud Gastel",
+    "website": "https://rrmotorcompany.nl",
+    "dealer_id": "99316"
+  },
+  {
+    "name": "Rouvoet Motoren",
+    "email": "info@rouvoetmotoren.nl",
+    "address": "Nieuwe Havenweg 83-B",
+    "postcode": "1216BP",
+    "city": "Hilversum",
+    "website": "https://rouvoetmotoren.nl",
+    "dealer_id": "99315"
+  },
+  {
+    "name": "Rosa Motoren",
+    "email": "info@rosamotoren.nl",
+    "address": "Zoerbeemden 10-A",
+    "postcode": "6245LR",
+    "city": "Eijsden",
+    "website": "https://rosamotoren.nl",
+    "dealer_id": "99314"
+  },
+  {
+    "name": "Ros Motoren",
+    "email": "info@rosmotoren.nl",
+    "address": "Voorsteven 1-A",
+    "postcode": "4871DX",
+    "city": "Etten-Leur",
+    "website": "https://rosmotoren.nl",
+    "dealer_id": "99313"
+  },
+  {
+    "name": "Ron van der Plaats Motoren",
+    "email": "info@ronvanderplaats.nl",
+    "address": "Noordelijke dwarsweg 98",
+    "postcode": "2761GD",
+    "city": "Zevenhuizen",
+    "website": "https://ronvanderplaats.nl",
+    "dealer_id": "99312"
+  },
+  {
+    "name": "Rokemp Motoren",
+    "email": "info@rokempmotoren.nl",
+    "address": "De Hagen 1",
+    "postcode": "8325DB",
+    "city": "Vollenhove",
+    "website": "https://rokempmotoren.nl",
+    "dealer_id": "99311"
+  },
+  {
+    "name": "Roke Motors Mijdrecht",
+    "email": "info@rokemotors.nl",
+    "address": "Industrieweg 19",
+    "postcode": "3641RK",
+    "city": "Mijdrecht",
+    "website": "https://rokemotors.nl",
+    "dealer_id": "99310"
+  },
+  {
+    "name": "Roelofs Motoren",
+    "email": "info@roelofsmotoren.nl",
+    "address": "Halle-Nijmanweg 9",
+    "postcode": "7025EG",
+    "city": "Halle",
+    "website": "https://roelofsmotoren.nl",
+    "dealer_id": "99309"
+  },
+  {
+    "name": "Roefs Motor Trading",
+    "email": "info@roefsmotortrading.nl",
+    "address": "Groesweg 33",
+    "postcode": "5993NN",
+    "city": "Maasbree",
+    "website": "https://roefsmotortrading.nl",
+    "dealer_id": "99308"
+  },
+  {
+    "name": "Rodenburg Rides and Bikes",
+    "email": "info@rodenburgrides.nl",
+    "address": "Zonnedauw 33",
+    "postcode": "8607DX",
+    "city": "Sneek",
+    "website": "https://rodenburgrides.nl",
+    "dealer_id": "99307"
+  },
+  {
+    "name": "Robs Accessoires",
+    "email": "info@robsaccessoires.nl",
+    "address": "Korte Belkmerweg 7",
+    "postcode": "1756CB",
+    "city": "'t Zand",
+    "website": "https://robsaccessoires.nl",
+    "dealer_id": "99306"
+  },
+  {
+    "name": "Roberto Motoren",
+    "email": "info@robertomotoren.nl",
+    "address": "Pascalstraat 11",
+    "postcode": "7903BJ",
+    "city": "Hoogeveen",
+    "website": "https://robertomotoren.nl",
+    "dealer_id": "99305"
+  },
+  {
+    "name": "Robbe Motoren",
+    "email": "info@robbemotoren.nl",
+    "address": "Nijverheidsweg 3b",
+    "postcode": "3381LM",
+    "city": "Giessenburg",
+    "website": "https://robbemotoren.nl",
+    "dealer_id": "99304"
+  },
+  {
+    "name": "Roadrunner Motoren",
+    "email": "info@roadrunner-motoren.nl",
+    "address": "Zuider Parallelweg 50",
+    "postcode": "6882AH",
+    "city": "Velp",
+    "website": "https://roadrunner-motoren.nl",
+    "dealer_id": "99303"
+  },
+  {
+    "name": "RJS Motoren",
+    "email": "info@rjsmotoren.nl",
+    "address": "De Langeloop 12A",
+    "postcode": "1742PB",
+    "city": "Schagen",
+    "website": "https://rjsmotoren.nl",
+    "dealer_id": "99302"
+  },
+  {
+    "name": "Rena Motoren",
+    "email": "info@rena-motoren.nl",
+    "address": "Rijksstraatweg 36-40",
+    "postcode": "3316EH",
+    "city": "Dordrecht",
+    "website": "https://rena-motoren.nl",
+    "dealer_id": "99301"
+  },
+  {
+    "name": "RB Motoren",
+    "email": "info@rbmotoren.nl",
+    "address": "Weltevreden 24-A",
+    "postcode": "3731AL",
+    "city": "De Bilt",
+    "website": "https://rbmotoren.nl",
+    "dealer_id": "99300"
+  },
+  {
+    "name": "Quispel Motoren",
+    "email": "info@quispelmotoren.nl",
+    "address": "Varenschut 11",
+    "postcode": "5705DK",
+    "city": "Helmond",
+    "website": "https://quispelmotoren.nl",
+    "dealer_id": "99290"
+  },
+  {
+    "name": "PremiumMobility",
+    "email": "info@premiummobility.nl",
+    "address": "Provincialeweg 19a",
+    "postcode": "3645CN",
+    "city": "Vinkeveen",
+    "website": "https://premiummobility.nl",
+    "dealer_id": "99289"
+  },
+  {
+    "name": "Postma Motoren en Fietsen",
+    "email": "info@postmamotoren.nl",
+    "address": "Molenweg 3b",
+    "postcode": "9963PG",
+    "city": "Warfhuizen",
+    "website": "https://postmamotoren.nl",
+    "dealer_id": "99288"
+  },
+  {
+    "name": "Pols Motoren",
+    "email": "info@polsmotoren.nl",
+    "address": "Tuinstraat 9",
+    "postcode": "5144NE",
+    "city": "Waalwijk",
+    "website": "https://polsmotoren.nl",
+    "dealer_id": "99287"
+  },
+  {
+    "name": "Pels Motoren",
+    "email": "info@pelsmotoren.nl",
+    "address": "De Gessel 1",
+    "postcode": "3454MZ",
+    "city": "De Meern",
+    "website": "https://pelsmotoren.nl",
+    "dealer_id": "99286"
+  },
+  {
+    "name": "Passie Motoren",
+    "email": "info@passiemotoren.nl",
+    "address": "Anjelierstraat 68",
+    "postcode": "7601BM",
+    "city": "Almelo",
+    "website": "https://passiemotoren.nl",
+    "dealer_id": "99285"
+  },
+  {
+    "name": "Paddock Motoren",
+    "email": "info@paddockmotoren.nl",
+    "address": "Cruquiusweg 1-E",
+    "postcode": "1951NB",
+    "city": "Velsen-Noord",
+    "website": "https://paddockmotoren.nl",
+    "dealer_id": "99284"
+  },
+  {
+    "name": "Paashuis Motoren",
+    "email": "info@paashuismotoren.nl",
+    "address": "Lievelderweg 28-A",
+    "postcode": "7131MC",
+    "city": "Lichtenvoorde",
+    "website": "https://paashuismotoren.nl",
+    "dealer_id": "99283"
+  },
+  {
+    "name": "Overveld Parts",
+    "email": "info@overveldparts.nl",
+    "address": "Dorpsstraat 36",
+    "postcode": "7025AE",
+    "city": "Halle",
+    "website": "https://overveldparts.nl",
+    "dealer_id": "99282"
+  },
+  {
+    "name": "Overkamp Motors",
+    "email": "info@overkampmotors.nl",
+    "address": "Buitenwatersloot 149",
+    "postcode": "2613TD",
+    "city": "Delft",
+    "website": "https://overkampmotors.nl",
+    "dealer_id": "99281"
+  },
+  {
+    "name": "Ovaa Motors",
+    "email": "info@ovaamotors.nl",
+    "address": "Mercuriusweg 1",
+    "postcode": "4382NC",
+    "city": "Vlissingen",
+    "website": "https://ovaamotors.nl",
+    "dealer_id": "99280"
+  },
+  {
+    "name": "Oude Monnink Motors",
+    "email": "info@oudemonninkmotors.nl",
+    "address": "Rientjesoven 18",
+    "postcode": "7621HG",
+    "city": "Borne",
+    "website": "https://oudemonninkmotors.nl",
+    "dealer_id": "99279"
+  },
+  {
+    "name": "Otomoto",
+    "email": "info@otomoto.nl",
+    "address": "Handelsweg 12",
+    "postcode": "9791DG",
+    "city": "Ten Boer",
+    "website": "https://otomoto.nl",
+    "dealer_id": "99278"
+  },
+  {
+    "name": "Oscar Motorservice",
+    "email": "info@oscarmotorservice.nl",
+    "address": "Industrieweg 60-L",
+    "postcode": "8071CV",
+    "city": "Nunspeet",
+    "website": "https://oscarmotorservice.nl",
+    "dealer_id": "99277"
+  },
+  {
+    "name": "Oostland Motorrad B.V.",
+    "email": "info@oostlandmotorrad.nl",
+    "address": "Spaansland 10",
+    "postcode": "7543BG",
+    "city": "Enschede",
+    "website": "https://oostlandmotorrad.nl",
+    "dealer_id": "99276"
+  },
+  {
+    "name": "Nobel Motoren",
+    "email": "info@nobelmotoren.nl",
+    "address": "David Ricardostraat 13-31",
+    "postcode": "7559SH",
+    "city": "Hengelo",
+    "website": "https://nobelmotoren.nl",
+    "dealer_id": "99275"
+  },
+  {
+    "name": "NIWA Motoren",
+    "email": "info@niwamotoren.nl",
+    "address": "Tulpenmarkt 1",
+    "postcode": "1681PK",
+    "city": "Zwaagdijk",
+    "website": "https://niwamotoren.nl",
+    "dealer_id": "99274"
+  },
+  {
+    "name": "Ninemotors",
+    "email": "info@ninemotors.nl",
+    "address": "Westerboekelweg 11-H",
+    "postcode": "1718MJ",
+    "city": "Hoogwoud",
+    "website": "https://ninemotors.nl",
+    "dealer_id": "99273"
+  },
+  {
+    "name": "Nijzing Motoren Emmen",
+    "email": "info@nijzingmotoren.nl",
+    "address": "Kapitein Nemostraat 4",
+    "postcode": "7821AC",
+    "city": "Emmen",
+    "website": "https://nijzingmotoren.nl",
+    "dealer_id": "99272"
+  },
+  {
+    "name": "Next Level Motors",
+    "email": "info@nextlevelmotors.nl",
+    "address": "Campagneweg 28",
+    "postcode": "4761RM",
+    "city": "Zevenbergen",
+    "website": "https://nextlevelmotors.nl",
+    "dealer_id": "99271"
+  },
+  {
+    "name": "Newtown Bikes",
+    "email": "info@newtownbikes.nl",
+    "address": "Millenerstraat 30",
+    "postcode": "6118CB",
+    "city": "Nieuwstadt",
+    "website": "https://newtownbikes.nl",
+    "dealer_id": "99270"
+  },
+  {
+    "name": "MVM-Motorservice",
+    "email": "info@mvm-motorservice.nl",
+    "address": "Hendrikkenhofstraat 58",
+    "postcode": "5916RZ",
+    "city": "Venlo",
+    "website": "https://mvm-motorservice.nl",
+    "dealer_id": "99269"
+  },
+  {
+    "name": "MVM Motoren",
+    "email": "info@mvmmotoren.nl",
+    "address": "Boteyken 301",
+    "postcode": "3454PD",
+    "city": "De Meern",
+    "website": "https://mvmmotoren.nl",
+    "dealer_id": "99268"
+  },
+  {
+    "name": "Munsters Motoren",
+    "email": "info@munstersmotoren.nl",
+    "address": "Hertog Janplein 16",
+    "postcode": "5469BJ",
+    "city": "Erp",
+    "website": "https://munstersmotoren.nl",
+    "dealer_id": "99267"
+  },
+  {
+    "name": "Mulders Motorcycles",
+    "email": "info@muldersmotorcycles.nl",
+    "address": "Vrijheidsweg 19",
+    "postcode": "9641KP",
+    "city": "Veendam",
+    "website": "https://muldersmotorcycles.nl",
+    "dealer_id": "99266"
+  },
+  {
+    "name": "MotoXpert Exclusive",
+    "email": "info@motoxpert.nl",
+    "address": "Het Spaarne 18",
+    "postcode": "8253PE",
+    "city": "Dronten",
+    "website": "https://motoxpert.nl",
+    "dealer_id": "99265"
+  },
+  {
+    "name": "Motown Bikestore",
+    "email": "info@motownbikestore.nl",
+    "address": "Pascalstraat 6",
+    "postcode": "1704RD",
+    "city": "Heerhugowaard",
+    "website": "https://motownbikestore.nl",
+    "dealer_id": "99264"
+  },
+  {
+    "name": "MotoVeda",
+    "email": "info@motoveda.nl",
+    "address": "Galvanistraat 55",
+    "postcode": "6716AE",
+    "city": "Ede",
+    "website": "https://motoveda.nl",
+    "dealer_id": "99263"
+  },
+  {
+    "name": "Mototoko",
+    "email": "info@mototoko.nl",
+    "address": "Industriestraat 5",
+    "postcode": "8391AG",
+    "city": "Noordwolde",
+    "website": "https://mototoko.nl",
+    "dealer_id": "99262"
+  },
+  {
+    "name": "Motostore Barendrecht",
+    "email": "info@motostore.nl",
+    "address": "Aalborg 9",
+    "postcode": "2993LP",
+    "city": "Barendrecht",
+    "website": "https://motostore.nl",
+    "dealer_id": "99261"
+  },
+  {
+    "name": "Motoshop Margraten",
+    "email": "info@motoshop-margraten.nl",
+    "address": "Aan de Fremme 62",
+    "postcode": "6269BE",
+    "city": "Margraten",
+    "website": "https://motoshop-margraten.nl",
+    "dealer_id": "99260"
+  },
+  {
+    "name": "Motorstore Uithoorn",
+    "email": "info@motorstore.nl",
+    "address": "Ant. Philipsweg 5-7",
+    "postcode": "1422AL",
+    "city": "Uithoorn",
+    "website": "https://motorstore.nl",
+    "dealer_id": "99259"
+  },
+  {
+    "name": "Motorsport Klazienaveen",
+    "email": "info@motorsportklazienaveen.nl",
+    "address": "Kruizemunt 4",
+    "postcode": "7892AB",
+    "city": "Klazienaveen",
+    "website": "https://motorsportklazienaveen.nl",
+    "dealer_id": "99258"
+  },
+  {
+    "name": "Motorshop Fransen",
+    "email": "info@motorshop-fransen.nl",
+    "address": "Hoofdstraat 95",
+    "postcode": "9944AC",
+    "city": "Nieuwolda",
+    "website": "https://motorshop-fransen.nl",
+    "dealer_id": "99257"
+  },
+  {
+    "name": "Motorservice Spanjer",
+    "email": "info@motorservicespanjer.nl",
+    "address": "Den Hoekstraat 4",
+    "postcode": "6171VZ",
+    "city": "Stein",
+    "website": "https://motorservicespanjer.nl",
+    "dealer_id": "99256"
+  },
+  {
+    "name": "Motorservice Ossendrecht",
+    "email": "info@motorserviceossendrecht.nl",
+    "address": "Molenstraat 16",
+    "postcode": "4641BC",
+    "city": "Ossendrecht",
+    "website": "https://motorserviceossendrecht.nl",
+    "dealer_id": "99255"
+  },
+  {
+    "name": "Motorservice Edgar Stijner",
+    "email": "info@edgarstijner.nl",
+    "address": "Hendrik ter Kuilestraat 165",
+    "postcode": "7547SK",
+    "city": "Enschede",
+    "website": "https://edgarstijner.nl",
+    "dealer_id": "99254"
+  },
+  {
+    "name": "Motorservice de Zeeuw",
+    "email": "info@motorservicedezeeuw.nl",
+    "address": "Zuidelijke Knibbelweg 90",
+    "postcode": "2765JT",
+    "city": "Cortelande",
+    "website": "https://motorservicedezeeuw.nl",
+    "dealer_id": "99253"
+  },
+  {
+    "name": "Motorplaza FME",
+    "email": "info@motorplaza.nl",
+    "address": "Kieler Bocht 57",
+    "postcode": "9723JA",
+    "city": "Groningen",
+    "website": "https://motorplaza.nl",
+    "dealer_id": "99252"
+  },
+  {
+    "name": "Motorplanet Almere",
+    "email": "info@motorplanet.nl",
+    "address": "Markerkant 15-18",
+    "postcode": "1314AX",
+    "city": "Almere",
+    "website": "https://motorplanet.nl",
+    "dealer_id": "99251"
+  },
+  {
+    "name": "MotorJager Sneek & Driebergen",
+    "email": "info@motorjager.nl",
+    "address": "Duiker 3",
+    "postcode": "8604DD",
+    "city": "Sneek",
+    "website": "https://motorjager.nl",
+    "dealer_id": "99250"
+  },
+  {
+    "name": "Motorini",
+    "email": "info@motorini.nl",
+    "address": "Stationsweg 28",
+    "postcode": "4416PJ",
+    "city": "Kruiningen",
+    "website": "https://motorini.nl",
+    "dealer_id": "99240"
+  },
+  {
+    "name": "Motorhuis Zwolle",
+    "email": "info@motorhuiszwolle.nl",
+    "address": "George Stephensonstraat 5",
+    "postcode": "8013NL",
+    "city": "Zwolle",
+    "website": "https://motorhuiszwolle.nl",
+    "dealer_id": "99239"
+  },
+  {
+    "name": "Motorhuis Seppe",
+    "email": "info@motorhuisseppe.nl",
+    "address": "Pastoor van Breugelstraat 128",
+    "postcode": "4744AG",
+    "city": "Bosschenhoofd",
+    "website": "https://motorhuisseppe.nl",
+    "dealer_id": "99238"
+  },
+  {
+    "name": "Motorhuis de Valkenier",
+    "email": "info@devalkenier.nl",
+    "address": "Dr. Willem Dreeslaan 10",
+    "postcode": "3771RW",
+    "city": "Barneveld",
+    "website": "https://devalkenier.nl",
+    "dealer_id": "99237"
+  },
+  {
+    "name": "Motorhuis Brabant",
+    "email": "info@motorhuisbrabant.nl",
+    "address": "Lannerstraat 53",
+    "postcode": "5011ET",
+    "city": "Tilburg",
+    "website": "https://motorhuisbrabant.nl",
+    "dealer_id": "99236"
+  },
+  {
+    "name": "Motorhuis Bakker",
+    "email": "info@motorhuisbakker.nl",
+    "address": "Noordveenkanaal ZZ 12",
+    "postcode": "7831AS",
+    "city": "Nieuw Weerdinge",
+    "website": "https://motorhuisbakker.nl",
+    "dealer_id": "99235"
+  },
+  {
+    "name": "Motorhandel Nederland",
+    "email": "info@motorhandelnederland.nl",
+    "address": "Ds Visscherwei 103",
+    "postcode": "9223LL",
+    "city": "Houtigehage",
+    "website": "https://motorhandelnederland.nl",
+    "dealer_id": "99234"
+  },
+  {
+    "name": "MotoRestyle",
+    "email": "info@motorestyle.nl",
+    "address": "Hommel 9",
+    "postcode": "7317BL",
+    "city": "Apeldoorn",
+    "website": "https://motorestyle.nl",
+    "dealer_id": "99233"
+  },
+  {
+    "name": "Motorcross Aad",
+    "email": "info@motorcrossaad.nl",
+    "address": "Zernikestraat 8",
+    "postcode": "2665JJ",
+    "city": "Bleiswijk",
+    "website": "https://motorcrossaad.nl",
+    "dealer_id": "99232"
+  },
+  {
+    "name": "Motorcentrum Urk",
+    "email": "info@motorcentrumurk.nl",
+    "address": "Het Scheer 11",
+    "postcode": "8321MN",
+    "city": "Urk",
+    "website": "https://motorcentrumurk.nl",
+    "dealer_id": "99231"
+  },
+  {
+    "name": "Motorcentrum Lunteren",
+    "email": "info@motorcentrumlunteren.nl",
+    "address": "Hullerpad 13-F",
+    "postcode": "6741PA",
+    "city": "Lunteren",
+    "website": "https://motorcentrumlunteren.nl",
+    "dealer_id": "99230"
+  },
+  {
+    "name": "Motorcentrum Friesland",
+    "email": "info@motorcentrumfriesland.nl",
+    "address": "De IJsbaan 7",
+    "postcode": "8731DW",
+    "city": "Wommels",
+    "website": "https://motorcentrumfriesland.nl",
+    "dealer_id": "99229"
+  },
+  {
+    "name": "Motorcentrum Deventer",
+    "email": "info@motorcentrumdeventer.nl",
+    "address": "Smeenkhof 13",
+    "postcode": "7429AX",
+    "city": "Deventer",
+    "website": "https://motorcentrumdeventer.nl",
+    "dealer_id": "99228"
+  },
+  {
+    "name": "Motorcentrum Almere",
+    "email": "info@motorcentrumalmere.nl",
+    "address": "Zeno van Citiumstraat 2",
+    "postcode": "1349GK",
+    "city": "Almere Stad",
+    "website": "https://motorcentrumalmere.nl",
+    "dealer_id": "99227"
+  },
+  {
+    "name": "Motorcenter Venlo",
+    "email": "info@motorcentervenlo.nl",
+    "address": "Rudolf Dieselweg 28a",
+    "postcode": "5928RA",
+    "city": "Venlo-Blerick",
+    "website": "https://motorcentervenlo.nl",
+    "dealer_id": "99226"
+  },
+  {
+    "name": "Motorbedrijf Hoffmans",
+    "email": "info@motorbedrijfhoffmans.nl",
+    "address": "Valendries 20",
+    "postcode": "5831DV",
+    "city": "Boxmeer",
+    "website": "https://motorbedrijfhoffmans.nl",
+    "dealer_id": "99225"
+  },
+  {
+    "name": "Motor-id",
+    "email": "info@motor-id.nl",
+    "address": "De Lind 17",
+    "postcode": "4841KC",
+    "city": "Prinsenbeek",
+    "website": "https://motor-id.nl",
+    "dealer_id": "99224"
+  },
+  {
+    "name": "Motor Venray",
+    "email": "info@motorvenray.nl",
+    "address": "De Hulst 1",
+    "postcode": "5807EW",
+    "city": "Venray",
+    "website": "https://motorvenray.nl",
+    "dealer_id": "99223"
+  },
+  {
+    "name": "Motor van de Toekomst",
+    "email": "info@motorvandetoekomst.nl",
+    "address": "Drijberseweg 46",
+    "postcode": "9418TL",
+    "city": "Wijster",
+    "website": "https://motorvandetoekomst.nl",
+    "dealer_id": "99222"
+  },
+  {
+    "name": "Motor Service Hoofddorp",
+    "email": "info@motorservicehoofddorp.nl",
+    "address": "Diamantlaan 71",
+    "postcode": "2132WV",
+    "city": "Hoofddorp",
+    "website": "https://motorservicehoofddorp.nl",
+    "dealer_id": "99221"
+  },
+  {
+    "name": "Motor Saloon Amersfoort",
+    "email": "info@motorsaloon.nl",
+    "address": "Siliciumweg 2",
+    "postcode": "3812SX",
+    "city": "Amersfoort",
+    "website": "https://motorsaloon.nl",
+    "dealer_id": "99220"
+  },
+  {
+    "name": "Motor Outlet Deventer",
+    "email": "info@motoroutletdeventer.nl",
+    "address": "Deventerweg 6",
+    "postcode": "7437BJ",
+    "city": "Bathmen",
+    "website": "https://motoroutletdeventer.nl",
+    "dealer_id": "99219"
+  },
+  {
+    "name": "Motor Oost",
+    "email": "info@motoroost.nl",
+    "address": "De Bleek 20",
+    "postcode": "7468DL",
+    "city": "Enter",
+    "website": "https://motoroost.nl",
+    "dealer_id": "99218"
+  },
+  {
+    "name": "Motor Metaal Lelystad",
+    "email": "info@motormetaallelystad.nl",
+    "address": "Wigstraat 25",
+    "postcode": "8223EE",
+    "city": "Lelystad",
+    "website": "https://motormetaallelystad.nl",
+    "dealer_id": "99217"
+  },
+  {
+    "name": "Motor City Amsterdam",
+    "email": "info@motorcity.nl",
+    "address": "Jarmuiden 31",
+    "postcode": "1046AC",
+    "city": "Amsterdam",
+    "website": "https://motorcity.nl",
+    "dealer_id": "99216"
+  },
+  {
+    "name": "Motor Centrum West",
+    "email": "info@motorcentrumwest.nl",
+    "address": "Smederijstraat 2",
+    "postcode": "2671BV",
+    "city": "Naaldwijk",
+    "website": "https://motorcentrumwest.nl",
+    "dealer_id": "99215"
+  },
+  {
+    "name": "Motor Centrum Roosendaal",
+    "email": "info@motorcentrumroosendaal.nl",
+    "address": "Gastelseweg 145",
+    "postcode": "4705AB",
+    "city": "Roosendaal",
+    "website": "https://motorcentrumroosendaal.nl",
+    "dealer_id": "99214"
+  },
+  {
+    "name": "Motor Centrum Rijen",
+    "email": "info@mcrijen.nl",
+    "address": "Rijksweg 96",
+    "postcode": "5121RC",
+    "city": "Rijen",
+    "website": "https://mcrijen.nl",
+    "dealer_id": "99213"
+  },
+  {
+    "name": "Motor Centrum Eibergen",
+    "email": "info@motorcentrumeibergen.nl",
+    "address": "Nijverheidsstraat 12",
+    "postcode": "7151HN",
+    "city": "Eibergen",
+    "website": "https://motorcentrumeibergen.nl",
+    "dealer_id": "99212"
+  },
+  {
+    "name": "Motor Arena",
+    "email": "info@motorarena.nl",
+    "address": "Dubloen 14",
+    "postcode": "5751PX",
+    "city": "Deurne",
+    "website": "https://motorarena.nl",
+    "dealer_id": "99211"
+  },
+  {
+    "name": "MotoPort Veldhoven",
+    "email": "veldhoven@motoport.nl",
+    "address": "De Run 5202",
+    "postcode": "5504DC",
+    "city": "Veldhoven",
+    "website": "https://www.motoport.nl",
+    "dealer_id": "99210"
+  },
+  {
+    "name": "MotoPort Goes",
+    "email": "goes@motoport.nl",
+    "address": "Nobelweg 4",
+    "postcode": "4462GK",
+    "city": "Goes",
+    "website": "https://www.motoport.nl",
+    "dealer_id": "99209"
+  },
+  {
+    "name": "MotoPort Echt",
+    "email": "echt@motoport.nl",
+    "address": "Edisonweg 33",
+    "postcode": "6101XJ",
+    "city": "Echt",
+    "website": "https://www.motoport.nl",
+    "dealer_id": "99208"
+  },
+  {
+    "name": "Motoport Assen / Ducati Assen",
+    "email": "assen@motoport.nl",
+    "address": "Industrieweg 11",
+    "postcode": "9402NP",
+    "city": "Assen",
+    "website": "https://www.motoport.nl",
+    "dealer_id": "99207"
+  },
+  {
+    "name": "MotoPort Almere",
+    "email": "almere@motoport.nl",
+    "address": "Randstad 22-41",
+    "postcode": "1316BR",
+    "city": "Almere Stad",
+    "website": "https://www.motoport.nl",
+    "dealer_id": "99206"
+  },
+  {
+    "name": "MotoNine",
+    "email": "info@motonine.nl",
+    "address": "Smithweg 1-31",
+    "postcode": "4462HC",
+    "city": "Goes",
+    "website": "https://motonine.nl",
+    "dealer_id": "99205"
+  },
+  {
+    "name": "MotoLeo B.V.",
+    "email": "info@motoleo.nl",
+    "address": "Industriestraat 9",
+    "postcode": "6433JW",
+    "city": "Hoensbroek",
+    "website": "https://motoleo.nl",
+    "dealer_id": "99204"
+  },
+  {
+    "name": "Motodrome",
+    "email": "info@motodrome.nl",
+    "address": "Hannelswei 1",
+    "postcode": "9251MR",
+    "city": "Burgum",
+    "website": "https://motodrome.nl",
+    "dealer_id": "99203"
+  },
+  {
+    "name": "Motoclassics",
+    "email": "info@motoclassics.nl",
+    "address": "Handelsweg 45",
+    "postcode": "4421SH",
+    "city": "Kapelle",
+    "website": "https://motoclassics.nl",
+    "dealer_id": "99202"
+  },
+  {
+    "name": "Moto Wijma",
+    "email": "info@motowijma.nl",
+    "address": "Zwettestraat 14",
+    "postcode": "8912AH",
+    "city": "Leeuwarden",
+    "website": "https://motowijma.nl",
+    "dealer_id": "99201"
+  },
+  {
+    "name": "Moto Rotterdam",
+    "email": "info@motorotterdam.nl",
+    "address": "Strickledeweg 112",
+    "postcode": "3044EL",
+    "city": "Rotterdam",
+    "website": "https://motorotterdam.nl",
+    "dealer_id": "99200"
+  },
+  {
+    "name": "Moto Puro",
+    "email": "info@motopuro.nl",
+    "address": "Europalaan 30",
+    "postcode": "5232BC",
+    "city": "Den Bosch",
+    "website": "https://www.motopuro.nl",
+    "dealer_id": "99190"
+  },
+  {
+    "name": "Moto Mondial",
+    "email": "info@motomondial.nl",
+    "address": "Zuidlangeweg 1",
+    "postcode": "4796SB",
+    "city": "Oudemolen",
+    "website": "https://motomondial.nl",
+    "dealer_id": "99189"
+  },
+  {
+    "name": "Moto Hippo",
+    "email": "info@motohippo.nl",
+    "address": "Molenveld 7",
+    "postcode": "1777HN",
+    "city": "Hippolytushoef",
+    "website": "https://motohippo.nl",
+    "dealer_id": "99188"
+  },
+  {
+    "name": "Molenaar Motors",
+    "email": "info@molenaarmotors.nl",
+    "address": "Einsteinweg 5-7",
+    "postcode": "3404LE",
+    "city": "IJsselstein",
+    "website": "https://www.molenaarmotors.nl",
+    "dealer_id": "99187"
+  },
+  {
+    "name": "Mokum Motors",
+    "email": "info@mokummotors.nl",
+    "address": "Van Ostadestraat 340-346",
+    "postcode": "1073TZ",
+    "city": "Amsterdam",
+    "website": "https://www.mokummotors.nl",
+    "dealer_id": "99186"
+  },
+  {
+    "name": "Mofra B.V.",
+    "email": "info@mofra.nl",
+    "address": "Dorpenbaan 2",
+    "postcode": "5121DG",
+    "city": "Rijen",
+    "website": "https://www.mofra.nl",
+    "dealer_id": "99185"
+  },
+  {
+    "name": "MKV Motoren",
+    "email": "info@mkvmotoren.nl",
+    "address": "Bunsenstraat 3",
+    "postcode": "3316GC",
+    "city": "Dordrecht",
+    "website": "https://mkvmotoren.nl",
+    "dealer_id": "99184"
+  },
+  {
+    "name": "Middendorp Motoren",
+    "email": "info@middendorpmotoren.nl",
+    "address": "West Kinderdijk 291",
+    "postcode": "2953XT",
+    "city": "Alblasserdam",
+    "website": "https://middendorpmotoren.nl",
+    "dealer_id": "99183"
+  },
+  {
+    "name": "MG Automotive",
+    "email": "info@mgautomotive.nl",
+    "address": "Donkervoortlaan 22",
+    "postcode": "3261NE",
+    "city": "Oud-Beijerland",
+    "website": "https://mgautomotive.nl",
+    "dealer_id": "99182"
+  },
+  {
+    "name": "Meester Motorsport",
+    "email": "info@meestermotorsport.nl",
+    "address": "De Kronkels 9B",
+    "postcode": "3752LM",
+    "city": "Bunschoten-Spakenburg",
+    "website": "https://meestermotorsport.nl",
+    "dealer_id": "99181"
+  },
+  {
+    "name": "MB Motoren",
+    "email": "info@mbmotoren.nl",
+    "address": "Langestraat 131-D",
+    "postcode": "7891GH",
+    "city": "Klazienaveen",
+    "website": "https://mbmotoren.nl",
+    "dealer_id": "99180"
+  },
+  {
+    "name": "Mast Motoren",
+    "email": "info@mastmotoren.nl",
+    "address": "De Hil 10",
+    "postcode": "4762AG",
+    "city": "Zevenbergen",
+    "website": "https://mastmotoren.nl",
+    "dealer_id": "99179"
+  },
+  {
+    "name": "Marty's Custom Parts",
+    "email": "info@martyscustomparts.nl",
+    "address": "Irenestraat 47",
+    "postcode": "4711SB",
+    "city": "St. Willebrord",
+    "website": "https://martyscustomparts.nl",
+    "dealer_id": "99178"
+  },
+  {
+    "name": "Mars Motoren",
+    "email": "info@marsmotoren.nl",
+    "address": "Varsseveldseweg 87A",
+    "postcode": "7002LJ",
+    "city": "Doetinchem",
+    "website": "https://marsmotoren.nl",
+    "dealer_id": "99177"
+  },
+  {
+    "name": "Mamola Motoren",
+    "email": "info@mamolamotoren.nl",
+    "address": "Molenveld 2",
+    "postcode": "7245CA",
+    "city": "Laren",
+    "website": "https://mamolamotoren.nl",
+    "dealer_id": "99176"
+  },
+  {
+    "name": "Maestro Motors",
+    "email": "info@maestromotors.nl",
+    "address": "Kraaivenstraat 25-04",
+    "postcode": "5048AB",
+    "city": "Tilburg",
+    "website": "https://maestromotors.nl",
+    "dealer_id": "99175"
+  },
+  {
+    "name": "Maeijer Motors",
+    "email": "info@maeijermotors.nl",
+    "address": "Tielsestraat 178",
+    "postcode": "6673AE",
+    "city": "Andelst",
+    "website": "https://maeijermotors.nl",
+    "dealer_id": "99174"
+  },
+  {
+    "name": "M-Point",
+    "email": "info@m-point.nl",
+    "address": "Dopplerlaan 26",
+    "postcode": "9207HC",
+    "city": "Drachten",
+    "website": "https://m-point.nl",
+    "dealer_id": "99173"
+  },
+  {
+    "name": "LST Motoren",
+    "email": "info@lstmotoren.nl",
+    "address": "Jan Flamelingstrjitte 10C",
+    "postcode": "9036VM",
+    "city": "Menaam",
+    "website": "https://lstmotoren.nl",
+    "dealer_id": "99172"
+  },
+  {
+    "name": "Lowlands Biker Store",
+    "email": "info@lowlandsbikerstore.nl",
+    "address": "Katwolderweg 3",
+    "postcode": "8041AC",
+    "city": "Zwolle",
+    "website": "https://lowlandsbikerstore.nl",
+    "dealer_id": "99171"
+  },
+  {
+    "name": "Louwsma Motoren BV",
+    "email": "info@louwsmamotoren.nl",
+    "address": "Eigen Haard 63",
+    "postcode": "8561EX",
+    "city": "Balk",
+    "website": "https://louwsmamotoren.nl",
+    "dealer_id": "99170"
+  },
+  {
+    "name": "Loud Motorcycles",
+    "email": "info@loudmotorcycles.nl",
+    "address": "Ambachtstraat 7-A",
+    "postcode": "3882BB",
+    "city": "Putten",
+    "website": "https://loudmotorcycles.nl",
+    "dealer_id": "99169"
+  },
+  {
+    "name": "Linders Motoren BV",
+    "email": "info@lindersmotoren.nl",
+    "address": "Windmolenbosweg 22",
+    "postcode": "6081PE",
+    "city": "Haelen",
+    "website": "https://lindersmotoren.nl",
+    "dealer_id": "99168"
+  },
+  {
+    "name": "Leusinks Motoren",
+    "email": "info@leusinksmotoren.nl",
+    "address": "Handelsweg noord 41",
+    "postcode": "8251JS",
+    "city": "Dronten",
+    "website": "https://leusinksmotoren.nl",
+    "dealer_id": "99167"
+  },
+  {
+    "name": "Lemstra Motoren",
+    "email": "info@lemstramotoren.nl",
+    "address": "Madame Curiestraat 12",
+    "postcode": "1821BM",
+    "city": "Alkmaar",
+    "website": "https://lemstramotoren.nl",
+    "dealer_id": "99166"
+  },
+  {
+    "name": "Lemar Motoren",
+    "email": "info@lemarmotoren.nl",
+    "address": "Stationsweg 120-J",
+    "postcode": "5807AD",
+    "city": "Oostrum",
+    "website": "https://lemarmotoren.nl",
+    "dealer_id": "99165"
+  },
+  {
+    "name": "Leigraaf Motoren BV",
+    "email": "info@leigraafmotoren.nl",
+    "address": "Keizersveld 71b",
+    "postcode": "5803AP",
+    "city": "Venray",
+    "website": "https://leigraafmotoren.nl",
+    "dealer_id": "99164"
+  },
+  {
+    "name": "Leidse Motoren",
+    "email": "info@leidsemotoren.nl",
+    "address": "De Ruyterstraat 10",
+    "postcode": "2231RV",
+    "city": "Rijnsburg",
+    "website": "https://leidsemotoren.nl",
+    "dealer_id": "99163"
+  },
+  {
+    "name": "Leertouwer Motoren en Bromfietsen BV",
+    "email": "info@leertouwer.nl",
+    "address": "Zuidergracht 1",
+    "postcode": "3763LS",
+    "city": "Soest",
+    "website": "https://www.leertouwer.nl",
+    "dealer_id": "99162"
+  },
+  {
+    "name": "Langenberg Motors",
+    "email": "info@langenbergmotors.nl",
+    "address": "Printer 11",
+    "postcode": "7741ME",
+    "city": "Coevorden",
+    "website": "https://langenbergmotors.nl",
+    "dealer_id": "99161"
+  },
+  {
+    "name": "Lammers Motoren",
+    "email": "info@lammersmotoren.nl",
+    "address": "Colmschaterstraatweg 18",
+    "postcode": "7433PR",
+    "city": "Schalkhaar",
+    "website": "https://lammersmotoren.nl",
+    "dealer_id": "99160"
+  },
+  {
+    "name": "Kromkamp Motoren",
+    "email": "info@kromkampmotoren.nl",
+    "address": "Grote Singel 13",
+    "postcode": "8431HV",
+    "city": "Oosterwolde",
+    "website": "https://kromkampmotoren.nl",
+    "dealer_id": "99159"
+  },
+  {
+    "name": "Korteland Motoren BV",
+    "email": "info@kortelandmotoren.nl",
+    "address": "Nijverheidsstraat 38",
+    "postcode": "3371XE",
+    "city": "Hardinxveld-Giessendam",
+    "website": "https://kortelandmotoren.nl",
+    "dealer_id": "99158"
+  },
+  {
+    "name": "Kommer Motors",
+    "email": "info@kommermotors.nl",
+    "address": "De Standerd 27",
+    "postcode": "3774SC",
+    "city": "Kootwijkerbroek",
+    "website": "https://www.kommermotors.nl",
+    "dealer_id": "99157"
+  },
+  {
+    "name": "Koeman Motoren",
+    "email": "info@koemanmotoren.nl",
+    "address": "Handelsweg 15",
+    "postcode": "1271EJ",
+    "city": "Huizen",
+    "website": "https://koemanmotoren.nl",
+    "dealer_id": "99156"
+  },
+  {
+    "name": "Kobo Motoren",
+    "email": "info@kobomotoren.nl",
+    "address": "Jade 10",
+    "postcode": "9207GL",
+    "city": "Drachten",
+    "website": "https://kobomotoren.nl",
+    "dealer_id": "99155"
+  },
+  {
+    "name": "Knoppert Motoren",
+    "email": "info@knoppertmotoren.nl",
+    "address": "Roosendaalseweg 109",
+    "postcode": "3882MN",
+    "city": "Putten",
+    "website": "https://knoppertmotoren.nl",
+    "dealer_id": "99154"
+  },
+  {
+    "name": "Klijnstra Motoren",
+    "email": "info@klijnstramotoren.nl",
+    "address": "Papierbaan 2-G",
+    "postcode": "9672BH",
+    "city": "Winschoten",
+    "website": "https://klijnstramotoren.nl",
+    "dealer_id": "99153"
+  },
+  {
+    "name": "JVL Motors",
+    "email": "info@jvlmotors.nl",
+    "address": "Ambachtsweg 3c",
+    "postcode": "5071NS",
+    "city": "Udenhout",
+    "website": "https://jvlmotors.nl",
+    "dealer_id": "99152"
+  },
+  {
+    "name": "JTX Motoren",
+    "email": "info@jtxmotoren.nl",
+    "address": "Heiligenberg 4",
+    "postcode": "5431SC",
+    "city": "Cuijk",
+    "website": "https://jtxmotoren.nl",
+    "dealer_id": "99151"
+  },
+  {
+    "name": "JP Motoren",
+    "email": "info@jpmotoren.nl",
+    "address": "Pater van den Elsenlaan 20E",
+    "postcode": "5462GG",
+    "city": "Veghel",
+    "website": "https://jpmotoren.nl",
+    "dealer_id": "99150"
+  },
+  {
+    "name": "JouwMotor",
+    "email": "info@jouwmotor.nl",
+    "address": "Treubstraat 17-015",
+    "postcode": "2288EH",
+    "city": "Rijswijk",
+    "website": "https://jouwmotor.nl",
+    "dealer_id": "99142"
+  },
+  {
+    "name": "Jos Engbers Motoren",
+    "email": "info@josengbersmotoren.nl",
+    "address": "Galvanistraat 5",
+    "postcode": "7651DH",
+    "city": "Tubbergen",
+    "website": "https://www.josengbersmotoren.nl",
+    "dealer_id": "99141"
+  },
+  {
+    "name": "Jordans Motorcycles",
+    "email": "info@jordansmotorcycles.nl",
+    "address": "Breedijk 5B",
+    "postcode": "5705CJ",
+    "city": "Helmond",
+    "website": "https://jordansmotorcycles.nl",
+    "dealer_id": "99140"
+  },
+  {
+    "name": "Joppen Motoren",
+    "email": "info@joppen.nl",
+    "address": "Strijperdijk 3-D",
+    "postcode": "5595XM",
+    "city": "Leende",
+    "website": "https://www.joppen.nl",
+    "dealer_id": "99139"
+  },
+  {
+    "name": "Joop Hoekstra Motoren",
+    "email": "info@joophoekstramotoren.nl",
+    "address": "Zwettewei 98-A",
+    "postcode": "8629EE",
+    "city": "Scharnegoutum",
+    "website": "https://www.joophoekstramotoren.nl",
+    "dealer_id": "99138"
+  },
+  {
+    "name": "Jonkers Motoren",
+    "email": "info@jonkersmotoren.nl",
+    "address": "Wolput 90",
+    "postcode": "5251CH",
+    "city": "Vlijmen",
+    "website": "https://www.jonkersmotoren.nl",
+    "dealer_id": "99137"
+  },
+  {
+    "name": "Joeys Motor Ranch",
+    "email": "info@joeysmotorranch.nl",
+    "address": "Veenweg 59",
+    "postcode": "7336AE",
+    "city": "Apeldoorn",
+    "website": "https://joeysmotorranch.nl",
+    "dealer_id": "99136"
+  },
+  {
+    "name": "JHL Automotive",
+    "email": "info@jhlautomotive.nl",
+    "address": "Weg om de Oost 10",
+    "postcode": "7903BS",
+    "city": "Hoogeveen",
+    "website": "https://www.jhlautomotive.nl",
+    "dealer_id": "99135"
+  },
+  {
+    "name": "Jensen Motorrijwielen",
+    "email": "info@jensenmotorrijwielen.nl",
+    "address": "Scheepvaartweg 5",
+    "postcode": "6541CV",
+    "city": "Nijmegen",
+    "website": "https://www.jensenmotorrijwielen.nl",
+    "dealer_id": "99134"
+  },
+  {
+    "name": "JdK Motoren",
+    "email": "info@jdkmotoren.nl",
+    "address": "Karreveld 57",
+    "postcode": "4371GA",
+    "city": "Koudekerke",
+    "website": "https://jdkmotoren.nl",
+    "dealer_id": "99133"
+  },
+  {
+    "name": "Jan Poppe Motoparts",
+    "email": "info@poppemotoparts.nl",
+    "address": "De Zompe 16-C",
+    "postcode": "4353RT",
+    "city": "Serooskerke",
+    "website": "https://poppemotoparts.nl",
+    "dealer_id": "99132"
+  },
+  {
+    "name": "Jan Hofland Motors",
+    "email": "h.o.hofland@gmail.com",
+    "address": "Veldzichtweg 12-B",
+    "postcode": "3851SG",
+    "city": "Ermelo",
+    "website": "https://www.janhoflandmotors.nl",
+    "dealer_id": "99131"
+  },
+  {
+    "name": "Jan Dokter Motors",
+    "email": "info@jandoktermotors.nl",
+    "address": "Maanderweg 15",
+    "postcode": "6711NC",
+    "city": "Ede",
+    "website": "https://www.jandoktermotors.nl",
+    "dealer_id": "99130"
+  },
+  {
+    "name": "Jager Motoren Hoogeveen",
+    "email": "info@jagermotoren.nl",
+    "address": "Buitenvaart 1214",
+    "postcode": "7905SG",
+    "city": "Hoogeveen",
+    "website": "https://www.jagermotoren.nl",
+    "dealer_id": "99129"
+  },
+  {
+    "name": "Indian Motorcycle Rotterdam",
+    "email": "info@indianmotorcyclerotterdam.com",
+    "address": "Waalhaven ZZ 6",
+    "postcode": "3088HH",
+    "city": "Rotterdam",
+    "website": "https://www.indianmotorcyclerotterdam.com",
+    "dealer_id": "99128"
+  },
+  {
+    "name": "Huybers Motoren",
+    "email": "info@huybersmotoren.nl",
+    "address": "Europalaan 91",
+    "postcode": "5481JD",
+    "city": "Schijndel",
+    "website": "https://www.huybersmotoren.nl",
+    "dealer_id": "99127"
+  },
+  {
+    "name": "Hunen Motoren",
+    "email": "hunenmotoren@hotmail.com",
+    "address": "Lange Klauwenhof 13",
+    "postcode": "6942HZ",
+    "city": "Didam",
+    "website": "https://www.hunenmotoren.nl",
+    "dealer_id": "99126"
+  },
+  {
+    "name": "Huijgen Motoren",
+    "email": "info@huijgenmotoren.nl",
+    "address": "De Kronkels 31C",
+    "postcode": "3752LM",
+    "city": "Spakenburg",
+    "website": "https://www.huijgenmotoren.nl",
+    "dealer_id": "99125"
+  },
+  {
+    "name": "HSL Bikes",
+    "email": "info@hslbikes.nl",
+    "address": "De Limiet 3",
+    "postcode": "4131NR",
+    "city": "Vianen",
+    "website": "https://www.hslbikes.nl",
+    "dealer_id": "99124"
+  },
+  {
+    "name": "Houkes Motortechniek",
+    "email": "info@houkesmotortechniek.nl",
+    "address": "Wolfskuilseweg 251",
+    "postcode": "6542AA",
+    "city": "Nijmegen",
+    "website": "https://houkesmotortechniek.nl",
+    "dealer_id": "99123"
+  },
+  {
+    "name": "Hoogendijk Motoren Reeuwijk",
+    "email": "ivo@technoservicehoogendijk.nl",
+    "address": "Jan Tinbergenstraat 8b",
+    "postcode": "2811DZ",
+    "city": "Reeuwijk",
+    "website": "https://hoogendijkmotorenreeuwijk.nl",
+    "dealer_id": "99122"
+  },
+  {
+    "name": "Hofland Motoren",
+    "email": "info@hoflandmotoren.nl",
+    "address": "Databankweg 2",
+    "postcode": "3821AL",
+    "city": "Amersfoort",
+    "website": "https://www.hoflandmotoren.nl",
+    "dealer_id": "99121"
+  },
+  {
+    "name": "Hoeve Motoren",
+    "email": "info@hoevemotoren.nl",
+    "address": "Westeinde 92",
+    "postcode": "7711CM",
+    "city": "Nieuwleusen",
+    "website": "https://www.hoevemotoren.nl",
+    "dealer_id": "99120"
+  },
+  {
+    "name": "Hoekstra Motoren B.V.",
+    "email": "info@hoekstramotoren.nl",
+    "address": "Waardeel 1",
+    "postcode": "8431NC",
+    "city": "Oosterwolde",
+    "website": "https://www.hoekstramotoren.nl",
+    "dealer_id": "99119"
+  },
+  {
+    "name": "Hoegee Suzuki Center",
+    "email": "info@hoegeesuzikucenter.nl",
+    "address": "Koningstraat 88",
+    "postcode": "6654AH",
+    "city": "Afferden",
+    "website": "https://www.hoegeesuzukicenter.nl",
+    "dealer_id": "99118"
+  },
+  {
+    "name": "HMI Italiaanse Motoren",
+    "email": "info@hmimoto.nl",
+    "address": "Dorpsstraat 280",
+    "postcode": "9605PH",
+    "city": "Kiel Windeweer",
+    "website": "https://hmimoto.nl",
+    "dealer_id": "99117"
+  },
+  {
+    "name": "HH Motoren",
+    "email": "info@hhmotoren.nl",
+    "address": "Walserij 71",
+    "postcode": "2211SL",
+    "city": "Noordwijkerhout",
+    "website": "https://hhmotoren.nl",
+    "dealer_id": "99116"
+  },
+  {
+    "name": "Hens Motoren",
+    "email": "info@hensmotoren.nl",
+    "address": "Voltaweg 4",
+    "postcode": "5993SE",
+    "city": "Maasbree",
+    "website": "https://www.hensmotoren.nl",
+    "dealer_id": "99115"
+  },
+  {
+    "name": "HB Wings and Parts",
+    "email": "info@wingsandparts.com",
+    "address": "Basalt 6",
+    "postcode": "8317RJ",
+    "city": "Kraggenburg",
+    "website": "https://wingsandparts.com",
+    "dealer_id": "99114"
+  },
+  {
+    "name": "Hartelman Motoren BV",
+    "email": "info@hartelman.nl",
+    "address": "Molenenk 3",
+    "postcode": "7255AX",
+    "city": "Hengelo",
+    "website": "https://www.hartelman.nl",
+    "dealer_id": "99113"
+  },
+  {
+    "name": "Harry Meijer B.V.",
+    "email": "info@harry-meijer.nl",
+    "address": "Sydneystraat 1",
+    "postcode": "1175RN",
+    "city": "Lijnden",
+    "website": "https://www.harry-meijer.nl",
+    "dealer_id": "99112"
+  },
+  {
+    "name": "Harliepleats",
+    "email": "info@harliepleats.nl",
+    "address": "Bolswarderweg 4-A",
+    "postcode": "8759LA",
+    "city": "Exmorra",
+    "website": "https://www.harliepleats.nl",
+    "dealer_id": "99111"
+  },
+  {
+    "name": "Harley-Davidson Rotterdam",
+    "email": "info@harleydavidsonrotterdam.nl",
+    "address": "Eerste Tochtweg 2-A",
+    "postcode": "2913LP",
+    "city": "Nieuwerkerk aan den IJssel",
+    "website": "https://harleydavidsonrotterdam.nl",
+    "dealer_id": "99110"
+  },
+  {
+    "name": "Harder Motoren",
+    "email": "info@hardermotoren.nl",
+    "address": "Kaap Hoornstroom 14",
+    "postcode": "1271EL",
+    "city": "Huizen",
+    "website": "https://hardermotoren.nl",
+    "dealer_id": "99109"
+  },
+  {
+    "name": "Hans Huijbers Motoren",
+    "email": "info@hanshuijbersmotoren.nl",
+    "address": "Ambachtsweg 2",
+    "postcode": "5683CD",
+    "city": "Best",
+    "website": "https://www.hanshuijbersmotoren.nl",
+    "dealer_id": "99108"
+  },
+  {
+    "name": "Hannamax Motorsport",
+    "email": "info@hannamax.nl",
+    "address": "Kronenburgpark 5",
+    "postcode": "5321JM",
+    "city": "Hedel",
+    "website": "https://www.hannamax.nl",
+    "dealer_id": "99107"
+  },
+  {
+    "name": "H.D. Service Venlo",
+    "email": "info@hdservicevenlo.nl",
+    "address": "Noorderpoort 2",
+    "postcode": "5916PJ",
+    "city": "Venlo",
+    "website": "https://www.hdservicevenlo.nl",
+    "dealer_id": "99106"
+  },
+  {
+    "name": "H-D Big Rivers",
+    "email": "info@big-rivers.nl",
+    "address": "Muskushouwsestraat 32",
+    "postcode": "6666MC",
+    "city": "Heteren",
+    "website": "https://big-riversharley-davidson.nl",
+    "dealer_id": "99105"
+  },
+  {
+    "name": "GS Motoren",
+    "email": "info@gsmotoren.nl",
+    "address": "de Bres 2E",
+    "postcode": "9363TM",
+    "city": "Marum",
+    "website": "https://gsmotoren.nl",
+    "dealer_id": "99104"
+  },
+  {
+    "name": "Grom Bikes",
+    "email": "info@grombikes.nl",
+    "address": "Industrieweg Oost 9 F7",
+    "postcode": "6662NE",
+    "city": "Elst",
+    "website": "https://grombikes.nl",
+    "dealer_id": "99103"
+  },
+  {
+    "name": "Groenevelt Motoren",
+    "email": "info@groeneveltmotoren.nl",
+    "address": "Ekkersrijt 1012",
+    "postcode": "5692AA",
+    "city": "Son en Breugel",
+    "website": "https://www.groeneveltmotoren.nl",
+    "dealer_id": "99102"
+  },
+  {
+    "name": "Gozers Motoren",
+    "email": "info@gozersmotoren.nl",
+    "address": "Aston Martinlaan 98",
+    "postcode": "3261NB",
+    "city": "Oud Beijerland",
+    "website": "https://www.gozersmotoren.nl",
+    "dealer_id": "99101"
+  },
+  {
+    "name": "Goedhart Motoren",
+    "email": "info@goedhartmotoren.nl",
+    "address": "Europaweg 1D",
+    "postcode": "2411NE",
+    "city": "Bodegraven",
+    "website": "https://www.goedhartmotoren.nl",
+    "dealer_id": "99100"
+  },
+  {
+    "name": "Beeks Motoren",
+    "email": "jellebeek@live.nl",
+    "address": "Hazenberg 20E",
+    "postcode": "6971LC",
+    "city": "Brummen",
+    "website": "https://beeksmotoren.nl",
+    "dealer_id": "99081"
+  },
+  {
+    "name": "Beekman Motoren",
+    "email": "info@beekmanmotoren.nl",
+    "address": "Holterweg 128",
+    "postcode": "7434PB",
+    "city": "Lettele",
+    "website": "https://beekmanmotoren.nl",
+    "dealer_id": "99080"
+  },
+  {
+    "name": "Boshuizen Motor Service",
+    "email": "info@boshuizenmotorservice.nl",
+    "address": "Barkstraat 1",
+    "postcode": "8102GV",
+    "city": "Raalte",
+    "website": "https://www.boshuizenmotorservice.nl",
+    "dealer_id": "99075"
+  },
+  {
+    "name": "Bosgoed Motoren",
+    "email": "jeroen@bosgoedmotoren.nl",
+    "address": "Eperweg 50A",
+    "postcode": "8181EX",
+    "city": "Heerde",
+    "website": "https://www.bosgoedmotoren.nl",
+    "dealer_id": "99074"
+  },
+  {
+    "name": "Bos Motoren",
+    "email": "info@bosmotoren.nl",
+    "address": "Pascalweg 7",
+    "postcode": "4104BE",
+    "city": "Culemborg",
+    "website": "https://www.bosmotoren.nl",
+    "dealer_id": "99073"
+  },
+  {
+    "name": "BNM Motoren",
+    "email": "motor@bnm-motoren.nl",
+    "address": "Weeskinderendijk 5",
+    "postcode": "3314CM",
+    "city": "Dordrecht",
+    "website": "https://bnm-motoren.nl",
+    "dealer_id": "99072"
+  },
+  {
+    "name": "BMB Motoren BV",
+    "email": "info@bmbmotoren.nl",
+    "address": "Rembrandtlaan 17",
+    "postcode": "5462CJ",
+    "city": "Veghel",
+    "website": "https://bmbmotoren.nl",
+    "dealer_id": "99071"
+  },
+  {
+    "name": "Blue Bikes Delft",
+    "email": "info@bluebikesdelft.nl",
+    "address": "Willem Hooftstraat 31",
+    "postcode": "2614EV",
+    "city": "Delft",
+    "website": "https://www.bluebikesdelft.nl",
+    "dealer_id": "99070"
+  },
+  {
+    "name": "Blom Motoren",
+    "email": "info@blommotoren.nl",
+    "address": "'t Koendert 4",
+    "postcode": "3831RB",
+    "city": "Leusden",
+    "website": "https://www.blommotoren.nl",
+    "dealer_id": "99069"
+  },
+  {
+    "name": "Bloemert Motoren",
+    "email": "info@bloemertmotoren.nl",
+    "address": "Achthoevenweg 14b",
+    "postcode": "7951SK",
+    "city": "Staphorst",
+    "website": "https://bloemertmotoren.nl",
+    "dealer_id": "99068"
+  },
+  {
+    "name": "BK Motoren",
+    "email": "info@bkmotoren.nl",
+    "address": "Gildeweg 19 A",
+    "postcode": "4383NH",
+    "city": "Vlissingen",
+    "website": "https://bkmotoren.nl",
+    "dealer_id": "99067"
+  },
+  {
+    "name": "Bisschop Motoren",
+    "email": "info@bisschop-motoren.nl",
+    "address": "Mr. J.B. Kanlaan 48",
+    "postcode": "7715PN",
+    "city": "Punthorst",
+    "website": "https://www.bisschop-motoren.nl",
+    "dealer_id": "99066"
+  },
+  {
+    "name": "BikerFun",
+    "email": "bikerfun.info@gmail.com",
+    "address": "Rafaelweg 23",
+    "postcode": "6114BX",
+    "city": "Susteren",
+    "website": "https://bikerfun.nl",
+    "dealer_id": "99065"
+  },
+  {
+    "name": "Bike-Barn bv",
+    "email": "info@bike-barn.nl",
+    "address": "Zuiderinslag 8-G",
+    "postcode": "3871MR",
+    "city": "Hoevelaken",
+    "website": "https://bike-barn.nl",
+    "dealer_id": "99064"
+  },
+  {
+    "name": "Bike Centre Holland",
+    "email": "info@bikecentreholland.nl",
+    "address": "Stadhoudersmolenweg 54-B",
+    "postcode": "7317AX",
+    "city": "Apeldoorn",
+    "website": "https://bikecentreholland.nl",
+    "dealer_id": "99063"
+  },
+  {
+    "name": "BEWO Motoren Lichtenvoorde",
+    "email": "bewomotoren@gmail.com",
+    "address": "Newtonstraat 6a",
+    "postcode": "7131PP",
+    "city": "Lichtenvoorde",
+    "website": "https://bewomotoren.nl",
+    "dealer_id": "99062"
+  },
+  {
+    "name": "Beugol Motoren",
+    "email": "info@beugol-motoren.nl",
+    "address": "Garderbroekerweg 59",
+    "postcode": "3774JC",
+    "city": "Kootwijkerbroek",
+    "website": "https://www.beugol-motoren.nl",
+    "dealer_id": "99061"
+  },
+  {
+    "name": "Benjan Motoren",
+    "email": "info@benjan.nl",
+    "address": "Kaartenmakersstraat 1",
+    "postcode": "2984CB",
+    "city": "Ridderkerk",
+    "website": "https://www.benjan.nl",
+    "dealer_id": "99060"
+  },
+  {
+    "name": "De Leeuw Motoren",
+    "email": "info@deleeuwmotoren.nl",
+    "address": "Nijverheidsstraat 6J",
+    "postcode": "5331PT",
+    "city": "Kerkdriel",
+    "website": "https://deleeuwmotoren.nl",
+    "dealer_id": "99055"
+  },
+  {
+    "name": "De Knalpot",
+    "email": "info@knalpot.nl",
+    "address": "Haltestraat 55",
+    "postcode": "4411NE",
+    "city": "Rilland",
+    "website": "https://www.knalpot.nl",
+    "dealer_id": "99054"
+  },
+  {
+    "name": "De Jonge Motoren",
+    "email": "info@dejongemotoren.nl",
+    "address": "Stevinweg 14",
+    "postcode": "4691SM",
+    "city": "Tholen",
+    "website": "https://www.dejongemotoren.nl",
+    "dealer_id": "99053"
+  },
+  {
+    "name": "De Jong In- en Verkoop",
+    "email": "ruud@dejongmotor.nl",
+    "address": "De Drie Kronen 33",
+    "postcode": "1601MT",
+    "city": "Enkhuizen",
+    "website": "https://www.dejongmotor.nl",
+    "dealer_id": "99052"
+  },
+  {
+    "name": "De Jong Alphen BV",
+    "email": "info@dejongalphen.nl",
+    "address": "Zaagmolenweg 8",
+    "postcode": "2401LN",
+    "city": "Alphen aan den Rijn",
+    "website": "https://www.dejongalphen.nl",
+    "dealer_id": "99051"
+  },
+  {
+    "name": "De Haar Motoren",
+    "email": "dehaarmotoren@outlook.com",
+    "address": "De Scheysloot 10",
+    "postcode": "2201GN",
+    "city": "Noordwijk",
+    "website": "https://www.dehaarmotoren.nl",
+    "dealer_id": "99050"
+  },
+  {
+    "name": "De Friese Motorfiets",
+    "email": "info@defriesemotorfiets.nl",
+    "address": "Conradi Veenlandstrjitte 102",
+    "postcode": "9104LA",
+    "city": "Damwald",
+    "website": "https://defriesemotorfiets.nl",
+    "dealer_id": "99049"
+  },
+  {
+    "name": "De Boer Motoren",
+    "email": "info@deboermotor.nl",
+    "address": "Bolster 26",
+    "postcode": "9281KK",
+    "city": "Harkema",
+    "website": "https://deboermotor.nl",
+    "dealer_id": "99048"
+  },
+  {
+    "name": "CPH Motoren",
+    "email": "info@cphmotoren.nl",
+    "address": "Nieuwe Baan 2",
+    "postcode": "5076SV",
+    "city": "Haaren",
+    "website": "https://www.cphmotoren.nl",
+    "dealer_id": "99047"
+  },
+  {
+    "name": "CG Motoren",
+    "email": "cgmotoren@gmail.com",
+    "address": "Akkerstraat 7",
+    "postcode": "5126PJ",
+    "city": "Gilze",
+    "website": "https://www.cgmotoren.nl",
+    "dealer_id": "99046"
+  },
+  {
+    "name": "Cattier autos en motoren",
+    "email": "michel.cattier@gmail.com",
+    "address": "Hoffmeijerweg 18",
+    "postcode": "7495RZ",
+    "city": "Ambt Delden",
+    "website": "https://www.cattier.nl",
+    "dealer_id": "99045"
+  },
+  {
+    "name": "Car and Bike",
+    "email": "verkoop@carandbike.nl",
+    "address": "Industrieweg 13",
+    "postcode": "7944HT",
+    "city": "Meppel",
+    "website": "https://www.carandbike.nl",
+    "dealer_id": "99044"
+  },
+  {
+    "name": "BTN Motoren",
+    "email": "info@btnmotoren.nl",
+    "address": "Hazenberg 18",
+    "postcode": "6971LC",
+    "city": "Brummen",
+    "website": "https://btnmotoren.nl",
+    "dealer_id": "99043"
+  },
+  {
+    "name": "Brouwer Motors",
+    "email": "info@brouwermotors.nl",
+    "address": "Wielweg 14",
+    "postcode": "3785KR",
+    "city": "Zwartebroek",
+    "website": "https://www.brouwermotors.nl",
+    "dealer_id": "99042"
+  },
+  {
+    "name": "Brinkman Motoren",
+    "email": "info@brinkmanmotoren.nl",
+    "address": "Dokter Larijweg 167-A",
+    "postcode": "7961NV",
+    "city": "Ruinerwold",
+    "website": "https://brinkmanmotoren.nl",
+    "dealer_id": "99041"
+  },
+  {
+    "name": "Brabant Motors Grave",
+    "email": "info@brabantmotors.nl",
+    "address": "Bosschebaan 9",
+    "postcode": "5363SW",
+    "city": "Grave",
+    "website": "https://www.brabantmotors.nl",
+    "dealer_id": "99040"
+  },
+  {
+    "name": "Een Goeie Motor",
+    "email": "eengoeiemotor@gmail.com",
+    "address": "De Visserlaan 88",
+    "postcode": "8072XJ",
+    "city": "Nunspeet",
+    "website": "https://www.eengoeiemotor.nl",
+    "dealer_id": "99034"
+  },
+  {
+    "name": "Dutch Hills Harley-Davidson",
+    "email": "directie@dutchhills.nl",
+    "address": "Langheckweg 2",
+    "postcode": "6468EL",
+    "city": "Kerkrade",
+    "website": "https://dutchhills.nl",
+    "dealer_id": "99033"
+  },
+  {
+    "name": "Dusseldorp Motorrad Den Haag",
+    "email": "denhaag@dusseldorpmotorrad.nl",
+    "address": "Prinses Arianelaan 10",
+    "postcode": "2496XB",
+    "city": "Den Haag",
+    "website": "https://www.dusseldorpmotorrad.nl",
+    "dealer_id": "99032"
+  },
+  {
+    "name": "Dusseldorp Motorrad Barendrecht",
+    "email": "barendrecht@dusseldorpmotorrad.nl",
+    "address": "Van 't Hoffstraat 21",
+    "postcode": "2991XP",
+    "city": "Barendrecht",
+    "website": "https://www.dusseldorpmotorrad.nl",
+    "dealer_id": "99031"
+  },
+  {
+    "name": "Dusseldorp Motorrad Alkmaar",
+    "email": "alkmaar@dusseldorpmotorrad.nl",
+    "address": "Koraalstraat 3",
+    "postcode": "1812RK",
+    "city": "Alkmaar",
+    "website": "https://www.dusseldorpmotorrad.nl",
+    "dealer_id": "99030"
+  },
+  {
+    "name": "Ducati Zaltbommel",
+    "email": "info@ducatizaltbommel.nl",
+    "address": "Schimminck 6",
+    "postcode": "5301KR",
+    "city": "Zaltbommel",
+    "website": "https://www.ducatizaltbommel.nl",
+    "dealer_id": "99029"
+  },
+  {
+    "name": "Ducati Amsterdam",
+    "email": "info@ducatiamsterdam.nl",
+    "address": "Jarmuiden 10",
+    "postcode": "1046AD",
+    "city": "Amsterdam",
+    "website": "https://ducatiamsterdam.nl",
+    "dealer_id": "99028"
+  },
+  {
+    "name": "Doornekamp Motorsport",
+    "email": "info@doornekampmotorsport.nl",
+    "address": "De Wel 30",
+    "postcode": "3871MV",
+    "city": "Hoevelaken",
+    "website": "https://doornekampmotorsport.nl",
+    "dealer_id": "99027"
+  },
+  {
+    "name": "Domburg Motoren Nieuwkoop",
+    "email": "info@domburgmotoren.nl",
+    "address": "Transportweg 15",
+    "postcode": "2421LT",
+    "city": "Nieuwkoop",
+    "website": "https://www.domburgmotoren.nl",
+    "dealer_id": "99026"
+  },
+  {
+    "name": "DIPI-moto Gilze",
+    "email": "info@dipimoto.nl",
+    "address": "Phantom 1",
+    "postcode": "5126RJ",
+    "city": "Gilze",
+    "website": "https://dipimoto.nl",
+    "dealer_id": "99025"
+  },
+  {
+    "name": "Diesveld VMS",
+    "email": "info@vakgaragediesveld.nl",
+    "address": "Gieterij 68",
+    "postcode": "2211ZD",
+    "city": "Noordwijkerhout",
+    "website": "https://www.vakgaragediesveld.nl",
+    "dealer_id": "99024"
+  },
+  {
+    "name": "Dekker Motorsport Hapert",
+    "email": "info@dekkermotorparts.nl",
+    "address": "Verbindingsweg 12",
+    "postcode": "5527AM",
+    "city": "Hapert",
+    "website": "https://dekkermotorparts.nl",
+    "dealer_id": "99023"
+  },
+  {
+    "name": "De Zwart Motoren",
+    "email": "info@dezwartmotoren.nl",
+    "address": "Moesdijk 15",
+    "postcode": "6004AX",
+    "city": "Weert",
+    "website": "https://dezwartmotoren.nl",
+    "dealer_id": "99022"
+  },
+  {
+    "name": "De Motorzaak",
+    "email": "info@demotorzaak.nl",
+    "address": "Veemarkt 165",
+    "postcode": "1019CG",
+    "city": "Amsterdam",
+    "website": "https://www.demotorzaak.nl",
+    "dealer_id": "99021"
+  },
+  {
+    "name": "De Motorloods",
+    "email": "info@demotorloods.nl",
+    "address": "Sulky 8-A",
+    "postcode": "3897AJ",
+    "city": "Zeewolde",
+    "website": "https://demotorloods.nl",
+    "dealer_id": "99020"
+  },
+  {
+    "name": "Gilex Motoren",
+    "email": "info@gilex.nl",
+    "address": "Penningweg 30",
+    "postcode": "1507DA",
+    "city": "Zaandam",
+    "website": "https://www.gilex.nl",
+    "dealer_id": "99016"
+  },
+  {
+    "name": "Gielen Motorsport",
+    "email": "tim@gielenmotorsport.nl",
+    "address": "Venusweg 16",
+    "postcode": "8938BC",
+    "city": "Leeuwarden",
+    "website": "https://gielenmotorsport.nl",
+    "dealer_id": "99015"
+  },
+  {
+    "name": "Gerrits Motoren",
+    "email": "info@gerritsmotoren.nl",
+    "address": "Verrijn Stuartweg 45",
+    "postcode": "4462GE",
+    "city": "Goes",
+    "website": "https://gerritsmotoren.nl",
+    "dealer_id": "99014"
+  },
+  {
+    "name": "Gebben Motoren",
+    "email": "info@gebbenmotoren.nl",
+    "address": "Industrieweg 25",
+    "postcode": "7949AJ",
+    "city": "Rogat",
+    "website": "https://www.gebbenmotoren.nl",
+    "dealer_id": "99013"
+  },
+  {
+    "name": "Friese Motorexperts",
+    "email": "info@friesemotorexperts.nl",
+    "address": "Jan Flamelingstrjitte 1",
+    "postcode": "9036VM",
+    "city": "Menaam",
+    "website": "https://friesemotorexperts.nl",
+    "dealer_id": "99012"
+  },
+  {
+    "name": "Frans Bleeker Motoren en Auto's",
+    "email": "info@fransbleeker.nl",
+    "address": "De Alde Mar 7",
+    "postcode": "9035VP",
+    "city": "Dronrijp",
+    "website": "https://www.fransbleeker.nl",
+    "dealer_id": "99011"
+  },
+  {
+    "name": "FH Motoren",
+    "email": "fhmotoren@gmail.com",
+    "address": "Verlengde Gildenweg 12-D",
+    "postcode": "8304BK",
+    "city": "Emmeloord",
+    "website": "https://fh-motoronderdelen.nl",
+    "dealer_id": "99010"
+  },
+  {
+    "name": "Femon Parts",
+    "email": "info@femon.nl",
+    "address": "Engelandlaan 34",
+    "postcode": "2391PN",
+    "city": "Hazerswoude-Dorp",
+    "website": "https://www.femon.nl",
+    "dealer_id": "99009"
+  },
+  {
+    "name": "Fair-Trading",
+    "email": "info@fair-trading.nl",
+    "address": "Stevenzandestraat 244",
+    "postcode": "5021HJ",
+    "city": "Tilburg",
+    "website": "https://www.fair-trading.nl",
+    "dealer_id": "99008"
+  },
+  {
+    "name": "EVO Motorcycles",
+    "email": "info@evomotorcycles.nl",
+    "address": "De Lange Baan 2",
+    "postcode": "8731DZ",
+    "city": "Wommels",
+    "website": "https://www.evomotorcycles.nl",
+    "dealer_id": "99007"
+  },
+  {
+    "name": "Euro-Motor",
+    "email": "info@euro-motor.nl",
+    "address": "Oosterdorpsstraat 113-A",
+    "postcode": "3871AC",
+    "city": "Hoevelaken",
+    "website": "https://www.euro-motor.nl",
+    "dealer_id": "99006"
+  },
+  {
+    "name": "Erison Motoren",
+    "email": "info@erison.nl",
+    "address": "Twentepoort West 34",
+    "postcode": "7609RD",
+    "city": "Almelo",
+    "website": "https://www.erison.nl",
+    "dealer_id": "99005"
+  },
+  {
+    "name": "Energica Motor",
+    "email": "info@energicamotor.nl",
+    "address": "Zuiderstraat 1A",
+    "postcode": "9967RP",
+    "city": "Eenrum",
+    "website": "https://energicamotor.nl",
+    "dealer_id": "99004"
+  },
+  {
+    "name": "Elevate Motoren B.V.",
+    "email": "info@elevatemotoren.nl",
+    "address": "Einsteinweg 11 N",
+    "postcode": "3225LT",
+    "city": "Hellevoetsluis",
+    "website": "https://www.elevateautomotive.nl",
+    "dealer_id": "99003"
+  },
+  {
+    "name": "Ekris Motorrad",
+    "email": "info@ekris.nl",
+    "address": "Australielaan 30",
+    "postcode": "6199AA",
+    "city": "Maastricht Airport",
+    "website": "https://www.ekris.nl",
+    "dealer_id": "99002"
+  },
+  {
+    "name": "Barbier Motorsport Havelte",
+    "email": "info@barbiermotorsport.nl",
+    "address": "Oeveraseweg 6",
+    "postcode": "7971PA",
+    "city": "Havelte",
+    "website": "http://barbiermotorsport.nl",
+    "dealer_id": "99001"
+  },
+  {
+    "name": "Arnolds Motorshop",
+    "email": "info@arnolds-motorshop.nl",
+    "address": "A. Plesmanlaan 11",
+    "postcode": "9615TJ",
+    "city": "Kolham",
+    "website": "http://www.arnolds-motorshop.nl",
+    "dealer_id": "19787"
+  },
+  {
+    "name": "ARN Motors",
+    "email": "verkoop@arnmotors.nl",
+    "address": "Steenbokstraat 27",
+    "postcode": "7324AZ",
+    "city": "Apeldoorn",
+    "website": "https://arnmotors.nl/",
+    "dealer_id": "15436"
+  },
+  {
+    "name": "Arie Molenaar Motors",
+    "email": "info@ariemolenaarmotors.nl",
+    "address": "Einsteinweg 4",
+    "postcode": "3404LK",
+    "city": "IJsselstein",
+    "website": "http://www.ariemolenaarmotors.nl",
+    "dealer_id": "15249"
+  },
+  {
+    "name": "Andre Motors",
+    "email": "info@andremotors.nl",
+    "address": "Marienhoef 12",
+    "postcode": "3851ST",
+    "city": "Ermelo",
+    "website": "http://www.andremotors.nl",
+    "dealer_id": "15903"
+  },
+  {
+    "name": "Anbergen Motoren",
+    "email": "info@anbergenmotoren.nl",
+    "address": "Herenstraat 79-B",
+    "postcode": "7776AM",
+    "city": "Slagharen",
+    "website": "http://www.anbergenmotoren.nl",
+    "dealer_id": "1113"
+  },
+  {
+    "name": "AMT Motors",
+    "email": "info@amtmotors.nl",
+    "address": "Braillestraat 1A",
+    "postcode": "2691HX",
+    "city": "s-Gravenzande",
+    "website": "http://www.amtmotors.nl",
+    "dealer_id": "15884"
+  },
+  {
+    "name": "AMR Motorfietsen",
+    "email": "info@amrmotorfietsen.nl",
+    "address": "Amsterdamseweg 13A",
+    "postcode": "1422AC",
+    "city": "Uithoorn",
+    "website": "http://www.amrmotorfietsen.nl",
+    "dealer_id": "20102"
+  },
+  {
+    "name": "American Bike Store",
+    "email": "americanbikestore@gmail.com",
+    "address": "De Cres 16",
+    "postcode": "1749DH",
+    "city": "Warmenhuizen",
+    "website": "http://www.americanbikestore.nl",
+    "dealer_id": "15793"
+  },
+  {
+    "name": "AM motoren",
+    "email": "maikelanna@outlook.com",
+    "address": "Leerlooier 7G",
+    "postcode": "9502KG",
+    "city": "Stadskanaal",
+    "website": "https://ammotoren.nl/",
+    "dealer_id": "20448"
+  },
+  {
+    "name": "Alfamotors",
+    "email": "info@alfamotors.nl",
+    "address": "Tuinderij 11",
+    "postcode": "2451GG",
+    "city": "Leimuiden",
+    "website": "http://www.alfamotors.nl",
+    "dealer_id": "5788"
+  },
+  {
+    "name": "Affetto Ducati",
+    "email": "info@affettoducati.nl",
+    "address": "Ewijkseweg 3",
+    "postcode": "6611AG",
+    "city": "Overasselt",
+    "website": "http://www.affetto.nl",
+    "dealer_id": "15742"
+  },
+  {
+    "name": "Aero Motoren",
+    "email": "info@aeromotoren.nl",
+    "address": "Meer en Duin 325",
+    "postcode": "2163HE",
+    "city": "Lisse",
+    "website": "http://www.aeromotoren.nl",
+    "dealer_id": "20249"
+  },
+  {
+    "name": "AE Motorbikes",
+    "email": "info@aemotorbikes.nl",
+    "address": "curieweg 18",
+    "postcode": "8013RA",
+    "city": "Zwolle",
+    "website": "https://www.aemotorbikes.nl/",
+    "dealer_id": "20333"
+  },
+  {
+    "name": "Adventureshield",
+    "email": "info@adventureshield.nl",
+    "address": "Kanaalstraat 3",
+    "postcode": "7858TE",
+    "city": "Eeserveen",
+    "website": "http://www.adventureshield.nl",
+    "dealer_id": "20402"
+  },
+  {
+    "name": "Adventure Bike Experience Center",
+    "email": "info@adventure-bike.nl",
+    "address": "IJzerweg 21",
+    "postcode": "8111CW",
+    "city": "Heeten",
+    "website": "http://www.Adventure-Bike.nl",
+    "dealer_id": "18359"
+  },
+  {
+    "name": "Ad Motoren",
+    "email": "info@admotoren.nl",
+    "address": "Lijnbaan 65",
+    "postcode": "1969ND",
+    "city": "Heemskerk",
+    "website": "http://www.admotoren.nl",
+    "dealer_id": "20366"
+  },
+  {
+    "name": "Abco Motors",
+    "email": "info@abcomotors.nl",
+    "address": "Productweg 6",
+    "postcode": "4387PG",
+    "city": "Vlissingen",
+    "website": "http://www.abcomotors.nl",
+    "dealer_id": "17875"
+  },
+  {
+    "name": "A3 Motoren",
+    "email": "a3motoren@gmail.com",
+    "address": "Gebbelsweg 19",
+    "postcode": "6035EA",
+    "city": "Ospel",
+    "website": "http://www.a3motoren.nl",
+    "dealer_id": "16801"
+  },
+  {
+    "name": "A. van Andel Motorrijwielen",
+    "email": "info@avanandel.nl",
+    "address": "Leijensteinstraat 15-A",
+    "postcode": "5331CS",
+    "city": "Kerkdriel",
+    "website": "http://www.avanandel.nl",
+    "dealer_id": "1258"
+  },
+  {
+    "name": "3D Motoren",
+    "email": "info@3dmotoren.nl",
+    "address": "Verbindingsweg 12",
+    "postcode": "5527AM",
+    "city": "Hapert",
+    "website": "http://www.3dmotoren.nl",
+    "dealer_id": "16944"
+  }
+]

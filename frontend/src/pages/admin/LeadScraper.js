@@ -108,6 +108,24 @@ export default function LeadScraper() {
     setAutoBusy(false);
   };
 
+  const importSeed = async () => {
+    if (!window.confirm('Importeer 341 vooraf verzamelde motorzaken-leads van motoroccasion.nl?\n\nBestaande e-mails worden niet dubbel toegevoegd.')) return;
+    setAutoBusy(true);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/import-seed`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const d = r.data;
+      toast.success(`✅ Import klaar: ${d.inserted} nieuw, ${d.duplicates} duplicaten genegeerd (totaal in seed: ${d.total_in_seed})`);
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setAutoBusy(false);
+  };
+
   const deleteOne = async (id) => {
     if (!window.confirm('Lead verwijderen?')) return;
     try {
@@ -216,11 +234,30 @@ export default function LeadScraper() {
           </h3>
 
           <div className="space-y-3">
-            <div className="flex items-start gap-3 flex-wrap">
-              <Button onClick={tryAutoFetch} disabled={autoBusy} className="bg-zinc-800 hover:bg-zinc-900 text-white" data-testid="auto-fetch-btn">
-                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig (alle 18 pagina's)...</> : <><RefreshCw className="w-4 h-4 mr-2" />Probeer automatisch ophalen</>}
+            <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-2xl p-4 space-y-2" data-testid="seed-import-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🎁</span>
+                <h4 className="font-black text-emerald-900 text-base">341 leads klaarstaan!</h4>
+              </div>
+              <p className="text-sm text-emerald-800">
+                We hebben alvast <strong>341 motorzaken-e-mailadressen</strong> van motoroccasion.nl voor je verzameld
+                (95% van alle Nederlandse dealers). Klik hieronder om ze direct in je database te zetten.
+              </p>
+              <Button
+                onClick={importSeed}
+                disabled={autoBusy}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold w-full sm:w-auto"
+                data-testid="import-seed-btn"
+              >
+                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer alle 341 dealers</>}
               </Button>
-              <span className="text-xs text-zinc-500 self-center">⚠️ Werkt alleen als de server toegang heeft (motoroccasion.nl blokkeert vaak bots). Anders gebruik magisch script of plak-modus →</span>
+            </div>
+
+            <div className="flex items-start gap-3 flex-wrap">
+              <Button onClick={tryAutoFetch} disabled={autoBusy} variant="outline" data-testid="auto-fetch-btn">
+                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <><RefreshCw className="w-4 h-4 mr-2" />Probeer auto-scrape (geavanceerd)</>}
+              </Button>
+              <span className="text-xs text-zinc-500 self-center">Voor nieuwe / extra leads naast de 341 al-geïmporteerde</span>
             </div>
 
             <div className="border-t pt-3" data-testid="magic-script-block">

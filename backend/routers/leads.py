@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import csv
 import io
+import json
+import os
 import re
 import uuid
 import logging
@@ -201,6 +203,66 @@ async def auto_fetch(
         "ok": True,
         "page": page,
         "parsed": len(result.get("leads", [])),
+        "inserted": inserted,
+        "duplicates": duplicates,
+        "skipped_no_email": skipped,
+    }
+
+
+@router.post("/admin/leads/import-seed")
+async def import_seed_leads(current_user: dict = Depends(get_current_user)):
+    """Importeer de 341 leads van motoroccasion.nl (vooraf verzameld in /backend/data/seed_leads.json).
+
+    Idempotent: bestaande e-mails worden overgeslagen (dedup op email_lower).
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+
+    seed_path = os.path.join(os.path.dirname(__file__), "..", "data", "seed_leads.json")
+    seed_path = os.path.abspath(seed_path)
+    if not os.path.exists(seed_path):
+        raise HTTPException(status_code=500, detail=f"Seed-bestand niet gevonden op {seed_path}")
+
+    with open(seed_path, "r", encoding="utf-8") as f:
+        seed = json.load(f)
+
+    inserted = 0
+    duplicates = 0
+    skipped = 0
+    for lead in seed:
+        email = (lead.get("email") or "").strip().lower()
+        if not email or not EMAIL_RE.match(email):
+            skipped += 1
+            continue
+        existing = await db.taxatie_leads.find_one({"email_lower": email}, {"_id": 0, "id": 1})
+        if existing:
+            duplicates += 1
+            continue
+        doc = {
+            "id": str(uuid.uuid4()),
+            "name": lead.get("name") or "",
+            "email": email,
+            "email_lower": email,
+            "address": lead.get("address") or "",
+            "postcode": lead.get("postcode") or "",
+            "city": lead.get("city") or "",
+            "website": lead.get("website") or "",
+            "source_site": "motoroccasion.nl",
+            "source_url": "",
+            "dealer_id": lead.get("dealer_id") or "",
+            "status": "new",
+            "notes": "",
+            "sent_at": None,
+            "batch_id": None,
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+            "created_by": current_user.get("id"),
+        }
+        await db.taxatie_leads.insert_one(doc)
+        inserted += 1
+
+    return {
+        "total_in_seed": len(seed),
         "inserted": inserted,
         "duplicates": duplicates,
         "skipped_no_email": skipped,
