@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, FileText, Mail, Phone, MapPin, Building2, Hash,
   Calendar, X, Trash2, ExternalLink, Inbox, CheckCircle2, Clock, AlertCircle,
+  Users, ChevronDown,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 
@@ -35,17 +36,21 @@ export default function AdminTaxatieAanvragen() {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState('alle');
   const [views, setViews] = useState({ views: [], today: 0, week: 0, total: 0 });
+  const [dealers, setDealers] = useState([]);
+  const [dealerFilter, setDealerFilter] = useState(null);  // { email, company_name } | null
   const isAllowed = user?.role === 'admin' || user?.role === 'taxateur' || user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
 
   const fetchData = useCallback(async () => {
     if (!isAllowed) { setLoading(false); return; }
     try {
-      const [resA, resV] = await Promise.all([
+      const [resA, resV, resD] = await Promise.all([
         axios.get(`${API}/admin/taxatie-aanvragen`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/taxatie-views`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/taxatie-dealers`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       setAanvragen(resA.data?.aanvragen || []);
       setViews(resV.data || { views: [], today: 0, week: 0, total: 0 });
+      setDealers(resD.data?.dealers || []);
     } catch (e) {
       toast.error('Laden mislukt: ' + (e.response?.data?.detail || e.message));
     }
@@ -89,7 +94,11 @@ export default function AdminTaxatieAanvragen() {
     }
   };
 
-  const filtered = filter === 'alle' ? aanvragen : aanvragen.filter(a => (a.status || 'nieuw') === filter);
+  // Filter eerst op dealer-email, dan op status
+  const byDealer = dealerFilter
+    ? aanvragen.filter(a => (a.email || '').toLowerCase() === dealerFilter.email.toLowerCase())
+    : aanvragen;
+  const filtered = filter === 'alle' ? byDealer : byDealer.filter(a => (a.status || 'nieuw') === filter);
   const counts = aanvragen.reduce((acc, a) => {
     const s = a.status || 'nieuw';
     acc[s] = (acc[s] || 0) + 1;
@@ -128,12 +137,82 @@ export default function AdminTaxatieAanvragen() {
         </div>
 
         {/* Bezoekers stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="views-stats">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3" data-testid="views-stats">
           <StatTile label="Vandaag" value={views.today} accent="bg-blue-600" />
           <StatTile label="Laatste 7 dagen" value={views.week} accent="bg-emerald-600" />
           <StatTile label="Totaal bezoekers" value={views.total} accent="bg-zinc-900" />
           <StatTile label="Aanvragen totaal" value={aanvragen.length} accent="bg-red-600" />
+          <StatTile label="Dealers geregistreerd" value={dealers.length} accent="bg-amber-600" />
         </div>
+
+        {/* Dealers paneel (collapsible) */}
+        {dealers.length > 0 && (
+          <details className="bg-white rounded-2xl border" data-testid="dealers-list">
+            <summary className="cursor-pointer px-5 py-3 font-bold text-sm hover:bg-zinc-50 select-none flex items-center gap-2">
+              <Users className="w-4 h-4 text-amber-600" />
+              Geregistreerde dealers ({dealers.length})
+              <ChevronDown className="w-4 h-4 text-zinc-400 ml-auto" />
+            </summary>
+            <div className="border-t overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-zinc-50 text-xs uppercase font-bold text-zinc-600">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left">Geregistreerd</th>
+                    <th className="px-4 py-2.5 text-left">Bedrijf</th>
+                    <th className="px-4 py-2.5 text-left">Contact</th>
+                    <th className="px-4 py-2.5 text-left">KVK / RSIN</th>
+                    <th className="px-4 py-2.5 text-left">Art.8</th>
+                    <th className="px-4 py-2.5 text-right">Aanvragen</th>
+                    <th className="px-4 py-2.5 text-left">Laatste</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dealers.map(d => {
+                    const active = dealerFilter?.email === d.email;
+                    return (
+                      <tr
+                        key={d.id}
+                        onClick={() => setDealerFilter(active ? null : { email: d.email, company_name: d.company_name })}
+                        className={`border-t cursor-pointer transition-colors ${active ? 'bg-amber-50' : 'hover:bg-zinc-50'}`}
+                        data-testid={`dealer-row-${d.id}`}
+                        title={active ? 'Klik om filter te verwijderen' : 'Klik om aanvragen van deze dealer te tonen'}
+                      >
+                      <td className="px-4 py-2.5 text-zinc-500 text-xs">
+                        {d.created_at ? new Date(d.created_at).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 font-bold">{d.company_name || '—'}</td>
+                      <td className="px-4 py-2.5 text-zinc-600 text-xs">
+                        <div>{d.contact_person || d.name || '—'}</div>
+                        <div className="text-zinc-400">{d.email}</div>
+                        {d.phone && <div className="text-zinc-400">{d.phone}</div>}
+                      </td>
+                      <td className="px-4 py-2.5 text-zinc-600 text-xs">
+                        {d.kvk_number && <div>KVK: {d.kvk_number}</div>}
+                        {d.rsin && <div>RSIN: {d.rsin}</div>}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs">
+                        {d.art8_vergunning ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold">
+                            <CheckCircle2 className="w-3 h-3" />{d.art8_nummer || 'Ja'}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-bold">{d.aanvragen_count || 0}</td>
+                      <td className="px-4 py-2.5 text-zinc-500 text-xs">
+                        {d.last_aanvraag_at
+                          ? new Date(d.last_aanvraag_at).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: '2-digit' })
+                          : <span className="text-zinc-300">geen</span>}
+                      </td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
 
         {/* Recente bezoekers (collapsible) */}
         {views.views.length > 0 && (
@@ -157,6 +236,24 @@ export default function AdminTaxatieAanvragen() {
               ))}
             </div>
           </details>
+        )}
+
+        {/* Active dealer filter banner */}
+        {dealerFilter && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3 flex items-center justify-between" data-testid="dealer-filter-banner">
+            <div className="text-sm">
+              <span className="text-amber-700">Gefilterd op dealer: </span>
+              <strong className="text-amber-900">{dealerFilter.company_name || dealerFilter.email}</strong>
+              <span className="text-amber-700 text-xs ml-2">({byDealer.length} aanvragen)</span>
+            </div>
+            <button
+              onClick={() => setDealerFilter(null)}
+              className="text-xs font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1"
+              data-testid="clear-dealer-filter"
+            >
+              <X className="w-3 h-3" />Filter verwijderen
+            </button>
+          </div>
         )}
 
         {/* Filter tabs */}

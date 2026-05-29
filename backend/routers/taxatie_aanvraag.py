@@ -751,6 +751,35 @@ async def dealer_update_me(
     return updated
 
 
+@router.get("/admin/taxatie-dealers")
+async def list_taxatie_dealers(current_user: dict = Depends(get_current_user)):
+    """Admin-only: lijst alle geregistreerde taxatie-dealers + aantal aanvragen per dealer."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    dealers = await db.users.find(
+        {"role": "taxatie_dealer"},
+        {"_id": 0, "password_hash": 0, "registered_ip": 0},
+    ).sort("created_at", -1).to_list(500)
+
+    # Tel aanvragen per dealer (op email match)
+    emails = [d.get("email", "").lower() for d in dealers]
+    counts: dict = {}
+    if emails:
+        pipeline = [
+            {"$match": {"email": {"$in": emails}}},
+            {"$group": {"_id": "$email", "count": {"$sum": 1}, "last": {"$max": "$created_at"}}},
+        ]
+        async for row in db.taxatie_aanvragen.aggregate(pipeline):
+            counts[row["_id"]] = {"count": row["count"], "last": row.get("last")}
+
+    for d in dealers:
+        info = counts.get(d.get("email", "").lower(), {})
+        d["aanvragen_count"] = info.get("count", 0)
+        d["last_aanvraag_at"] = info.get("last")
+
+    return {"dealers": dealers}
+
+
 @router.get("/dealer/aanvragen")
 async def dealer_list_aanvragen(current_user: dict = Depends(_require_taxatie_dealer)):
     """Alle taxatie-aanvragen van de ingelogde dealer (gematcht op email)."""
