@@ -49,8 +49,7 @@ Zie de bijgevoegde flyer voor alle details.
 
 Met vriendelijke groet,
 
-Sandro
-Moto Import B.V.
+Team Moto Import B.V.
 Horsterhoekweg 11, 7433 SV Schalkhaar
 KVK 94622086
 www.motoimportbv.nl
@@ -136,8 +135,8 @@ const HTML_BODY = `<div style="font-family: -apple-system, BlinkMacSystemFont, '
   <!-- Signature -->
   <div style="background: white; padding: 16px 28px 28px; font-size: 13px; color: #3f3f46;">
     <p style="margin: 16px 0 4px;">Met vriendelijke groet,</p>
-    <p style="margin: 0 0 4px; font-weight: 700; color: #18181b;">Sandro</p>
-    <p style="margin: 0; color: #71717a; font-size: 12px;">Moto Import B.V. · Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+    <p style="margin: 0 0 4px; font-weight: 700; color: #18181b;">Team Moto Import B.V.</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
     <p style="margin: 0; color: #71717a; font-size: 12px;">KVK 94622086 · <a href="https://www.motoimportbv.nl" style="color: #dc2626;">www.motoimportbv.nl</a></p>
   </div>
 </div>`;
