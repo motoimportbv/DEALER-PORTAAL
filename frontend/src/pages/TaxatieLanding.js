@@ -259,11 +259,14 @@ export default function TaxatieLanding() {
                 </a>
                 <a href="/taxatie-dealer/login" className="inline-block">
                   <Button variant="outline" className="w-full sm:w-auto font-bold px-6 py-3" data-testid="cta-login-btn">
-                    Al een account? Inloggen
+                    Taxatie-dealer login
                   </Button>
                 </a>
               </div>
-              <p className="text-xs text-zinc-400 mt-6">€60 introductietarief voor uw eerste taxatie · daarna €120 ex BTW per verslag · binnen 48 uur in uw mailbox</p>
+              <p className="text-xs text-zinc-500 mt-4">
+                Heeft u al een <strong>Moto Import platform-account</strong> (handel/import)? <a href="/login" className="text-red-600 font-bold hover:underline" data-testid="cta-platform-login">Daar inloggen →</a>
+              </p>
+              <p className="text-xs text-zinc-400 mt-4">€60 introductietarief voor uw eerste taxatie · daarna €120 ex BTW per verslag · binnen 48 uur in uw mailbox</p>
             </div>
           ) : (
           <form onSubmit={submit} className="bg-white rounded-2xl border border-zinc-200 p-6 lg:p-8 space-y-6" data-testid="taxatie-aanvraag-form">

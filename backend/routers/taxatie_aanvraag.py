@@ -129,10 +129,12 @@ async def submit_taxatie_aanvraag(
 ):
     """Verwerk een nieuwe taxatie-aanvraag van een ingelogde dealer (of admin/taxateur intern)."""
     role = (current_user or {}).get("role")
-    if role not in (TAXATIE_DEALER_ROLE, "admin", "taxateur"):
+    # Alle ingelogde gebruikers mogen een taxatie indienen: dealers (platform), taxatie-dealers,
+    # particulieren, en admin/taxateur intern. Anonieme bezoekers krijgen 401 via get_current_user.
+    if role not in (TAXATIE_DEALER_ROLE, "dealer", "particulier", "admin", "taxateur"):
         raise HTTPException(
             status_code=403,
-            detail="U moet inloggen als dealer om een taxatie-aanvraag in te dienen.",
+            detail="U moet inloggen om een taxatie-aanvraag in te dienen.",
         )
     if len(detail_fotos) > 20:
         raise HTTPException(status_code=400, detail="Maximaal 20 detailfoto's toegestaan")
@@ -527,6 +529,18 @@ async def _require_taxatie_dealer(current_user: dict = Depends(get_current_user)
     return current_user
 
 
+async def _require_any_dealer(current_user: dict = Depends(get_current_user)) -> dict:
+    """Sta zowel taxatie-dealers, platform-dealers, particulieren als admin/taxateur toe.
+
+    Gebruikt voor read-only endpoints (zoals profile + eigen aanvragen lijst), zodat
+    de /taxatie aanvraag-flow werkt voor iedereen die kan inloggen.
+    """
+    role = (current_user or {}).get("role")
+    if role not in (TAXATIE_DEALER_ROLE, "dealer", "particulier", "admin", "taxateur"):
+        raise HTTPException(status_code=403, detail="Login vereist")
+    return current_user
+
+
 @router.post("/public/taxatie-dealer-register")
 async def taxatie_dealer_register(request: Request, body: dict = Body(...)):
     """Self-registration voor motordealers die taxatie-aanvragen willen indienen.
@@ -766,8 +780,12 @@ async def taxatie_dealer_register(request: Request, body: dict = Body(...)):
 
 
 @router.get("/dealer/me")
-async def dealer_me(current_user: dict = Depends(_require_taxatie_dealer)):
-    """Profiel van de ingelogde dealer (zonder password_hash)."""
+async def dealer_me(current_user: dict = Depends(_require_any_dealer)):
+    """Profiel van de ingelogde dealer (zonder password_hash).
+
+    Werkt voor zowel `taxatie_dealer` als reguliere `dealer`/`particulier`/`admin`.
+    De /taxatie aanvraag-pagina vult dit profiel automatisch in.
+    """
     return {
         "id": current_user["id"],
         "email": current_user["email"],
