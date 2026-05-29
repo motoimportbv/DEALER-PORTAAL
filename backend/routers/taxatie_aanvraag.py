@@ -613,29 +613,108 @@ async def taxatie_dealer_register(request: Request, body: dict = Body(...)):
 
     # Welkomstmail naar dealer + notificatie naar admin
     try:
-        await send_email(
-            to_email=email,
-            subject="Welkom bij Moto Import — uw dealer-account is actief",
-            html_content=f"""
-            <div style="font-family: Arial; max-width: 560px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #18181b, #7f1d1d); color: white; padding: 24px;">
-                <h1 style="margin: 0;">Welkom, {contactpersoon or bedrijfsnaam}!</h1>
-              </div>
-              <div style="background: white; padding: 24px; font-size: 14px; color: #18181b;">
-                <p>Uw dealer-account voor taxatieverslagen is direct actief. U kunt nu:</p>
-                <ul style="line-height: 1.8;">
-                  <li>Nieuwe taxatie-aanvragen indienen vanuit uw eigen dashboard</li>
-                  <li>De status van uw aanvragen volgen</li>
-                  <li>Alle eerdere taxaties terugzien</li>
-                </ul>
-                <p style="margin: 24px 0;">
-                  <a href="https://www.motoimportbv.nl/taxatie-dealer/login" style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Inloggen op dashboard</a>
-                </p>
-                <p style="font-size: 12px; color: #71717a;">Vragen? Bel 06-24264861 of mail motoimportbv@gmail.com</p>
-              </div>
+        # Probeer flyer bij te voegen
+        flyer_path = os.path.join(FLYER_DIR, "taxatie_flyer_a4.pdf")
+        if not os.path.exists(flyer_path):
+            try:
+                import sys as _sys
+                _sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+                from generate_taxatie_flyer import create_flyer
+                create_flyer()
+            except Exception:
+                flyer_path = None
+        if flyer_path and not os.path.exists(flyer_path):
+            flyer_path = None
+
+        first_name = (contactpersoon or bedrijfsnaam or "dealer").split()[0]
+        welcome_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f4f4f5;">
+
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #18181b 0%, #7f1d1d 100%); color: white; padding: 32px 24px;">
+            <p style="margin: 0 0 8px 0; font-size: 12px; opacity: 0.7; letter-spacing: 2px; text-transform: uppercase;">Moto Import B.V.</p>
+            <h1 style="margin: 0; font-size: 28px; font-weight: 900;">Welkom, {first_name}! 🎉</h1>
+            <p style="margin: 12px 0 0 0; font-size: 15px; opacity: 0.9;">Uw dealer-account is direct actief. U kunt nu taxatieverslagen aanvragen voor <strong>€60 voor de eerste aanvraag</strong> en daarna <strong>€120 per stuk</strong>.</p>
+          </div>
+
+          <!-- Body -->
+          <div style="background: white; padding: 32px 24px;">
+
+            <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #18181b;">📋 Zo dient u uw eerste taxatie in (3 minuten)</h2>
+
+            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0 0 6px 0; font-weight: bold; color: #7f1d1d;">Stap 1 · Log in op uw dashboard</p>
+              <p style="margin: 0; font-size: 14px; color: #525252;">Ga naar <a href="https://www.motoimportbv.nl/taxatie-dealer/login" style="color: #dc2626; font-weight: bold;">motoimportbv.nl/taxatie-dealer/login</a> en log in met uw e-mailadres + wachtwoord.</p>
             </div>
-            """,
-        )
+
+            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0 0 6px 0; font-weight: bold; color: #7f1d1d;">Stap 2 · Klik op "Nieuwe aanvraag indienen"</p>
+              <p style="margin: 0; font-size: 14px; color: #525252;">Vul de gegevens van het voertuig in (kenteken/VIN, kilometerstand, schadebeschrijving). Wij raden aan om <strong>4-8 foto's</strong> mee te sturen van verschillende hoeken.</p>
+            </div>
+
+            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0 0 6px 0; font-weight: bold; color: #7f1d1d;">Stap 3 · Wacht 24-48 uur</p>
+              <p style="margin: 0; font-size: 14px; color: #525252;">Onze taxateurs (RDW-erkend) beoordelen de aanvraag en sturen u een complete <strong>BPM-taxatieverslag-PDF</strong> die u 1-op-1 indient bij de Belastingdienst.</p>
+            </div>
+
+            <!-- Big CTA -->
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://www.motoimportbv.nl/taxatie-dealer/dashboard" style="display: inline-block; background: #dc2626; color: white; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; box-shadow: 0 2px 8px rgba(220,38,38,0.3);">▶ Direct uw eerste aanvraag indienen</a>
+              <p style="margin: 12px 0 0 0; font-size: 12px; color: #a1a1aa;">Slechts <strong>€60</strong> voor de eerste aanvraag</p>
+            </div>
+
+            <!-- Why us -->
+            <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 24px 0;">
+              <p style="margin: 0 0 12px 0; font-weight: bold; color: #18181b; font-size: 15px;">Waarom Moto Import B.V.?</p>
+              <ul style="margin: 0; padding-left: 18px; line-height: 1.7; color: #525252; font-size: 13px;">
+                <li>✅ RDW-erkende taxateurs (geldig voor alle BPM-aangiftes)</li>
+                <li>✅ Eenvoudig digitaal proces — geen papierwerk</li>
+                <li>✅ 24-48 uur turnaround</li>
+                <li>✅ Bezwaarondersteuning gratis bij elk verslag</li>
+                <li>✅ Vaste prijs €120 vanaf 2e aanvraag (concurrenten €150-250)</li>
+              </ul>
+            </div>
+
+            <p style="margin: 24px 0 8px 0; font-size: 13px; color: #525252;">
+              Bij de flyer in de bijlage staat alle praktische informatie nogmaals overzichtelijk samengevat.
+              Bewaar 'm zodat u 'm altijd bij de hand heeft.
+            </p>
+
+            <p style="margin: 20px 0 0 0; font-size: 13px; color: #525252;">
+              Vragen? Stuur ons gerust een mail of bel:
+              <br>📞 <strong>06-24264861</strong>
+              <br>✉️ <strong>motoimportbv@gmail.com</strong>
+            </p>
+
+            <p style="margin: 24px 0 0 0; font-size: 13px; color: #18181b;">
+              Met vriendelijke groet,<br>
+              <strong>Team Moto Import B.V.</strong>
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="background: #18181b; color: #a1a1aa; padding: 16px 24px; font-size: 11px; text-align: center;">
+            <p style="margin: 0;">Moto Import B.V. · KvK 86204050 · BTW NL903918485B01</p>
+            <p style="margin: 4px 0 0 0;">www.motoimportbv.nl</p>
+          </div>
+        </div>
+        """
+        subject = f"🎉 Welkom bij Moto Import, {first_name}! Zo dient u uw eerste taxatie in"
+
+        if flyer_path:
+            await send_email_with_attachment(
+                to_email=email,
+                subject=subject,
+                html_content=welcome_html,
+                attachment_path=flyer_path,
+                attachment_display_name="Moto-Import-Taxatie-Flyer.pdf",
+            )
+        else:
+            await send_email(
+                to_email=email,
+                subject=subject,
+                html_content=welcome_html,
+            )
     except Exception as ee:
         logger.warning(f"Welkomstmail dealer faalde: {ee}")
 
