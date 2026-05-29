@@ -690,6 +690,65 @@ async def dealer_me(current_user: dict = Depends(_require_taxatie_dealer)):
     }
 
 
+@router.patch("/dealer/me")
+async def dealer_update_me(
+    body: dict = Body(...),
+    current_user: dict = Depends(_require_taxatie_dealer),
+):
+    """Dealer kan eigen bedrijfsgegevens bijwerken (geen email/role/password)."""
+    allowed = {
+        "company_name", "contact_person", "phone", "kvk_number", "rsin",
+        "address", "postal_code", "city", "art8_vergunning", "art8_nummer",
+    }
+    update: dict = {}
+    for k, v in (body or {}).items():
+        if k in allowed:
+            if k == "art8_vergunning":
+                update[k] = bool(v)
+            else:
+                update[k] = (str(v) if v is not None else "").strip()
+    # Houd 'name' in sync met contact_person (gebruikt voor display)
+    if "contact_person" in update:
+        update["name"] = update["contact_person"] or update.get("company_name") or current_user.get("name", "")
+
+    if not update:
+        raise HTTPException(status_code=400, detail="Geen geldige velden om bij te werken")
+
+    update["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one({"id": current_user["id"]}, {"$set": update})
+
+    # Sync ook customer-record onder motoimportbv@gmail.com
+    customer_id = current_user.get("customer_id")
+    if customer_id:
+        cust_update: dict = {}
+        if "company_name" in update:
+            cust_update["name"] = update["company_name"]
+        if "contact_person" in update:
+            cust_update["contact_person"] = update["contact_person"]
+        if "phone" in update:
+            cust_update["phone"] = update["phone"]
+        if "address" in update:
+            cust_update["address"] = update["address"]
+        if "city" in update:
+            cust_update["city"] = update["city"]
+        if "postal_code" in update:
+            cust_update["postcode"] = update["postal_code"]
+        if "kvk_number" in update:
+            cust_update["kvk_number"] = update["kvk_number"]
+        if "rsin" in update:
+            cust_update["rsin"] = update["rsin"]
+        if "art8_vergunning" in update:
+            cust_update["art8_vergunning"] = update["art8_vergunning"]
+        if "art8_nummer" in update:
+            cust_update["art8_nummer"] = update["art8_nummer"]
+        if cust_update:
+            await db.customers.update_one({"id": customer_id}, {"$set": cust_update})
+
+    # Stuur bijgewerkte profielversie terug
+    updated = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
+    return updated
+
+
 @router.get("/dealer/aanvragen")
 async def dealer_list_aanvragen(current_user: dict = Depends(_require_taxatie_dealer)):
     """Alle taxatie-aanvragen van de ingelogde dealer (gematcht op email)."""
