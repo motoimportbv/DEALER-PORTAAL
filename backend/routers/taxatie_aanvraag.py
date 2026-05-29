@@ -12,6 +12,8 @@ from typing import List, Optional
 import os
 import re
 import uuid
+import secrets
+import hashlib
 import logging
 
 from database import db
@@ -757,6 +759,137 @@ async def dealer_list_aanvragen(current_user: dict = Depends(_require_taxatie_de
         {"email": email}, {"_id": 0}
     ).sort("created_at", -1).to_list(200)
     return {"aanvragen": aanvragen}
+
+
+# ============ PASSWORD RESET (forgot password) ============
+
+PASSWORD_RESET_TTL_MINUTES = 60
+PASSWORD_RESET_RATE_LIMIT = 3  # max per email per 15 min
+
+
+def _hash_reset_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+@router.post("/public/taxatie-dealer-forgot-password")
+async def taxatie_dealer_forgot_password(body: dict = Body(...)):
+    """Stuur een password-reset e-mail. Reveal nooit of het e-mailadres bestaat."""
+    email = (body.get("email") or "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Geldig e-mailadres is verplicht")
+
+    now = datetime.now(timezone.utc)
+
+    # Rate limit
+    recent = await db.password_resets.count_documents({
+        "email": email,
+        "created_at": {"$gte": (now - timedelta(minutes=15)).isoformat()},
+    })
+    if recent >= PASSWORD_RESET_RATE_LIMIT:
+        # Geef alsnog 200 terug om enumeration te voorkomen
+        return {"status": "ok", "message": "Als dit e-mailadres bekend is ontvangt u zo een reset-link."}
+
+    # Vind gebruiker (case-insensitive)
+    user = await db.users.find_one({
+        "email": {"$regex": f"^{re.escape(email)}$", "$options": "i"},
+        "role": TAXATIE_DEALER_ROLE,
+    })
+
+    if user:
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = _hash_reset_token(raw_token)
+        expires_at = now + timedelta(minutes=PASSWORD_RESET_TTL_MINUTES)
+        await db.password_resets.insert_one({
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "user_id": user["id"],
+            "token_hash": token_hash,
+            "expires_at": expires_at.isoformat(),
+            "used": False,
+            "created_at": now.isoformat(),
+        })
+
+        reset_link = f"https://www.motoimportbv.nl/taxatie-dealer/reset/{raw_token}"
+        try:
+            await send_email(
+                to_email=email,
+                subject="Wachtwoord resetten — Moto Import dealer-account",
+                html_content=f"""
+                <div style="font-family: Arial; max-width: 560px; margin: 0 auto;">
+                  <div style="background: #18181b; color: white; padding: 20px;">
+                    <h2 style="margin: 0;">Wachtwoord resetten</h2>
+                  </div>
+                  <div style="background: white; padding: 24px; font-size: 14px;">
+                    <p>U vroeg een nieuw wachtwoord aan voor uw Moto Import dealer-account.</p>
+                    <p>Klik op onderstaande knop om een nieuw wachtwoord in te stellen. Deze link is <strong>60 minuten</strong> geldig.</p>
+                    <p style="text-align: center; margin: 28px 0;">
+                      <a href="{reset_link}" style="background: #dc2626; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;">Nieuw wachtwoord instellen</a>
+                    </p>
+                    <p style="font-size: 12px; color: #71717a;">Werkt de knop niet? Kopieer deze link:<br><span style="word-break: break-all;">{reset_link}</span></p>
+                    <p style="font-size: 12px; color: #71717a; margin-top: 24px;">Niet aangevraagd? Negeer deze e-mail — uw wachtwoord blijft hetzelfde.</p>
+                  </div>
+                </div>
+                """,
+            )
+        except Exception as e:
+            logger.warning(f"Wachtwoord-resetmail kon niet verstuurd worden: {e}")
+
+    return {"status": "ok", "message": "Als dit e-mailadres bekend is ontvangt u zo een reset-link."}
+
+
+@router.post("/public/taxatie-dealer-reset-password")
+async def taxatie_dealer_reset_password(body: dict = Body(...)):
+    """Wissel een reset-token om naar een nieuw wachtwoord."""
+    raw_token = (body.get("token") or "").strip()
+    new_password = body.get("password") or ""
+
+    if not raw_token:
+        raise HTTPException(status_code=400, detail="Reset-token ontbreekt")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minstens 8 tekens zijn")
+
+    token_hash = _hash_reset_token(raw_token)
+    now = datetime.now(timezone.utc).isoformat()
+
+    record = await db.password_resets.find_one({
+        "token_hash": token_hash,
+        "used": False,
+        "expires_at": {"$gte": now},
+    })
+    if not record:
+        raise HTTPException(status_code=400, detail="Deze link is ongeldig of verlopen. Vraag een nieuwe aan.")
+
+    user_id = record.get("user_id")
+    user = await db.users.find_one({"id": user_id, "role": TAXATIE_DEALER_ROLE})
+    if not user:
+        raise HTTPException(status_code=400, detail="Account niet gevonden")
+
+    # Hash + opslaan
+    new_hash = hash_password(new_password)
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": new_hash, "updated_at": now}},
+    )
+    # Invalidate token (one-time use) + alle andere openstaande tokens van dezelfde user
+    await db.password_resets.update_many(
+        {"user_id": user_id, "used": False},
+        {"$set": {"used": True, "used_at": now}},
+    )
+
+    # Issue verse JWT zodat user meteen ingelogd is
+    token = create_token(user_id, user.get("email", ""), TAXATIE_DEALER_ROLE)
+    return {
+        "status": "ok",
+        "message": "Wachtwoord gewijzigd. U bent ingelogd.",
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": user.get("email"),
+            "role": TAXATIE_DEALER_ROLE,
+            "company_name": user.get("company_name", ""),
+            "name": user.get("name", ""),
+        },
+    }
 
 
 # ============ FLYER DOWNLOAD ============

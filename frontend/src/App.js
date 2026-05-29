@@ -77,6 +77,8 @@ import TaxatieLanding from "./pages/TaxatieLanding";
 import TaxatieDealerRegister from "./pages/TaxatieDealerRegister";
 import TaxatieDealerLogin from "./pages/TaxatieDealerLogin";
 import TaxatieDealerDashboard from "./pages/TaxatieDealerDashboard";
+import TaxatieDealerForgotPassword from "./pages/TaxatieDealerForgotPassword";
+import TaxatieDealerResetPassword from "./pages/TaxatieDealerResetPassword";
 import AdminTaxatieAanvragen from "./pages/admin/AdminTaxatieAanvragen";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
@@ -233,6 +235,8 @@ function App() {
             <Route path="/taxatie-dealer/register" element={<TaxatieDealerRegister />} />
             <Route path="/taxatie-dealer/login" element={<TaxatieDealerLogin />} />
             <Route path="/taxatie-dealer/dashboard" element={<TaxatieDealerDashboard />} />
+            <Route path="/taxatie-dealer/forgot" element={<TaxatieDealerForgotPassword />} />
+            <Route path="/taxatie-dealer/reset/:token" element={<TaxatieDealerResetPassword />} />
             <Route path="/motoren" element={<PublicMotorListing />} />
             <Route path="/motor/:id/:slug?" element={<PublicMotorDetail />} />
             <Route path="/klant/motor/:id" element={<CustomerMotorView />} />

@@ -69,7 +69,10 @@ export default function TaxatieDealerLogin() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-700 mb-1">Wachtwoord</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-zinc-700">Wachtwoord</label>
+              <Link to="/taxatie-dealer/forgot" className="text-xs text-red-600 font-bold hover:underline" data-testid="forgot-link">Vergeten?</Link>
+            </div>
             <input
               type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
               className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
