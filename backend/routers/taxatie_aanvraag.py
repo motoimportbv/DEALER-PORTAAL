@@ -17,7 +17,7 @@ import hashlib
 import logging
 
 from database import db
-from services.email_service import send_email
+from services.email_service import send_email, send_email_with_attachment
 from services.auth_service import get_current_user, hash_password, verify_password, create_token
 from routers.taxatie import _is_admin_team
 
@@ -946,3 +946,124 @@ async def download_taxatie_flyer():
         media_type="application/pdf",
         filename="moto-import-taxatie-flyer.pdf",
     )
+
+
+# ============ BULK SALES MAIL ============
+
+@router.post("/admin/taxatie-sales-mail/send")
+async def send_sales_mail_bulk(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Verstuur de sales-mail naar een lijst e-mailadressen via Gmail BCC.
+    Body: { subject, html, plain_text, recipients: [email,...], attach_flyer: bool }
+    """
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    subject = (body.get("subject") or "").strip()
+    html = body.get("html") or ""
+    recipients = body.get("recipients") or []
+    attach_flyer = bool(body.get("attach_flyer", True))
+
+    if not subject:
+        raise HTTPException(status_code=400, detail="Onderwerp is verplicht")
+    if not html:
+        raise HTTPException(status_code=400, detail="Mail-inhoud is verplicht")
+    if not isinstance(recipients, list) or not recipients:
+        raise HTTPException(status_code=400, detail="Minimaal 1 ontvanger nodig")
+
+    # Valideer en dedupliceer e-mailadressen (case-insensitive)
+    email_re = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    seen = set()
+    valid: list[str] = []
+    invalid: list[str] = []
+    for raw in recipients:
+        e = (raw or "").strip().lower()
+        if not e:
+            continue
+        if not email_re.match(e):
+            invalid.append(raw)
+            continue
+        if e in seen:
+            continue
+        seen.add(e)
+        valid.append(e)
+
+    if not valid:
+        raise HTTPException(status_code=400, detail="Geen geldige e-mailadressen gevonden")
+
+    # Anti-spam cap: max 100 per call
+    if len(valid) > 100:
+        raise HTTPException(status_code=400, detail=f"Maximaal 100 ontvangers per verzending (u stuurde {len(valid)})")
+
+    flyer_path = os.path.join(FLYER_DIR, "taxatie_flyer_a4.pdf") if attach_flyer else None
+    if attach_flyer and (not flyer_path or not os.path.exists(flyer_path)):
+        # Probeer flyer te (her-)genereren
+        try:
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+            from generate_taxatie_flyer import create_flyer
+            create_flyer()
+        except Exception as e:
+            logger.warning(f"Kon flyer niet (her)genereren: {e}")
+            flyer_path = None
+
+    sent_ok: list[str] = []
+    failed: list[str] = []
+
+    # Verstuur 1×1 (Gmail SMTP). Trage maar betrouwbare aanpak voor max 100 stuks.
+    import asyncio
+    for email in valid:
+        try:
+            if flyer_path and os.path.exists(flyer_path):
+                ok = await send_email_with_attachment(
+                    to_email=email,
+                    subject=subject,
+                    html_content=html,
+                    attachment_path=flyer_path,
+                    attachment_display_name="Moto-Import-Taxatie-Flyer.pdf",
+                )
+            else:
+                ok = await send_email(email, subject, html)
+            if ok:
+                sent_ok.append(email)
+            else:
+                failed.append(email)
+        except Exception as e:
+            logger.warning(f"Bulk-mail naar {email} faalde: {e}")
+            failed.append(email)
+        # Korte pauze om Gmail-rate-limits te ontwijken
+        await asyncio.sleep(0.4)
+
+    # Log de verzending voor audit
+    await db.sales_mail_log.insert_one({
+        "id": str(uuid.uuid4()),
+        "sent_by": current_user.get("email"),
+        "subject": subject,
+        "recipients_total": len(valid),
+        "recipients_ok": len(sent_ok),
+        "recipients_failed": len(failed),
+        "failed_addresses": failed,
+        "invalid_addresses": invalid,
+        "attach_flyer": bool(flyer_path),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {
+        "status": "ok",
+        "sent": len(sent_ok),
+        "failed": len(failed),
+        "invalid": len(invalid),
+        "failed_addresses": failed,
+        "invalid_addresses": invalid,
+    }
+
+
+@router.get("/admin/taxatie-sales-mail/history")
+async def sales_mail_history(current_user: dict = Depends(get_current_user)):
+    """Admin-only: laatste 50 verzendingen van de sales-mail."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    log = await db.sales_mail_log.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return {"history": log}

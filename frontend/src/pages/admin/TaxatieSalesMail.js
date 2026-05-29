@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Copy, Check, FileText, Mail, Eye, FileCode, Type } from 'lucide-react';
+import axios from 'axios';
+import { ArrowLeft, Copy, Check, FileText, Mail, Eye, FileCode, Type, Send, Loader2, History, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 
@@ -142,11 +143,36 @@ const HTML_BODY = `<div style="font-family: -apple-system, BlinkMacSystemFont, '
 </div>`;
 
 export default function TaxatieSalesMail() {
-  const { user } = useAuth();
-  const [view, setView] = useState('preview');  // 'preview' | 'html' | 'plain'
+  const { user, token } = useAuth();
+  const [view, setView] = useState('preview');  // 'preview' | 'html' | 'plain' | 'send'
   const [copied, setCopied] = useState('');
+  const [recipientText, setRecipientText] = useState('');
+  const [attachFlyer, setAttachFlyer] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const isAllowed = user?.role === 'admin' || user?.role === 'taxateur' || user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
+
+  // Parse plak-tekst (komma's, puntkomma's, regels, spaties allemaal toegestaan)
+  const parseRecipients = useCallback((t) => {
+    return (t || '').split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
+  }, []);
+
+  const recipients = parseRecipients(recipientText);
+  const validCount = recipients.filter(e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)).length;
+
+  const fetchHistory = useCallback(async () => {
+    if (!token) return;
+    try {
+      const r = await axios.get(`${API}/admin/taxatie-sales-mail/history`, { headers: { Authorization: `Bearer ${token}` } });
+      setHistory(r.data?.history || []);
+    } catch { /* ok */ }
+  }, [token]);
+
+  useEffect(() => {
+    if (showHistory) fetchHistory();
+  }, [showHistory, fetchHistory]);
 
   const copyTo = (label, content) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -157,6 +183,30 @@ export default function TaxatieSalesMail() {
   };
 
   const downloadFlyer = () => window.open(`${API}/public/taxatie-flyer`, '_blank');
+
+  const sendBulk = async () => {
+    if (validCount === 0) { toast.error('Geen geldige e-mailadressen'); return; }
+    if (validCount > 100) { toast.error(`Max 100 per keer (u heeft ${validCount})`); return; }
+    if (!window.confirm(`Verstuur deze sales-mail naar ${validCount} ontvangers?${attachFlyer ? ' (incl. flyer-bijlage)' : ''}`)) return;
+    setSending(true);
+    try {
+      const r = await axios.post(
+        `${API}/admin/taxatie-sales-mail/send`,
+        { subject: SUBJECT, html: HTML_BODY, recipients, attach_flyer: attachFlyer },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const d = r.data;
+      toast.success(`Verzonden: ${d.sent} OK · ${d.failed} mislukt · ${d.invalid} ongeldig`);
+      if (d.failed > 0) {
+        toast.warning(`Mislukt: ${d.failed_addresses.join(', ')}`);
+      }
+      setRecipientText('');
+      if (showHistory) fetchHistory();
+    } catch (e) {
+      toast.error('Verzenden mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setSending(false);
+  };
 
   if (!isAllowed) {
     return <Layout><div className="p-10 text-center text-zinc-500">Geen toegang</div></Layout>;
@@ -211,10 +261,11 @@ export default function TaxatieSalesMail() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b">
+        <div className="flex gap-2 border-b flex-wrap">
           <TabBtn active={view === 'preview'} onClick={() => setView('preview')} icon={Eye} label="Visuele preview" testid="tab-preview" />
           <TabBtn active={view === 'html'} onClick={() => setView('html')} icon={FileCode} label="HTML code" testid="tab-html" />
           <TabBtn active={view === 'plain'} onClick={() => setView('plain')} icon={Type} label="Plain-text" testid="tab-plain" />
+          <TabBtn active={view === 'send'} onClick={() => setView('send')} icon={Send} label="🚀 Direct versturen" testid="tab-send" highlight />
         </div>
 
         {/* Content */}
@@ -237,6 +288,82 @@ export default function TaxatieSalesMail() {
             data-testid="plain-textarea"
           />
         )}
+        {view === 'send' && (
+          <div className="bg-white rounded-2xl border p-6 space-y-5" data-testid="send-block">
+            <div>
+              <h3 className="font-bold text-zinc-900 flex items-center gap-2 mb-1">
+                <Send className="w-4 h-4 text-red-600" />Direct verzenden via Gmail
+              </h3>
+              <p className="text-xs text-zinc-500">Plak alle dealer-e-mailadressen. Komma's, regelafbrekingen of spaties zijn toegestaan. Wij sturen ze via uw Moto Import Gmail-account verzonden — elke ontvanger krijgt een aparte e-mail (geen BCC nodig).</p>
+            </div>
+
+            <textarea
+              value={recipientText}
+              onChange={(e) => setRecipientText(e.target.value)}
+              placeholder={"voorbeeld@dealer.nl\ntweede@andermail.nl\nderde@dealer.nl, vierde@partner.nl"}
+              className="w-full h-48 border border-zinc-300 rounded-xl px-3 py-2 text-sm font-mono bg-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+              data-testid="recipients-textarea"
+            />
+
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-bold">{validCount}</span>
+                <span className="text-zinc-500">geldig{recipients.length !== validCount && (<span className="text-amber-600 ml-1">· {recipients.length - validCount} ongeldig</span>)}</span>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox" checked={attachFlyer} onChange={(e) => setAttachFlyer(e.target.checked)}
+                  className="w-4 h-4 accent-red-600" data-testid="attach-flyer-toggle"
+                />
+                <span className="text-sm">Flyer als PDF-bijlage meesturen</span>
+              </label>
+              <Button onClick={() => setShowHistory(s => !s)} variant="ghost" size="sm" className="ml-auto text-xs" data-testid="toggle-history-btn">
+                <History className="w-3.5 h-3.5 mr-1" />{showHistory ? 'Verberg' : 'Toon'} verzendgeschiedenis
+              </Button>
+            </div>
+
+            {validCount > 50 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-800 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span><strong>Let op:</strong> u stuurt naar {validCount} ontvangers. Gmail beperkt ~500 mails/dag — spreid grote batches over meerdere dagen. Max 100 per verzending.</span>
+              </div>
+            )}
+
+            <Button
+              onClick={sendBulk}
+              disabled={sending || validCount === 0 || validCount > 100}
+              className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-bold py-3"
+              data-testid="send-bulk-btn"
+            >
+              {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig met verzenden — even geduld ({validCount} stuks)...</>
+                       : <><Send className="w-4 h-4 mr-2" />Verstuur naar {validCount} ontvangers</>}
+            </Button>
+
+            {showHistory && (
+              <div className="border-t pt-4 space-y-2" data-testid="history-block">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Verzendgeschiedenis</h4>
+                {history.length === 0 ? (
+                  <p className="text-sm text-zinc-400">Nog niets verzonden.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                    {history.map(h => (
+                      <div key={h.id} className="flex items-center justify-between px-3 py-2 bg-zinc-50 rounded-lg text-xs" data-testid={`history-row-${h.id}`}>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="font-semibold">{h.recipients_ok}</span>
+                          <span className="text-zinc-500">/ {h.recipients_total} ok</span>
+                          {h.recipients_failed > 0 && <span className="text-amber-700">· {h.recipients_failed} mislukt</span>}
+                          {h.attach_flyer && <span className="text-zinc-400">· met flyer</span>}
+                        </div>
+                        <span className="text-zinc-400">{new Date(h.created_at).toLocaleString('nl-NL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Instructies */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-sm" data-testid="instructions-block">
@@ -257,13 +384,15 @@ export default function TaxatieSalesMail() {
   );
 }
 
-function TabBtn({ active, onClick, icon: Icon, label, testid }) {
+function TabBtn({ active, onClick, icon: Icon, label, testid, highlight }) {
   return (
     <button
       onClick={onClick}
       data-testid={testid}
       className={`px-4 py-2.5 text-sm font-bold border-b-2 -mb-px flex items-center gap-2 transition-colors ${
-        active ? 'border-red-600 text-red-600' : 'border-transparent text-zinc-500 hover:text-zinc-900'
+        active
+          ? (highlight ? 'border-red-600 text-red-600' : 'border-red-600 text-red-600')
+          : (highlight ? 'border-transparent text-red-600 hover:text-red-700' : 'border-transparent text-zinc-500 hover:text-zinc-900')
       }`}
     >
       <Icon className="w-4 h-4" />{label}

@@ -46,7 +46,7 @@ async def send_email(to_email: str, subject: str, html_content: str, cc: list = 
         return False
 
 
-async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_path: str = None) -> bool:
+async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_path: str = None, attachment_display_name: str = None) -> bool:
     """Send email with optional attachment via Gmail SMTP"""
     try:
         msg = MIMEMultipart('mixed')
@@ -64,7 +64,7 @@ async def send_email_with_attachment(to_email: str, subject: str, html_content: 
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(f.read())
             encoders.encode_base64(part)
-            filename = attachment_path.split('/')[-1]
+            filename = attachment_display_name or attachment_path.split('/')[-1]
             part.add_header('Content-Disposition', f'attachment; filename= {filename}')
             msg.attach(part)
         
