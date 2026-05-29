@@ -6,6 +6,7 @@ import axios from 'axios';
 import {
   ArrowLeft, Globe, Trash2, Download, RefreshCw, Loader2, Search,
   CheckCircle2, ExternalLink, AlertTriangle, ClipboardPaste, Mail, Building2,
+  Copy, Check,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
@@ -219,7 +220,16 @@ export default function LeadScraper() {
               <Button onClick={tryAutoFetch} disabled={autoBusy} className="bg-zinc-800 hover:bg-zinc-900 text-white" data-testid="auto-fetch-btn">
                 {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig (alle 18 pagina's)...</> : <><RefreshCw className="w-4 h-4 mr-2" />Probeer automatisch ophalen</>}
               </Button>
-              <span className="text-xs text-zinc-500 self-center">⚠️ Werkt alleen als de server toegang heeft (motoroccasion.nl blokkeert vaak bots). Anders gebruik plak-modus →</span>
+              <span className="text-xs text-zinc-500 self-center">⚠️ Werkt alleen als de server toegang heeft (motoroccasion.nl blokkeert vaak bots). Anders gebruik magisch script of plak-modus →</span>
+            </div>
+
+            <div className="border-t pt-3" data-testid="magic-script-block">
+              <details open>
+                <summary className="cursor-pointer text-sm font-bold text-emerald-700 hover:underline">
+                  🪄 Magisch script (aanbevolen — alle 358 dealers in 1 klik)
+                </summary>
+                <MagicScript token={token} apiBase={API} />
+              </details>
             </div>
 
             <div className="border-t pt-3" data-testid="paste-mode-block">
@@ -409,5 +419,82 @@ function StatusBadge({ status }) {
     <span className={`${cfg.bg} text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1`}>
       {status === 'sent' && <CheckCircle2 className="w-3 h-3" />}{cfg.label}
     </span>
+  );
+}
+
+
+function MagicScript({ token, apiBase }) {
+  const [copied, setCopied] = useState(false);
+  const script = `(async () => {
+  const API = '${apiBase}/admin/leads/scrape-paste';
+  const T = '${token}';
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  // Zet max op 50 per pagina voor minder klikken (8 pagina's ipv 18)
+  try {
+    const sel = document.querySelector('#maxstepper');
+    if (sel && sel.value !== '50') { sel.value = '50'; sel.dispatchEvent(new Event('change', { bubbles: true })); await wait(2000); }
+  } catch (e) {}
+  let totalNew = 0, totalDup = 0;
+  for (let p = 1; p <= 20; p++) {
+    if (p > 1) {
+      const btns = Array.from(document.querySelectorAll('button.pagination'));
+      const next = btns.find(b => b.textContent.trim() === String(p));
+      if (!next) { console.log('%c✅ Klaar — geen pagina ' + p + ' meer', 'color:green;font-weight:bold'); break; }
+      next.click();
+      await wait(2200);
+    }
+    const html = document.documentElement.outerHTML;
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + T },
+      body: JSON.stringify({ html })
+    });
+    const j = await res.json();
+    totalNew += j.inserted || 0;
+    totalDup += j.duplicates || 0;
+    console.log('%cPagina ' + p + ':', 'color:blue;font-weight:bold', j);
+  }
+  console.log('%c🎉 TOTAAL: ' + totalNew + ' nieuwe leads, ' + totalDup + ' duplicaten', 'color:green;font-size:14px;font-weight:bold');
+  alert('✅ Klaar! ' + totalNew + ' nieuwe leads toegevoegd, ' + totalDup + ' duplicaten genegeerd. Ga terug naar Moto Import.');
+})();`;
+
+  const copy = () => {
+    navigator.clipboard.writeText(script).then(() => {
+      setCopied(true);
+      toast.success('Script gekopieerd — plak nu in console van motoroccasion.nl');
+      setTimeout(() => setCopied(false), 3000);
+    });
+  };
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 space-y-1">
+        <p className="font-bold">⚡ Snelste methode — alle dealers in één keer:</p>
+        <ol className="list-decimal pl-5 space-y-0.5">
+          <li>Klik <strong>"Kopieer script"</strong> hieronder</li>
+          <li>Open <a href="https://www.motoroccasion.nl/adressen/dealers.html" target="_blank" rel="noreferrer" className="text-emerald-700 hover:underline font-bold">motoroccasion.nl/adressen/dealers.html <ExternalLink className="inline w-3 h-3" /></a> in een nieuw tabblad</li>
+          <li>Druk op <kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">F12</kbd> (of <kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Cmd+Opt+I</kbd> op Mac) → tab <strong>Console</strong></li>
+          <li>Plak het script en druk op <kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Enter</kbd></li>
+          <li>Wacht ~30 seconden — het script klikt alle pagina's door en stuurt elke pagina naar je database</li>
+          <li>Kom terug hier en ververs — alle ~358 dealers staan erin ✨</li>
+        </ol>
+      </div>
+      <div className="relative">
+        <pre className="bg-zinc-900 text-emerald-300 text-[10px] font-mono p-3 rounded-xl overflow-x-auto max-h-32" data-testid="magic-script-code">
+          {script.substring(0, 200)}...
+        </pre>
+        <Button
+          onClick={copy}
+          size="sm"
+          className="absolute top-2 right-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+          data-testid="copy-magic-btn"
+        >
+          {copied ? <><Check className="w-3 h-3 mr-1" />Gekopieerd</> : <><Copy className="w-3 h-3 mr-1" />Kopieer script</>}
+        </Button>
+      </div>
+      <p className="text-[11px] text-zinc-500">
+        ⚠️ Het script gebruikt jouw login-token (1u geldig). Voer alleen scripts uit die je vertrouwt — dit script doet niets anders dan dealer-data van motoroccasion.nl doorsturen naar jouw eigen admin-API.
+      </p>
+    </div>
   );
 }
