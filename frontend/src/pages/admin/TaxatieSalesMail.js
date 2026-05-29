@@ -227,6 +227,18 @@ export default function TaxatieSalesMail() {
           sessionStorage.removeItem('lead_import_ids');
         } catch { /* niet kritisch */ }
       }
+      // Als dit een follow-up campagne was → markeer ze ook als follow_up_sent
+      if (sessionStorage.getItem('lead_import_is_followup') === '1') {
+        try {
+          await axios.post(
+            `${API}/admin/follow-up-mark-sent`,
+            { emails: recipients },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          sessionStorage.removeItem('lead_import_is_followup');
+          sessionStorage.removeItem('lead_import_subject_hint');
+        } catch { /* niet kritisch */ }
+      }
       setRecipientText('');
       if (showHistory) fetchHistory();
     } catch (e) {

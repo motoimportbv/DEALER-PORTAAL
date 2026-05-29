@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft, BarChart3, Mail, Eye, RefreshCw, Loader2, ChevronDown,
-  CheckCircle2, Clock, ExternalLink,
+  CheckCircle2, Clock, ExternalLink, Send, AlertCircle,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
@@ -19,6 +19,8 @@ export default function CampaignResults() {
   const [loading, setLoading] = useState(false);
   const [expandedBatch, setExpandedBatch] = useState(null);
   const [batchDetails, setBatchDetails] = useState({});
+  const [followUps, setFollowUps] = useState({ candidates: [], count: 0 });
+  const [followUpDays, setFollowUpDays] = useState(3);
 
   const isAllowed = user?.role === 'admin' || user?.role === 'taxateur' || user?.email?.toLowerCase() === 'motoimportbv@gmail.com';
 
@@ -26,16 +28,18 @@ export default function CampaignResults() {
     if (!token) return;
     setLoading(true);
     try {
-      const r = await axios.get(`${API}/admin/campaign-results`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setBatches(r.data?.batches || []);
-      setTotals(r.data?.totals || { total_sent: 0, total_opened: 0, overall_open_rate: 0 });
+      const [r1, r2] = await Promise.all([
+        axios.get(`${API}/admin/campaign-results`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/follow-up-candidates?min_days_since_send=${followUpDays}`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      setBatches(r1.data?.batches || []);
+      setTotals(r1.data?.totals || { total_sent: 0, total_opened: 0, overall_open_rate: 0 });
+      setFollowUps(r2.data || { candidates: [], count: 0 });
     } catch (e) {
       toast.error('Laden mislukt: ' + (e.response?.data?.detail || e.message));
     }
     setLoading(false);
-  }, [token]);
+  }, [token, followUpDays]);
 
   useEffect(() => {
     if (isAllowed && token) fetchData();
@@ -56,6 +60,19 @@ export default function CampaignResults() {
     } catch (e) {
       toast.error('Details laden mislukt: ' + (e.response?.data?.detail || e.message));
     }
+  };
+
+  const sendFollowUpsToMailer = () => {
+    const emails = followUps.candidates.map(c => c.email);
+    if (emails.length === 0) {
+      toast.error('Geen opvolg-kandidaten');
+      return;
+    }
+    // Sla op in sessionStorage zodat TaxatieSalesMail het ophaalt
+    sessionStorage.setItem('lead_import_emails', emails.join('\n'));
+    sessionStorage.setItem('lead_import_subject_hint', '[Vriendelijke herinnering] Word taxatie-dealer');
+    sessionStorage.setItem('lead_import_is_followup', '1');
+    window.location.href = '/admin/taxatie-sales-mail?import=leads';
   };
 
   const fmtDate = (iso) => {
@@ -100,6 +117,75 @@ export default function CampaignResults() {
           <StatTile icon={Eye} label="Geopend (uniek)" value={totals.total_opened} color="emerald" />
           <StatTile icon={BarChart3} label="Open rate" value={`${totals.overall_open_rate}%`} color="red" highlight />
         </div>
+
+        {/* Follow-up campagne panel */}
+        {totals.total_sent > 0 && (
+          <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-300 rounded-2xl p-4 sm:p-5 space-y-3" data-testid="follow-up-panel">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📨</span>
+              <h3 className="font-black text-orange-900 text-base">Slimme opvolg-campagne</h3>
+            </div>
+            <p className="text-sm text-orange-800">
+              Stuur een vriendelijke herinnering naar dealers die je eerste mail <strong>wél hebben geopend</strong>
+              maar zich nog <strong>niet hebben geregistreerd</strong>. Conversie typisch <strong>+40-60%</strong>.
+            </p>
+            <div className="flex items-center gap-3 flex-wrap pt-1">
+              <label className="text-xs text-orange-900 font-bold flex items-center gap-2">
+                Minimaal dagen na 1e mail:
+                <select
+                  value={followUpDays}
+                  onChange={(e) => setFollowUpDays(parseInt(e.target.value))}
+                  className="border border-orange-300 rounded px-2 py-1 text-xs bg-white"
+                  data-testid="followup-days"
+                >
+                  <option value={1}>1 dag</option>
+                  <option value={3}>3 dagen</option>
+                  <option value={7}>7 dagen</option>
+                  <option value={14}>14 dagen</option>
+                </select>
+              </label>
+              <div className="bg-white border border-orange-200 rounded-lg px-3 py-1.5 text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span><strong className="text-orange-900">{followUps.count}</strong> kandidaten gevonden</span>
+              </div>
+              <Button
+                onClick={sendFollowUpsToMailer}
+                disabled={followUps.count === 0}
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold"
+                data-testid="send-followups-btn"
+              >
+                <Send className="w-4 h-4 mr-2" />Naar Bulk Mailer ({followUps.count})
+              </Button>
+            </div>
+            {followUps.count > 0 && (
+              <details className="text-xs">
+                <summary className="cursor-pointer text-orange-700 hover:underline font-bold">
+                  Bekijk kandidaten ({followUps.count})
+                </summary>
+                <div className="mt-2 bg-white border border-orange-200 rounded-lg max-h-60 overflow-y-auto" data-testid="followup-list">
+                  {followUps.candidates.map(c => (
+                    <div key={c.email} className="px-3 py-1.5 border-b last:border-b-0 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-zinc-900 truncate">{c.name || c.email}</p>
+                        <p className="text-zinc-500 text-[11px] truncate">{c.email}{c.city ? ` · ${c.city}` : ''}</p>
+                      </div>
+                      <span className="text-emerald-700 text-[10px] font-bold whitespace-nowrap">
+                        <Eye className="w-3 h-3 inline mr-1" />{fmtDate(c.opened_at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+            {followUps.count === 0 && totals.total_opened > 0 && (
+              <div className="flex items-start gap-2 text-xs text-orange-700 bg-white/60 border border-orange-200 rounded-lg p-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>Geen kandidaten: alle geopende leads zijn al geregistreerd, hebben al een follow-up gehad,
+                of de mail is nog te recent (probeer "1 dag" of stuur eerst een 1e mailing).</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Batches list */}
         <div className="bg-white rounded-2xl border overflow-hidden" data-testid="batches-list">

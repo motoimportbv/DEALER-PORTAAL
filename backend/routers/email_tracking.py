@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from fastapi.responses import Response
 
 from database import db
@@ -164,3 +164,108 @@ async def batch_details(batch_id: str, current_user: dict = Depends(get_current_
         "open_rate": round((opened / sent * 100), 1) if sent else 0,
         "rows": rows,
     }
+
+
+
+# ============ FOLLOW-UP CAMPAIGN ============
+
+@router.get("/admin/follow-up-candidates")
+async def follow_up_candidates(
+    min_days_since_send: int = 3,
+    current_user: dict = Depends(get_current_user),
+):
+    """Lijst leads die de mail wél hebben geopend maar nog NIET zijn geregistreerd als dealer.
+
+    Filters:
+    - Lead heeft `opened_at` (= mail geopend)
+    - Lead heeft `follow_up_sent` is False/missing
+    - Mail is minimaal X dagen geleden verstuurd (default 3)
+    - E-mail komt NIET voor in users met role=taxatie_dealer (= nog niet geregistreerd)
+    """
+    _require_admin(current_user)
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=min_days_since_send)
+    cutoff_iso = cutoff.isoformat()
+
+    # Pull geopende tracking-records ouder dan cutoff
+    opened = await db.email_tracking.find(
+        {"opened_at": {"$ne": None}, "sent_at": {"$lt": cutoff_iso}},
+        {"_id": 0, "lead_email": 1, "opened_at": 1, "batch_id": 1, "sent_at": 1},
+    ).to_list(2000)
+
+    # Per e-mail: meest recente open
+    by_email: dict = {}
+    for r in opened:
+        e = (r.get("lead_email") or "").lower()
+        if not e:
+            continue
+        prev = by_email.get(e)
+        if not prev or (r.get("opened_at") or "") > (prev.get("opened_at") or ""):
+            by_email[e] = r
+
+    if not by_email:
+        return {"candidates": [], "min_days_since_send": min_days_since_send}
+
+    # Filter: niet geregistreerd als dealer
+    emails = list(by_email.keys())
+    registered = await db.users.find(
+        {"email": {"$in": emails}, "role": "taxatie_dealer"},
+        {"_id": 0, "email": 1},
+    ).to_list(len(emails) + 1)
+    registered_emails = {u["email"].lower() for u in registered if u.get("email")}
+
+    # Filter: nog geen follow-up gestuurd
+    leads = await db.taxatie_leads.find(
+        {"email_lower": {"$in": emails}},
+        {"_id": 0, "email_lower": 1, "name": 1, "city": 1, "follow_up_sent": 1},
+    ).to_list(len(emails) + 1)
+    lead_map = {lead_row["email_lower"]: lead_row for lead_row in leads}
+
+    candidates = []
+    for email, track in by_email.items():
+        if email in registered_emails:
+            continue
+        lead = lead_map.get(email, {})
+        if lead.get("follow_up_sent"):
+            continue
+        candidates.append({
+            "email": email,
+            "name": lead.get("name", ""),
+            "city": lead.get("city", ""),
+            "opened_at": track.get("opened_at"),
+            "sent_at": track.get("sent_at"),
+            "original_batch_id": track.get("batch_id"),
+        })
+
+    # Sorteer: meest recent geopend bovenaan
+    candidates.sort(key=lambda c: c.get("opened_at") or "", reverse=True)
+
+    return {
+        "candidates": candidates,
+        "min_days_since_send": min_days_since_send,
+        "count": len(candidates),
+    }
+
+
+@router.post("/admin/follow-up-mark-sent")
+async def mark_follow_up_sent(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Markeer leads als 'follow_up_sent' = true zodat ze niet nogmaals worden gepakt.
+
+    Body: { emails: [...] }
+    """
+    _require_admin(current_user)
+    emails = (body or {}).get("emails") or []
+    emails_lower = [e.lower() for e in emails if isinstance(e, str)]
+    if not emails_lower:
+        raise HTTPException(status_code=400, detail="Geef minimaal 1 e-mailadres op")
+    r = await db.taxatie_leads.update_many(
+        {"email_lower": {"$in": emails_lower}},
+        {"$set": {
+            "follow_up_sent": True,
+            "follow_up_sent_at": _now_iso(),
+        }},
+    )
+    return {"updated": r.modified_count}

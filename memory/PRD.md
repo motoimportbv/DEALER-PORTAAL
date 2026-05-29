@@ -4,6 +4,7 @@
 Platform voor motorhandelnetwerk "Moto Import" met dealer management, bestellingen, en BPM tools.
 
 ## Kernfuncties
+- **Email-tracking & opvolg-campagne** (Feb 2026): 1×1 tracking-pixel in elke bulk-mail. Dashboard `/admin/campaign-results` met per-batch open rates en slimme opvolg-knop voor dealers die mail openden maar nog niet registreerden. Endpoints in `backend/routers/email_tracking.py`.
 - **BPM Vermindering Tool**: Volledige BPM taxatie met:
   - AutoTelex gegevens overnemen
   - Snel schadebedrag (slider, presets, terugrekenen)
