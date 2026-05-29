@@ -1012,20 +1012,66 @@ async def send_sales_mail_bulk(
     sent_ok: list[str] = []
     failed: list[str] = []
 
+    # Genereer 1 batch_id voor deze verzending — gebruikt door tracking-pixel
+    batch_id = str(uuid.uuid4())[:12]
+    # Public base URL voor tracking pixel — wordt door mailclients geladen
+    public_base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+    if not public_base:
+        # Fallback: lees frontend-URL uit env (gebruikt in templates)
+        public_base = os.environ.get("FRONTEND_URL", "").rstrip("/")
+
     # Verstuur 1×1 (Gmail SMTP). Trage maar betrouwbare aanpak voor max 100 stuks.
     import asyncio
     for email in valid:
+        # Genereer per-recipient tracking-pixel
+        tracking_id = str(uuid.uuid4())
+        pixel_url = f"{public_base}/api/track/open/{tracking_id}.gif" if public_base else ""
+        pixel_tag = (
+            f'<img src="{pixel_url}" width="1" height="1" border="0" alt="" '
+            f'style="display:block;width:1px;height:1px;border:0;outline:none;'
+            f'visibility:hidden;opacity:0" />'
+        ) if pixel_url else ""
+
+        # Injecteer pixel net voor </body> (of aan einde)
+        if pixel_tag:
+            if "</body>" in html.lower():
+                # Case-insensitive replace voor </body>
+                idx = html.lower().rfind("</body>")
+                html_for_email = html[:idx] + pixel_tag + html[idx:]
+            else:
+                html_for_email = html + pixel_tag
+        else:
+            html_for_email = html
+
+        # Track-record vooraf opslaan (zelfs als verzenden faalt — als opened wordt
+        # geregistreerd verwijderen we het later niet)
+        try:
+            await db.email_tracking.insert_one({
+                "id": str(uuid.uuid4()),
+                "tracking_id": tracking_id,
+                "batch_id": batch_id,
+                "lead_email": email,
+                "subject": subject,
+                "sent_at": datetime.now(timezone.utc).isoformat(),
+                "opened_at": None,
+                "last_opened_at": None,
+                "open_count": 0,
+                "user_agent": "",
+            })
+        except Exception as e:
+            logger.warning(f"email_tracking insert faalde voor {email}: {e}")
+
         try:
             if flyer_path and os.path.exists(flyer_path):
                 ok = await send_email_with_attachment(
                     to_email=email,
                     subject=subject,
-                    html_content=html,
+                    html_content=html_for_email,
                     attachment_path=flyer_path,
                     attachment_display_name="Moto-Import-Taxatie-Flyer.pdf",
                 )
             else:
-                ok = await send_email(email, subject, html)
+                ok = await send_email(email, subject, html_for_email)
             if ok:
                 sent_ok.append(email)
             else:
@@ -1041,6 +1087,7 @@ async def send_sales_mail_bulk(
         "id": str(uuid.uuid4()),
         "sent_by": current_user.get("email"),
         "subject": subject,
+        "batch_id": batch_id,
         "recipients_total": len(valid),
         "recipients_ok": len(sent_ok),
         "recipients_failed": len(failed),
@@ -1052,6 +1099,7 @@ async def send_sales_mail_bulk(
 
     return {
         "status": "ok",
+        "batch_id": batch_id,
         "sent": len(sent_ok),
         "failed": len(failed),
         "invalid": len(invalid),

@@ -82,6 +82,7 @@ import TaxatieDealerResetPassword from "./pages/TaxatieDealerResetPassword";
 import AdminTaxatieAanvragen from "./pages/admin/AdminTaxatieAanvragen";
 import TaxatieSalesMail from "./pages/admin/TaxatieSalesMail";
 import LeadScraper from "./pages/admin/LeadScraper";
+import CampaignResults from "./pages/admin/CampaignResults";
 import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 import CustomerMotorView from "./pages/CustomerMotorView";
@@ -278,6 +279,7 @@ function App() {
             <Route path="/admin/taxatie-aanvragen" element={<AdminTaxatieAanvragen />} />
             <Route path="/admin/taxatie-sales-mail" element={<TaxatieSalesMail />} />
             <Route path="/admin/lead-scraper" element={<LeadScraper />} />
+            <Route path="/admin/campaign-results" element={<CampaignResults />} />
             
             {/* Dealer Routes */}
             <Route path="/dealer" element={<DealerDashboard />} />

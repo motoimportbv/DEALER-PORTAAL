@@ -251,6 +251,11 @@ export default function TaxatieSalesMail() {
             <p className="text-zinc-500 mt-1 text-sm">Kant-en-klare e-mail om dealers binnen te halen — kopiëer naar Gmail/Outlook of stuur in bulk.</p>
           </div>
           <div className="flex gap-2">
+            <Link to="/admin/campaign-results">
+              <Button variant="outline" data-testid="campaign-results-link">
+                <Eye className="w-4 h-4 mr-2" />Resultaten
+              </Button>
+            </Link>
             <Link to="/admin/lead-scraper">
               <Button variant="outline" data-testid="lead-scraper-link">
                 <Globe className="w-4 h-4 mr-2" />Lead-scraper
