@@ -36,3 +36,11 @@
 ## Test Order (with pakbon data pre-filled)
 - Order ID: 630312c9-2560-41ac-98a8-626d79cc3651
 - Has: kentekenbewijs_url, payment_instructions (CHF 7.500, Hostettler AG, IBAN CH93...), license plate
+
+## Taxatie Dealer Self-Registration (NEW Feb 2026)
+- Public register endpoint: POST /api/public/taxatie-dealer-register (no auth)
+- Login: POST /api/auth/login → returns user with role="taxatie_dealer"
+- Dealer dashboard: /taxatie-dealer/dashboard
+- Profile API: GET /api/dealer/me
+- Eigen aanvragen API: GET /api/dealer/aanvragen (gefilterd op email match)
+- Tested register: jan@dealertest.nl / test12345 (was cleaned up after test)

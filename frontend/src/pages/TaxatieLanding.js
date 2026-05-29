@@ -96,6 +96,12 @@ export default function TaxatieLanding() {
       {/* HERO */}
       <section className="relative bg-gradient-to-br from-zinc-950 via-red-950 to-zinc-900 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,0,0,0.4) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,100,0,0.2) 0%, transparent 50%)' }} />
+        {/* Topbar met dealer-login */}
+        <div className="relative max-w-6xl mx-auto px-6 pt-5 flex items-center justify-end gap-3 text-sm">
+          <a href="/taxatie-dealer/login" className="text-red-200 hover:text-white font-bold transition-colors" data-testid="nav-dealer-login">Dealer inloggen</a>
+          <span className="text-red-400/50">·</span>
+          <a href="/taxatie-dealer/register" className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-3 py-1 text-white font-bold transition-colors" data-testid="nav-dealer-register">Word dealer →</a>
+        </div>
         <div className="relative max-w-6xl mx-auto px-6 py-20 lg:py-32">
           <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-400/40 rounded-full px-4 py-1.5 mb-6">
             <Sparkles className="w-4 h-4 text-red-300" />

@@ -16,7 +16,7 @@ import logging
 
 from database import db
 from services.email_service import send_email
-from services.auth_service import get_current_user
+from services.auth_service import get_current_user, hash_password, verify_password, create_token
 from routers.taxatie import _is_admin_team
 
 logger = logging.getLogger(__name__)
@@ -490,6 +490,208 @@ async def list_taxatie_views(current_user: dict = Depends(get_current_user)):
         "week": week_count,
         "total": total_count,
     }
+
+
+# ============ TAXATIE DEALER ACCOUNTS (self-registration) ============
+
+# Rol-naam zodat we ze kunnen onderscheiden van de "echte" dealer-rol (Moto Import shop)
+TAXATIE_DEALER_ROLE = "taxatie_dealer"
+
+
+async def _require_taxatie_dealer(current_user: dict = Depends(get_current_user)) -> dict:
+    if (current_user or {}).get("role") != TAXATIE_DEALER_ROLE:
+        raise HTTPException(status_code=403, detail="Geen toegang — alleen voor dealer-accounts")
+    return current_user
+
+
+@router.post("/public/taxatie-dealer-register")
+async def taxatie_dealer_register(request: Request, body: dict = Body(...)):
+    """Self-registration voor motordealers die taxatie-aanvragen willen indienen.
+
+    Direct toegang (geen approval), JWT terug, account wordt direct gekoppeld
+    aan een customer-record onder motoimportbv@gmail.com.
+    """
+    # Rate limit: max 3 nieuwe registraties per IP per 10 minuten (anti-misbruik)
+    ip = (
+        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or (request.client.host if request.client else "")
+    )
+    if ip:
+        recent = await db.users.count_documents({
+            "registered_ip": ip,
+            "role": TAXATIE_DEALER_ROLE,
+            "created_at": {"$gte": (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()},
+        })
+        if recent >= 3:
+            raise HTTPException(status_code=429, detail="Te veel registraties vanaf dit adres. Probeer over 10 minuten opnieuw.")
+
+    # Valideer verplichte velden
+    email = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+    bedrijfsnaam = (body.get("bedrijfsnaam") or "").strip()
+    kvk = (body.get("kvk") or "").strip()
+    rsin = (body.get("rsin") or "").strip()
+    contactpersoon = (body.get("contactpersoon") or "").strip()
+    telefoon = (body.get("telefoon") or "").strip()
+    adres = (body.get("adres") or "").strip()
+    postcode = (body.get("postcode") or "").strip()
+    woonplaats = (body.get("woonplaats") or "").strip()
+    art8_vergunning = bool(body.get("art8_vergunning"))
+    art8_nummer = (body.get("art8_nummer") or "").strip()
+
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Geldig e-mailadres is verplicht")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Wachtwoord moet minstens 8 tekens zijn")
+    if not bedrijfsnaam:
+        raise HTTPException(status_code=400, detail="Bedrijfsnaam is verplicht")
+    if not kvk and not rsin:
+        raise HTTPException(status_code=400, detail="KVK of RSIN is verplicht")
+    if not telefoon:
+        raise HTTPException(status_code=400, detail="Telefoonnummer is verplicht")
+
+    # Case-insensitive email-uniciteit
+    existing = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Dit e-mailadres is al geregistreerd. Log in i.p.v. een nieuw account aan te maken.")
+
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    user_doc = {
+        "id": user_id,
+        "email": email,
+        "password_hash": hash_password(password),
+        "role": TAXATIE_DEALER_ROLE,
+        "company_name": bedrijfsnaam,
+        "name": contactpersoon or bedrijfsnaam,
+        "contact_person": contactpersoon,
+        "phone": telefoon,
+        "kvk_number": kvk,
+        "rsin": rsin,
+        "address": adres,
+        "postal_code": postcode,
+        "city": woonplaats,
+        "art8_vergunning": art8_vergunning,
+        "art8_nummer": art8_nummer,
+        "is_approved": True,
+        "created_at": now,
+        "registered_ip": ip,
+    }
+    await db.users.insert_one(user_doc)
+
+    # Maak ook een customer-record onder motoimportbv@gmail.com zodat aanvragen
+    # gekoppeld zijn aan jouw klantenbestand
+    try:
+        record = {
+            "bedrijfsnaam": bedrijfsnaam,
+            "contactpersoon": contactpersoon,
+            "email": email,
+            "telefoon": telefoon,
+            "adres": adres,
+            "woonplaats": woonplaats,
+            "rsin": rsin,
+        }
+        customer_id = await _ensure_customer(record)
+        if customer_id:
+            # Voeg KVK/postcode/art8 toe op de customer
+            update = {"postcode": postcode, "kvk_number": kvk}
+            if art8_vergunning:
+                update["art8_vergunning"] = True
+                update["art8_nummer"] = art8_nummer
+            await db.customers.update_one({"id": customer_id}, {"$set": update})
+            await db.users.update_one({"id": user_id}, {"$set": {"customer_id": customer_id}})
+    except Exception as e:
+        logger.warning(f"_ensure_customer voor dealer-register faalde: {e}")
+
+    # Welkomstmail naar dealer + notificatie naar admin
+    try:
+        await send_email(
+            to_email=email,
+            subject="Welkom bij Moto Import — uw dealer-account is actief",
+            html_content=f"""
+            <div style="font-family: Arial; max-width: 560px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #18181b, #7f1d1d); color: white; padding: 24px;">
+                <h1 style="margin: 0;">Welkom, {contactpersoon or bedrijfsnaam}!</h1>
+              </div>
+              <div style="background: white; padding: 24px; font-size: 14px; color: #18181b;">
+                <p>Uw dealer-account voor taxatieverslagen is direct actief. U kunt nu:</p>
+                <ul style="line-height: 1.8;">
+                  <li>Nieuwe taxatie-aanvragen indienen vanuit uw eigen dashboard</li>
+                  <li>De status van uw aanvragen volgen</li>
+                  <li>Alle eerdere taxaties terugzien</li>
+                </ul>
+                <p style="margin: 24px 0;">
+                  <a href="https://www.motoimportbv.nl/taxatie-dealer/login" style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Inloggen op dashboard</a>
+                </p>
+                <p style="font-size: 12px; color: #71717a;">Vragen? Bel 06-24264861 of mail motoimportbv@gmail.com</p>
+              </div>
+            </div>
+            """,
+        )
+    except Exception as ee:
+        logger.warning(f"Welkomstmail dealer faalde: {ee}")
+
+    try:
+        await send_email(
+            to_email=ADMIN_OWNER_EMAIL,
+            subject=f"Nieuwe taxatie-dealer geregistreerd: {bedrijfsnaam}",
+            html_content=f"""
+            <p>Nieuwe dealer registratie via /dealer/register:</p>
+            <ul>
+              <li><strong>Bedrijf:</strong> {bedrijfsnaam}</li>
+              <li><strong>Contact:</strong> {contactpersoon or '—'}</li>
+              <li><strong>Email:</strong> {email}</li>
+              <li><strong>Telefoon:</strong> {telefoon}</li>
+              <li><strong>KVK/RSIN:</strong> {kvk or '—'} / {rsin or '—'}</li>
+              <li><strong>Art.8:</strong> {'Ja — ' + art8_nummer if art8_vergunning else 'Nee'}</li>
+            </ul>
+            """,
+        )
+    except Exception:
+        pass
+
+    token = create_token(user_id, email, TAXATIE_DEALER_ROLE)
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": email,
+            "role": TAXATIE_DEALER_ROLE,
+            "company_name": bedrijfsnaam,
+            "name": contactpersoon or bedrijfsnaam,
+        },
+    }
+
+
+@router.get("/dealer/me")
+async def dealer_me(current_user: dict = Depends(_require_taxatie_dealer)):
+    """Profiel van de ingelogde dealer (zonder password_hash)."""
+    return {
+        "id": current_user["id"],
+        "email": current_user["email"],
+        "company_name": current_user.get("company_name", ""),
+        "name": current_user.get("name", ""),
+        "contact_person": current_user.get("contact_person", ""),
+        "phone": current_user.get("phone", ""),
+        "kvk_number": current_user.get("kvk_number", ""),
+        "rsin": current_user.get("rsin", ""),
+        "address": current_user.get("address", ""),
+        "postal_code": current_user.get("postal_code", ""),
+        "city": current_user.get("city", ""),
+        "art8_vergunning": current_user.get("art8_vergunning", False),
+        "art8_nummer": current_user.get("art8_nummer", ""),
+        "role": current_user.get("role"),
+    }
+
+
+@router.get("/dealer/aanvragen")
+async def dealer_list_aanvragen(current_user: dict = Depends(_require_taxatie_dealer)):
+    """Alle taxatie-aanvragen van de ingelogde dealer (gematcht op email)."""
+    email = current_user.get("email", "").lower()
+    aanvragen = await db.taxatie_aanvragen.find(
+        {"email": email}, {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    return {"aanvragen": aanvragen}
 
 
 # ============ FLYER DOWNLOAD ============
