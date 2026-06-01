@@ -341,7 +341,37 @@ export default function AdminTaxatieAanvragen() {
                         <div className="text-xs text-zinc-400">{a.email}</div>
                       </td>
                       <td className="px-4 py-3 text-zinc-600 text-xs">{a.woonplaats}</td>
-                      <td className="px-4 py-3 text-zinc-600 text-xs">{(a.files || []).length}</td>
+                      <td className="px-4 py-3 text-zinc-600">
+                        {(a.files || []).length === 0 ? (
+                          <span className="text-xs text-zinc-300">geen</span>
+                        ) : (
+                          <div className="flex items-center gap-1" data-testid={`thumbs-${a.id}`}>
+                            {(a.files || []).slice(0, 4).map((f, idx) => (
+                              <a
+                                key={f.filename || idx}
+                                href={`${BACKEND}${f.url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-10 h-10 rounded border bg-zinc-100 overflow-hidden hover:border-red-400 hover:scale-110 transition flex-shrink-0"
+                                title={f.field || f.filename}
+                              >
+                                <img
+                                  src={`${BACKEND}${f.url}`}
+                                  alt=""
+                                  loading="lazy"
+                                  className="w-full h-full object-cover"
+                                />
+                              </a>
+                            ))}
+                            {(a.files || []).length > 4 && (
+                              <span className="text-[10px] font-bold text-zinc-500 ml-1 whitespace-nowrap">
+                                +{(a.files || []).length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold border ${st.color}`}>
                           <Icon className="w-3 h-3" />{st.label}
