@@ -30,7 +30,8 @@ export default function TaxatieLanding() {
   const formRef = useRef(null);
   const [form, setForm] = useState({
     bedrijfsnaam: '', contactpersoon: '', email: '', telefoon: '',
-    adres: '', woonplaats: '', rsin: '', opmerking: '',
+    adres: '', woonplaats: '', rsin: '', kenteken: '',
+    rdw_goedkeuring_datum: '', opmerking: '',
   });
   const [files, setFiles] = useState({});  // {foto_voorwiel: File, ...}
   const [details, setDetails] = useState([]);  // File[]
@@ -328,6 +329,37 @@ export default function TaxatieLanding() {
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Voertuig & RDW */}
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-700 mb-1 pb-2 border-b">Voertuig & RDW-goedkeuring</h3>
+              <p className="text-xs text-zinc-500 mb-4">Geef de datum van RDW-goedkeuring door (mag ook later) — uw taxatieverslag wordt pas verzonden zodra deze datum bekend is.</p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-zinc-600 block mb-1">Kenteken <span className="text-zinc-400 font-normal">(optioneel)</span></label>
+                  <input
+                    type="text"
+                    value={form.kenteken}
+                    onChange={e => setField('kenteken', e.target.value.toUpperCase())}
+                    placeholder="Bijv. MK-123-Z"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    data-testid="aanvraag-kenteken"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-zinc-600 block mb-1">Datum RDW-goedkeuring <span className="text-zinc-400 font-normal">(indien bekend)</span></label>
+                  <input
+                    type="date"
+                    value={form.rdw_goedkeuring_datum}
+                    onChange={e => setField('rdw_goedkeuring_datum', e.target.value)}
+                    max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    data-testid="aanvraag-rdw-datum"
+                  />
+                  <p className="text-[11px] text-zinc-400 mt-1">Nog niet bekend? Laat leeg, u kunt later via uw dashboard de datum doorgeven.</p>
+                </div>
               </div>
             </div>
 

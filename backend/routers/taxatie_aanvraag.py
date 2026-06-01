@@ -111,6 +111,8 @@ async def submit_taxatie_aanvraag(
     adres: str = Form(...),
     woonplaats: str = Form(...),
     rsin: str = Form(...),
+    rdw_goedkeuring_datum: str = Form(""),
+    kenteken: str = Form(""),
     opmerking: str = Form(""),
     # 9 vaste foto's
     foto_voorwiel: UploadFile = File(...),
@@ -185,6 +187,8 @@ async def submit_taxatie_aanvraag(
         "adres": adres.strip(),
         "woonplaats": woonplaats.strip(),
         "rsin": rsin.strip(),
+        "rdw_goedkeuring_datum": (rdw_goedkeuring_datum or "").strip(),
+        "kenteken": (kenteken or "").strip().upper().replace("-", "").replace(" ", ""),
         "opmerking": opmerking.strip(),
         "files": saved_files,
         "status": "nieuw",
@@ -218,6 +222,8 @@ async def submit_taxatie_aanvraag(
               <tr><td style="padding: 6px 0; color: #71717a;">Telefoon</td><td style="padding: 6px 0;">{telefoon or '—'}</td></tr>
               <tr><td style="padding: 6px 0; color: #71717a;">Adres</td><td style="padding: 6px 0;">{adres}, {woonplaats}</td></tr>
               <tr><td style="padding: 6px 0; color: #71717a;">RSIN/BSN</td><td style="padding: 6px 0;">{rsin}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">Kenteken</td><td style="padding: 6px 0; font-weight: bold;">{kenteken or '—'}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">RDW goedkeuring</td><td style="padding: 6px 0; font-weight: bold; color: {'#059669' if rdw_goedkeuring_datum else '#dc2626'};">{rdw_goedkeuring_datum or 'NOG NIET BEKEND — wacht op datum vóór verzending'}</td></tr>
             </table>
             <hr style="margin: 16px 0; border: none; border-top: 1px solid #e4e4e7;">
             <p style="font-size: 13px;"><strong>Opmerking:</strong><br>{(opmerking or '—').replace(chr(10), '<br>')}</p>
@@ -893,13 +899,79 @@ async def list_taxatie_dealers(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/dealer/aanvragen")
-async def dealer_list_aanvragen(current_user: dict = Depends(_require_taxatie_dealer)):
-    """Alle taxatie-aanvragen van de ingelogde dealer (gematcht op email)."""
+async def dealer_list_aanvragen(current_user: dict = Depends(_require_any_dealer)):
+    """Alle taxatie-aanvragen van de ingelogde gebruiker (gematcht op email)."""
     email = current_user.get("email", "").lower()
     aanvragen = await db.taxatie_aanvragen.find(
         {"email": email}, {"_id": 0}
     ).sort("created_at", -1).to_list(200)
     return {"aanvragen": aanvragen}
+
+
+@router.patch("/dealer/aanvragen/{aanvraag_id}/rdw-datum")
+async def dealer_update_rdw_datum(
+    aanvraag_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Dealer/admin geeft achteraf de RDW-goedkeuringsdatum door.
+
+    Dealer mag alleen eigen aanvragen wijzigen. Admin/taxateur mag alle.
+    Body: { rdw_goedkeuring_datum: "2026-02-15" (ISO) }
+    """
+    role = (current_user or {}).get("role", "")
+    aanvraag = await db.taxatie_aanvragen.find_one({"id": aanvraag_id}, {"_id": 0})
+    if not aanvraag:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+    if role not in ("admin", "taxateur"):
+        if aanvraag.get("email", "").lower() != (current_user or {}).get("email", "").lower():
+            raise HTTPException(status_code=403, detail="Geen toegang tot deze aanvraag")
+
+    new_date = (body or {}).get("rdw_goedkeuring_datum", "").strip()
+    if new_date:
+        # Basisvalidatie YYYY-MM-DD
+        import re as _re
+        if not _re.match(r"^\d{4}-\d{2}-\d{2}$", new_date):
+            raise HTTPException(status_code=400, detail="Datum moet formaat YYYY-MM-DD hebben")
+
+    await db.taxatie_aanvragen.update_one(
+        {"id": aanvraag_id},
+        {"$set": {
+            "rdw_goedkeuring_datum": new_date,
+            "rdw_doorgegeven_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+
+    # Notificeer admin als de dealer (geen admin/taxateur) deze datum doorgeeft
+    if role not in ("admin", "taxateur") and new_date:
+        try:
+            await send_email(
+                to_email=ADMIN_OWNER_EMAIL,
+                subject=f"✅ RDW-datum doorgegeven {aanvraag.get('ref_nr', aanvraag_id[:8])}: {aanvraag.get('bedrijfsnaam', '')}",
+                html_content=f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: #059669; color: white; padding: 20px;">
+                    <h2 style="margin: 0;">✅ Klaar voor verzending</h2>
+                    <p style="margin: 4px 0 0; color: #d1fae5; font-size: 13px;">Ref. {aanvraag.get('ref_nr', '-')}</p>
+                  </div>
+                  <div style="padding: 20px; background: #fff;">
+                    <p>De dealer heeft de RDW-goedkeuringsdatum doorgegeven. Het taxatieverslag kan nu worden verzonden.</p>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                      <tr><td style="padding: 6px 0; color: #71717a;">Bedrijf</td><td style="padding: 6px 0; font-weight: bold;">{aanvraag.get('bedrijfsnaam', '')}</td></tr>
+                      <tr><td style="padding: 6px 0; color: #71717a;">RDW-datum</td><td style="padding: 6px 0; font-weight: bold; color: #059669;">{new_date}</td></tr>
+                      <tr><td style="padding: 6px 0; color: #71717a;">Kenteken</td><td style="padding: 6px 0;">{aanvraag.get('kenteken', '—')}</td></tr>
+                    </table>
+                    <p style="font-size: 13px; color: #71717a; margin-top: 16px;">
+                      <a href="https://www.motoimportbv.nl/admin/taxatie-aanvragen">Open aanvraag in admin →</a>
+                    </p>
+                  </div>
+                </div>
+                """,
+            )
+        except Exception as ee:
+            logger.warning(f"RDW-doorgegeven notificatie email faalde: {ee}")
+
+    return {"ok": True, "rdw_goedkeuring_datum": new_date}
 
 
 # ============ PASSWORD RESET (forgot password) ============

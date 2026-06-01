@@ -210,8 +210,8 @@ export default function AdminTaxatieAanvragen() {
                       <td className="px-4 py-2.5 font-bold">{d.company_name || '—'}</td>
                       <td className="px-4 py-2.5 text-zinc-600 text-xs">
                         <div>{d.contact_person || d.name || '—'}</div>
-                        <div className="text-zinc-400">{d.email}</div>
-                        {d.phone && <div className="text-zinc-400">{d.phone}</div>}
+                        {d.email && <a href={`mailto:${d.email}`} className="text-zinc-500 hover:text-red-600 block">{d.email}</a>}
+                        {d.phone && <a href={`tel:${d.phone}`} className="text-zinc-500 hover:text-red-600 block" data-testid={`dealer-phone-${d.id || d.email}`}>{d.phone}</a>}
                       </td>
                       <td className="px-4 py-2.5 text-zinc-600 text-xs">
                         {d.kvk_number && <div>KVK: {d.kvk_number}</div>}
@@ -321,6 +321,7 @@ export default function AdminTaxatieAanvragen() {
                   <th className="px-4 py-3 text-left">Contact</th>
                   <th className="px-4 py-3 text-left">Locatie</th>
                   <th className="px-4 py-3 text-left">Foto's</th>
+                  <th className="px-4 py-3 text-left">RDW</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3"></th>
                 </tr>
@@ -370,6 +371,17 @@ export default function AdminTaxatieAanvragen() {
                               </span>
                             )}
                           </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {a.rdw_goedkeuring_datum ? (
+                          <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-md border border-emerald-300 whitespace-nowrap" data-testid={`rdw-${a.id}`}>
+                            <CheckCircle2 className="w-3 h-3" />{new Date(a.rdw_goedkeuring_datum).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' })}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md border border-amber-300 whitespace-nowrap" data-testid={`rdw-pending-${a.id}`}>
+                            <Clock className="w-3 h-3" />Wacht
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3">

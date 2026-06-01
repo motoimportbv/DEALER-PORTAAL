@@ -141,6 +141,7 @@ export default function TaxatieDealerDashboard() {
                     <th className="px-4 py-3 text-left">Referentie</th>
                     <th className="px-4 py-3 text-left">Datum</th>
                     <th className="px-4 py-3 text-left">Foto's</th>
+                    <th className="px-4 py-3 text-left">RDW-goedkeuring</th>
                     <th className="px-4 py-3 text-left">Status</th>
                   </tr>
                 </thead>
@@ -158,6 +159,9 @@ export default function TaxatieDealerDashboard() {
                         <td className="px-4 py-3 text-zinc-500 text-xs">
                           <FileText className="w-3 h-3 inline mr-1" />
                           {(a.files || []).length}
+                        </td>
+                        <td className="px-4 py-3">
+                          <RdwDateCell aanvraag={a} token={token} onUpdated={fetchAll} />
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold border ${st.color}`}>
@@ -328,4 +332,76 @@ function F({ label, value, onChange, t, placeholder }) {
       />
     </div>
   );
+}
+
+
+function RdwDateCell({ aanvraag, token, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(aanvraag.rdw_goedkeuring_datum || '');
+  const [saving, setSaving] = useState(false);
+
+  const fmtDate = (iso) => {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return iso; }
+  };
+
+  const save = async () => {
+    if (!value) return;
+    setSaving(true);
+    try {
+      await axios.patch(
+        `${API}/dealer/aanvragen/${aanvraag.id}/rdw-datum`,
+        { rdw_goedkeuring_datum: value },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('RDW-datum doorgegeven. Wij sturen u het verslag z.s.m.');
+      setEditing(false);
+      if (onUpdated) onUpdated();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setSaving(false);
+  };
+
+  if (aanvraag.rdw_goedkeuring_datum && !editing) {
+    return (
+      <div className="flex items-center gap-2" data-testid={`rdw-cell-${aanvraag.id}`}>
+        <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-md border border-emerald-300">
+          <CheckCircle2 className="w-3 h-3" />{fmtDate(aanvraag.rdw_goedkeuring_datum)}
+        </span>
+        <button onClick={() => setEditing(true)} className="text-zinc-400 hover:text-red-600" title="Datum aanpassen" data-testid={`rdw-edit-${aanvraag.id}`}>
+          <Pencil className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  if (editing || !aanvraag.rdw_goedkeuring_datum) {
+    return (
+      <div className="flex items-center gap-1" data-testid={`rdw-cell-${aanvraag.id}`}>
+        <input
+          type="date"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="text-xs border border-zinc-300 rounded px-2 py-1 focus:border-red-500 focus:outline-none"
+          data-testid={`rdw-input-${aanvraag.id}`}
+        />
+        <button
+          onClick={save}
+          disabled={saving || !value}
+          className="bg-red-600 hover:bg-red-700 disabled:bg-zinc-300 text-white text-xs font-bold px-2 py-1 rounded"
+          data-testid={`rdw-save-${aanvraag.id}`}
+        >
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+        </button>
+        {editing && (
+          <button onClick={() => { setEditing(false); setValue(aanvraag.rdw_goedkeuring_datum || ''); }} className="text-zinc-400 hover:text-red-600">
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    );
+  }
 }

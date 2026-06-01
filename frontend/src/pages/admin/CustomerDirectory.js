@@ -180,8 +180,8 @@ function CustomerHistoryModal({ customerId, onClose, token }) {
               <div>
                 <h2 className="text-2xl font-black text-zinc-900" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{data.customer.name}</h2>
                 <div className="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                  {data.customer.phone && <span>{data.customer.phone}</span>}
-                  {data.customer.email && <span>{data.customer.email}</span>}
+                  {data.customer.phone && <a href={`tel:${data.customer.phone}`} className="text-red-600 hover:underline" data-testid="customer-detail-phone">{data.customer.phone}</a>}
+                  {data.customer.email && <a href={`mailto:${data.customer.email}`} className="text-red-600 hover:underline">{data.customer.email}</a>}
                   {data.customer.rsin && <span className="font-mono">RSIN: {data.customer.rsin}</span>}
                   {data.customer.art8_vergunning && (
                     <span className="font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
@@ -426,7 +426,11 @@ export default function CustomerDirectory() {
                         data-testid={`customer-history-${c.id}`}
                       >{c.name}</button>
                     </td>
-                    <td className="px-4 py-3 text-zinc-700">{c.phone || '\u2014'}</td>
+                    <td className="px-4 py-3 text-zinc-700">
+                      {c.phone ? (
+                        <a href={`tel:${c.phone}`} className="text-red-600 hover:underline" data-testid={`customer-phone-${c.id || c.email}`}>{c.phone}</a>
+                      ) : '\u2014'}
+                    </td>
                     <td className="px-4 py-3 text-zinc-700">{c.email || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.address || '\u2014'}</td>
                     <td className="px-4 py-3 text-zinc-700">{c.city || '\u2014'}</td>
