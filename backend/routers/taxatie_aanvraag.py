@@ -316,6 +316,256 @@ async def submit_taxatie_aanvraag(
     }
 
 
+# ============ CHUNKED UPLOAD ENDPOINTS (1 foto per request) ============
+# Doel: voorkomen dat 30+ foto's in één multipart-request worden geüpload —
+# dat veroorzaakt op mobiel out-of-memory en time-outs. Met deze endpoints
+# upload de frontend elke foto apart, en sluit af met /finalize.
+
+FIXED_SLOT_KEYS = {
+    "voorwiel", "achterwiel", "km_stand", "chassisnummer",
+    "motorfiets_links", "motorfiets_rechts", "inkoop_verklaring",
+    "kenteken_voor", "kenteken_achter",
+}
+
+
+def _require_submitter_role(current_user: dict) -> str:
+    role = (current_user or {}).get("role")
+    if role not in (TAXATIE_DEALER_ROLE, "dealer", "particulier", "admin", "taxateur"):
+        raise HTTPException(status_code=403, detail="U moet inloggen om een taxatie-aanvraag in te dienen.")
+    return role
+
+
+async def _get_draft_for_user(aanvraag_id: str, current_user: dict) -> dict:
+    """Haal draft op + verifieer dat huidige gebruiker de eigenaar is (of admin)."""
+    doc = await db.taxatie_aanvragen.find_one({"id": aanvraag_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+    if doc.get("status") != "draft":
+        raise HTTPException(status_code=400, detail="Aanvraag is al ingediend en kan niet meer gewijzigd worden.")
+    role = (current_user or {}).get("role")
+    user_email = (current_user or {}).get("email", "").lower()
+    if role not in ("admin", "taxateur") and doc.get("_submitter_email") != user_email:
+        raise HTTPException(status_code=403, detail="Geen toegang tot deze aanvraag.")
+    return doc
+
+
+@router.post("/public/taxatie-aanvraag/start")
+async def start_taxatie_aanvraag(
+    bedrijfsnaam: str = Form(...),
+    contactpersoon: str = Form(""),
+    email: str = Form(...),
+    telefoon: str = Form(""),
+    adres: str = Form(...),
+    woonplaats: str = Form(...),
+    rsin: str = Form(...),
+    rdw_goedkeuring_datum: str = Form(""),
+    kenteken: str = Form(""),
+    opmerking: str = Form(""),
+    current_user: dict = Depends(get_current_user),
+):
+    """Maak een draft-aanvraag aan. Returnt aanvraag_id waarop foto's apart geüpload worden."""
+    _require_submitter_role(current_user)
+    aanvraag_id = str(uuid.uuid4())
+    ref_nr = f"TX-{aanvraag_id[:8].upper()}"
+    submitter_email = (current_user or {}).get("email", "").lower()
+    record = {
+        "id": aanvraag_id,
+        "ref_nr": ref_nr,
+        "bedrijfsnaam": bedrijfsnaam.strip(),
+        "contactpersoon": contactpersoon.strip(),
+        "email": email.strip().lower(),
+        "telefoon": telefoon.strip(),
+        "adres": adres.strip(),
+        "woonplaats": woonplaats.strip(),
+        "rsin": rsin.strip(),
+        "rdw_goedkeuring_datum": (rdw_goedkeuring_datum or "").strip(),
+        "kenteken": (kenteken or "").strip().upper().replace("-", "").replace(" ", ""),
+        "opmerking": opmerking.strip(),
+        "files": [],
+        "status": "draft",
+        "_submitter_email": submitter_email,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.taxatie_aanvragen.insert_one(record)
+    return {"id": aanvraag_id, "ref_nr": ref_nr}
+
+
+@router.post("/public/taxatie-aanvraag/{aanvraag_id}/photo")
+async def upload_taxatie_photo(
+    aanvraag_id: str,
+    slot_key: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Upload één foto bij een draft-aanvraag.
+
+    slot_key = één van de 9 vaste slots (voorwiel, achterwiel, ...) OF 'detail'
+    voor detailfoto's.
+    """
+    _require_submitter_role(current_user)
+    doc = await _get_draft_for_user(aanvraag_id, current_user)
+
+    existing_files = doc.get("files", [])
+    is_detail = slot_key == "detail"
+    if not is_detail and slot_key not in FIXED_SLOT_KEYS:
+        raise HTTPException(status_code=400, detail=f"Ongeldige slot_key: {slot_key}")
+
+    if is_detail:
+        detail_count = sum(1 for f in existing_files if f.get("field", "").startswith("detail_"))
+        if detail_count >= 20:
+            raise HTTPException(status_code=400, detail="Maximaal 20 detailfoto's toegestaan")
+        field_key = f"detail_{detail_count + 1:02d}"
+        prefix = f"{aanvraag_id}_{field_key}"
+    else:
+        # Vaste slot: vervang eventueel een eerdere upload (idempotent bij retry)
+        existing_files = [f for f in existing_files if f.get("field") != slot_key]
+        field_key = slot_key
+        prefix = f"{aanvraag_id}_{slot_key}"
+
+    try:
+        saved = _save_file(prefix, file, field_key=field_key)
+    except Exception as e:
+        logger.error(f"Failed to save chunked upload {field_key}: {e}")
+        raise HTTPException(status_code=500, detail=f"Foto '{field_key}' opslaan mislukt")
+
+    existing_files.append(saved)
+    await db.taxatie_aanvragen.update_one(
+        {"id": aanvraag_id},
+        {"$set": {"files": existing_files, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    return {"ok": True, "field": field_key, "filename": saved["filename"], "files_count": len(existing_files)}
+
+
+@router.post("/public/taxatie-aanvraag/{aanvraag_id}/finalize")
+async def finalize_taxatie_aanvraag(
+    aanvraag_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Markeer draft als ingediend, valideer dat 9 vaste foto's aanwezig zijn,
+    maak customer aan en verstuur notificatie + bevestigingsmails."""
+    _require_submitter_role(current_user)
+    doc = await _get_draft_for_user(aanvraag_id, current_user)
+
+    saved_files = doc.get("files", [])
+    present_slots = {f.get("field") for f in saved_files}
+    missing = FIXED_SLOT_KEYS - present_slots
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Niet alle vaste foto's zijn geüpload. Ontbrekend: {', '.join(sorted(missing))}",
+        )
+
+    aantal_detail = sum(1 for f in saved_files if str(f.get("field", "")).startswith("detail_"))
+    aantal_vast = len(saved_files) - aantal_detail
+
+    # Auto-create / update customer
+    customer_id = await _ensure_customer(doc)
+
+    update_fields = {
+        "status": "nieuw",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if customer_id:
+        update_fields["customer_id"] = customer_id
+    await db.taxatie_aanvragen.update_one({"id": aanvraag_id}, {"$set": update_fields})
+
+    ref_nr = doc.get("ref_nr") or f"TX-{aanvraag_id[:8].upper()}"
+    bedrijfsnaam = doc.get("bedrijfsnaam", "")
+    email = doc.get("email", "")
+    contactpersoon = doc.get("contactpersoon", "")
+    telefoon = doc.get("telefoon", "")
+    adres = doc.get("adres", "")
+    woonplaats = doc.get("woonplaats", "")
+    rsin = doc.get("rsin", "")
+    kenteken = doc.get("kenteken", "")
+    rdw_goedkeuring_datum = doc.get("rdw_goedkeuring_datum", "")
+    opmerking = doc.get("opmerking", "")
+
+    # 1) Admin notificatie-email
+    try:
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #18181b; color: white; padding: 20px;">
+            <h2 style="margin: 0; color: #f87171;">Nieuwe taxatie-aanvraag</h2>
+            <p style="margin: 4px 0 0; color: #a1a1aa; font-size: 13px;">via motoimportbv.nl/taxatie — ref. {ref_nr}</p>
+          </div>
+          <div style="padding: 20px; background: #fff;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="padding: 6px 0; color: #71717a;">Bedrijf</td><td style="padding: 6px 0; font-weight: bold;">{bedrijfsnaam}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">Contact</td><td style="padding: 6px 0;">{contactpersoon or '—'}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">E-mail</td><td style="padding: 6px 0;"><a href="mailto:{email}">{email}</a></td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">Telefoon</td><td style="padding: 6px 0;">{telefoon or '—'}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">Adres</td><td style="padding: 6px 0;">{adres}, {woonplaats}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">RSIN/BSN</td><td style="padding: 6px 0;">{rsin}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">Kenteken</td><td style="padding: 6px 0; font-weight: bold;">{kenteken or '—'}</td></tr>
+              <tr><td style="padding: 6px 0; color: #71717a;">RDW goedkeuring</td><td style="padding: 6px 0; font-weight: bold; color: {'#059669' if rdw_goedkeuring_datum else '#dc2626'};">{rdw_goedkeuring_datum or 'NOG NIET BEKEND — wacht op datum vóór verzending'}</td></tr>
+            </table>
+            <hr style="margin: 16px 0; border: none; border-top: 1px solid #e4e4e7;">
+            <p style="font-size: 13px;"><strong>Opmerking:</strong><br>{(opmerking or '—').replace(chr(10), '<br>')}</p>
+            <p style="margin: 16px 0; padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; font-size: 13px;">
+              <strong>{aantal_vast} vaste foto's</strong> + <strong>{aantal_detail} detailfoto's</strong> geüpload.
+            </p>
+            <p style="font-size: 13px; color: #71717a;">Bekijk in admin: <a href="https://www.motoimportbv.nl/admin/taxatie-aanvragen">/admin/taxatie-aanvragen</a></p>
+          </div>
+        </div>
+        """
+        await send_email(
+            to_email=ADMIN_OWNER_EMAIL,
+            subject=f"📄 Nieuwe taxatie-aanvraag {ref_nr}: {bedrijfsnaam}",
+            html_content=html,
+        )
+    except Exception as ee:
+        logger.warning(f"Could not send admin notification email (finalize): {ee}")
+
+    # 2) Dealer bevestigingsmail
+    try:
+        dealer_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafafa;">
+          <div style="background: linear-gradient(135deg, #18181b, #7f1d1d); color: white; padding: 28px 24px;">
+            <h1 style="margin: 0 0 6px; font-size: 22px;">Bedankt voor uw aanvraag!</h1>
+            <p style="margin: 0; color: #fecaca; font-size: 14px;">Uw taxatieverslag is onderweg.</p>
+          </div>
+          <div style="background: white; padding: 24px;">
+            <p style="font-size: 15px; color: #18181b; margin: 0 0 12px;">Beste {contactpersoon or bedrijfsnaam},</p>
+            <p style="font-size: 14px; color: #3f3f46; line-height: 1.6;">
+              Wij hebben uw taxatie-aanvraag goed ontvangen. Onze taxateur gaat er binnen
+              <strong>48 uur</strong> mee aan de slag en stuurt u het officiële taxatieverslag
+              (PDF) plus de BPM-berekening per e-mail toe.
+            </p>
+            <div style="margin: 20px 0; padding: 16px; background: #fef2f2; border-left: 4px solid #dc2626; border-radius: 6px;">
+              <p style="margin: 0; font-size: 12px; color: #991b1b; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Uw referentienummer</p>
+              <p style="margin: 4px 0 0; font-size: 22px; font-weight: bold; color: #18181b; letter-spacing: 1px;">{ref_nr}</p>
+              <p style="margin: 6px 0 0; font-size: 12px; color: #71717a;">Vermeld dit nummer bij vragen of contact.</p>
+            </div>
+            <p style="font-size: 13px; color: #71717a; margin: 16px 0 0;">Aantal foto's ontvangen: <strong>{aantal_vast} vaste + {aantal_detail} detail</strong></p>
+          </div>
+          <div style="background: #18181b; padding: 16px; text-align: center; color: #a1a1aa; font-size: 11px;">
+            <p style="margin: 2px 0;"><strong style="color: white;">Moto Import B.V.</strong> — gespecialiseerd in motorfiets-taxaties</p>
+            <p style="margin: 2px 0;">www.motoimportbv.nl</p>
+          </div>
+        </div>
+        """
+        await send_email(
+            to_email=email,
+            subject=f"Bevestiging taxatie-aanvraag {ref_nr} — Moto Import",
+            html_content=dealer_html,
+        )
+    except Exception as ee:
+        logger.warning(f"Could not send dealer confirmation email (finalize): {ee}")
+
+    return {
+        "status": "ok",
+        "id": aanvraag_id,
+        "ref_nr": ref_nr,
+        "files_uploaded": len(saved_files),
+        "customer_id": customer_id,
+        "message": f"Bedankt! Uw referentienummer is {ref_nr}. We nemen binnen 24 uur contact met u op.",
+    }
+
+
+
+
 # ============ ADMIN ENDPOINTS ============
 
 @router.get("/admin/taxatie-aanvragen")
@@ -323,7 +573,10 @@ async def list_aanvragen(current_user: dict = Depends(get_current_user)):
     """Admin-only: lijst alle aanvragen, nieuwste eerst."""
     if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
-    aanvragen = await db.taxatie_aanvragen.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    aanvragen = await db.taxatie_aanvragen.find(
+        {"status": {"$ne": "draft"}},
+        {"_id": 0, "_submitter_email": 0},
+    ).sort("created_at", -1).to_list(500)
     return {"aanvragen": aanvragen}
 
 
@@ -903,7 +1156,7 @@ async def dealer_list_aanvragen(current_user: dict = Depends(_require_any_dealer
     """Alle taxatie-aanvragen van de ingelogde gebruiker (gematcht op email)."""
     email = current_user.get("email", "").lower()
     aanvragen = await db.taxatie_aanvragen.find(
-        {"email": email}, {"_id": 0}
+        {"email": email, "status": {"$ne": "draft"}}, {"_id": 0, "_submitter_email": 0}
     ).sort("created_at", -1).to_list(200)
     return {"aanvragen": aanvragen}
 

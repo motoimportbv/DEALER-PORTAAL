@@ -7,7 +7,7 @@ import {
   ArrowRight, Award, CheckCircle, Clock, FileText, Image as ImageIcon,
   Loader2, Phone, ShieldCheck, Upload, X, Mail, Bike, Sparkles,
 } from 'lucide-react';
-import { compressImages } from '../utils/imageCompression';
+import { compressImage } from '../utils/imageCompression';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -101,44 +101,98 @@ export default function TaxatieLanding() {
       return;
     }
     setSubmitting(true);
-    setUploadProgress({ stage: 'compress', current: 0, total: 0, percent: 0 });
+    setUploadProgress({ stage: 'start', current: 0, total: 0, percent: 0 });
+    const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
     try {
-      // STAP 1 — comprimeer alle foto's client-side om time-outs bij upload te voorkomen.
-      const slotKeys = FIXED_SLOTS.map(s => s.key);
-      const slotFiles = slotKeys.map(k => files[k]);
-      const allOriginals = [...slotFiles, ...details];
-      const onCompress = (i, total) => setUploadProgress({
-        stage: 'compress', current: i, total, percent: total ? Math.round((i / total) * 100) : 0,
+      // STAP 1 — Maak draft-aanvraag aan met form-fields (geen foto's nog)
+      const startFd = new FormData();
+      Object.entries(form).forEach(([k, v]) => startFd.append(k, v));
+      const startRes = await axios.post(`${API}/public/taxatie-aanvraag/start`, startFd, {
+        headers: { 'Content-Type': 'multipart/form-data', ...authHeader },
+        timeout: 30000,
       });
-      const compressed = await compressImages(allOriginals, onCompress, { maxDimension: 2000, maxBytes: 1_200_000 });
-      const compressedSlots = compressed.slice(0, slotKeys.length);
-      const compressedDetails = compressed.slice(slotKeys.length);
+      const aanvraagId = startRes.data.id;
 
-      // STAP 2 — bouw FormData en upload met progress.
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      slotKeys.forEach((k, idx) => fd.append(k, compressedSlots[idx], compressedSlots[idx].name));
-      compressedDetails.forEach(d => fd.append('detail_fotos', d, d.name));
-
-      setUploadProgress({ stage: 'upload', current: 0, total: 100, percent: 0 });
-      const res = await axios.post(`${API}/public/taxatie-aanvraag`, fd, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        timeout: 300000, // 5 minuten — voor trage 4G uploads
-        onUploadProgress: (evt) => {
-          const pct = evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0;
-          setUploadProgress({ stage: 'upload', current: evt.loaded, total: evt.total, percent: pct });
-        },
+      // STAP 2 — Bouw upload-taken: 9 vaste + alle detailfoto's
+      const tasks = [];
+      FIXED_SLOTS.forEach(s => {
+        const slotKey = s.key.replace(/^foto_/, ''); // 'foto_voorwiel' → 'voorwiel'
+        tasks.push({ slotKey, file: files[s.key], label: s.label });
       });
-      setRefNr(res.data?.ref_nr || '');
-      toast.success(res.data.message);
+      details.forEach((f, idx) => tasks.push({ slotKey: 'detail', file: f, label: `Detailfoto ${idx + 1}` }));
+
+      const total = tasks.length;
+      let completed = 0;
+      let failed = 0;
+      const updateProgress = () => setUploadProgress({
+        stage: 'upload',
+        current: completed,
+        total,
+        percent: total ? Math.round((completed / total) * 100) : 0,
+      });
+      updateProgress();
+
+      // Upload één taak met compressie + retry (max 3 pogingen).
+      const uploadOne = async (task) => {
+        let lastErr;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const compressed = await compressImage(task.file, { maxDimension: 2000, maxBytes: 1_200_000 });
+            const fd = new FormData();
+            fd.append('slot_key', task.slotKey);
+            fd.append('file', compressed, compressed.name || task.file.name);
+            await axios.post(`${API}/public/taxatie-aanvraag/${aanvraagId}/photo`, fd, {
+              headers: { 'Content-Type': 'multipart/form-data', ...authHeader },
+              timeout: 90000, // 90s per foto
+            });
+            return; // success
+          } catch (err) {
+            lastErr = err;
+            // wachten tussen pogingen (exponentieel)
+            await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+          }
+        }
+        throw lastErr;
+      };
+
+      // Beperkte parallellie: max 3 gelijktijdige uploads (lichter op mobiel).
+      const POOL_SIZE = 3;
+      let cursor = 0;
+      const worker = async () => {
+        while (true) {
+          const idx = cursor++;
+          if (idx >= tasks.length) return;
+          try {
+            await uploadOne(tasks[idx]);
+          } catch {
+            failed += 1;
+          } finally {
+            completed += 1;
+            updateProgress();
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(POOL_SIZE, tasks.length) }, worker));
+
+      if (failed > 0) {
+        throw new Error(`${failed} foto('s) konden niet geüpload worden. Controleer uw internet en probeer opnieuw — uw aanvraag is bewaard.`);
+      }
+
+      // STAP 3 — Finaliseer aanvraag (valideer compleet, stuur emails)
+      setUploadProgress({ stage: 'finalize', current: total, total, percent: 100 });
+      const finalRes = await axios.post(
+        `${API}/public/taxatie-aanvraag/${aanvraagId}/finalize`,
+        {},
+        { headers: authHeader, timeout: 60000 },
+      );
+      setRefNr(finalRes.data?.ref_nr || '');
+      toast.success(finalRes.data.message);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       const msg = err.response?.data?.detail
-        || (err.code === 'ECONNABORTED' ? 'De upload duurde te lang. Probeer minder/kleinere foto\'s of een snellere verbinding.' : err.message);
+        || (err.code === 'ECONNABORTED' ? 'Upload duurde te lang. Controleer uw internet en probeer opnieuw.' : err.message);
       toast.error('Aanvraag mislukt: ' + msg);
     } finally {
       setSubmitting(false);
@@ -413,15 +467,15 @@ export default function TaxatieLanding() {
               />
             </div>
 
-            {/* Voortgangsbalk tijdens compressie/upload */}
+            {/* Voortgangsbalk: één foto tegelijk uploaden — geen geheugenpiek meer */}
             {submitting && uploadProgress.stage && (
               <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 space-y-2" data-testid="upload-progress">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-bold text-blue-900 flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    {uploadProgress.stage === 'compress'
-                      ? `Foto's optimaliseren... (${uploadProgress.current}/${uploadProgress.total})`
-                      : `Bezig met versturen... ${uploadProgress.percent}%`}
+                    {uploadProgress.stage === 'start' && 'Aanvraag voorbereiden...'}
+                    {uploadProgress.stage === 'upload' && `Foto ${uploadProgress.current} van ${uploadProgress.total} verzonden...`}
+                    {uploadProgress.stage === 'finalize' && 'Aanvraag afronden...'}
                   </p>
                   <span className="text-xs text-blue-700 font-bold">{uploadProgress.percent}%</span>
                 </div>
@@ -432,9 +486,7 @@ export default function TaxatieLanding() {
                   ></div>
                 </div>
                 <p className="text-[11px] text-blue-700">
-                  {uploadProgress.stage === 'compress'
-                    ? 'We verkleinen uw foto\'s voor een snellere upload — sluit deze pagina niet.'
-                    : 'Uploaden kan 30-60 seconden duren op een mobiele verbinding. Even geduld...'}
+                  Foto's worden één voor één verstuurd zodat het ook op mobiel betrouwbaar werkt — sluit deze pagina niet.
                 </p>
               </div>
             )}
