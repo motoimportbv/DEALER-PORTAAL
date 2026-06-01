@@ -7,6 +7,7 @@ import {
   ArrowRight, Award, CheckCircle, Clock, FileText, Image as ImageIcon,
   Loader2, Phone, ShieldCheck, Upload, X, Mail, Bike, Sparkles,
 } from 'lucide-react';
+import { compressImages } from '../utils/imageCompression';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -33,6 +34,7 @@ export default function TaxatieLanding() {
   });
   const [files, setFiles] = useState({});  // {foto_voorwiel: File, ...}
   const [details, setDetails] = useState([]);  // File[]
+  const [uploadProgress, setUploadProgress] = useState({ stage: '', current: 0, total: 0, percent: 0 });
   const [me, setMe] = useState(null);  // ingelogde dealer/admin info
   const [authChecking, setAuthChecking] = useState(true);
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
@@ -98,15 +100,35 @@ export default function TaxatieLanding() {
       return;
     }
     setSubmitting(true);
+    setUploadProgress({ stage: 'compress', current: 0, total: 0, percent: 0 });
     try {
+      // STAP 1 — comprimeer alle foto's client-side om time-outs bij upload te voorkomen.
+      const slotKeys = FIXED_SLOTS.map(s => s.key);
+      const slotFiles = slotKeys.map(k => files[k]);
+      const allOriginals = [...slotFiles, ...details];
+      const onCompress = (i, total) => setUploadProgress({
+        stage: 'compress', current: i, total, percent: total ? Math.round((i / total) * 100) : 0,
+      });
+      const compressed = await compressImages(allOriginals, onCompress, { maxDimension: 2000, maxBytes: 1_200_000 });
+      const compressedSlots = compressed.slice(0, slotKeys.length);
+      const compressedDetails = compressed.slice(slotKeys.length);
+
+      // STAP 2 — bouw FormData en upload met progress.
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      FIXED_SLOTS.forEach(s => fd.append(s.key, files[s.key]));
-      details.forEach(d => fd.append('detail_fotos', d));
+      slotKeys.forEach((k, idx) => fd.append(k, compressedSlots[idx], compressedSlots[idx].name));
+      compressedDetails.forEach(d => fd.append('detail_fotos', d, d.name));
+
+      setUploadProgress({ stage: 'upload', current: 0, total: 100, percent: 0 });
       const res = await axios.post(`${API}/public/taxatie-aanvraag`, fd, {
         headers: {
           'Content-Type': 'multipart/form-data',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        timeout: 300000, // 5 minuten — voor trage 4G uploads
+        onUploadProgress: (evt) => {
+          const pct = evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0;
+          setUploadProgress({ stage: 'upload', current: evt.loaded, total: evt.total, percent: pct });
         },
       });
       setRefNr(res.data?.ref_nr || '');
@@ -114,9 +136,12 @@ export default function TaxatieLanding() {
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      toast.error('Aanvraag mislukt: ' + (err.response?.data?.detail || err.message));
+      const msg = err.response?.data?.detail
+        || (err.code === 'ECONNABORTED' ? 'De upload duurde te lang. Probeer minder/kleinere foto\'s of een snellere verbinding.' : err.message);
+      toast.error('Aanvraag mislukt: ' + msg);
     } finally {
       setSubmitting(false);
+      setUploadProgress({ stage: '', current: 0, total: 0, percent: 0 });
     }
   };
 
@@ -355,6 +380,32 @@ export default function TaxatieLanding() {
                 data-testid="aanvraag-opmerking"
               />
             </div>
+
+            {/* Voortgangsbalk tijdens compressie/upload */}
+            {submitting && uploadProgress.stage && (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 space-y-2" data-testid="upload-progress">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-bold text-blue-900 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {uploadProgress.stage === 'compress'
+                      ? `Foto's optimaliseren... (${uploadProgress.current}/${uploadProgress.total})`
+                      : `Bezig met versturen... ${uploadProgress.percent}%`}
+                  </p>
+                  <span className="text-xs text-blue-700 font-bold">{uploadProgress.percent}%</span>
+                </div>
+                <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 transition-all duration-200"
+                    style={{ width: `${uploadProgress.percent}%` }}
+                  ></div>
+                </div>
+                <p className="text-[11px] text-blue-700">
+                  {uploadProgress.stage === 'compress'
+                    ? 'We verkleinen uw foto\'s voor een snellere upload — sluit deze pagina niet.'
+                    : 'Uploaden kan 30-60 seconden duren op een mobiele verbinding. Even geduld...'}
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button type="submit" disabled={submitting} className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-6 text-base flex-1 rounded-xl" data-testid="aanvraag-submit">
