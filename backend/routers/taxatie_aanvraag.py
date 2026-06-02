@@ -603,13 +603,49 @@ async def update_status(
     status = (body.get("status") or "").strip()
     if status not in {"nieuw", "in_behandeling", "afgerond", "afgewezen"}:
         raise HTTPException(status_code=400, detail="Ongeldige status")
+    now_iso = datetime.now(timezone.utc).isoformat()
+    update_fields = {"status": status, "updated_at": now_iso}
+    # Audit-trail: wie heeft welke status wanneer gezet (gebruikt voor maandelijkse taxateur-stats)
+    actor_id = (current_user or {}).get("id") or str((current_user or {}).get("_id", ""))
+    actor_email = (current_user or {}).get("email", "")
+    update_fields["status_updated_at"] = now_iso
+    update_fields["status_updated_by_id"] = actor_id
+    update_fields["status_updated_by_email"] = actor_email
+    if status == "afgerond":
+        update_fields["completed_at"] = now_iso
+        update_fields["completed_by_id"] = actor_id
+        update_fields["completed_by_email"] = actor_email
     result = await db.taxatie_aanvragen.update_one(
         {"id": aanvraag_id},
-        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": update_fields},
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
     return {"status": "ok", "new_status": status}
+
+
+@router.post("/admin/taxateur-monthly-report/send-now")
+async def trigger_monthly_taxateur_report(
+    body: dict = Body(default={}),
+    current_user: dict = Depends(get_current_user),
+):
+    """Admin-only: handmatig het maandrapport voor afgelopen maand versturen of preview tonen.
+
+    Body: `{"dry_run": true}` → return stats zonder e-mail. Default verstuurt e-mail.
+    """
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    from services.taxateur_stats import (
+        compute_taxateur_stats, _previous_month_range, send_monthly_taxateur_report,
+    )
+    dry_run = bool(body.get("dry_run", False))
+    if dry_run:
+        start_iso, end_iso, label, _ = _previous_month_range(datetime.now(timezone.utc))
+        stats = await compute_taxateur_stats(start_iso, end_iso)
+        return {"ok": True, "dry_run": True, "label": label, "stats": stats}
+    result = await send_monthly_taxateur_report()
+    return result
+
 
 
 @router.delete("/admin/taxatie-aanvragen/{aanvraag_id}")

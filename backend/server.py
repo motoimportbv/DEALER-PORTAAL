@@ -94,6 +94,7 @@ async def startup_db_client():
     asyncio.create_task(auto_delete_expired_motorcycles())
     asyncio.create_task(expire_wanted_requests())
     asyncio.create_task(monthly_taxatie_reminder())
+    asyncio.create_task(monthly_taxateur_report_task())
 
     # Pre-warm AutoTelex login so first /api/admin/autotelex/search is fast
     # Note: disabled — warmup races with first request via cached context
@@ -171,7 +172,32 @@ async def monthly_taxatie_reminder():
         await asyncio.sleep(300)
 
 
+async def monthly_taxateur_report_task():
+    """Background task: stuurt op de 1e van elke maand om ~08:00 UTC (09:00 NL-tijd)
+    een maandrapport met aantal taxatie-rapporten per taxateur."""
+    from services.taxateur_stats import send_monthly_taxateur_report
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            if now.day == 1 and now.hour == 8 and now.minute < 5:
+                month_key = now.strftime("%Y-%m")
+                already_sent = await db.system_tasks.find_one(
+                    {"task": "monthly_taxateur_report", "month": month_key}
+                )
+                if not already_sent:
+                    await send_monthly_taxateur_report(now)
+                    await db.system_tasks.insert_one({
+                        "task": "monthly_taxateur_report",
+                        "month": month_key,
+                        "sent_at": now.isoformat(),
+                    })
+        except Exception as e:
+            logger.error(f"Error in monthly_taxateur_report_task: {e}")
+        await asyncio.sleep(300)
+
+
 # ============ SHUTDOWN ============
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
