@@ -3,7 +3,7 @@ import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Users, Loader2, Trash2, Search, Plus, FileText, Receipt, Bike, X } from 'lucide-react';
+import { ArrowLeft, Users, Loader2, Trash2, Search, Plus, FileText, Receipt, Bike, X, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -315,7 +315,8 @@ export default function CustomerDirectory() {
   const [customers, setCustomers] = useState([]);
   const [q, setQ] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', art8_vergunning: false, art8_nummer: '' });
+  const [editingId, setEditingId] = useState(null); // null = aanmaken, anders = ID van klant die we bewerken
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', postcode: '', contact_person: '', art8_vergunning: false, art8_nummer: '' });
   const [historyCustomerId, setHistoryCustomerId] = useState(null);
   const isAllowed = user?.email?.toLowerCase() === 'motoimportbv@gmail.com' || user?.role === 'admin' || user?.role === 'taxateur';
 
@@ -347,12 +348,43 @@ export default function CustomerDirectory() {
     e.preventDefault();
     if (!newCustomer.name.trim()) { toast.error('Naam is verplicht'); return; }
     try {
-      await axios.post(`${API}/customers`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success('Klant opgeslagen');
+      if (editingId) {
+        await axios.put(`${API}/customers/${editingId}`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('Klant bijgewerkt');
+      } else {
+        await axios.post(`${API}/customers`, newCustomer, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success('Klant opgeslagen');
+      }
       setShowAdd(false);
-      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', art8_vergunning: false, art8_nummer: '' });
+      setEditingId(null);
+      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', postcode: '', contact_person: '', art8_vergunning: false, art8_nummer: '' });
       fetchCustomers();
     } catch (e) { toast.error('Mislukt: ' + (e.response?.data?.detail || e.message)); }
+  };
+
+  const openEdit = (c) => {
+    setEditingId(c.id);
+    setNewCustomer({
+      name: c.name || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      address: c.address || '',
+      city: c.city || '',
+      default_fee: c.default_fee != null ? String(c.default_fee) : '',
+      default_taxatie_fee: c.default_taxatie_fee != null ? String(c.default_taxatie_fee) : '',
+      rsin: c.rsin || '',
+      postcode: c.postcode || '',
+      contact_person: c.contact_person || '',
+      art8_vergunning: !!c.art8_vergunning,
+      art8_nummer: c.art8_nummer || '',
+    });
+    setShowAdd(true);
+  };
+
+  const closeModal = () => {
+    setShowAdd(false);
+    setEditingId(null);
+    setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', default_fee: '', default_taxatie_fee: '', rsin: '', postcode: '', contact_person: '', art8_vergunning: false, art8_nummer: '' });
   };
 
   if (!isAllowed) return <Layout><div className="flex items-center justify-center h-64 text-zinc-500">Geen toegang.</div></Layout>;
@@ -450,13 +482,22 @@ export default function CustomerDirectory() {
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700">{c.usage_count || 0}\u00d7</span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(c.id, c.name)}
-                        className="p-2 rounded-lg hover:bg-red-100 text-red-500"
-                        title="Verwijderen"
-                        data-testid={`delete-customer-${c.id}`}
-                      ><Trash2 className="w-4 h-4" /></button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(c)}
+                          className="p-2 rounded-lg hover:bg-blue-100 text-blue-600"
+                          title="Bewerken"
+                          data-testid={`edit-customer-${c.id}`}
+                        ><Pencil className="w-4 h-4" /></button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c.id, c.name)}
+                          className="p-2 rounded-lg hover:bg-red-100 text-red-500"
+                          title="Verwijderen"
+                          data-testid={`delete-customer-${c.id}`}
+                        ><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -466,24 +507,26 @@ export default function CustomerDirectory() {
         )}
 
         {showAdd && (
-          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAdd(false)} data-testid="add-customer-modal">
-            <form onSubmit={handleAdd} className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeModal} data-testid="add-customer-modal">
+            <form onSubmit={handleAdd} className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
               <div className="px-5 py-4 border-b border-zinc-200 bg-red-50">
                 <div className="flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-red-600" />
-                  <h2 className="text-lg font-black text-zinc-900">Nieuwe klant</h2>
+                  {editingId ? <Pencil className="w-5 h-5 text-red-600" /> : <Plus className="w-5 h-5 text-red-600" />}
+                  <h2 className="text-lg font-black text-zinc-900">{editingId ? 'Klant bewerken' : 'Nieuwe klant'}</h2>
                 </div>
               </div>
-              <div className="px-5 py-4 space-y-3">
+              <div className="px-5 py-4 space-y-3 overflow-y-auto">
                 {[
                   { k: 'name', l: 'Naam *', p: 'Jan Jansen' },
                   { k: 'phone', l: 'Telefoon', p: '06-12345678' },
                   { k: 'email', l: 'E-mail', p: 'jan@email.nl' },
                   { k: 'address', l: 'Adres', p: 'Straatnaam 1' },
+                  { k: 'postcode', l: 'Postcode', p: 'bv. 1234 AB' },
                   { k: 'city', l: 'Stad', p: 'Amsterdam' },
+                  { k: 'contact_person', l: 'Contactpersoon / tekenbevoegde', p: 'bv. J. Jansen — auto-invullen op Aangifte BPM' },
                   { k: 'rsin', l: 'RSIN / BSN (Belastingdienst)', p: 'bv. 866851525 — auto-invullen op Aangifte BPM' },
-                  { k: 'default_taxatie_fee', l: 'Taxatietarief (\u20ac, optioneel)', p: 'standaard 160 — anders bv. 175', type: 'number' },
-                  { k: 'default_fee', l: 'Extra fee (\u20ac, optioneel)', p: 'bv. 60 — leeg = geen automatische fee', type: 'number' },
+                  { k: 'default_taxatie_fee', l: 'Taxatietarief (€, optioneel)', p: 'standaard 160 — anders bv. 175', type: 'number' },
+                  { k: 'default_fee', l: 'Extra fee (€, optioneel)', p: 'bv. 60 — leeg = geen automatische fee', type: 'number' },
                 ].map(f => (
                   <div key={f.k}>
                     <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">{f.l}</label>
@@ -525,8 +568,8 @@ export default function CustomerDirectory() {
                 </div>
               </div>
               <div className="px-5 py-3 border-t border-zinc-200 bg-zinc-50 flex justify-end gap-2">
-                <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-zinc-300 hover:bg-zinc-100">Annuleren</button>
-                <button type="submit" disabled={!newCustomer.name.trim()} className="px-4 py-2 rounded-lg text-sm font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50" data-testid="save-customer-btn">Opslaan</button>
+                <button type="button" onClick={closeModal} className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-zinc-300 hover:bg-zinc-100">Annuleren</button>
+                <button type="submit" disabled={!newCustomer.name.trim()} className="px-4 py-2 rounded-lg text-sm font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50" data-testid="save-customer-btn">{editingId ? 'Opslaan' : 'Aanmaken'}</button>
               </div>
             </form>
           </div>

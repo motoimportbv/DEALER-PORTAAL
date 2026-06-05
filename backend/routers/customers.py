@@ -20,8 +20,36 @@ def _slug(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
 
-def _owner_filter(user: dict) -> dict:
-    """Iedere taxateur/admin ziet alleen zijn/haar eigen klanten."""
+# Lazy import om circulaire afhankelijkheden te vermijden
+def _admin_team_emails() -> list:
+    from routers.taxatie import ADMIN_TEAM_EMAILS
+    return ADMIN_TEAM_EMAILS
+
+
+def _is_admin_team_user(user: dict) -> bool:
+    email = (user.get("email") or "").lower()
+    return email in _admin_team_emails()
+
+
+async def _admin_team_user_ids() -> list:
+    """Haal alle user.id's op die in de admin-team-pool zitten."""
+    cursor = db.users.find(
+        {"email": {"$in": _admin_team_emails()}},
+        {"_id": 0, "id": 1},
+    )
+    return [u["id"] async for u in cursor if u.get("id")]
+
+
+async def _owner_filter(user: dict) -> dict:
+    """Klanten-filter:
+    - Taxateur: alleen eigen klanten.
+    - Admin-team lid (motoimportbv + Daniel): gedeelde data-pool — alle klanten
+      aangemaakt door welk admin-team-lid dan ook.
+    - Overig admin: alleen eigen klanten.
+    """
+    if _is_admin_team_user(user):
+        team_ids = await _admin_team_user_ids()
+        return {"created_by": {"$in": team_ids}}
     return {"created_by": user.get("id")}
 
 
@@ -118,7 +146,7 @@ async def list_customers(
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
-    query: dict = _owner_filter(current_user)
+    query: dict = await _owner_filter(current_user)
     if q:
         regex = {"$regex": re.escape(q.strip()), "$options": "i"}
         query["$or"] = [
@@ -146,6 +174,61 @@ async def create_or_update_customer(
     return {"status": "ok"}
 
 
+@router.put("/customers/{customer_id}")
+async def update_customer(
+    customer_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Werk een bestaande klant bij (alle velden bewerkbaar). Admin-team deelt data-pool."""
+    if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    existing = await db.customers.find_one(
+        {"id": customer_id, **(await _owner_filter(current_user))},
+        {"_id": 0},
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Klant niet gevonden")
+
+    if not (body.get("name") or "").strip():
+        raise HTTPException(status_code=400, detail="Naam is verplicht")
+
+    update_set = {
+        "name": body["name"].strip(),
+        "name_slug": _slug(body["name"]),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    # Tekst-velden — lege string is toegestaan zodat de gebruiker een waarde kan wissen
+    for fld in ("phone", "email", "address", "city", "rsin", "postcode",
+                "contact_person", "art8_nummer"):
+        if fld in body:
+            val = body[fld]
+            update_set[fld] = (val.lower() if fld == "email" and val else (str(val).strip() if val is not None else ""))
+    # Booleans
+    if "art8_vergunning" in body:
+        update_set["art8_vergunning"] = bool(body["art8_vergunning"])
+    # Numerieke optionele velden (None of "" wist het veld)
+    for fee_field in ("default_fee", "default_taxatie_fee"):
+        if fee_field in body:
+            v = body[fee_field]
+            if v in (None, ""):
+                update_set[fee_field] = None
+            else:
+                try:
+                    update_set[fee_field] = float(v)
+                except (TypeError, ValueError):
+                    pass
+
+    await db.customers.update_one(
+        {"id": customer_id},
+        {"$set": update_set},
+    )
+    return {"status": "ok"}
+
+
+
+
 @router.delete("/customers/{customer_id}")
 async def delete_customer(
     customer_id: str,
@@ -153,7 +236,7 @@ async def delete_customer(
 ):
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
-    res = await db.customers.delete_one({"id": customer_id, **_owner_filter(current_user)})
+    res = await db.customers.delete_one({"id": customer_id, **(await _owner_filter(current_user))})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Klant niet gevonden")
     return {"status": "deleted"}
@@ -168,7 +251,7 @@ async def customer_history(
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
-    cust = await db.customers.find_one({"id": customer_id, **_owner_filter(current_user)}, {"_id": 0})
+    cust = await db.customers.find_one({"id": customer_id, **(await _owner_filter(current_user))}, {"_id": 0})
     if not cust:
         raise HTTPException(status_code=404, detail="Klant niet gevonden")
 
@@ -237,7 +320,7 @@ async def customer_intro_pricing(
     if current_user.get("role") not in ("admin", "taxateur") and current_user.get("email", "").lower() != "motoimportbv@gmail.com":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
-    cust = await db.customers.find_one({"id": customer_id, **_owner_filter(current_user)}, {"_id": 0})
+    cust = await db.customers.find_one({"id": customer_id, **(await _owner_filter(current_user))}, {"_id": 0})
     if not cust:
         raise HTTPException(status_code=404, detail="Klant niet gevonden")
 
