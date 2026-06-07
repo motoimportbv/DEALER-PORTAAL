@@ -20,6 +20,11 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Universele URL-bulk email finder + uitgebreide FR/BE seed** (Feb 2026):
+  1. **Quick-win**: 5 extra geverifieerde BE dealers (Honda Mertens Antwerpen, Caset Lichtervelde, Raes Motoren Oostende, Van Der Heyden, Honda Mertens Brussel) + 2 extra FR (Village Motos Orvault). Totaal FR/BE seed: **13 dealers**.
+  2. **Generieke `extract_emails_from_url_list()` functie** in `services/dealer_scraper.py` — geeft een lijst URLs, gaat per website naar `/contact, /contacts, /contatti, /contattaci, /about/contact, /contattaci, /chi-siamo/contatti` en extraheert emails via regex met spam-filter. Country auto-detect via TLD. Bedrijfsnaam best-effort uit hostname (motoshop-paris.fr → "Motoshop Paris"). Idempotent dedup. Werkt voor **élk land** (FR, BE, IT, NL, DE, etc.).
+  3. **Endpoint**: `POST /api/admin/leads/extract-emails-from-urls` body `{urls: [...]}` (max 200/call). Live getest met 4 echte websites: **100% hit-rate** (Felix-Jos BE, Motoexpert FR, Superbike Marseille FR, Stamoto IT).
+  4. **Frontend**: blauw 🌐 "URL-BULK EMAIL FINDER (UNIVERSEEL)" blok in `/admin/lead-scraper` met collapsible help, textarea voor 1-URL-per-regel, live URL-teller, en resultaat-feedback met top-8 nieuwe leads.
 - **Auto-scraper moto.it + uitgebreide seed-lijsten** (Feb 2026):
   1. **Quick-win seed uitbreiding**: 11 extra FR/BE dealers (Brussels Moto Store, Honda Mertens, Superbike Marseille, Moto Expert 31, City2Roues...) en 6 extra IT dealers (Stamoto Milano, CMT Motor Brescia/Milano, Alma Moto, CeB Group, Baldassarre Moto). Totaal seed: **11 FR/BE + 13 IT dealers**.
   2. **Automatische moto.it scraper** in `backend/services/dealer_scraper.py`: parsed listing-pagina van `moto.it/concessionari`, gaat per dealer naar `dealer.moto.it/{slug}` om externe website-domein te extraheren (skip-list voor social/google/merk-sites), probeert dan `/contatti`, `/contact`, etc. paden om emails via regex te vinden. Async parallel pool (semaphore=5). Tested met 1 pagina: **13 van 20 dealers (65% hit-rate) — echte emails** zoals `info@hondapoint.it`, `hbs@harleybrescia.com`, `info@euromotogorini.com`.

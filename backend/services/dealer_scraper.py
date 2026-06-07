@@ -185,6 +185,111 @@ async def _try_dealer_contact_pages(client: httpx.AsyncClient, website: str) -> 
     return None
 
 
+async def extract_emails_from_url_list(urls: list, current_user_id: Optional[str] = None) -> dict:
+    """Voor elke website-URL in de lijst: probeer /contact, /contatti, etc. paden om
+    email-adressen te vinden via regex. Insert in DB met country auto-detect via TLD.
+
+    Returns: {processed, inserted, duplicates, no_email, errors, details: [...]}
+    """
+    inserted = 0
+    duplicates = 0
+    no_email = 0
+    processed = 0
+    errors = 0
+    details = []  # Per-URL feedback voor UI
+
+    # Dedup input
+    clean_urls = []
+    seen = set()
+    for u in urls:
+        u = (u or "").strip()
+        if not u:
+            continue
+        if not u.startswith("http"):
+            u = "https://" + u.lstrip("/")
+        u = u.rstrip("/")
+        if u in seen:
+            continue
+        seen.add(u)
+        clean_urls.append(u)
+
+    async with httpx.AsyncClient(limits=httpx.Limits(max_connections=10, max_keepalive_connections=5)) as client:
+        semaphore = asyncio.Semaphore(5)
+
+        async def process_url(website: str):
+            nonlocal inserted, duplicates, no_email, processed, errors
+            async with semaphore:
+                processed += 1
+                try:
+                    # Probeer alle contact-pagina paden
+                    email = await _try_dealer_contact_pages(client, website)
+                    if not email:
+                        no_email += 1
+                        details.append({"url": website, "status": "no_email"})
+                        return
+                    if not _is_valid_email(email):
+                        no_email += 1
+                        details.append({"url": website, "status": "no_email"})
+                        return
+                    # Dedup
+                    existing = await db.taxatie_leads.find_one({"email_lower": email}, {"_id": 0, "id": 1})
+                    if existing:
+                        duplicates += 1
+                        details.append({"url": website, "status": "duplicate", "email": email})
+                        return
+                    # Bepaal country via TLD
+                    try:
+                        host = website.split("/")[2].lower()
+                        tld = host.rsplit(".", 1)[-1]
+                        country = {"fr": "FR", "be": "BE", "lu": "LU", "nl": "NL", "de": "DE",
+                                   "it": "IT", "es": "ES", "ch": "CH", "uk": "GB", "co.uk": "GB"}.get(tld, "")
+                    except Exception:
+                        host = ""
+                        country = ""
+                    # Best-effort: dealer-naam uit host (motoshop-paris.fr → "Motoshop Paris")
+                    name_part = host.replace("www.", "").split(".")[0]
+                    name = " ".join(w.capitalize() for w in re.split(r"[-_]", name_part) if w)
+                    doc = {
+                        "id": str(uuid.uuid4()),
+                        "name": name,
+                        "email": email,
+                        "email_lower": email,
+                        "address": "",
+                        "postcode": "",
+                        "city": "",
+                        "website": website,
+                        "country": country,
+                        "source_site": "url-bulk",
+                        "source_url": website,
+                        "dealer_id": "",
+                        "status": "new",
+                        "notes": "Email auto-geëxtraheerd via URL-bulk tool",
+                        "sent_at": None,
+                        "batch_id": None,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                        "created_by": current_user_id,
+                    }
+                    await db.taxatie_leads.insert_one(doc)
+                    inserted += 1
+                    details.append({"url": website, "status": "ok", "email": email, "name": name})
+                except Exception as e:
+                    errors += 1
+                    details.append({"url": website, "status": "error", "error": str(e)[:100]})
+
+        await asyncio.gather(*(process_url(u) for u in clean_urls))
+
+    return {
+        "total_urls": len(clean_urls),
+        "processed": processed,
+        "inserted": inserted,
+        "duplicates": duplicates,
+        "no_email": no_email,
+        "errors": errors,
+        "details": details,
+    }
+
+
 async def scrape_moto_it(max_pages: int = 5, current_user_id: Optional[str] = None,
                          progress_cb=None) -> dict:
     """Scrape moto.it concessionari + zoek emails per dealer-website.

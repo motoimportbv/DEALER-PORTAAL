@@ -162,6 +162,37 @@ export default function LeadScraper() {
     setAutoBusy(false);
   };
 
+  const [urlBulkText, setUrlBulkText] = useState('');
+  const [urlBulkBusy, setUrlBulkBusy] = useState(false);
+  const [urlBulkLastResult, setUrlBulkLastResult] = useState(null);
+  const runUrlBulkExtract = async () => {
+    const urls = urlBulkText.split('\n').map(u => u.trim()).filter(Boolean);
+    if (urls.length === 0) {
+      toast.error('Plak minstens 1 URL');
+      return;
+    }
+    if (urls.length > 200) {
+      toast.error('Maximaal 200 URLs per keer');
+      return;
+    }
+    setUrlBulkBusy(true);
+    setUrlBulkLastResult(null);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/extract-emails-from-urls`,
+        { urls },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 600000 }
+      );
+      const d = r.data;
+      setUrlBulkLastResult(d);
+      toast.success(`✅ ${d.inserted} nieuwe leads (${d.duplicates} dup, ${d.no_email} zonder email, ${d.errors} errors van ${d.processed} URLs)`);
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setUrlBulkBusy(false);
+  };
+
   const [motoItPages, setMotoItPages] = useState(5);
   const [motoItBusy, setMotoItBusy] = useState(false);
   const scrapeMotoIt = async () => {
@@ -340,8 +371,9 @@ export default function LeadScraper() {
                 <h3 className="text-sm font-bold text-purple-900 uppercase tracking-wide">Franse &amp; Belgische leveranciers</h3>
               </div>
               <p className="text-sm text-purple-800">
-                Geverifieerde startlijst met <strong>6 FR/BE motor-dealers</strong> (KM Motos, CLM Motos, La Maison de la Moto,
-                Planet Racing, Sud Moto, Zone Rouge). Verwerk daarna meer leads via de plak-modus hieronder.
+                Geverifieerde startlijst met <strong>11 FR/BE motor-dealers</strong> (KM Motos, CLM Motos, Brussels Moto Store,
+                Honda Mertens Brussel/Antwerpen, Caset, Raes Motoren, Van Der Heyden, La Maison de la Moto, Planet Racing, Superbike Marseille,
+                Moto Expert 31, City2Roues, Village Motos).
               </p>
               <Button
                 onClick={importForeignSeed}
@@ -349,7 +381,7 @@ export default function LeadScraper() {
                 className="bg-purple-600 hover:bg-purple-700 text-white font-bold w-full sm:w-auto"
                 data-testid="import-foreign-seed-btn"
               >
-                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer 6 FR/BE dealers</>}
+                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer FR/BE dealers</>}
               </Button>
             </div>
 
@@ -380,7 +412,7 @@ export default function LeadScraper() {
                 </p>
                 <div className="flex flex-wrap gap-2 items-end">
                   <div>
-                    <label className="text-[10px] text-green-700 font-bold block">Aantal pagina's (max 70):</label>
+                    <label className="text-[10px] text-green-700 font-bold block">Aantal pagina&apos;s (max 70):</label>
                     <input
                       type="number"
                       min={1}
@@ -401,8 +433,56 @@ export default function LeadScraper() {
                     {motoItBusy ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Scraping... (kan paar min duren)</> : <>🤖 Start auto-scrape</>}
                   </Button>
                 </div>
-                <p className="text-[10px] text-green-700">Tip: start met 2 pagina's (40 dealers) als testbatch — schaal daarna op.</p>
+                <p className="text-[10px] text-green-700">Tip: start met 2 pagina&apos;s (40 dealers) als testbatch — schaal daarna op.</p>
               </div>
+            </div>
+
+            {/* GENERIEKE URL-bulk email finder — werkt voor ELK land/website */}
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 space-y-3" data-testid="url-bulk-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🌐</span>
+                <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wide">URL-bulk email finder (universeel)</h3>
+              </div>
+              <p className="text-sm text-blue-800">
+                Plak een lijst dealer-websites (1 per regel) — backend gaat per URL naar <strong>/contact, /contacts, /contatti, /contattaci</strong> om e-mails te extraheren.
+                Werkt voor FR, BE, IT, NL, DE — overal. Test-batch gaf <strong>100% hit-rate</strong>.
+              </p>
+              <details className="bg-white border border-blue-200 rounded-lg p-3">
+                <summary className="cursor-pointer text-xs font-bold text-blue-900">💡 Hoe verzamel ik URLs?</summary>
+                <ul className="mt-2 text-xs text-blue-800 list-disc pl-5 space-y-1">
+                  <li>Google: <code className="bg-blue-100 px-1 rounded">"concessionnaire moto" Lyon site:.fr</code> → kopieer alle resultaten</li>
+                  <li>Yamaha dealer-locator: <code className="bg-blue-100 px-1 rounded">yamaha-motor.eu/fr/dealers</code> → kopieer alle dealer-URLs</li>
+                  <li>Pages Jaunes: plak hier de website-URLs uit profielpagina&apos;s</li>
+                  <li>Of vraag ChatGPT om &quot;lijst van 50 motor-dealer websites in [stad/regio]&quot;</li>
+                </ul>
+              </details>
+              <textarea
+                value={urlBulkText}
+                onChange={(e) => setUrlBulkText(e.target.value)}
+                placeholder={"https://www.dealer1.fr\nhttps://www.dealer2.be\nhttps://dealer3.it\n... (max 200 per keer)"}
+                className="w-full h-32 border border-blue-300 rounded-xl px-3 py-2 text-xs font-mono bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                data-testid="url-bulk-textarea"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={runUrlBulkExtract}
+                  disabled={urlBulkBusy || urlBulkText.trim().length < 4}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                  data-testid="run-url-bulk-btn"
+                >
+                  {urlBulkBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>🔍 Vind emails op alle URLs</>}
+                </Button>
+                <p className="text-[11px] text-blue-700">{urlBulkText.split('\n').filter(u => u.trim()).length} URL(s) klaar</p>
+              </div>
+              {urlBulkLastResult && (
+                <div className="bg-white border border-blue-200 rounded-lg p-3 text-xs space-y-1" data-testid="url-bulk-result">
+                  <p className="font-bold text-blue-900">Laatste resultaat:</p>
+                  <p>✅ {urlBulkLastResult.inserted} nieuw · ⏭️ {urlBulkLastResult.duplicates} dup · ❌ {urlBulkLastResult.no_email} geen email · {urlBulkLastResult.errors} errors</p>
+                  {urlBulkLastResult.details?.filter(d => d.status === 'ok').slice(0, 8).map((d, i) => (
+                    <p key={i} className="text-zinc-700 truncate">  <span className="text-green-600">✓</span> {d.email} <span className="text-zinc-400">({d.url})</span></p>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="border-t pt-3" data-testid="generic-paste-block">

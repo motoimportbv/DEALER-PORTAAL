@@ -292,6 +292,18 @@ FOREIGN_SEED_LEADS = [
     {"name": "Honda Mertens Brussel", "email": "info@hondamertens.be", "city": "Zaventem",
      "postcode": "1930", "address": "Mechelsesteenweg 560", "website": "https://www.hondamertensbrussel.be",
      "country": "BE", "source_site": "hondamertensbrussel.be", "notes": "Honda exclusief dealer Brussel"},
+    {"name": "Honda Mertens Antwerpen", "email": "antwerpen@hondamertens.be", "city": "Boechout",
+     "postcode": "2530", "address": "Alexander Franckstraat 51", "website": "https://www.hondamertensantwerpen.be",
+     "country": "BE", "source_site": "hondamertensantwerpen.be", "notes": "Honda exclusief dealer regio Antwerpen"},
+    {"name": "Motorcenter Caset", "email": "info@caset.be", "city": "Lichtervelde",
+     "postcode": "8810", "address": "Brugsebaan 24", "website": "https://www.caset.be",
+     "country": "BE", "source_site": "caset.be", "notes": "Honda dealer West-Vlaanderen"},
+    {"name": "Raes Motoren", "email": "yamaha@raesmotoren.be", "city": "Oostende",
+     "postcode": "8400", "address": "Zandvoordestraat 442", "website": "https://raesmotoren.be",
+     "country": "BE", "source_site": "raesmotoren.be", "notes": "Yamaha dealer Noord-West-Vlaanderen"},
+    {"name": "Van Der Heyden Motors", "email": "info@vdheydenmotors.be", "city": "",
+     "postcode": "", "address": "", "website": "https://www.vdheydenmotors.be",
+     "country": "BE", "source_site": "vdheydenmotors.be", "notes": "Officiële dealer Yamaha/Suzuki/SYM"},
     # ===== FR =====
     {"name": "La Maison de la Moto", "email": "info@maisondelamoto.fr", "city": "Mougins",
      "postcode": "06250", "address": "", "website": "https://www.maisondelamoto.fr", "country": "FR",
@@ -309,6 +321,9 @@ FOREIGN_SEED_LEADS = [
     {"name": "City2Roues", "email": "contact@city2roues.com", "city": "Toulouse",
      "postcode": "31200", "address": "34 Rue Georges Ohnet", "website": "https://www.city2roues.com",
      "country": "FR", "source_site": "city2roues.com", "notes": "Concessionnaire moto Toulouse"},
+    {"name": "Village Motos", "email": "contact@village-motos.com", "city": "Orvault",
+     "postcode": "44700", "address": "", "website": "https://village-motos.com",
+     "country": "FR", "source_site": "village-motos.com", "notes": "Concession multi-marques Nantes/Orvault"},
 ]
 
 
@@ -445,6 +460,39 @@ async def scrape_moto_it_endpoint(
     max_pages = int((body or {}).get("max_pages", 5))
     max_pages = max(1, min(max_pages, 70))  # cap op 70 (~1.190 dealers max)
     result = await scrape_moto_it(max_pages=max_pages, current_user_id=current_user.get("id"))
+    return result
+
+
+@router.post("/admin/leads/extract-emails-from-urls")
+async def extract_emails_from_urls_endpoint(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Generieke email-extractor voor een lijst van website-URL's.
+
+    Body: { urls: ["https://dealer1.fr", "https://dealer2.be", ...] }
+    Voor elke URL probeert backend /contact, /contacts, /contatti, /contattaci paden
+    om emails te vinden via regex. Country wordt afgeleid uit TLD. Werkt voor élk land.
+
+    Bedoeld voor copy-paste van Google-resultaten of dealer-locator lijsten.
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+    from services.dealer_scraper import extract_emails_from_url_list
+
+    urls = (body or {}).get("urls") or []
+    if not isinstance(urls, list):
+        # ook ondersteunen als string met 1 URL per regel
+        if isinstance(urls, str):
+            urls = [u.strip() for u in urls.splitlines() if u.strip()]
+        else:
+            raise HTTPException(status_code=400, detail="`urls` moet een list of newline-separated string zijn")
+    if not urls:
+        raise HTTPException(status_code=400, detail="Geen URLs opgegeven")
+    if len(urls) > 200:
+        raise HTTPException(status_code=400, detail="Maximaal 200 URLs per call")
+
+    result = await extract_emails_from_url_list(urls, current_user_id=current_user.get("id"))
     return result
 
 
