@@ -269,6 +269,198 @@ async def import_seed_leads(current_user: dict = Depends(get_current_user)):
     }
 
 
+# ============ FR/BE FOREIGN LEADS ============
+
+# Statische startlijst — geverifieerd via dealer-websites (Feb 2026).
+FOREIGN_SEED_LEADS = [
+    {"name": "KM Motos", "email": "info@kmmotos.be", "city": "Lontzen", "postcode": "4710",
+     "address": "Rue Mitoyenne 344", "website": "https://kmmotos.be", "country": "BE",
+     "source_site": "kmmotos.be", "notes": "Yamaha officieel dealer"},
+    {"name": "CLM Motos", "email": "info@clmmotos.be", "city": "Seraing", "postcode": "4100",
+     "address": "Rue du Sewage 4", "website": "https://clmmotos.be", "country": "BE",
+     "source_site": "clmmotos.be", "notes": "Yamaha officieel dealer Liège"},
+    {"name": "La Maison de la Moto", "email": "info@maisondelamoto.fr", "city": "Mougins",
+     "postcode": "06250", "address": "", "website": "https://www.maisondelamoto.fr", "country": "FR",
+     "source_site": "maisondelamoto.fr", "notes": "Multi-merk dealer Côte d'Azur"},
+    {"name": "Planet Racing", "email": "ventemotos@planet-racing.fr", "city": "", "postcode": "",
+     "address": "", "website": "https://www.planet-racing.fr", "country": "FR",
+     "source_site": "planet-racing.fr", "notes": "Yamaha dealer"},
+    {"name": "Sud Moto", "email": "info@sudmoto.be", "city": "Uccle", "postcode": "1180",
+     "address": "", "website": "https://sudmoto.be", "country": "BE",
+     "source_site": "sudmoto.be", "notes": "Yamaha Sud Bruxelles"},
+    {"name": "Zone Rouge", "email": "info@zonerouge.be", "city": "Fosses-la-Ville", "postcode": "",
+     "address": "", "website": "https://www.zonerouge.be", "country": "BE",
+     "source_site": "zonerouge.be", "notes": "Yamaha dealer Wallonië — meerdere vestigingen"},
+]
+
+
+@router.post("/admin/leads/import-foreign-seed")
+async def import_foreign_seed_leads(current_user: dict = Depends(get_current_user)):
+    """Importeer een statische startlijst van geverifieerde FR/BE motor-dealers met emails.
+    Idempotent: bestaande e-mails worden overgeslagen (dedup op email_lower)."""
+    _require_admin(current_user)
+    await _ensure_indexes()
+
+    inserted = 0
+    duplicates = 0
+    skipped = 0
+    for lead in FOREIGN_SEED_LEADS:
+        email = (lead.get("email") or "").strip().lower()
+        if not email or not EMAIL_RE.match(email):
+            skipped += 1
+            continue
+        existing = await db.taxatie_leads.find_one({"email_lower": email}, {"_id": 0, "id": 1})
+        if existing:
+            duplicates += 1
+            continue
+        doc = {
+            "id": str(uuid.uuid4()),
+            "name": lead.get("name") or "",
+            "email": email,
+            "email_lower": email,
+            "address": lead.get("address") or "",
+            "postcode": lead.get("postcode") or "",
+            "city": lead.get("city") or "",
+            "website": lead.get("website") or "",
+            "country": lead.get("country") or "",
+            "source_site": lead.get("source_site") or "foreign-seed",
+            "source_url": "",
+            "dealer_id": "",
+            "status": "new",
+            "notes": lead.get("notes") or "",
+            "sent_at": None,
+            "batch_id": None,
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+            "created_by": current_user.get("id"),
+        }
+        await db.taxatie_leads.insert_one(doc)
+        inserted += 1
+
+    return {
+        "total_in_seed": len(FOREIGN_SEED_LEADS),
+        "inserted": inserted,
+        "duplicates": duplicates,
+        "skipped_no_email": skipped,
+    }
+
+
+# Generic email-extractor patroon — werkt voor Pages Jaunes, Google Maps copy-paste,
+# motoconcess-resultaten en willekeurige andere bronnen. Pakt elke e-mail uit de tekst
+# + probeert context-info (bedrijfsnaam, plaats) eromheen te halen.
+GENERIC_EMAIL_RE = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+FR_BE_POSTCODE_RE = re.compile(r'\b(\d{4,5})\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\-\s]{1,40})')
+
+
+def _guess_name_from_email(email: str) -> str:
+    """Best-effort: haal een leesbare bedrijfsnaam uit de domain van een email.
+    bv. info@motodupont-paris.fr → 'Motodupont Paris'
+    """
+    try:
+        domain = email.split("@", 1)[1].split(".")[0]
+        # Verwijder gangbare prefixes
+        domain = re.sub(r'^(www-)?', '', domain, flags=re.IGNORECASE)
+        # Splits op -, _ en spatie → woorden capitaliseren
+        words = re.split(r'[-_\s]+', domain)
+        return " ".join(w.capitalize() for w in words if w)
+    except Exception:
+        return ""
+
+
+def _guess_country_from_tld(email: str) -> str:
+    """Bepaal land op basis van TLD."""
+    try:
+        tld = email.rsplit(".", 1)[-1].lower()
+        return {"fr": "FR", "be": "BE", "lu": "LU", "nl": "NL", "de": "DE", "es": "ES", "it": "IT"}.get(tld, "")
+    except Exception:
+        return ""
+
+
+@router.post("/admin/leads/scrape-paste-generic")
+async def scrape_paste_generic(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Generieke email-extractor voor FR/BE/etc bronnen (Pages Jaunes, Google Maps, websites).
+
+    Body: { text: "..." (HTML of plain text), source_label: "pagesjaunes" (optioneel) }
+    Returnt: aantal gevonden emails / inserted / duplicates.
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+
+    text = (body or {}).get("text") or ""
+    source_label = ((body or {}).get("source_label") or "paste-generic").strip().lower()
+    if len(text) < 20:
+        raise HTTPException(status_code=400, detail="Tekst is leeg of te kort")
+
+    # Vind alle unieke emails, filter generieke
+    raw_emails = GENERIC_EMAIL_RE.findall(text)
+    skip_domains = {"google.com", "facebook.com", "instagram.com", "youtube.com", "twitter.com",
+                    "linkedin.com", "wixstatic.com", "sentry.io", "googletagmanager.com",
+                    "googleadservices.com", "doubleclick.net", "wordpress.com", "wp.com",
+                    "example.com", "domain.com", "yourdomain.com", "test.com"}
+    unique = []
+    seen = set()
+    for e in raw_emails:
+        em = e.strip().lower()
+        if em in seen:
+            continue
+        domain = em.split("@", 1)[1] if "@" in em else ""
+        if any(domain.endswith(sd) for sd in skip_domains):
+            continue
+        if not EMAIL_RE.match(em):
+            continue
+        seen.add(em)
+        unique.append(em)
+
+    # Optioneel: probeer een postcode + plaats uit de tekst te halen (rough context).
+    pc_match = FR_BE_POSTCODE_RE.search(text)
+    pc, city = ("", "")
+    if pc_match:
+        pc = pc_match.group(1)
+        city = pc_match.group(2).strip()
+
+    inserted = 0
+    duplicates = 0
+    for em in unique:
+        existing = await db.taxatie_leads.find_one({"email_lower": em}, {"_id": 0, "id": 1})
+        if existing:
+            duplicates += 1
+            continue
+        doc = {
+            "id": str(uuid.uuid4()),
+            "name": _guess_name_from_email(em),
+            "email": em,
+            "email_lower": em,
+            "address": "",
+            "postcode": pc,
+            "city": city,
+            "website": "",
+            "country": _guess_country_from_tld(em),
+            "source_site": source_label,
+            "source_url": "",
+            "dealer_id": "",
+            "status": "new",
+            "notes": "",
+            "sent_at": None,
+            "batch_id": None,
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+            "created_by": current_user.get("id"),
+        }
+        await db.taxatie_leads.insert_one(doc)
+        inserted += 1
+
+    return {
+        "found_emails": len(unique),
+        "inserted": inserted,
+        "duplicates": duplicates,
+    }
+
+
+
+
 # ============ LIST / FILTER ============
 
 @router.get("/admin/leads")

@@ -126,6 +126,48 @@ export default function LeadScraper() {
     setAutoBusy(false);
   };
 
+  const importForeignSeed = async () => {
+    if (!window.confirm('Importeer geverifieerde FR/BE motor-dealers met e-mail?\n\nKM Motos, CLM Motos, La Maison de la Moto, Planet Racing, Sud Moto, Zone Rouge.')) return;
+    setAutoBusy(true);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/import-foreign-seed`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const d = r.data;
+      toast.success(`✅ FR/BE seed klaar: ${d.inserted} nieuw, ${d.duplicates} duplicaten genegeerd (totaal: ${d.total_in_seed})`);
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setAutoBusy(false);
+  };
+
+  const [genericText, setGenericText] = useState('');
+  const [genericBusy, setGenericBusy] = useState(false);
+  const submitGenericPaste = async () => {
+    if (genericText.trim().length < 20) {
+      toast.error('Tekst is te kort');
+      return;
+    }
+    setGenericBusy(true);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/scrape-paste-generic`,
+        { text: genericText, source_label: 'pagesjaunes' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const d = r.data;
+      toast.success(`✅ ${d.inserted} nieuwe leads gevonden (${d.found_emails} e-mails geparsed, ${d.duplicates} duplicaten)`);
+      setGenericText('');
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setGenericBusy(false);
+  };
+
   const deleteOne = async (id) => {
     if (!window.confirm('Lead verwijderen?')) return;
     try {
@@ -251,6 +293,54 @@ export default function LeadScraper() {
               >
                 {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer alle 341 dealers</>}
               </Button>
+            </div>
+
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 space-y-3" data-testid="foreign-seed-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🇫🇷🇧🇪</span>
+                <h3 className="text-sm font-bold text-purple-900 uppercase tracking-wide">Franse &amp; Belgische leveranciers</h3>
+              </div>
+              <p className="text-sm text-purple-800">
+                Geverifieerde startlijst met <strong>6 FR/BE motor-dealers</strong> (KM Motos, CLM Motos, La Maison de la Moto,
+                Planet Racing, Sud Moto, Zone Rouge). Verwerk daarna meer leads via de plak-modus hieronder.
+              </p>
+              <Button
+                onClick={importForeignSeed}
+                disabled={autoBusy}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold w-full sm:w-auto"
+                data-testid="import-foreign-seed-btn"
+              >
+                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer 6 FR/BE dealers</>}
+              </Button>
+            </div>
+
+            <div className="border-t pt-3" data-testid="generic-paste-block">
+              <details>
+                <summary className="cursor-pointer text-sm font-bold text-purple-700 hover:underline">
+                  🌍 Plak FR/BE dealers (Pages Jaunes, Google Maps, eigen lijst)
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs text-purple-900 space-y-1">
+                    <p className="font-bold">📋 Hoe gebruik je deze:</p>
+                    <ol className="list-decimal pl-5 space-y-0.5">
+                      <li>Open <a href="https://www.pagesjaunes.fr/recherche/france/concessionnaire-moto" target="_blank" rel="noreferrer" className="text-purple-700 hover:underline font-bold">Pages Jaunes — concessionnaires moto <ExternalLink className="inline w-3 h-3" /></a> (of een vergelijkbare bron)</li>
+                      <li>Selecteer alle resultaten op de pagina (<kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Ctrl+A</kbd>) en kopieer (<kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Ctrl+C</kbd>)</li>
+                      <li>Plak hieronder — onze parser haalt automatisch alle e-mailadressen eruit</li>
+                      <li>Spam-domeinen (google.com, facebook.com etc.) worden automatisch overgeslagen</li>
+                    </ol>
+                  </div>
+                  <textarea
+                    value={genericText}
+                    onChange={(e) => setGenericText(e.target.value)}
+                    placeholder="Plak hier dealer-info, e-mailadressen, of Pages Jaunes resultaten. De parser herkent automatisch alle e-mails..."
+                    className="w-full h-40 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono bg-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    data-testid="generic-paste-textarea"
+                  />
+                  <Button onClick={submitGenericPaste} disabled={genericBusy || genericText.length < 20} className="bg-purple-600 hover:bg-purple-700 text-white" data-testid="submit-generic-paste-btn">
+                    {genericBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Parsen...</> : <>🔍 Vind alle e-mails →</>}
+                  </Button>
+                </div>
+              </details>
             </div>
 
             <div className="flex items-start gap-3 flex-wrap">
