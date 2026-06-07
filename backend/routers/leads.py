@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Body, Query
+from fastapi import APIRouter, Depends, HTTPException, Body, Query, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 
 from database import db
@@ -610,6 +610,165 @@ async def scrape_paste_generic(
     }
 
 
+
+
+@router.post("/admin/leads/import-csv")
+async def import_leads_csv(
+    file: UploadFile = File(...),
+    country: str = Form(""),
+    source_label: str = Form("csv-import"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Bulk-import leads via CSV upload. Geschikt voor data uit Hunter.io,
+    Apollo.io, Google Sheets, Pages Jaunes export, etc.
+
+    Verwachte kolommen (case-insensitive, automatisch gemapt):
+      email | e-mail | mail   → email (verplicht)
+      name  | bedrijfsnaam | company → name
+      city  | stad | ville | citta | town → city
+      website | url | site | domain → website
+      country | land | pays | paese → country (overschrijft form-param niet)
+      address | adres | adresse → address
+      postcode | zip | cap | plz → postcode
+      phone | telefoon | tel → notes (geconcat met phone:)
+
+    Returns: {total_rows, inserted, duplicates, invalid_emails, errors}
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+
+    raw = await file.read()
+    # Probeer UTF-8 eerst, dan latin-1 als fallback
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        text = raw.decode("latin-1")
+
+    # Detecteer delimiter (,;\t)
+    import csv as _csv
+    import io as _io
+    sample = text[:2048]
+    try:
+        dialect = _csv.Sniffer().sniff(sample, delimiters=",;\t")
+    except Exception:
+        dialect = _csv.excel
+    reader = _csv.DictReader(_io.StringIO(text), dialect=dialect)
+
+    # Header-mapping
+    def _h(s: str) -> str:
+        return (s or "").strip().lower().replace("-", "").replace("_", "").replace(" ", "")
+    headers = {_h(h): h for h in (reader.fieldnames or [])}
+    aliases = {
+        "email": ["email", "emailaddress", "mail", "emailadres"],
+        "name": ["name", "company", "bedrijfsnaam", "naam", "dealername", "businessname"],
+        "city": ["city", "stad", "ville", "citta", "città", "town", "ort", "plaats"],
+        "website": ["website", "url", "site", "domain", "homepage"],
+        "country": ["country", "land", "pays", "paese", "nation"],
+        "address": ["address", "adres", "adresse", "indirizzo", "street"],
+        "postcode": ["postcode", "zip", "zipcode", "cap", "plz", "postalcode"],
+        "phone": ["phone", "telefoon", "tel", "telefono", "telephone"],
+    }
+    def _find(field: str):
+        for a in aliases[field]:
+            if a in headers:
+                return headers[a]
+        return None
+    col = {f: _find(f) for f in aliases}
+
+    if not col["email"]:
+        raise HTTPException(status_code=400, detail="CSV mist verplichte kolom 'email' (of mail/emailadres)")
+
+    total = 0
+    inserted = 0
+    duplicates = 0
+    invalid = 0
+    errors = 0
+    now = _now_iso()
+    form_country = (country or "").upper().strip()
+
+    for row in reader:
+        total += 1
+        try:
+            em = (row.get(col["email"]) or "").strip().lower()
+            if not em or not EMAIL_RE.match(em):
+                invalid += 1
+                continue
+            # Extra blacklist check via dealer_scraper helper
+            from services.dealer_scraper import _is_valid_email as _v
+            if not _v(em):
+                invalid += 1
+                continue
+            existing = await db.taxatie_leads.find_one({"email_lower": em}, {"_id": 0, "id": 1})
+            if existing:
+                duplicates += 1
+                continue
+            row_country = (row.get(col["country"]) or "").strip().upper() if col["country"] else ""
+            # Form param > row country > TLD-fallback
+            final_country = form_country or row_country
+            if not final_country:
+                try:
+                    tld = em.rsplit(".", 1)[-1].lower()
+                    final_country = {"fr": "FR", "be": "BE", "lu": "LU", "nl": "NL",
+                                     "de": "DE", "it": "IT", "es": "ES", "ch": "CH",
+                                     "at": "AT", "pl": "PL", "cz": "CZ", "pt": "PT"}.get(tld, "")
+                except Exception:
+                    final_country = ""
+            phone = (row.get(col["phone"]) or "").strip() if col["phone"] else ""
+            notes_extra = f"phone: {phone}" if phone else ""
+            doc = {
+                "id": str(uuid.uuid4()),
+                "name": (row.get(col["name"]) or "").strip() if col["name"] else "",
+                "email": em,
+                "email_lower": em,
+                "address": (row.get(col["address"]) or "").strip() if col["address"] else "",
+                "postcode": (row.get(col["postcode"]) or "").strip() if col["postcode"] else "",
+                "city": (row.get(col["city"]) or "").strip() if col["city"] else "",
+                "website": (row.get(col["website"]) or "").strip() if col["website"] else "",
+                "country": final_country,
+                "source_site": source_label or "csv-import",
+                "source_url": "",
+                "dealer_id": "",
+                "status": "new",
+                "notes": notes_extra or f"Geïmporteerd via CSV {file.filename}",
+                "sent_at": None,
+                "batch_id": None,
+                "created_at": now,
+                "updated_at": now,
+                "created_by": current_user.get("id"),
+            }
+            await db.taxatie_leads.insert_one(doc)
+            inserted += 1
+        except Exception:
+            errors += 1
+
+    return {
+        "filename": file.filename,
+        "detected_columns": {k: v for k, v in col.items() if v},
+        "total_rows": total,
+        "inserted": inserted,
+        "duplicates": duplicates,
+        "invalid_emails": invalid,
+        "errors": errors,
+    }
+
+
+@router.post("/admin/leads/scrape-brand-locator")
+async def scrape_brand_locator(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Server-side scrape van een merk-dealer-locator URL (Yamaha/Honda/BMW/KTM/Ducati).
+
+    Body: { url: "https://...", country: "DE"|"IT"|"FR"|"BE" }
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+    url = ((body or {}).get("url") or "").strip()
+    country = ((body or {}).get("country") or "").upper().strip()
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="Ongeldige URL")
+    from services.dealer_scraper import scrape_brand_locator_url
+    return await scrape_brand_locator_url(url, country=country, current_user_id=current_user.get("id"))
 
 
 @router.post("/admin/leads/scrape-html-paste")

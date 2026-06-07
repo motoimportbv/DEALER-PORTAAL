@@ -267,6 +267,63 @@ export default function LeadScraper() {
     setHtmlPasteBusy(false);
   };
 
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvCountry, setCsvCountry] = useState('');
+  const [csvBusy, setCsvBusy] = useState(false);
+  const [csvResult, setCsvResult] = useState(null);
+  const runCsvImport = async () => {
+    if (!csvFile) { toast.error('Selecteer eerst een CSV-bestand'); return; }
+    setCsvBusy(true);
+    setCsvResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', csvFile);
+      fd.append('country', csvCountry);
+      fd.append('source_label', `csv-${csvFile.name}`);
+      const r = await axios.post(
+        `${API}/admin/leads/import-csv`, fd,
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 90000 }
+      );
+      setCsvResult(r.data);
+      toast.success(`✅ ${r.data.inserted} nieuwe leads · ${r.data.duplicates} dup · ${r.data.invalid_emails} ongeldig`);
+      setCsvFile(null);
+      fetchLeads();
+    } catch (e) {
+      toast.error('CSV-import mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setCsvBusy(false);
+  };
+
+  const [customUrl, setCustomUrl] = useState('');
+  const [customUrlCountry, setCustomUrlCountry] = useState('');
+  const [customUrlBusy, setCustomUrlBusy] = useState(false);
+  const [customUrlResult, setCustomUrlResult] = useState(null);
+  const runCustomUrlScrape = async () => {
+    if (!customUrl.startsWith('http')) { toast.error('Plak een geldige URL (https://...)'); return; }
+    setCustomUrlBusy(true);
+    setCustomUrlResult(null);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/scrape-brand-locator`,
+        { url: customUrl, country: customUrlCountry },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
+      );
+      setCustomUrlResult(r.data);
+      if ((r.data.inserted || 0) > 0) {
+        toast.success(`✅ ${r.data.inserted} nieuw · ${r.data.duplicates} dup · ${r.data.emails_found} emails`);
+        setCustomUrl('');
+      } else if (r.data.error) {
+        toast.error(`Geen emails — ${r.data.error}. Pagina is mogelijk JS-rendered → gebruik HTML-paste tool.`);
+      } else {
+        toast.info('Geen emails in HTML. Pagina is waarschijnlijk JS-rendered → gebruik de HTML-paste tool eronder.');
+      }
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setCustomUrlBusy(false);
+  };
+
   const deleteOne = async (id) => {
     if (!window.confirm('Lead verwijderen?')) return;
     try {
@@ -498,6 +555,120 @@ export default function LeadScraper() {
                 </div>
                 <p className="text-[10px] text-green-700">Tip: start met 2 pagina&apos;s (40 dealers) als testbatch — schaal daarna op.</p>
               </div>
+            </div>
+
+            {/* CSV-IMPORT — oneindig schaalbaar via Hunter.io/Apollo.io/Pages Jaunes export */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-400 rounded-xl p-4 space-y-3" data-testid="csv-import-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">📥</span>
+                <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-wide">CSV-import (oneindig schaalbaar)</h3>
+              </div>
+              <p className="text-sm text-emerald-800">
+                <strong>De snelste weg naar duizenden leads.</strong> Koop een dealer-database bij <a href="https://hunter.io" target="_blank" rel="noreferrer" className="underline font-bold">Hunter.io <ExternalLink className="inline w-3 h-3" /></a> (€50-100 voor 5.000-10.000 emails), <a href="https://apollo.io" target="_blank" rel="noreferrer" className="underline font-bold">Apollo.io <ExternalLink className="inline w-3 h-3" /></a> (gratis tier: 1.200 emails/maand), of exporteer uit Pages Jaunes / Pagine Gialle / Gelbe Seiten. Upload de CSV hier en de backend voegt alles toe met dedup-check.
+              </p>
+              <details className="bg-white border border-emerald-200 rounded-lg p-3">
+                <summary className="cursor-pointer text-xs font-bold text-emerald-900">📋 Welke kolommen worden gelezen?</summary>
+                <div className="mt-2 text-xs text-emerald-800 space-y-1">
+                  <p><strong>Verplicht:</strong> <code className="bg-emerald-100 px-1 rounded">email</code> (of mail / emailadres)</p>
+                  <p><strong>Optioneel:</strong> <code className="bg-emerald-100 px-1 rounded">name</code> / company / bedrijfsnaam, <code className="bg-emerald-100 px-1 rounded">city</code> / stad / ville / citta, <code className="bg-emerald-100 px-1 rounded">website</code> / url, <code className="bg-emerald-100 px-1 rounded">country</code> / land, <code className="bg-emerald-100 px-1 rounded">address</code> / adres, <code className="bg-emerald-100 px-1 rounded">postcode</code> / cap / plz, <code className="bg-emerald-100 px-1 rounded">phone</code> / tel</p>
+                  <p>Auto-detect: comma, semicolon, tab. UTF-8 of latin-1.</p>
+                </div>
+              </details>
+              <div className="flex items-end gap-2 flex-wrap">
+                <div>
+                  <label className="text-[10px] text-emerald-800 font-bold block">Land (override):</label>
+                  <select
+                    value={csvCountry}
+                    onChange={(e) => setCsvCountry(e.target.value)}
+                    className="border-2 border-emerald-300 rounded px-3 py-1.5 text-sm font-bold bg-white"
+                    data-testid="csv-country"
+                  >
+                    <option value="">— auto (uit CSV/TLD) —</option>
+                    <option value="DE">🇩🇪 Duitsland</option>
+                    <option value="IT">🇮🇹 Italië</option>
+                    <option value="FR">🇫🇷 Frankrijk</option>
+                    <option value="BE">🇧🇪 België</option>
+                    <option value="NL">🇳🇱 Nederland</option>
+                    <option value="ES">🇪🇸 Spanje</option>
+                    <option value="CH">🇨🇭 Zwitserland</option>
+                    <option value="AT">🇦🇹 Oostenrijk</option>
+                  </select>
+                </div>
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                  className="text-sm border-2 border-emerald-300 rounded px-2 py-1 bg-white"
+                  data-testid="csv-file-input"
+                />
+                <Button
+                  onClick={runCsvImport}
+                  disabled={!csvFile || csvBusy}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                  data-testid="run-csv-import-btn"
+                >
+                  {csvBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Importeren...</> : <>📥 Importeer CSV →</>}
+                </Button>
+              </div>
+              {csvResult && (
+                <div className="bg-white border border-emerald-200 rounded-lg p-3 text-xs space-y-1" data-testid="csv-import-result">
+                  <p className="font-bold text-emerald-900">{csvResult.filename}</p>
+                  <p>📊 {csvResult.total_rows} rijen verwerkt</p>
+                  <p>✅ {csvResult.inserted} nieuw · ⏭️ {csvResult.duplicates} dup · ⚠️ {csvResult.invalid_emails} ongeldig · ❌ {csvResult.errors} errors</p>
+                  <p className="text-[10px] text-emerald-700">Kolommen herkend: {Object.entries(csvResult.detected_columns || {}).map(([k, v]) => `${k}=${v}`).join(' · ')}</p>
+                </div>
+              )}
+            </div>
+
+            {/* CUSTOM URL SCRAPER — voor dealer-list pagina's die server-side gerenderd zijn */}
+            <div className="bg-indigo-50 border-2 border-indigo-300 rounded-xl p-4 space-y-3" data-testid="custom-url-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🔗</span>
+                <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wide">URL-scraper (server-side fetch)</h3>
+              </div>
+              <p className="text-sm text-indigo-800">
+                Plak elke dealer-list URL die <strong>server-side gerendered emails</strong> bevat. Backend fetcht met browser-headers, extraheert emails + websites. <em>Werkt niet voor JS/SPA sites (Yamaha-motor.eu, Honda, BMW) — gebruik daarvoor de HTML-paste tool hieronder.</em>
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="url"
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder="https://www.bimota.com/it/it/dealer of https://... dealer-list"
+                  className="flex-1 min-w-0 border-2 border-indigo-300 rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-indigo-600"
+                  data-testid="custom-url-input"
+                />
+                <select
+                  value={customUrlCountry}
+                  onChange={(e) => setCustomUrlCountry(e.target.value)}
+                  className="border-2 border-indigo-300 rounded px-3 py-1.5 text-sm bg-white"
+                  data-testid="custom-url-country"
+                >
+                  <option value="">— land —</option>
+                  <option value="DE">🇩🇪 DE</option>
+                  <option value="IT">🇮🇹 IT</option>
+                  <option value="FR">🇫🇷 FR</option>
+                  <option value="BE">🇧🇪 BE</option>
+                  <option value="NL">🇳🇱 NL</option>
+                </select>
+                <Button
+                  onClick={runCustomUrlScrape}
+                  disabled={customUrlBusy || !customUrl.startsWith('http')}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                  data-testid="run-custom-url-btn"
+                >
+                  {customUrlBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scrapen...</> : <>🔍 Scrape</>}
+                </Button>
+              </div>
+              {customUrlResult && (
+                <div className="bg-white border border-indigo-200 rounded-lg p-3 text-xs space-y-1" data-testid="custom-url-result">
+                  <p>✅ {customUrlResult.inserted || 0} nieuw · ⏭️ {customUrlResult.duplicates || 0} dup · 📧 {customUrlResult.emails_found || 0} emails · 🌐 {customUrlResult.websites_found || 0} websites</p>
+                  {customUrlResult.error && <p className="text-red-600">⚠️ {customUrlResult.error}</p>}
+                  {(customUrlResult.details || []).slice(0, 5).map((d, i) => (
+                    <p key={i} className="text-zinc-700 truncate">✓ {d.name} — {d.email}</p>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* HTML-PASTE scraper voor BE/FR — bypasst anti-bot blokkades */}

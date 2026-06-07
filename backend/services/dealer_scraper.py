@@ -290,6 +290,142 @@ async def extract_emails_from_url_list(urls: list, current_user_id: Optional[str
     }
 
 
+async def scrape_brand_locator_url(url: str, country: str = "", current_user_id: Optional[str] = None) -> dict:
+    """Server-side fetch een merk-dealer-locator URL met browser-headers, extract
+    emails+websites+namen. Werkt voor o.a. Yamaha JSON APIs, Honda HTML lists,
+    BMW Motorrad dealer pages, KTM/Ducati locator outputs.
+
+    Body: { url: 'https://www.yamaha-motor.eu/...', country: 'DE' }
+    Returns: {emails_found, inserted, duplicates, errors, details}
+    """
+    import json as _json
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "application/json, text/html, */*",
+        "Accept-Language": "en-US,en;q=0.9,de;q=0.8,it;q=0.7,fr;q=0.6,nl;q=0.5",
+    }
+    text = ""
+    is_json = False
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=headers) as client:
+        try:
+            r = await client.get(url)
+            if r.status_code != 200:
+                return {"error": f"HTTP {r.status_code}", "url": url, "emails_found": 0, "inserted": 0}
+            text = r.text
+            ct = r.headers.get("content-type", "").lower()
+            is_json = "json" in ct
+        except Exception as e:
+            return {"error": str(e)[:200], "url": url, "emails_found": 0, "inserted": 0}
+
+    # Strategy 1: JSON response → flatten alle string-values + zoek emails
+    if is_json:
+        try:
+            data = _json.loads(text)
+            text = _json.dumps(data, ensure_ascii=False)  # platte string voor regex
+        except Exception:
+            pass
+
+    emails = []
+    seen_em = set()
+    for m in EMAIL_RE.finditer(text):
+        em = m.group(0).lower()
+        if em in seen_em or not _is_valid_email(em):
+            continue
+        seen_em.add(em)
+        emails.append({"email": em, "pos": m.start()})
+
+    # Websites extract uit href= en uit JSON-strings beginnend met http
+    url_re_local = re.compile(r'https?://[^"\'<>\s\)]+', re.IGNORECASE)
+    websites = []
+    seen_hosts = set()
+    for u in url_re_local.findall(text)[:500]:  # cap voor perf
+        try:
+            host = u.split("/")[2].lower()
+            host = host[4:] if host.startswith("www.") else host
+        except IndexError:
+            continue
+        if host in seen_hosts or any(s in host for s in ("google.", "facebook.", "instagram.",
+                                                          "youtube.", "twitter.", "linkedin.",
+                                                          "yamaha-motor.eu", "honda.", "bmw.",
+                                                          "ducati.com", "ktm.com", "schema.org",
+                                                          "w3.org", "cookielaw", "iubenda",
+                                                          "googletagmanager", "stcrm.it")):
+            continue
+        seen_hosts.add(host)
+        websites.append({"host": host, "url": f"https://{host}", "pos": text.find(u)})
+
+    # Insert leads (zelfde logica als scrape-html-paste)
+    inserted = 0
+    duplicates = 0
+    errors = 0
+    details = []
+    for em_obj in emails:
+        em = em_obj["email"]
+        try:
+            existing = await db.taxatie_leads.find_one({"email_lower": em}, {"_id": 0, "id": 1})
+            if existing:
+                duplicates += 1
+                continue
+            website = ""
+            email_domain = em.split("@", 1)[1].lower()
+            for w in websites:
+                if email_domain in (w.get("host") or ""):
+                    website = w.get("url", "")
+                    break
+            if not website and websites:
+                # nearest pos
+                best = min(websites, key=lambda w: abs((w.get("pos") or 0) - em_obj["pos"]))
+                website = best.get("url", "")
+            domain_part = email_domain.split(".")[0]
+            name = " ".join(w.capitalize() for w in re.split(r"[-_]", domain_part) if w)
+            # TLD-fallback voor country
+            ct = (country or "").upper()
+            if not ct:
+                try:
+                    tld = em.rsplit(".", 1)[-1].lower()
+                    ct = {"fr": "FR", "be": "BE", "lu": "LU", "nl": "NL", "de": "DE",
+                          "it": "IT", "es": "ES", "ch": "CH", "at": "AT", "pl": "PL"}.get(tld, "")
+                except Exception:
+                    ct = ""
+            doc = {
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "email": em,
+                "email_lower": em,
+                "address": "",
+                "postcode": "",
+                "city": "",
+                "website": website,
+                "country": ct,
+                "source_site": f"brand-locator",
+                "source_url": url,
+                "dealer_id": "",
+                "status": "new",
+                "notes": f"Brand-locator scrape · {url[:80]}",
+                "sent_at": None,
+                "batch_id": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user_id,
+            }
+            await db.taxatie_leads.insert_one(doc)
+            inserted += 1
+            details.append({"email": em, "name": name, "website": website})
+        except Exception as e:
+            errors += 1
+            details.append({"email": em, "error": str(e)[:120]})
+
+    return {
+        "url": url,
+        "emails_found": len(emails),
+        "websites_found": len(websites),
+        "inserted": inserted,
+        "duplicates": duplicates,
+        "errors": errors,
+        "details": details[:30],
+    }
+
+
 def extract_from_html_paste(html: str, country: str = "", current_user_id: Optional[str] = None) -> dict:
     """Parse rauwe HTML (bv. View Source van Google search results, Pages Jaunes,
     Yamaha dealer-locator, etc.) → vind alle emails + bijhorende websites + namen.
