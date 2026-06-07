@@ -400,17 +400,40 @@ export default function LeadScraper() {
 
   const sendToMailer = () => {
     const filtered = leads.filter(l => selectedIds.size > 0 ? selectedIds.has(l.id) : l.status === 'new');
-    const emails = filtered.map(l => l.email);
-    if (emails.length === 0) { toast.error('Geen leads om naar bulk-mailer te sturen'); return; }
-    // Bepaal dominant land uit selectie zodat de mailer automatisch de juiste taal-template laadt
+    if (filtered.length === 0) { toast.error('Geen leads om naar bulk-mailer te sturen'); return; }
+    // Cap op max 100 per land (Gmail SMTP reputation-veilig)
+    const MAX_PER_COUNTRY = 100;
+    const perCountry = {};
+    const limited = [];
+    let droppedByCap = 0;
+    // Sorteer eerst: status=new bovenaan (verse leads krijgen prioriteit)
+    const sorted = [...filtered].sort((a, b) => {
+      if (a.status === 'new' && b.status !== 'new') return -1;
+      if (a.status !== 'new' && b.status === 'new') return 1;
+      return 0;
+    });
+    sorted.forEach(l => {
+      const c = countryOf(l);
+      perCountry[c] = (perCountry[c] || 0) + 1;
+      if (perCountry[c] <= MAX_PER_COUNTRY) {
+        limited.push(l);
+      } else {
+        droppedByCap++;
+      }
+    });
+    const emails = limited.map(l => l.email);
+    // Dominant land voor template selectie
     const countryCount = {};
-    filtered.forEach(l => {
+    limited.forEach(l => {
       const c = countryOf(l);
       countryCount[c] = (countryCount[c] || 0) + 1;
     });
     const dominantCountry = Object.entries(countryCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    if (droppedByCap > 0) {
+      toast.info(`Geknipt op max ${MAX_PER_COUNTRY} per land — ${droppedByCap} leads overgeslagen voor volgende batch (Gmail SMTP veilig).`);
+    }
     sessionStorage.setItem('lead_import_emails', emails.join('\n'));
-    sessionStorage.setItem('lead_import_ids', JSON.stringify(filtered.map(l => l.id)));
+    sessionStorage.setItem('lead_import_ids', JSON.stringify(limited.map(l => l.id)));
     sessionStorage.setItem('lead_import_country', dominantCountry);
     window.location.href = '/admin/taxatie-sales-mail?import=leads';
   };
@@ -910,8 +933,8 @@ export default function LeadScraper() {
             <Button variant="outline" size="sm" onClick={copyAllNewEmails} data-testid="copy-new-btn">
               Kopieer alle &apos;nieuwe&apos;
             </Button>
-            <Button onClick={sendToMailer} className="bg-red-600 hover:bg-red-700 text-white" size="sm" data-testid="send-to-mailer-btn">
-              <Mail className="w-4 h-4 mr-1" />Naar Bulk Mailer →
+            <Button onClick={sendToMailer} className="bg-red-600 hover:bg-red-700 text-white" size="sm" data-testid="send-to-mailer-btn" title="Max 100 per land — Gmail SMTP reputatie-veilig">
+              <Mail className="w-4 h-4 mr-1" />Naar Bulk Mailer → <span className="text-[10px] opacity-80 ml-1">max 100/land</span>
             </Button>
             <Button variant="ghost" size="sm" onClick={deleteSelected} disabled={selectedIds.size === 0} className="text-red-600 hover:bg-red-50" data-testid="delete-selected-btn">
               <Trash2 className="w-4 h-4 mr-1" />Verwijder {selectedIds.size > 0 ? selectedIds.size : ''}
