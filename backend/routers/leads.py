@@ -294,17 +294,41 @@ FOREIGN_SEED_LEADS = [
 ]
 
 
-@router.post("/admin/leads/import-foreign-seed")
-async def import_foreign_seed_leads(current_user: dict = Depends(get_current_user)):
-    """Importeer een statische startlijst van geverifieerde FR/BE motor-dealers met emails.
-    Idempotent: bestaande e-mails worden overgeslagen (dedup op email_lower)."""
-    _require_admin(current_user)
-    await _ensure_indexes()
+# Italiaanse dealers — geverifieerd via officiële websites (Feb 2026).
+ITALIAN_SEED_LEADS = [
+    {"name": "Euroscooter Moto", "email": "info@euroscootermoto.it", "city": "Roma", "postcode": "00189",
+     "address": "Via Cassia 911/919", "website": "https://www.euroscootermoto.it", "country": "IT",
+     "source_site": "euroscootermoto.it", "notes": "Rivenditore Ufficiale Honda Roma"},
+    {"name": "Honda Moto Roma — Mega Store Tiburtina", "email": "commerciale.tiburtina@hondamotoroma.com",
+     "city": "Roma", "postcode": "", "address": "Via Tiburtina, 1166/1168",
+     "website": "https://www.hondamotoroma.com", "country": "IT",
+     "source_site": "hondamotoroma.com", "notes": "Honda Mega Store"},
+    {"name": "Honda Moto Roma — Store Gregorio", "email": "commerciale.gregorio@hondamotoroma.com",
+     "city": "Roma", "postcode": "", "address": "Via Gregorio VII, 374/380",
+     "website": "https://www.hondamotoroma.com", "country": "IT",
+     "source_site": "hondamotoroma.com", "notes": "Honda Store Roma"},
+    {"name": "Honda Moto Roma — Store Appia", "email": "commerciale.appia@hondamotoroma.com",
+     "city": "Roma", "postcode": "", "address": "Via Appia Nuova, 606",
+     "website": "https://www.hondamotoroma.com", "country": "IT",
+     "source_site": "hondamotoroma.com", "notes": "Honda Store Roma Appia"},
+    {"name": "La Moto Roma Nord", "email": "info.romanord@lamotoroma.com", "city": "Roma", "postcode": "00135",
+     "address": "Via Pieve di Cadore, 57", "website": "https://www.lamotoroma.com", "country": "IT",
+     "source_site": "lamotoroma.com", "notes": "Concessionaria Triumph Roma Nord"},
+    {"name": "La Moto Roma Ovest", "email": "info@lamotoroma.com", "city": "Roma", "postcode": "00146",
+     "address": "LungoTevere degli Inventori, 110", "website": "https://www.lamotoroma.com", "country": "IT",
+     "source_site": "lamotoroma.com", "notes": "Concessionaria multimarca"},
+    {"name": "Pogliani", "email": "infomotoescooter@pogliani.com", "city": "Sesto San Giovanni",
+     "postcode": "20099", "address": "Viale Casiraghi 427", "website": "https://pogliani.com",
+     "country": "IT", "source_site": "pogliani.com", "notes": "Specialisti 2 ruote Milano dal 1952"},
+]
 
+
+async def _import_seed(seed_list, current_user: dict, default_label: str) -> dict:
+    """Generieke importer voor seed-lijsten met dedup op email_lower."""
     inserted = 0
     duplicates = 0
     skipped = 0
-    for lead in FOREIGN_SEED_LEADS:
+    for lead in seed_list:
         email = (lead.get("email") or "").strip().lower()
         if not email or not EMAIL_RE.match(email):
             skipped += 1
@@ -323,7 +347,7 @@ async def import_foreign_seed_leads(current_user: dict = Depends(get_current_use
             "city": lead.get("city") or "",
             "website": lead.get("website") or "",
             "country": lead.get("country") or "",
-            "source_site": lead.get("source_site") or "foreign-seed",
+            "source_site": lead.get("source_site") or default_label,
             "source_url": "",
             "dealer_id": "",
             "status": "new",
@@ -336,13 +360,29 @@ async def import_foreign_seed_leads(current_user: dict = Depends(get_current_use
         }
         await db.taxatie_leads.insert_one(doc)
         inserted += 1
-
     return {
-        "total_in_seed": len(FOREIGN_SEED_LEADS),
+        "total_in_seed": len(seed_list),
         "inserted": inserted,
         "duplicates": duplicates,
         "skipped_no_email": skipped,
     }
+
+
+@router.post("/admin/leads/import-foreign-seed")
+async def import_foreign_seed_leads(current_user: dict = Depends(get_current_user)):
+    """Importeer een statische startlijst van geverifieerde FR/BE motor-dealers met emails.
+    Idempotent: bestaande e-mails worden overgeslagen (dedup op email_lower)."""
+    _require_admin(current_user)
+    await _ensure_indexes()
+    return await _import_seed(FOREIGN_SEED_LEADS, current_user, "foreign-seed")
+
+
+@router.post("/admin/leads/import-italian-seed")
+async def import_italian_seed_leads(current_user: dict = Depends(get_current_user)):
+    """Importeer een statische startlijst van geverifieerde Italiaanse motor-dealers met emails."""
+    _require_admin(current_user)
+    await _ensure_indexes()
+    return await _import_seed(ITALIAN_SEED_LEADS, current_user, "italian-seed")
 
 
 # Generic email-extractor patroon — werkt voor Pages Jaunes, Google Maps copy-paste,

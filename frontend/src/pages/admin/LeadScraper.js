@@ -144,6 +144,24 @@ export default function LeadScraper() {
     setAutoBusy(false);
   };
 
+  const importItalianSeed = async () => {
+    if (!window.confirm('Importeer geverifieerde Italiaanse motor-dealers met e-mail?\n\nEuroscooter Roma, Honda Moto Roma (3 stores), La Moto Roma Nord & Ovest, Pogliani Milano.')) return;
+    setAutoBusy(true);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/import-italian-seed`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const d = r.data;
+      toast.success(`✅ IT seed klaar: ${d.inserted} nieuw, ${d.duplicates} duplicaten genegeerd (totaal: ${d.total_in_seed})`);
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setAutoBusy(false);
+  };
+
   const [genericText, setGenericText] = useState('');
   const [genericBusy, setGenericBusy] = useState(false);
   const submitGenericPaste = async () => {
@@ -311,6 +329,26 @@ export default function LeadScraper() {
                 data-testid="import-foreign-seed-btn"
               >
                 {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer 6 FR/BE dealers</>}
+              </Button>
+            </div>
+
+            <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4 space-y-3" data-testid="italian-seed-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🇮🇹</span>
+                <h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">Italiaanse leveranciers</h3>
+              </div>
+              <p className="text-sm text-green-800">
+                Geverifieerde startlijst met <strong>7 Italiaanse motor-dealers</strong> (Euroscooter Roma,
+                Honda Moto Roma — 3 vestigingen, La Moto Roma Nord/Ovest, Pogliani Milano).
+                Verzamel meer via de plak-modus hieronder met paginegialle.it.
+              </p>
+              <Button
+                onClick={importItalianSeed}
+                disabled={autoBusy}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold w-full sm:w-auto"
+                data-testid="import-italian-seed-btn"
+              >
+                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer 7 Italiaanse dealers</>}
               </Button>
             </div>
 

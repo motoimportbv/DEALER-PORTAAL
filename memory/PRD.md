@@ -20,6 +20,10 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Italiaanse leveranciers — outreach compleet** (Feb 2026):
+  1. **Italian seed knop** in `/admin/lead-scraper` (groen 🇮🇹 blok) — `POST /api/admin/leads/import-italian-seed` importeert 7 geverifieerde IT motor-dealers: Euroscooter Moto (Roma), Honda Moto Roma — 3 vestigingen (Tiburtina, Gregorio, Appia), La Moto Roma Nord, La Moto Roma Ovest, Pogliani (Sesto San Giovanni MI). Idempotent via email_lower dedup, helper `_import_seed()` shared met FR/BE seed.
+  2. **Italiaanse mail-template** toegevoegd aan `/admin/taxatie-sales-mail` als 4e vlag-tegel 🇮🇹 "Concessionario outreach — Italiano". Volledig vertaald: subject, plain-text en HTML body met groen Italiaans thema. Link naar `?lang=it` (al bestaande Italiaanse landing-page i18n keys).
+  3. End-to-end getest: 7 inserted ✅, 0 duplicates op 2e call ✅, template-switch wijzigt onderwerp correct ✅.
 - **FR/BE lead-import in Lead Scraper** (Feb 2026):
   1. **Foreign seed knop** — `POST /api/admin/leads/import-foreign-seed` importeert 6 geverifieerde FR/BE motor-dealers met emails: KM Motos (Lontzen, BE), CLM Motos (Seraing, BE), La Maison de la Moto (Mougins, FR), Planet Racing (FR), Sud Moto (Uccle, BE), Zone Rouge (Wallonië). Idempotent via email_lower dedup.
   2. **Generieke paste-flow** — `POST /api/admin/leads/scrape-paste-generic` accepteert ruwe tekst van Pages Jaunes, Google Maps, websites, etc. Regex-extractor vindt alle e-mails. Spam-filter sluit `google.com`, `facebook.com`, `noreply` etc. uit. Bedrijfsnaam wordt geraden uit email-domain (bv. `info@motodupont-paris.fr` → "Motodupont Paris"). Land wordt afgeleid uit TLD (.fr → FR, .be → BE). Postcode + plaats wordt 1× per batch geraden.

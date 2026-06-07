@@ -285,6 +285,78 @@ const SUPPLIER_FR_HTML = `<div style="font-family: -apple-system, BlinkMacSystem
   </div>
 </div>`;
 
+const SUPPLIER_IT_SUBJECT = "Vendi le tue moto a oltre 100 rivenditori olandesi — Moto Import B.V.";
+
+const SUPPLIER_IT_PLAIN = `Buongiorno,
+
+Sono Sandro di Moto Import B.V. — siamo alla ricerca di concessionari moto in Italia che vogliano vendere il loro stock alla nostra rete di rivenditori olandesi.
+
+COSA OFFRIAMO:
+• Piattaforma con oltre 100 rivenditori moto olandesi — vedranno le tue moto immediatamente
+• 100% gratuito — nessun abbonamento, nessuna commissione. Tu fissi il prezzo per Moto Import B.V.
+• Pagamento tramite bonifico entro 1 settimana
+• Veniamo noi a ritirare la moto da te
+• Moto Import B.V. si occupa di tutto: RDW, BPM olandese, immatricolazione e trasporto
+• Niente IVA olandese né documenti d'importazione da gestire
+
+COME FUNZIONA:
+1. Iscrizione gratuita: https://www.motoimportbv.nl/register/supplier?lang=it
+2. Carica le tue moto con il prezzo per Moto Import B.V.
+3. Veniamo a ritirarle e ti paghiamo entro 1 settimana
+
+PREFERISCI PARLARNE PRIMA?
+> Tel: +31 6 24264861
+> WhatsApp: +31 6 24264861
+> Email: motoimportbv@gmail.com
+
+Cordiali saluti,
+Il team Moto Import B.V.
+Horsterhoekweg 11, 7433 SV Schalkhaar — Paesi Bassi
+KVK 94622086
+www.motoimportbv.nl
+`;
+
+const SUPPLIER_IT_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafafa; color: #18181b;">
+  <div style="background: linear-gradient(135deg, #18181b 0%, #166534 100%); color: white; padding: 36px 28px;">
+    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #86efac; text-transform: uppercase;">Per concessionari moto in Italia</p>
+    <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 900; line-height: 1.1;">Vendi le tue moto a 100+ rivenditori olandesi.</h1>
+    <p style="margin: 0; color: #bbf7d0; font-size: 15px;">Veniamo noi a ritirarle, ci occupiamo di tutto, pagamento entro 1 settimana.</p>
+  </div>
+  <div style="background: white; padding: 28px;">
+    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Buongiorno,</p>
+    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+      Siamo <strong>Moto Import B.V.</strong> — cerchiamo concessionari moto in Italia che vogliano vendere il loro stock alla nostra rete di rivenditori olandesi. Niente complicazioni di export, niente attese, nessuna sorpresa.
+    </p>
+    <h3 style="margin: 24px 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b;">Cosa ti offriamo</h3>
+    <ul style="margin: 0 0 24px; padding-left: 18px; font-size: 14px; line-height: 1.8; color: #3f3f46;">
+      <li><strong>Oltre 100 rivenditori olandesi</strong> vedranno le tue moto immediatamente</li>
+      <li><strong>100% gratuito</strong> — nessun abbonamento, nessuna commissione. Tu fissi il prezzo per Moto Import B.V.</li>
+      <li><strong>Pagamento entro 1 settimana</strong> tramite bonifico bancario</li>
+      <li><strong>Veniamo noi a ritirare la moto</strong> — RDW, BPM e trasporto: ci pensiamo noi</li>
+      <li><strong>Nessuna burocrazia olandese</strong> da gestire da parte tua</li>
+    </ul>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="https://www.motoimportbv.nl/register/supplier?lang=it" style="display: inline-block; background: #16a34a; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;">
+        Crea un account gratuito →
+      </a>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #71717a;">senza carta di credito · accesso immediato</p>
+    </div>
+    <div style="margin: 32px 0 0; padding: 18px; background: #18181b; border-radius: 8px; text-align: center;">
+      <p style="margin: 0 0 6px; font-size: 13px; color: #fafafa;">Preferisci chiamarci?</p>
+      <p style="margin: 0; font-size: 16px; font-weight: 700;">
+        <a href="tel:+31624264861" style="color: #86efac; text-decoration: none; margin: 0 12px;">📞 +31 6 24264861</a>
+        <a href="https://wa.me/31624264861" style="color: #86efac; text-decoration: none; margin: 0 12px;">💬 WhatsApp</a>
+      </p>
+    </div>
+  </div>
+  <div style="background: white; padding: 16px 28px 28px; font-size: 13px; color: #3f3f46;">
+    <p style="margin: 16px 0 4px;">Cordiali saluti,</p>
+    <p style="margin: 0 0 4px; font-weight: 700; color: #18181b;">Il team Moto Import B.V.</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">Horsterhoekweg 11, 7433 SV Schalkhaar — Paesi Bassi</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">KVK 94622086 · <a href="https://www.motoimportbv.nl" style="color: #16a34a;">www.motoimportbv.nl</a></p>
+  </div>
+</div>`;
+
 const TEMPLATES = {
   bpm: {
     label: 'BPM-taxatie — NL motorzaken',
@@ -308,6 +380,14 @@ const TEMPLATES = {
     subject: SUPPLIER_FR_SUBJECT,
     plain: SUPPLIER_FR_PLAIN,
     html: SUPPLIER_FR_HTML,
+    showFlyer: false,
+  },
+  supplier_it: {
+    label: 'Concessionario outreach — Italiano',
+    flag: '🇮🇹',
+    subject: SUPPLIER_IT_SUBJECT,
+    plain: SUPPLIER_IT_PLAIN,
+    html: SUPPLIER_IT_HTML,
     showFlyer: false,
   },
 };
