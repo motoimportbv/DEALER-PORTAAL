@@ -283,17 +283,17 @@ export default function LeadScraper() {
     if (next.has(id)) next.delete(id); else next.add(id);
     setSelectedIds(next);
   };
-  // Bucket land-codes — alles wat geen NL/FR/BE/IT is gaat naar OTHER
+  // Bucket land-codes — alles wat geen NL/FR/BE/IT/DE is gaat naar OTHER
   const countryOf = (l) => {
     const c = (l.country || '').toUpperCase();
-    if (['NL', 'FR', 'BE', 'IT'].includes(c)) return c;
+    if (['NL', 'FR', 'BE', 'IT', 'DE'].includes(c)) return c;
     // Fallback: leeg country → NL (oude motoroccasion.nl leads)
     if (!c && (l.source_site || '').includes('motoroccasion')) return 'NL';
     if (!c) return 'NL';
     return 'OTHER';
   };
   const countryCounts = useMemo(() => {
-    const counts = { ALL: leads.length, NL: 0, FR: 0, BE: 0, IT: 0, OTHER: 0 };
+    const counts = { ALL: leads.length, NL: 0, FR: 0, BE: 0, IT: 0, DE: 0, OTHER: 0 };
     leads.forEach(l => { counts[countryOf(l)] = (counts[countryOf(l)] || 0) + 1; });
     return counts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -755,6 +755,7 @@ export default function LeadScraper() {
               { key: 'FR', flag: '🇫🇷', label: 'Frankrijk' },
               { key: 'BE', flag: '🇧🇪', label: 'België' },
               { key: 'IT', flag: '🇮🇹', label: 'Italië' },
+              { key: 'DE', flag: '🇩🇪', label: 'Duitsland' },
               { key: 'OTHER', flag: '🌍', label: 'Overig' },
             ].map(t => (
               <button
@@ -805,7 +806,7 @@ export default function LeadScraper() {
                 <tbody>
                   {visibleLeads.map((lead) => {
                     const ct = countryOf(lead);
-                    const flag = { NL: '🇳🇱', FR: '🇫🇷', BE: '🇧🇪', IT: '🇮🇹', OTHER: '🌍' }[ct] || '🌍';
+                    const flag = { NL: '🇳🇱', FR: '🇫🇷', BE: '🇧🇪', IT: '🇮🇹', DE: '🇩🇪', OTHER: '🌍' }[ct] || '🌍';
                     return (
                     <tr key={lead.id} className="border-b hover:bg-zinc-50/50" data-testid={`lead-row-${lead.id}`}>
                       <td className="px-3 py-2">

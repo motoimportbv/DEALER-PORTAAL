@@ -357,6 +357,78 @@ const SUPPLIER_IT_HTML = `<div style="font-family: -apple-system, BlinkMacSystem
   </div>
 </div>`;
 
+const SUPPLIER_DE_SUBJECT = "Verkaufen Sie Ihre Motorräder an 100+ niederländische Händler — Moto Import B.V.";
+
+const SUPPLIER_DE_PLAIN = `Guten Tag,
+
+Ich bin Sandro von Moto Import B.V. — wir suchen Motorradhändler in Deutschland, die ihren Bestand an unser niederländisches Händlernetzwerk verkaufen möchten.
+
+WAS WIR BIETEN:
+• Plattform mit 100+ niederländischen Motorradhändlern — Ihre Motorräder werden sofort sichtbar
+• 100% kostenlos — keine Abo-Gebühren, keine Provision. Sie bestimmen den Preis für Moto Import B.V.
+• Zahlung per Banküberweisung innerhalb von 1 Woche
+• Wir holen das Motorrad bei Ihnen ab
+• Moto Import B.V. regelt alles: RDW, niederländische BPM, Zulassung und Transport
+• Keine niederländische MwSt. oder Importpapiere für Sie
+
+SO FUNKTIONIERT'S:
+1. Kostenlose Registrierung: https://www.motoimportbv.nl/register/supplier?lang=de
+2. Laden Sie Ihre Motorräder mit dem Preis für Moto Import B.V. hoch
+3. Wir holen sie ab und bezahlen Sie innerhalb von 1 Woche
+
+LIEBER ZUERST SPRECHEN?
+> Tel: +31 6 24264861
+> WhatsApp: +31 6 24264861
+> Email: motoimportbv@gmail.com
+
+Mit freundlichen Grüßen,
+Das Moto Import B.V. Team
+Horsterhoekweg 11, 7433 SV Schalkhaar — Niederlande
+KVK 94622086
+www.motoimportbv.nl
+`;
+
+const SUPPLIER_DE_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafafa; color: #18181b;">
+  <div style="background: linear-gradient(135deg, #18181b 0%, #b91c1c 100%); color: white; padding: 36px 28px;">
+    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #fecaca; text-transform: uppercase;">Für Motorradhändler in Deutschland</p>
+    <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 900; line-height: 1.1;">Verkaufen Sie Ihre Motorräder an 100+ niederländische Händler.</h1>
+    <p style="margin: 0; color: #fecaca; font-size: 15px;">Wir holen sie ab, regeln alles, Zahlung innerhalb von 1 Woche.</p>
+  </div>
+  <div style="background: white; padding: 28px;">
+    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Guten Tag,</p>
+    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+      Wir sind <strong>Moto Import B.V.</strong> — wir suchen Motorradhändler in Deutschland, die ihren Bestand an unser niederländisches Händlernetzwerk verkaufen möchten. Keine Export-Komplikationen, keine Wartezeiten, keine Überraschungen.
+    </p>
+    <h3 style="margin: 24px 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b;">Was wir Ihnen bieten</h3>
+    <ul style="margin: 0 0 24px; padding-left: 18px; font-size: 14px; line-height: 1.8; color: #3f3f46;">
+      <li><strong>100+ niederländische Händler</strong> sehen Ihre Motorräder sofort</li>
+      <li><strong>100% kostenlos</strong> — keine Abo-Gebühren, keine Provision. Sie bestimmen den Preis für Moto Import B.V.</li>
+      <li><strong>Zahlung innerhalb von 1 Woche</strong> per Banküberweisung</li>
+      <li><strong>Wir holen das Motorrad bei Ihnen ab</strong> — RDW, BPM und Transport: wir regeln das</li>
+      <li><strong>Keine niederländische Bürokratie</strong> für Sie</li>
+    </ul>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="https://www.motoimportbv.nl/register/supplier?lang=de" style="display: inline-block; background: #b91c1c; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;">
+        Kostenloses Konto erstellen →
+      </a>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #71717a;">ohne Kreditkarte · sofortiger Zugang</p>
+    </div>
+    <div style="margin: 32px 0 0; padding: 18px; background: #18181b; border-radius: 8px; text-align: center;">
+      <p style="margin: 0 0 6px; font-size: 13px; color: #fafafa;">Lieber anrufen?</p>
+      <p style="margin: 0; font-size: 16px; font-weight: 700;">
+        <a href="tel:+31624264861" style="color: #fecaca; text-decoration: none; margin: 0 12px;">📞 +31 6 24264861</a>
+        <a href="https://wa.me/31624264861" style="color: #fecaca; text-decoration: none; margin: 0 12px;">💬 WhatsApp</a>
+      </p>
+    </div>
+  </div>
+  <div style="background: white; padding: 16px 28px 28px; font-size: 13px; color: #3f3f46;">
+    <p style="margin: 16px 0 4px;">Mit freundlichen Grüßen,</p>
+    <p style="margin: 0 0 4px; font-weight: 700; color: #18181b;">Das Moto Import B.V. Team</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">Horsterhoekweg 11, 7433 SV Schalkhaar — Niederlande</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">KVK 94622086 · <a href="https://www.motoimportbv.nl" style="color: #b91c1c;">www.motoimportbv.nl</a></p>
+  </div>
+</div>`;
+
 const TEMPLATES = {
   bpm: {
     label: 'BPM-taxatie — NL motorzaken',
@@ -388,6 +460,14 @@ const TEMPLATES = {
     subject: SUPPLIER_IT_SUBJECT,
     plain: SUPPLIER_IT_PLAIN,
     html: SUPPLIER_IT_HTML,
+    showFlyer: false,
+  },
+  supplier_de: {
+    label: 'Lieferant outreach — Deutsch',
+    flag: '🇩🇪',
+    subject: SUPPLIER_DE_SUBJECT,
+    plain: SUPPLIER_DE_PLAIN,
+    html: SUPPLIER_DE_HTML,
     showFlyer: false,
   },
 };
@@ -441,6 +521,7 @@ export default function TaxatieSalesMail() {
           BE: 'supplier_nl',
           FR: 'supplier_fr',
           IT: 'supplier_it',
+          DE: 'supplier_de',
         };
         const matched = COUNTRY_TO_TEMPLATE[country];
         if (matched && TEMPLATES[matched]) {
