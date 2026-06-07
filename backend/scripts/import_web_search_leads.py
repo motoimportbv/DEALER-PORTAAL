@@ -1055,6 +1055,31 @@ WEB_SEARCH_LEADS = [
     {"name": "MotoConti Milmort", "email": "info@moto-conti.be", "city": "Milmort",
      "website": "https://www.moto-conti.be", "country": "BE",
      "notes": "Liège-regio motor occasion"},
+
+    # ===== Batch 44 (Feb 2026 — Bayern Allgäu + IT Lodi + BE Mons) =====
+    {"name": "Motorrad Ressler Niederrieden", "email": "info@motorrad-ressler.de",
+     "city": "Niederrieden", "website": "https://www.motorrad-ressler.de", "country": "DE",
+     "notes": "Yamaha/Beta Allgäu - voorheen Memmingerberg"},
+    {"name": "Motorrad Kiermaier Landshut", "email": "info@motorrad-kiermaier.de",
+     "city": "Landshut", "website": "https://www.motorrad-kiermaier.de", "country": "DE",
+     "notes": "Landshut motor dealer"},
+    {"name": "Motorradhaus Geisenhofer Sulzberg", "email": "motorrad.geisenhofer@t-online.de",
+     "city": "Sulzberg", "website": "https://www.motorrad-geisenhofer.de", "country": "DE",
+     "notes": "Suzuki/Honda Allgäu"},
+    {"name": "Motorradhaus Gruber Weiler", "email": "info@motorradhaus-gruber.de",
+     "city": "Weiler", "website": "https://www.motorrad-gruber.de", "country": "DE",
+     "notes": "Honda+Yamaha Allgäu"},
+    {"name": "Valentino Moto Lodi (CFMOTO)", "email": "info@valentinomoto.it", "city": "Lodi",
+     "website": "https://cfmotoitaly.it/concessionari/", "country": "IT",
+     "notes": "CFMOTO Lombardia"},
+    {"name": "BMW Louyet Mons", "email": "mons@louyet.be", "city": "Mons",
+     "website": "https://louyet.bmw.be/fr/Mons", "country": "BE",
+     "notes": "BMW Motorrad Mons"},
+
+    # ===== Batch 45 (Feb 2026 — laatste) =====
+    {"name": "Motorama BE", "email": "info@motorama.be", "city": "België",
+     "website": "https://www.motorama.be", "country": "BE",
+     "notes": "Motor dealer Vlaanderen"},
 ]
 
 
