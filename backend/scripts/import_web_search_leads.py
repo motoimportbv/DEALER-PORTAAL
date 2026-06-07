@@ -843,6 +843,61 @@ WEB_SEARCH_LEADS = [
     {"name": "Lorenz GmbH Ludwigsburg", "email": "info@zweirad-lorenz.de",
      "city": "Ludwigsburg", "website": "https://www.zweirad-lorenz.de", "country": "DE",
      "notes": "Zweirad Lorenz"},
+
+    # ===== Batch 27 (Feb 2026 — Bodensee + Bavaria + Normandie) =====
+    {"name": "Mahle Zweiräder Ravensburg", "email": "info@mahle-zweiraeder.de",
+     "city": "Ravensburg", "website": "https://mahle-zweiraeder.de", "country": "DE",
+     "notes": "BMW Motorrad Bodensee-regio"},
+    {"name": "Zweiradwelt Ravensburg", "email": "info@zweiradwelt-ravensburg.de",
+     "city": "Ravensburg", "website": "https://zweiradwelt-ravensburg.de", "country": "DE",
+     "notes": "Ravensburg motor dealer"},
+    {"name": "Alpenmove Garmisch", "email": "info@alpenmove.de", "city": "Garmisch-Partenkirchen",
+     "website": "https://www.alpenmove.de", "country": "DE", "notes": "Segway & Motorrad Alpen"},
+    {"name": "Motorrad Zeislmeier Wasserburg", "email": "mechaniker@zeislmeier.de",
+     "city": "Wasserburg", "website": "https://www.motorrad-zeislmeier.de", "country": "DE",
+     "notes": "Wasserburg/Inn"},
+    {"name": "Rupp & Söhne Rosenheim", "email": "info@rupprosenheim.de", "city": "Rosenheim",
+     "website": "https://www.rupp-rosenheim.de", "country": "DE", "notes": "Rosenheim dealer"},
+    {"name": "Motorradwelt Auer", "email": "info@motorradwelt-auer.de", "city": "Bayern",
+     "website": "https://www.motorradwelt-auer.de", "country": "DE", "notes": "Bavaria moto dealer"},
+    {"name": "A.D. Pugliese BMW Motorrad Sicilia", "email": "usato.moto@adpugliese.bmw.it",
+     "city": "Melilli", "website": "https://www.adpugliese.it", "country": "IT",
+     "notes": "BMW Motorrad Caltanissetta/Ragusa/Agrigento"},
+    {"name": "M2ROO Caen", "email": "contact@m2roo.fr", "city": "Cormelles-le-Royal",
+     "website": "https://www.cf-moto.fr/moto/concessionnaires/m2roo", "country": "FR",
+     "notes": "CFMOTO Caen Normandie"},
+
+    # ===== Batch 28 (Feb 2026 — NRW + Centre-Val-de-Loire) =====
+    {"name": "Triumph Köln Ost (Löhmer)", "email": "verkauf@motorrad-loehmer.de",
+     "city": "Köln", "website": "https://triumph-koeln-ost.de", "country": "DE",
+     "notes": "Triumph Köln Ost"},
+    {"name": "BMW Motorrad Amplitude Motos Tours", "email": "contact-motos@amplitude.net.bmw.fr",
+     "city": "Chambray-lès-Tours", "postcode": "37170", "website": "https://axxia.fr",
+     "country": "FR", "notes": "66 rue Charles Coulomb"},
+    {"name": "BMW Motorrad Panel Bourges", "email": "bourges@panel.net.bmw.fr",
+     "city": "Saint-Doulchard", "postcode": "18230", "website": "https://axxia.fr",
+     "country": "FR", "notes": "Rue des Creuzettes"},
+    {"name": "BMW Motorrad Panel Châteauroux", "email": "chateauroux@panel.net.bmw.fr",
+     "city": "Châteauroux", "postcode": "36000", "website": "https://axxia.fr",
+     "country": "FR", "notes": "La Poterie Rocade Sud"},
+
+    # ===== Batch 29 (Feb 2026 — laatste finale ronde) =====
+    {"name": "Motorradbude Göttingen", "email": "info@motorradbude.de", "city": "Göttingen",
+     "postcode": "37075", "website": "https://www.motorradbude.de", "country": "DE",
+     "notes": "Hannoversche Str. 60"},
+    {"name": "Zweiradteam Viole Göttingen", "email": "info@zweiradteam-viole.de",
+     "city": "Göttingen", "postcode": "37079", "website": "https://www.zweiradteam-viole.de",
+     "country": "DE", "notes": "Industriestr. 18"},
+    {"name": "Sembenini Moto Trento", "email": "info@sembeninimotoverona.it",
+     "city": "Trento", "website": "https://www.sembeninimoto.it", "country": "IT",
+     "notes": "Trento/Verona moto"},
+    {"name": "Trentino in Moto", "email": "info@trentinoinmoto.com", "city": "Trento",
+     "website": "https://www.trentinoinmoto.it", "country": "IT", "notes": "CIO Trentino"},
+
+    # ===== Batch 30 (Feb 2026 — final final) =====
+    {"name": "Kosmoto Olbia", "email": "kosmoto1@libero.it", "city": "Olbia",
+     "postcode": "07026", "website": "https://kosmoto-olbia-s-r-l.webnode.it",
+     "country": "IT", "notes": "Honda Sardegna - Via D'Annunzio 67"},
 ]
 
 
