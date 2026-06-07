@@ -86,11 +86,24 @@ export default function AdminTaxatieAanvragen() {
     }
   };
 
-  const startBpm = (a) => {
-    if (a.customer_id) {
-      navigate(`/admin/taxatie-programma?prefill_customer=${a.customer_id}`);
-    } else {
-      toast.error('Geen klant gekoppeld aan deze aanvraag');
+  const startBpm = async (a) => {
+    try {
+      const r = await axios.post(
+        `${API}/admin/taxatie-aanvragen/${a.id}/start-bpm`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (r.data?.existing) {
+        toast.success('Bestaand BPM-verslag geopend');
+      } else {
+        toast.success('Nieuw BPM-verslag aangemaakt met gegevens uit aanvraag');
+      }
+      // Refresh aanvragen-lijst (status is nu in_behandeling)
+      fetchData?.();
+      // Navigeer naar de taxatie zelf
+      navigate(`/admin/taxatie-programma?id=${r.data.id}`);
+    } catch (e) {
+      toast.error('Kon BPM-taxatie niet starten: ' + (e.response?.data?.detail || e.message));
     }
   };
 
@@ -472,11 +485,9 @@ function DetailModal({ aanvraag, onClose, onUpdateStatus, onDelete, onStartBpm, 
               </select>
             </div>
             <div className="flex gap-2">
-              {a.customer_id && (
-                <Button onClick={onStartBpm} className="bg-red-600 hover:bg-red-700 text-white" data-testid="start-bpm-btn">
-                  <FileText className="w-4 h-4 mr-2" />Start BPM Taxatie
-                </Button>
-              )}
+              <Button onClick={onStartBpm} className="bg-red-600 hover:bg-red-700 text-white" data-testid="start-bpm-btn">
+                <FileText className="w-4 h-4 mr-2" />Start BPM Taxatie
+              </Button>
               <Button variant="outline" onClick={onDelete} className="text-red-600 border-red-200 hover:bg-red-50" data-testid="delete-btn">
                 <Trash2 className="w-4 h-4 mr-2" />Verwijderen
               </Button>

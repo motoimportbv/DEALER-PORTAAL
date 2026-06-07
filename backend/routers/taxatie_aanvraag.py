@@ -688,6 +688,153 @@ async def get_aanvraag(aanvraag_id: str, current_user: dict = Depends(get_curren
     return doc
 
 
+@router.post("/admin/taxatie-aanvragen/{aanvraag_id}/start-bpm")
+async def start_bpm_from_aanvraag(
+    aanvraag_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Maak (of open bestaande) BPM-taxatie vanuit een taxatie-aanvraag.
+
+    - Existing match: gebruikt `source_aanvraag_id` om duplicaten te voorkomen.
+    - Nieuwe taxatie: vooringevulde klant/voertuig data + foto's read-only meegekoppeld.
+    - Zet aanvraag-status automatisch op `in_behandeling`.
+    - Klant wordt geüpsert in `customers` (gebeurt al bij aanvraag-submit, dubbel veilig).
+    """
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    aanvraag = await db.taxatie_aanvragen.find_one({"id": aanvraag_id}, {"_id": 0})
+    if not aanvraag:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+
+    # 1) Bestaande BPM-taxatie voor deze aanvraag? Open die.
+    existing = await db.taxatie_programma.find_one(
+        {"source_aanvraag_id": aanvraag_id}, {"_id": 0, "id": 1},
+    )
+    if existing:
+        # Toch aanvraag-status op in_behandeling zetten als ie nog "nieuw" was
+        if aanvraag.get("status") == "nieuw":
+            now_iso = datetime.now(timezone.utc).isoformat()
+            await db.taxatie_aanvragen.update_one(
+                {"id": aanvraag_id},
+                {"$set": {
+                    "status": "in_behandeling",
+                    "status_updated_at": now_iso,
+                    "status_updated_by_id": (current_user or {}).get("id"),
+                    "status_updated_by_email": (current_user or {}).get("email", ""),
+                    "updated_at": now_iso,
+                }},
+            )
+        return {"id": existing["id"], "existing": True}
+
+    # 2) Nieuw taxatie_programma record maken met aanvraag-data
+    from routers.taxatie import _stamp_owner
+
+    now = datetime.now(timezone.utc)
+    taxatie_id = str(uuid.uuid4())
+
+    # Adres-string voor customer_address veld (TaxatieProgramma slaat dat als 1 string op)
+    addr_parts = [aanvraag.get("adres", ""), aanvraag.get("woonplaats", "")]
+    customer_address = ", ".join(p for p in addr_parts if p)
+
+    # Files met read-only label
+    source_files = []
+    for f in (aanvraag.get("files") or []):
+        source_files.append({
+            "field": f.get("field", ""),
+            "url": f.get("url", ""),
+            "filename": f.get("filename", ""),
+            "original_name": f.get("original_name", ""),
+            "content_type": f.get("content_type", ""),
+        })
+
+    doc = {
+        "id": taxatie_id,
+        "taxatie_nummer": f"BPM-{now.strftime('%Y%m%d')}-{taxatie_id[:4].upper()}",
+        # Klantgegevens
+        "customer_name": aanvraag.get("bedrijfsnaam", ""),
+        "customer_phone": aanvraag.get("telefoon", ""),
+        "customer_email": aanvraag.get("email", ""),
+        "customer_address": customer_address,
+        # Voertuig
+        "license_plate": aanvraag.get("kenteken", ""),
+        "vin_number": "",
+        "brand": "",
+        "model": "",
+        "bouwjaar": "",
+        "mileage": 0,
+        "color": "",
+        "first_registration_date": "",
+        "fuel_type": "Benzine",
+        "cylinder_capacity": "",
+        "power_kw": 0,
+        "netto_catalogusprijs": 0,
+        "consumentenprijs": 0,
+        "koerslijst_waarde": 0,
+        "taxatie_inruil_waarde": 0,
+        # Beoordeling default
+        "damage_items": [],
+        "damage_notes": "",
+        "score_engine": 3, "score_frame": 3, "score_paint": 3, "score_tires": 3,
+        "score_brakes": 3, "score_electrics": 3, "score_exhaust": 3,
+        "score_suspension": 3, "score_chain_drive": 3, "score_general": 3,
+        # Notitie meenemen vanuit aanvraag-opmerking
+        "notes": aanvraag.get("opmerking", ""),
+        # BPM-stats (placeholders, worden later berekend)
+        "netto_bpm": 0,
+        "bpm_vermindering": 0,
+        "average_score": 3.0,
+        "condition_label": "Redelijk",
+        "status": "concept",
+        # Workflow-link
+        "source_aanvraag_id": aanvraag_id,
+        "source_aanvraag_ref": aanvraag.get("ref_nr", ""),
+        "source_aanvraag_files": source_files,
+        # RDW
+        "rdw_goedkeuring_datum": aanvraag.get("rdw_goedkeuring_datum", ""),
+        # Audit
+        "created_at": now.isoformat(),
+        "created_by": (current_user or {}).get("email", ""),
+    }
+    _stamp_owner(doc, current_user)
+
+    await db.taxatie_programma.insert_one(doc)
+
+    # 3) Klant upserten (defensief, mocht aanvraag-submit niet alles hebben gevuld)
+    try:
+        from routers.customers import upsert_customer_from_form
+        await upsert_customer_from_form(current_user, {
+            "name": aanvraag.get("bedrijfsnaam", ""),
+            "phone": aanvraag.get("telefoon", ""),
+            "email": aanvraag.get("email", ""),
+            "address": aanvraag.get("adres", ""),
+            "city": aanvraag.get("woonplaats", ""),
+            "rsin": aanvraag.get("rsin", ""),
+            "postcode": aanvraag.get("postcode", ""),
+            "contact_person": aanvraag.get("contactpersoon", ""),
+        })
+    except Exception as e:
+        logger.warning(f"start-bpm: upsert_customer faalde: {e}")
+
+    # 4) Aanvraag status → in_behandeling
+    now_iso = now.isoformat()
+    await db.taxatie_aanvragen.update_one(
+        {"id": aanvraag_id},
+        {"$set": {
+            "status": "in_behandeling",
+            "status_updated_at": now_iso,
+            "status_updated_by_id": (current_user or {}).get("id"),
+            "status_updated_by_email": (current_user or {}).get("email", ""),
+            "linked_taxatie_id": taxatie_id,
+            "updated_at": now_iso,
+        }},
+    )
+
+    return {"id": taxatie_id, "existing": False}
+
+
+
+
 @router.post("/admin/taxatie-aanvragen/{aanvraag_id}/status")
 async def update_status(
     aanvraag_id: str,

@@ -8,7 +8,8 @@ import axios from 'axios';
 import {
   Plus, Search, Printer, Trash2, Eye, Edit2, ExternalLink, Download,
   Star, Camera, Save, FileCheck, X, Loader2, Bike, Phone, MapPin, User, Mail,
-  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles, RefreshCw, Send, Inbox
+  Calculator, AlertTriangle, ArrowLeft, Shield, Wrench, Check, CheckSquare, Sparkles, RefreshCw, Send, Inbox,
+  Image as ImageIcon
 } from 'lucide-react';
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { MOTORCYCLE_DATABASE, MOTORCYCLE_BRANDS } from '../../data/motorcycleDatabase';
@@ -1741,6 +1742,37 @@ export default function TaxatieProgramma() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAllowed]);
 
+  // ===== Direct openen via ?id={taxatie_id} (vanaf /admin/taxatie-aanvragen "Start BPM Taxatie") =====
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const directId = params.get('id');
+    if (!directId || !isAllowed) return;
+    (async () => {
+      try {
+        const res = await axios.get(`${API}/taxatie-programma/${directId}`, { headers });
+        const t = res.data;
+        if (!t) { toast.error('Taxatie niet gevonden'); return; }
+        const items = t.damage_items?.length ? t.damage_items : userDamageItems.map(d => ({ ...d }));
+        setForm({ ...EMPTY_FORM, ...t, damage_items: items });
+        setEditingId(t.id);
+        setManualDamageAmount(t.manual_damage_amount ?? null);
+        setTargetBpm('');
+        setShowChecklist(false);
+        setView('form');
+        if (t.source_aanvraag_id) {
+          toast.success(`BPM-taxatie geopend (bron: ${t.source_aanvraag_ref || 'aanvraag'})`);
+        }
+        // Schoonmaken URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (e) {
+        toast.error('Kon taxatie niet laden: ' + (e.response?.data?.detail || e.message));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAllowed]);
+
+
+
   // ===== Verzending reminders (>5 dagen na post zonder BPM-ontvangst) =====
   const [reminders, setReminders] = useState({ count: 0, items: [] });
   const fetchReminders = useCallback(async () => {
@@ -2022,6 +2054,51 @@ export default function TaxatieProgramma() {
           </div>
 
           <BpmSummary form={form} overrideHerstelkosten={effectiveHerstel} />
+
+          {/* Bron-aanvraag foto's (alleen zichtbaar als deze taxatie via een aanvraag is gestart) */}
+          {Array.isArray(form.source_aanvraag_files) && form.source_aanvraag_files.length > 0 && (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6" data-testid="source-aanvraag-photos">
+              <div className="flex items-start justify-between mb-3 gap-2 flex-wrap">
+                <div>
+                  <h2 className="text-lg font-bold flex items-center gap-2 text-blue-900">
+                    <ImageIcon className="w-5 h-5" />Foto&apos;s uit aanvraag {form.source_aanvraag_ref || ''}
+                  </h2>
+                  <p className="text-xs text-blue-700 mt-1">
+                    {form.source_aanvraag_files.length} foto(&apos;s) van de dealer. Klik om groot te bekijken. <strong>Read-only</strong> — jij beslist welke je gebruikt voor het rapport.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2">
+                {form.source_aanvraag_files.map((f, idx) => {
+                  const isImage = (f.content_type || '').startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.original_name || f.filename || '');
+                  const slotLabel = f.field || '';
+                  const fullUrl = f.url?.startsWith('http') ? f.url : `${process.env.REACT_APP_BACKEND_URL}${f.url || ''}`;
+                  return (
+                    <a
+                      key={f.filename || idx}
+                      href={fullUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block rounded-lg overflow-hidden border bg-white hover:border-blue-500 hover:shadow-md transition"
+                      title={slotLabel || f.original_name}
+                      data-testid={`source-photo-${idx}`}
+                    >
+                      {isImage ? (
+                        <img src={fullUrl} alt={slotLabel} loading="lazy" className="w-full aspect-square object-cover" />
+                      ) : (
+                        <div className="w-full aspect-square flex items-center justify-center bg-zinc-100 text-zinc-500 text-xs p-2 text-center">{f.original_name || f.filename}</div>
+                      )}
+                      {slotLabel && (
+                        <div className="px-1.5 py-1 text-[10px] font-bold text-blue-800 bg-blue-100 truncate">
+                          {slotLabel}
+                        </div>
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Voertuiggegevens */}
           <div className="bg-white rounded-2xl border p-6">
