@@ -2056,7 +2056,30 @@ export default function TaxatieProgramma() {
           <BpmSummary form={form} overrideHerstelkosten={effectiveHerstel} />
 
           {/* Bron-aanvraag foto's (alleen zichtbaar als deze taxatie via een aanvraag is gestart) */}
-          {Array.isArray(form.source_aanvraag_files) && form.source_aanvraag_files.length > 0 && (
+          {Array.isArray(form.source_aanvraag_files) && form.source_aanvraag_files.length > 0 && (() => {
+            const fullUrlOf = (f) => f.url?.startsWith('http') ? f.url : `${process.env.REACT_APP_BACKEND_URL}${f.url || ''}`;
+            const photosSet = new Set(form.photos || []);
+            const isAttached = (f) => photosSet.has(fullUrlOf(f));
+            const attachOne = (f) => {
+              const url = fullUrlOf(f);
+              if (!url) return;
+              setForm(prev => prev.photos?.includes(url) ? prev : { ...prev, photos: [...(prev.photos || []), url] });
+              toast.success(`Foto "${f.field || f.original_name}" toegevoegd aan rapport`);
+            };
+            const attachAll = () => {
+              const urls = form.source_aanvraag_files.map(fullUrlOf).filter(Boolean);
+              setForm(prev => {
+                const existing = new Set(prev.photos || []);
+                const merged = [...(prev.photos || [])];
+                let added = 0;
+                urls.forEach(u => { if (!existing.has(u)) { merged.push(u); existing.add(u); added++; } });
+                toast.success(added ? `${added} foto's toegevoegd aan rapport` : 'Alle foto\'s zaten al in het rapport');
+                return { ...prev, photos: merged };
+              });
+            };
+            const attachedCount = form.source_aanvraag_files.filter(isAttached).length;
+            const allAttached = attachedCount === form.source_aanvraag_files.length;
+            return (
             <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6" data-testid="source-aanvraag-photos">
               <div className="flex items-start justify-between mb-3 gap-2 flex-wrap">
                 <div>
@@ -2064,41 +2087,64 @@ export default function TaxatieProgramma() {
                     <ImageIcon className="w-5 h-5" />Foto&apos;s uit aanvraag {form.source_aanvraag_ref || ''}
                   </h2>
                   <p className="text-xs text-blue-700 mt-1">
-                    {form.source_aanvraag_files.length} foto(&apos;s) van de dealer. Klik om groot te bekijken. <strong>Read-only</strong> — jij beslist welke je gebruikt voor het rapport.
+                    {form.source_aanvraag_files.length} foto(&apos;s) van de dealer · <strong>{attachedCount}</strong> in rapport. Klik op een foto om groot te bekijken, of op <strong>+</strong> om hem aan het rapport te koppelen.
                   </p>
                 </div>
+                <Button
+                  type="button"
+                  onClick={attachAll}
+                  disabled={allAttached}
+                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-xs"
+                  data-testid="attach-all-source-photos"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  {allAttached ? 'Alles gekoppeld' : 'Alle foto\u2019s koppelen aan rapport'}
+                </Button>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2">
                 {form.source_aanvraag_files.map((f, idx) => {
                   const isImage = (f.content_type || '').startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.original_name || f.filename || '');
                   const slotLabel = f.field || '';
-                  const fullUrl = f.url?.startsWith('http') ? f.url : `${process.env.REACT_APP_BACKEND_URL}${f.url || ''}`;
+                  const fullUrl = fullUrlOf(f);
+                  const attached = isAttached(f);
                   return (
-                    <a
-                      key={f.filename || idx}
-                      href={fullUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group block rounded-lg overflow-hidden border bg-white hover:border-blue-500 hover:shadow-md transition"
-                      title={slotLabel || f.original_name}
-                      data-testid={`source-photo-${idx}`}
-                    >
-                      {isImage ? (
-                        <img src={fullUrl} alt={slotLabel} loading="lazy" className="w-full aspect-square object-cover" />
-                      ) : (
-                        <div className="w-full aspect-square flex items-center justify-center bg-zinc-100 text-zinc-500 text-xs p-2 text-center">{f.original_name || f.filename}</div>
-                      )}
-                      {slotLabel && (
-                        <div className="px-1.5 py-1 text-[10px] font-bold text-blue-800 bg-blue-100 truncate">
-                          {slotLabel}
-                        </div>
-                      )}
-                    </a>
+                    <div key={f.filename || idx} className="relative group">
+                      <a
+                        href={fullUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block rounded-lg overflow-hidden border-2 bg-white hover:shadow-md transition ${attached ? 'border-green-500 ring-2 ring-green-200' : 'border-blue-200 hover:border-blue-500'}`}
+                        title={slotLabel || f.original_name}
+                        data-testid={`source-photo-${idx}`}
+                      >
+                        {isImage ? (
+                          <img src={fullUrl} alt={slotLabel} loading="lazy" className="w-full aspect-square object-cover" />
+                        ) : (
+                          <div className="w-full aspect-square flex items-center justify-center bg-zinc-100 text-zinc-500 text-xs p-2 text-center">{f.original_name || f.filename}</div>
+                        )}
+                        {slotLabel && (
+                          <div className="px-1.5 py-1 text-[10px] font-bold text-blue-800 bg-blue-100 truncate">
+                            {slotLabel}
+                          </div>
+                        )}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!attached) attachOne(f); }}
+                        disabled={attached}
+                        className={`absolute top-1 right-1 w-7 h-7 rounded-full shadow-md flex items-center justify-center text-white text-sm font-bold transition ${attached ? 'bg-green-600 cursor-default' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        title={attached ? 'Al in rapport' : 'Toevoegen aan rapport'}
+                        data-testid={`attach-source-photo-${idx}`}
+                      >
+                        {attached ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Voertuiggegevens */}
           <div className="bg-white rounded-2xl border p-6">
