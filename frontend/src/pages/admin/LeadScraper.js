@@ -324,6 +324,31 @@ export default function LeadScraper() {
     setCustomUrlBusy(false);
   };
 
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncEmail, setSyncEmail] = useState('Motoimportbv@gmail.com');
+  const [syncPassword, setSyncPassword] = useState('');
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const runSyncToProd = async () => {
+    if (!syncPassword) { toast.error('Wachtwoord verplicht'); return; }
+    setSyncBusy(true);
+    setSyncResult(null);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/sync-to-production`,
+        { prod_url: 'https://motoimportbv.nl', prod_email: syncEmail, prod_password: syncPassword },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 240000 }
+      );
+      setSyncResult(r.data);
+      const p = r.data.production_response || {};
+      toast.success(`✅ Productie sync: ${p.inserted || 0} nieuw · ${p.duplicates || 0} dup · ${p.invalid_emails || 0} ongeldig`);
+      setSyncPassword('');
+    } catch (e) {
+      toast.error('Sync mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setSyncBusy(false);
+  };
+
   const setReaction = async (leadId, reaction) => {
     try {
       await axios.patch(
@@ -952,6 +977,9 @@ export default function LeadScraper() {
             <Button onClick={sendToMailer} className="bg-red-600 hover:bg-red-700 text-white" size="sm" data-testid="send-to-mailer-btn" title="Max 100 per land — Gmail SMTP reputatie-veilig">
               <Mail className="w-4 h-4 mr-1" />Naar Bulk Mailer → <span className="text-[10px] opacity-80 ml-1">max 100/land</span>
             </Button>
+            <Button onClick={() => setShowSyncModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white" size="sm" data-testid="sync-to-prod-btn" title="Sync alle leads van preview naar motoimportbv.nl">
+              🚀 Sync naar Productie
+            </Button>
             <Button variant="ghost" size="sm" onClick={deleteSelected} disabled={selectedIds.size === 0} className="text-red-600 hover:bg-red-50" data-testid="delete-selected-btn">
               <Trash2 className="w-4 h-4 mr-1" />Verwijder {selectedIds.size > 0 ? selectedIds.size : ''}
             </Button>
@@ -1116,6 +1144,52 @@ export default function LeadScraper() {
           </span>
         </div>
       </div>
+
+      {/* Sync-to-Production Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => !syncBusy && setShowSyncModal(false)} data-testid="sync-modal">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-2">🚀 Sync alle leads naar productie</h3>
+            <p className="text-sm text-zinc-600 mb-4">Upload alle <strong>{leads.length}</strong> preview-leads naar <strong>motoimportbv.nl</strong>. Bestaande leads (zelfde email) worden overgeslagen — idempotent.</p>
+            <p className="text-xs text-amber-700 mb-4 bg-amber-50 border border-amber-200 rounded p-2">⚠️ Wachtwoord wordt alleen voor deze 1 call gebruikt en niet opgeslagen.</p>
+            <label className="block text-xs font-bold text-zinc-700 mb-1">Productie e-mail</label>
+            <input
+              type="email"
+              value={syncEmail}
+              onChange={(e) => setSyncEmail(e.target.value)}
+              className="w-full border-2 rounded px-3 py-2 text-sm mb-3"
+              data-testid="sync-email-input"
+            />
+            <label className="block text-xs font-bold text-zinc-700 mb-1">Productie wachtwoord</label>
+            <input
+              type="password"
+              value={syncPassword}
+              onChange={(e) => setSyncPassword(e.target.value)}
+              className="w-full border-2 rounded px-3 py-2 text-sm mb-4"
+              placeholder="(jouw wachtwoord op motoimportbv.nl)"
+              data-testid="sync-password-input"
+            />
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => setShowSyncModal(false)} variant="outline" size="sm" disabled={syncBusy}>Annuleer</Button>
+              <Button onClick={runSyncToProd} className="bg-purple-600 hover:bg-purple-700 text-white" size="sm" disabled={syncBusy || !syncPassword} data-testid="run-sync-btn">
+                {syncBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig met sync...</> : <>🚀 Start sync</>}
+              </Button>
+            </div>
+            {syncResult && (
+              <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded p-3 text-xs" data-testid="sync-result">
+                <p className="font-bold text-emerald-900">✅ Sync voltooid</p>
+                <p>📤 Geëxporteerd uit preview: <strong>{syncResult.total_exported_from_preview}</strong></p>
+                <p>📥 Productie response:</p>
+                <ul className="list-disc pl-5 mt-1">
+                  <li>{syncResult.production_response?.inserted || 0} nieuw ingevoegd</li>
+                  <li>{syncResult.production_response?.duplicates || 0} duplicaten</li>
+                  <li>{syncResult.production_response?.invalid_emails || 0} ongeldig</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

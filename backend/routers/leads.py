@@ -659,6 +659,72 @@ async def get_reaction_stats(current_user: dict = Depends(get_current_user)):
     return {"by_country": out}
 
 
+@router.post("/admin/leads/sync-to-production")
+async def sync_to_production(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """One-click migratie van preview leads naar productie via API.
+
+    Body: { prod_url?: "https://motoimportbv.nl", prod_email, prod_password }
+    User credentials worden NIET opgeslagen — alleen gebruikt voor deze 1 call.
+    """
+    _require_admin(current_user)
+    prod_url = ((body or {}).get("prod_url") or "https://motoimportbv.nl").rstrip("/")
+    prod_email = ((body or {}).get("prod_email") or "").strip()
+    prod_password = ((body or {}).get("prod_password") or "").strip()
+    if not prod_email or not prod_password:
+        raise HTTPException(status_code=400, detail="prod_email + prod_password vereist")
+
+    # Build CSV in-memory
+    import csv as _csv
+    import io as _io
+    leads_cursor = db.taxatie_leads.find({}, {"_id": 0})
+    all_leads = await leads_cursor.to_list(20000)
+    output = _io.StringIO()
+    writer = _csv.writer(output)
+    writer.writerow(["name", "email", "country", "address", "postcode", "city",
+                     "website", "status", "source", "reaction"])
+    for ld in all_leads:
+        writer.writerow([
+            ld.get("name", ""), ld.get("email", ""), ld.get("country", ""),
+            ld.get("address", ""), ld.get("postcode", ""), ld.get("city", ""),
+            ld.get("website", ""), ld.get("status", ""),
+            ld.get("source_site", ""), ld.get("reaction") or "",
+        ])
+    csv_data = output.getvalue().encode("utf-8")
+
+    # Login + upload via httpx
+    timeout = httpx.Timeout(180.0, connect=20.0)
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True,
+                                  headers={"User-Agent": "Mozilla/5.0 SyncBot"}) as client:
+        login_r = await client.post(prod_url + "/api/auth/login",
+                                     json={"email": prod_email, "password": prod_password})
+        if login_r.status_code != 200:
+            raise HTTPException(status_code=401,
+                detail=f"Productie login mislukt ({login_r.status_code}). Check email/wachtwoord.")
+        ldata = login_r.json()
+        token = ldata.get("access_token") or ldata.get("token")
+        if not token:
+            raise HTTPException(status_code=500, detail="Geen token in login-response")
+
+        files = {"file": ("sync_preview_to_prod.csv", csv_data, "text/csv")}
+        data_form = {"country": "", "source_label": "sync-from-preview"}
+        up_r = await client.post(prod_url + "/api/admin/leads/import-csv",
+            files=files, data=data_form,
+            headers={"Authorization": f"Bearer {token}"})
+        if up_r.status_code != 200:
+            raise HTTPException(status_code=502,
+                detail=f"Upload naar productie mislukt ({up_r.status_code}): {up_r.text[:300]}")
+        result = up_r.json()
+
+    return {
+        "ok": True,
+        "total_exported_from_preview": len(all_leads),
+        "production_response": result,
+    }
+
+
 @router.post("/admin/leads/import-csv")
 async def import_leads_csv(
     file: UploadFile = File(...),
