@@ -20,6 +20,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Voordelen-blok op aanmeldpagina buitenlandse leveranciers** (Feb 2026): `/register/supplier` toont nu prominent 5 krachtige voordelen (100+ NL dealers / 100% gratis / uitbetaling <1 week / wij regelen RDW+BPM+ophalen / geen NL-administratie) met purple icons in een opvallend kader boven het formulier. Alle 4 talen (NL/FR/DE/IT) hebben volledige vertalingen — Vlag-toggle rechtsboven werkt. Direct linkbaar via `?lang=fr` of `?lang=nl` voor bulk-mail outreach naar BE/FR dealers. Screenshot bevestigd: beide talen rendert correct, 5 benefit-items zichtbaar.
 - **Workflow: Aanvraag → BPM-taxatie one-click** (Feb 2026): Nieuwe knop "Start BPM Taxatie" in detail-modal van `/admin/taxatie-aanvragen` maakt direct een vooringevuld `taxatie_programma` record aan. Backend endpoint `POST /api/admin/taxatie-aanvragen/{id}/start-bpm`:
   - Maakt nieuw BPM-record met klantgegevens (naam, telefoon, e-mail, adres, kenteken, RDW-datum, opmerking → notes)
   - Koppelt alle foto's read-only via `source_aanvraag_files` + `source_aanvraag_id`

@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Globe, Mail, Lock, Building, ArrowRight, Phone, User, ChevronDown, MapPin } from 'lucide-react';
+import { Globe, Mail, Lock, Building, ArrowRight, Phone, User, ChevronDown, MapPin, Users, Truck, Wallet, FileCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -182,9 +182,39 @@ const SupplierRegisterPage = () => {
           <h2 className="font-barlow text-3xl font-bold text-zinc-900 uppercase mb-2">
             {t('supplierRegister.title')}
           </h2>
-          <p className="text-zinc-500 mb-8">
+          <p className="text-zinc-500 mb-6">
             {t('supplierRegister.subtitle')}
           </p>
+
+          {/* Voordelen-blok — krachtig en kort */}
+          <div className="bg-gradient-to-br from-purple-50 to-zinc-50 border-2 border-purple-200 rounded-2xl p-5 mb-8" data-testid="benefits-block">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-bold text-zinc-900 text-base">{t('supplierRegister.benefitsTitle')}</h3>
+            </div>
+            <p className="text-xs text-zinc-600 mb-4">{t('supplierRegister.benefitsSubtitle')}</p>
+            <ul className="space-y-3">
+              {[
+                { Icon: Users,     title: t('supplierRegister.benefit1Title'), text: t('supplierRegister.benefit1Text') },
+                { Icon: Building,  title: t('supplierRegister.benefit2Title'), text: t('supplierRegister.benefit2Text') },
+                { Icon: Wallet,    title: t('supplierRegister.benefit3Title'), text: t('supplierRegister.benefit3Text') },
+                { Icon: Truck,     title: t('supplierRegister.benefit4Title'), text: t('supplierRegister.benefit4Text') },
+                { Icon: FileCheck, title: t('supplierRegister.benefit5Title'), text: t('supplierRegister.benefit5Text') },
+              ].map(({ Icon, title, text }, idx) => (
+                <li key={idx} className="flex gap-3" data-testid={`benefit-item-${idx}`}>
+                  <div className="flex-shrink-0 w-9 h-9 bg-white border-2 border-purple-200 rounded-lg flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-zinc-900 leading-tight">{title}</p>
+                    <p className="text-xs text-zinc-600 leading-snug mt-0.5">{text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">

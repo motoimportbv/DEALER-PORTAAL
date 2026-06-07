@@ -39,7 +39,21 @@
     "submit": "S'inscrire comme fournisseur",
     "success": "Inscription réussie ! Nous vous contacterons.",
     "dealerLink": "Êtes-vous un revendeur néerlandais ?",
-    "dealerRegister": "Inscrivez-vous ici"
+    "dealerRegister": "Inscrivez-vous ici",
+    "benefitsTitle": "Pourquoi choisir Moto Import ?",
+    "benefitsSubtitle": "Vendez rapidement et sans tracas au plus grand réseau de revendeurs des Pays-Bas.",
+    "benefit1Title": "Plus de 100 revendeurs néerlandais",
+    "benefit1Text": "Vos motos sont immédiatement visibles par plus de 100 revendeurs actifs partout aux Pays-Bas.",
+    "benefit2Title": "Plateforme 100% gratuite",
+    "benefit2Text": "Mettez en ligne un nombre illimité de motos — sans abonnement, sans commission. Vous fixez le prix pour Moto Import B.V.",
+    "benefit3Title": "Paiement sous 1 semaine",
+    "benefit3Text": "Dès que nous récupérons la moto, vous recevez votre paiement par virement bancaire en 7 jours.",
+    "benefit4Title": "Nous nous occupons de tout",
+    "benefit4Text": "Moto Import B.V. vient chercher la moto chez vous et gère l'immatriculation RDW, la BPM néerlandaise et le transport.",
+    "benefit5Title": "Aucune démarche aux Pays-Bas",
+    "benefit5Text": "Pas de TVA néerlandaise ni de papiers d'importation à gérer — nous nous occupons de toute l'administration.",
+    "ctaSignup": "S'inscrire",
+    "scrollToForm": "S'inscrire maintenant"
   },
   "auth": {
     "email": "Adresse e-mail",

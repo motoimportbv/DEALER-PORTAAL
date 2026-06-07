@@ -39,7 +39,21 @@
     "submit": "Registreren als Leverancier",
     "success": "Registratie succesvol! Wij nemen contact met u op.",
     "dealerLink": "Bent u een Nederlandse dealer?",
-    "dealerRegister": "Registreer hier"
+    "dealerRegister": "Registreer hier",
+    "benefitsTitle": "Waarom kiezen voor Moto Import?",
+    "benefitsSubtitle": "Verkoop snel en zonder gedoe aan het grootste dealernetwerk van Nederland.",
+    "benefit1Title": "100+ Nederlandse dealers",
+    "benefit1Text": "Uw motoren worden direct getoond aan meer dan 100 actieve dealers in heel Nederland.",
+    "benefit2Title": "Volledig gratis platform",
+    "benefit2Text": "Plaats onbeperkt motoren — geen abonnement, geen commissie. U bepaalt de prijs voor Moto Import B.V.",
+    "benefit3Title": "Uitbetaling binnen 1 week",
+    "benefit3Text": "Zodra wij de motor ophalen, ontvangt u uw geld per overschrijving binnen 7 dagen.",
+    "benefit4Title": "Wij regelen alles",
+    "benefit4Text": "Moto Import B.V. haalt de motor bij u op en verzorgt RDW, BPM, tenaamstelling en transport.",
+    "benefit5Title": "Geen NL-administratie",
+    "benefit5Text": "U hoeft geen Nederlandse btw of import-papieren te regelen — wij doen het volledige administratieve traject.",
+    "ctaSignup": "Aanmelden",
+    "scrollToForm": "Direct aanmelden"
   },
   "auth": {
     "email": "E-mailadres",

@@ -39,7 +39,21 @@
     "submit": "Als Lieferant registrieren",
     "success": "Registrierung erfolgreich! Wir werden Sie kontaktieren.",
     "dealerLink": "Sind Sie ein niederländischer Händler?",
-    "dealerRegister": "Hier registrieren"
+    "dealerRegister": "Hier registrieren",
+    "benefitsTitle": "Warum Moto Import wählen?",
+    "benefitsSubtitle": "Verkaufen Sie schnell und unkompliziert an das größte Händlernetzwerk der Niederlande.",
+    "benefit1Title": "Über 100 niederländische Händler",
+    "benefit1Text": "Ihre Motorräder werden sofort über 100 aktiven Händlern in den gesamten Niederlanden angezeigt.",
+    "benefit2Title": "Komplett kostenlose Plattform",
+    "benefit2Text": "Stellen Sie unbegrenzt Motorräder ein — keine Abo-Gebühren, keine Provision. Sie bestimmen den Preis für Moto Import B.V.",
+    "benefit3Title": "Auszahlung in 1 Woche",
+    "benefit3Text": "Sobald wir das Motorrad abholen, erhalten Sie Ihre Zahlung per Überweisung innerhalb von 7 Tagen.",
+    "benefit4Title": "Wir kümmern uns um alles",
+    "benefit4Text": "Moto Import B.V. holt das Motorrad bei Ihnen ab und übernimmt RDW, BPM, Zulassung und Transport.",
+    "benefit5Title": "Keine NL-Administration",
+    "benefit5Text": "Keine niederländische Mehrwertsteuer oder Import-Papiere — wir erledigen die gesamte Verwaltung.",
+    "ctaSignup": "Anmelden",
+    "scrollToForm": "Jetzt registrieren"
   },
   "auth": {
     "email": "E-Mail-Adresse",
