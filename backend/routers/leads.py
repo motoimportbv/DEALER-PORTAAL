@@ -612,6 +612,53 @@ async def scrape_paste_generic(
 
 
 
+@router.patch("/admin/leads/{lead_id}/reaction")
+async def update_lead_reaction(
+    lead_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Markeer reactie van dealer: positive / negative / no_reply / (leeg = reset).
+
+    Body: { reaction: "positive"|"negative"|"no_reply"|"", note: "..." }
+    """
+    _require_admin(current_user)
+    reaction = ((body or {}).get("reaction") or "").strip().lower()
+    note = ((body or {}).get("note") or "").strip()
+    if reaction and reaction not in {"positive", "negative", "no_reply"}:
+        raise HTTPException(status_code=400, detail="Invalid reaction value")
+    update = {
+        "reaction": reaction or None,
+        "reaction_note": note or None,
+        "reaction_at": _now_iso() if reaction else None,
+        "updated_at": _now_iso(),
+    }
+    r = await db.taxatie_leads.update_one({"id": lead_id}, {"$set": update})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return {"ok": True, "reaction": reaction or None}
+
+
+@router.get("/admin/leads/reaction-stats")
+async def get_reaction_stats(current_user: dict = Depends(get_current_user)):
+    """Toon counts per land per reactie-type voor dashboard."""
+    _require_admin(current_user)
+    pipeline = [
+        {"$match": {"status": {"$in": ["sent", "opened", "clicked"]}}},
+        {"$group": {
+            "_id": {"country": "$country", "reaction": "$reaction"},
+            "count": {"$sum": 1},
+        }},
+    ]
+    rows = await db.taxatie_leads.aggregate(pipeline).to_list(500)
+    out = {}
+    for r in rows:
+        country = (r["_id"] or {}).get("country") or "OTHER"
+        reaction = (r["_id"] or {}).get("reaction") or "no_reaction"
+        out.setdefault(country, {})[reaction] = r["count"]
+    return {"by_country": out}
+
+
 @router.post("/admin/leads/import-csv")
 async def import_leads_csv(
     file: UploadFile = File(...),

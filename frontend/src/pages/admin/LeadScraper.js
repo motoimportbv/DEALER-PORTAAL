@@ -324,6 +324,22 @@ export default function LeadScraper() {
     setCustomUrlBusy(false);
   };
 
+  const setReaction = async (leadId, reaction) => {
+    try {
+      await axios.patch(
+        `${API}/admin/leads/${leadId}/reaction`,
+        { reaction, note: '' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Optimistische update zonder volledige refetch
+      // eslint-disable-next-line no-unused-vars
+      const lower = (s) => (s || '').toLowerCase();
+      fetchLeads();
+    } catch (e) {
+      toast.error('Reactie opslaan mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+  };
+
   const deleteOne = async (id) => {
     if (!window.confirm('Lead verwijderen?')) return;
     try {
@@ -971,6 +987,30 @@ export default function LeadScraper() {
               </button>
             ))}
           </div>
+          {/* Reaction-Stats balk — toont 👍/👎/💬 counts voor huidige selectie */}
+          {(() => {
+            const counts = { positive: 0, negative: 0, no_reply: 0, awaiting: 0 };
+            visibleLeads.forEach(l => {
+              if (l.reaction === 'positive') counts.positive++;
+              else if (l.reaction === 'negative') counts.negative++;
+              else if (l.reaction === 'no_reply') counts.no_reply++;
+              else if (l.status === 'sent' || l.status === 'opened' || l.status === 'clicked') counts.awaiting++;
+            });
+            const total = visibleLeads.length || 1;
+            const pct = (n) => Math.round((n / total) * 100);
+            return (
+              <div className="flex flex-wrap items-center gap-2 pt-2 text-xs" data-testid="reaction-stats">
+                <span className="font-bold text-zinc-700 uppercase tracking-wider text-[10px]">Reacties:</span>
+                <span className="bg-green-100 text-green-900 rounded-full px-2.5 py-1 font-semibold flex items-center gap-1">👍 {counts.positive} <span className="opacity-60">({pct(counts.positive)}%)</span></span>
+                <span className="bg-red-100 text-red-900 rounded-full px-2.5 py-1 font-semibold flex items-center gap-1">👎 {counts.negative} <span className="opacity-60">({pct(counts.negative)}%)</span></span>
+                <span className="bg-zinc-200 text-zinc-700 rounded-full px-2.5 py-1 font-semibold flex items-center gap-1">💬 {counts.no_reply} <span className="opacity-60">({pct(counts.no_reply)}%)</span></span>
+                <span className="bg-blue-50 text-blue-900 rounded-full px-2.5 py-1 font-semibold flex items-center gap-1">⏳ {counts.awaiting} wacht</span>
+                {counts.positive > 0 && (
+                  <span className="ml-2 text-green-700 font-bold">↗ {pct(counts.positive)}% conversie!</span>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Lijst */}
@@ -994,6 +1034,7 @@ export default function LeadScraper() {
                     <th className="text-left px-3 py-2">Plaats</th>
                     <th className="text-left px-3 py-2">Website</th>
                     <th className="text-left px-3 py-2">Status</th>
+                    <th className="text-left px-3 py-2 w-32">Reactie</th>
                     <th className="text-left px-3 py-2 w-12"></th>
                   </tr>
                 </thead>
@@ -1026,6 +1067,31 @@ export default function LeadScraper() {
                       </td>
                       <td className="px-3 py-2">
                         <StatusBadge status={lead.status} />
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex gap-1 items-center" data-testid={`reaction-cell-${lead.id}`}>
+                          <button
+                            type="button"
+                            onClick={() => setReaction(lead.id, lead.reaction === 'positive' ? '' : 'positive')}
+                            title="Positief — geïnteresseerd"
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-base transition ${lead.reaction === 'positive' ? 'bg-green-100 ring-2 ring-green-500' : 'bg-zinc-100 hover:bg-green-50 opacity-50 hover:opacity-100'}`}
+                            data-testid={`react-pos-${lead.id}`}
+                          >👍</button>
+                          <button
+                            type="button"
+                            onClick={() => setReaction(lead.id, lead.reaction === 'negative' ? '' : 'negative')}
+                            title="Negatief — afgewezen"
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-base transition ${lead.reaction === 'negative' ? 'bg-red-100 ring-2 ring-red-500' : 'bg-zinc-100 hover:bg-red-50 opacity-50 hover:opacity-100'}`}
+                            data-testid={`react-neg-${lead.id}`}
+                          >👎</button>
+                          <button
+                            type="button"
+                            onClick={() => setReaction(lead.id, lead.reaction === 'no_reply' ? '' : 'no_reply')}
+                            title="Geen reactie"
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-base transition ${lead.reaction === 'no_reply' ? 'bg-zinc-300 ring-2 ring-zinc-500' : 'bg-zinc-100 hover:bg-zinc-200 opacity-50 hover:opacity-100'}`}
+                            data-testid={`react-none-${lead.id}`}
+                          >💬</button>
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-right">
                         <button onClick={() => deleteOne(lead.id)} className="text-zinc-400 hover:text-red-600" data-testid={`delete-${lead.id}`}>
