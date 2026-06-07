@@ -1080,6 +1080,38 @@ WEB_SEARCH_LEADS = [
     {"name": "Motorama BE", "email": "info@motorama.be", "city": "België",
      "website": "https://www.motorama.be", "country": "BE",
      "notes": "Motor dealer Vlaanderen"},
+
+    # ===== Batch 46 (Feb 2026 — BE Oost-Vlaanderen extra) =====
+    {"name": "Mototech Wetteren", "email": "info@mototech.be", "city": "Wetteren",
+     "website": "https://www.mototech.be", "country": "BE",
+     "notes": "Oost-Vlaanderen Honda/scooter"},
+    {"name": "Gent Motors", "email": "info@gentmotors.be", "city": "Gent",
+     "website": "https://www.gentmotors.be", "country": "BE",
+     "notes": "Gent + Drongen"},
+    {"name": "Peter D'Haese BMW Motorrad Zottegem", "email": "info@dhaese.net.bmw.be",
+     "city": "Zottegem", "website": "https://www.dhaese.bmw.be", "country": "BE",
+     "notes": "BMW Motorrad Oost-Vlaanderen"},
+
+    # ===== Batch 47 (Feb 2026 — NRW Essen) =====
+    {"name": "Motor Center Heinen Essen (Suzuki)", "email": "essen@heinen-nrw.de",
+     "city": "Essen", "postcode": "45141", "website": "https://heinen-nrw.de",
+     "country": "DE", "notes": "Karolingerstraße 90 — Suzuki dealer"},
+
+    # ===== Batch 48 (Feb 2026 — Bayern Bayreuth/Coburg) =====
+    {"name": "PEPA-BIKES e.K. Bayreuth", "email": "info@pepa-bikes.de", "city": "Bayreuth",
+     "postcode": "95448", "website": "https://ktm-pepa-bikes.de", "country": "DE",
+     "notes": "KTM dealer Bayreuth"},
+    {"name": "Motorrad Reinhardt Coburg", "email": "info@motorrad-reinhardt.de",
+     "city": "Coburg", "postcode": "96450", "website": "https://www.motorrad-reinhardt.de",
+     "country": "DE", "notes": "Suzuki Coburg - Neustadter Str. 23-25"},
+
+    # ===== Batch 49 (Feb 2026 — NL Noord) =====
+    {"name": "MotoPort Leeuwarden", "email": "info@motoportleeuwarden.nl",
+     "city": "Leeuwarden", "website": "https://www.motoport.nl/leeuwarden",
+     "country": "NL", "notes": "Honda dealer Friesland"},
+    {"name": "Moto Wijma", "email": "info@motowijma.nl", "city": "Friesland",
+     "website": "https://www.motowijma.nl", "country": "NL",
+     "notes": "Honda+Yamaha motoren Friesland"},
 ]
 
 
