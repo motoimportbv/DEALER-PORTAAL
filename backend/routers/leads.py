@@ -1082,17 +1082,19 @@ async def export_leads_csv(
 
     buf = io.StringIO()
     writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(["name", "email", "address", "postcode", "city", "website", "status", "source", "sent_at"])
+    writer.writerow(["name", "email", "country", "address", "postcode", "city", "website", "status", "source", "reaction", "sent_at"])
     for lead_row in leads:
         writer.writerow([
             lead_row.get("name", ""),
             lead_row.get("email", ""),
+            lead_row.get("country", ""),
             lead_row.get("address", ""),
             lead_row.get("postcode", ""),
             lead_row.get("city", ""),
             lead_row.get("website", ""),
             lead_row.get("status", ""),
             lead_row.get("source_site", ""),
+            lead_row.get("reaction") or "",
             lead_row.get("sent_at") or "",
         ])
 
