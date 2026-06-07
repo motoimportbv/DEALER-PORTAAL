@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
@@ -16,6 +16,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function LeadScraper() {
   const { user, token } = useAuth();
   const [leads, setLeads] = useState([]);
+  const [countryFilter, setCountryFilter] = useState('ALL'); // 'ALL' | 'NL' | 'FR' | 'BE' | 'IT' | 'OTHER'
   const [stats, setStats] = useState({ total: 0, new: 0, sent: 0, bounced: 0 });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -254,7 +255,33 @@ export default function LeadScraper() {
     if (next.has(id)) next.delete(id); else next.add(id);
     setSelectedIds(next);
   };
-  const selectAll = () => setSelectedIds(new Set(leads.map(l => l.id)));
+  // Bucket land-codes — alles wat geen NL/FR/BE/IT is gaat naar OTHER
+  const countryOf = (l) => {
+    const c = (l.country || '').toUpperCase();
+    if (['NL', 'FR', 'BE', 'IT'].includes(c)) return c;
+    // Fallback: leeg country → NL (oude motoroccasion.nl leads)
+    if (!c && (l.source_site || '').includes('motoroccasion')) return 'NL';
+    if (!c) return 'NL';
+    return 'OTHER';
+  };
+  const countryCounts = useMemo(() => {
+    const counts = { ALL: leads.length, NL: 0, FR: 0, BE: 0, IT: 0, OTHER: 0 };
+    leads.forEach(l => { counts[countryOf(l)] = (counts[countryOf(l)] || 0) + 1; });
+    return counts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leads]);
+  const visibleLeads = useMemo(() => {
+    let filtered = countryFilter === 'ALL' ? leads : leads.filter(l => countryOf(l) === countryFilter);
+    // Sorteer alfabetisch per land, dan op naam — zo zit alles netjes gegroepeerd
+    return [...filtered].sort((a, b) => {
+      const ca = countryOf(a), cb = countryOf(b);
+      if (ca !== cb) return ca.localeCompare(cb);
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leads, countryFilter]);
+
+  const selectAll = () => setSelectedIds(new Set(visibleLeads.map(l => l.id)));
   const selectNone = () => setSelectedIds(new Set());
 
   const deleteSelected = async () => {
@@ -597,14 +624,14 @@ export default function LeadScraper() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
-            <span className="text-xs text-zinc-500">{leads.length} resultaten · {selectedIds.size} geselecteerd</span>
-            <Button variant="ghost" size="sm" onClick={selectAll} disabled={leads.length === 0} data-testid="select-all-btn">Selecteer alles</Button>
+            <span className="text-xs text-zinc-500">{visibleLeads.length} resultaten {countryFilter !== 'ALL' ? `(${countryFilter}, ${leads.length} totaal)` : ''} · {selectedIds.size} geselecteerd</span>
+            <Button variant="ghost" size="sm" onClick={selectAll} disabled={visibleLeads.length === 0} data-testid="select-all-btn">Selecteer alles</Button>
             <Button variant="ghost" size="sm" onClick={selectNone} disabled={selectedIds.size === 0} data-testid="select-none-btn">Niets</Button>
             <Button variant="outline" size="sm" onClick={copySelectedEmails} disabled={selectedIds.size === 0} data-testid="copy-selected-btn">
               Kopieer geselecteerde e-mails
             </Button>
             <Button variant="outline" size="sm" onClick={copyAllNewEmails} data-testid="copy-new-btn">
-              Kopieer alle 'nieuwe'
+              Kopieer alle &apos;nieuwe&apos;
             </Button>
             <Button onClick={sendToMailer} className="bg-red-600 hover:bg-red-700 text-white" size="sm" data-testid="send-to-mailer-btn">
               <Mail className="w-4 h-4 mr-1" />Naar Bulk Mailer →
@@ -613,16 +640,46 @@ export default function LeadScraper() {
               <Trash2 className="w-4 h-4 mr-1" />Verwijder {selectedIds.size > 0 ? selectedIds.size : ''}
             </Button>
           </div>
+
+          {/* Land-filter tabs */}
+          <div className="flex flex-wrap gap-2 pt-2 border-t" data-testid="country-filter-tabs">
+            {[
+              { key: 'ALL', flag: '🌐', label: 'Alle' },
+              { key: 'NL', flag: '🇳🇱', label: 'Nederland' },
+              { key: 'FR', flag: '🇫🇷', label: 'Frankrijk' },
+              { key: 'BE', flag: '🇧🇪', label: 'België' },
+              { key: 'IT', flag: '🇮🇹', label: 'Italië' },
+              { key: 'OTHER', flag: '🌍', label: 'Overig' },
+            ].map(t => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => { setCountryFilter(t.key); setSelectedIds(new Set()); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition flex items-center gap-1.5 ${
+                  countryFilter === t.key
+                    ? 'border-red-500 bg-red-50 text-red-900'
+                    : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400'
+                }`}
+                data-testid={`country-tab-${t.key.toLowerCase()}`}
+              >
+                <span>{t.flag}</span>
+                <span>{t.label}</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  countryFilter === t.key ? 'bg-red-600 text-white' : 'bg-zinc-100 text-zinc-700'
+                }`}>{countryCounts[t.key] || 0}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Lijst */}
         <div className="bg-white rounded-2xl border overflow-hidden" data-testid="leads-list">
           {loading ? (
             <div className="p-12 text-center text-zinc-400"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
-          ) : leads.length === 0 ? (
+          ) : visibleLeads.length === 0 ? (
             <div className="p-12 text-center text-zinc-400">
               <Building2 className="w-10 h-10 mx-auto mb-3 text-zinc-300" />
-              <p>Nog geen leads. Voeg ze toe via de plak-modus hierboven.</p>
+              <p>{leads.length === 0 ? 'Nog geen leads. Voeg ze toe via de plak-modus hierboven.' : `Geen leads in deze categorie. Probeer een ander land.`}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -630,6 +687,7 @@ export default function LeadScraper() {
                 <thead className="bg-zinc-50 border-b text-xs uppercase tracking-wider text-zinc-500">
                   <tr>
                     <th className="px-3 py-2 w-8"></th>
+                    <th className="text-left px-3 py-2 w-12">Land</th>
                     <th className="text-left px-3 py-2">Bedrijf</th>
                     <th className="text-left px-3 py-2">E-mail</th>
                     <th className="text-left px-3 py-2">Plaats</th>
@@ -639,7 +697,10 @@ export default function LeadScraper() {
                   </tr>
                 </thead>
                 <tbody>
-                  {leads.map(lead => (
+                  {visibleLeads.map((lead) => {
+                    const ct = countryOf(lead);
+                    const flag = { NL: '🇳🇱', FR: '🇫🇷', BE: '🇧🇪', IT: '🇮🇹', OTHER: '🌍' }[ct] || '🌍';
+                    return (
                     <tr key={lead.id} className="border-b hover:bg-zinc-50/50" data-testid={`lead-row-${lead.id}`}>
                       <td className="px-3 py-2">
                         <input
@@ -649,6 +710,7 @@ export default function LeadScraper() {
                           data-testid={`select-${lead.id}`}
                         />
                       </td>
+                      <td className="px-3 py-2 text-center text-lg" title={ct}>{flag}</td>
                       <td className="px-3 py-2 font-semibold text-zinc-900">{lead.name}</td>
                       <td className="px-3 py-2">
                         <a href={`mailto:${lead.email}`} className="text-red-600 hover:underline">{lead.email}</a>
@@ -670,7 +732,8 @@ export default function LeadScraper() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

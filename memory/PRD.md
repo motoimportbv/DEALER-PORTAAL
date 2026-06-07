@@ -20,6 +20,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Land-filter tabs in Lead Scraper** (Feb 2026): User-request "emails moeten per land gegroepeerd, niet door elkaar". Toegevoegd: rij van 6 vlag-tab knoppen boven de tabel (🌐 Alle / 🇳🇱 NL / 🇫🇷 FR / 🇧🇪 BE / 🇮🇹 IT / 🌍 Overig) met live counters in een rode badge. Klik tab → tabel filtert direct + selectie wordt gereset. Tabel sorteert binnen land alfabetisch op naam. Nieuwe kolom "Land" met emoji-vlag toont per rij het land. Helper `countryOf()` fallback: leeg country + bron motoroccasion = NL (legacy fix). Visueel bevestigd: 341 NL / 7 IT / 2 FR / 4 BE — filter werkt instant.
 - **Universele URL-bulk email finder + uitgebreide FR/BE seed** (Feb 2026):
   1. **Quick-win**: 5 extra geverifieerde BE dealers (Honda Mertens Antwerpen, Caset Lichtervelde, Raes Motoren Oostende, Van Der Heyden, Honda Mertens Brussel) + 2 extra FR (Village Motos Orvault). Totaal FR/BE seed: **13 dealers**.
   2. **Generieke `extract_emails_from_url_list()` functie** in `services/dealer_scraper.py` — geeft een lijst URLs, gaat per website naar `/contact, /contacts, /contatti, /contattaci, /about/contact, /contattaci, /chi-siamo/contatti` en extraheert emails via regex met spam-filter. Country auto-detect via TLD. Bedrijfsnaam best-effort uit hostname (motoshop-paris.fr → "Motoshop Paris"). Idempotent dedup. Werkt voor **élk land** (FR, BE, IT, NL, DE, etc.).
