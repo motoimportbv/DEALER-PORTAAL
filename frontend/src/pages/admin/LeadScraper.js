@@ -342,11 +342,19 @@ export default function LeadScraper() {
   };
 
   const sendToMailer = () => {
-    const emails = leads.filter(l => selectedIds.size > 0 ? selectedIds.has(l.id) : l.status === 'new').map(l => l.email);
+    const filtered = leads.filter(l => selectedIds.size > 0 ? selectedIds.has(l.id) : l.status === 'new');
+    const emails = filtered.map(l => l.email);
     if (emails.length === 0) { toast.error('Geen leads om naar bulk-mailer te sturen'); return; }
-    // Sla op in sessionStorage zodat TaxatieSalesMail het op kan halen
+    // Bepaal dominant land uit selectie zodat de mailer automatisch de juiste taal-template laadt
+    const countryCount = {};
+    filtered.forEach(l => {
+      const c = countryOf(l);
+      countryCount[c] = (countryCount[c] || 0) + 1;
+    });
+    const dominantCountry = Object.entries(countryCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
     sessionStorage.setItem('lead_import_emails', emails.join('\n'));
-    sessionStorage.setItem('lead_import_ids', JSON.stringify(leads.filter(l => emails.includes(l.email)).map(l => l.id)));
+    sessionStorage.setItem('lead_import_ids', JSON.stringify(filtered.map(l => l.id)));
+    sessionStorage.setItem('lead_import_country', dominantCountry);
     window.location.href = '/admin/taxatie-sales-mail?import=leads';
   };
 

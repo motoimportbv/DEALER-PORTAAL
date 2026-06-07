@@ -434,8 +434,23 @@ export default function TaxatieSalesMail() {
       if (stored) {
         setRecipientText(stored);
         setView('send');
-        toast.success(`${stored.split(/\s+/).filter(Boolean).length} adressen geïmporteerd vanuit Lead-scraper`);
+        // Auto-switch template op basis van dominant land uit Lead Scraper
+        const country = (sessionStorage.getItem('lead_import_country') || '').toUpperCase();
+        const COUNTRY_TO_TEMPLATE = {
+          NL: 'bpm',
+          BE: 'supplier_nl',
+          FR: 'supplier_fr',
+          IT: 'supplier_it',
+        };
+        const matched = COUNTRY_TO_TEMPLATE[country];
+        if (matched && TEMPLATES[matched]) {
+          setTemplateKey(matched);
+          toast.success(`${stored.split(/\s+/).filter(Boolean).length} adressen geïmporteerd · template ${TEMPLATES[matched].flag} ${TEMPLATES[matched].label} automatisch geselecteerd`);
+        } else {
+          toast.success(`${stored.split(/\s+/).filter(Boolean).length} adressen geïmporteerd vanuit Lead-scraper`);
+        }
         sessionStorage.removeItem('lead_import_emails');
+        sessionStorage.removeItem('lead_import_country');
         // ids worden bewaard zodat we ze na verzending kunnen markeren
         // (zie sendBulk)
       }
