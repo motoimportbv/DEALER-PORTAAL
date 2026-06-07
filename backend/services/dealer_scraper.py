@@ -290,6 +290,81 @@ async def extract_emails_from_url_list(urls: list, current_user_id: Optional[str
     }
 
 
+def extract_from_html_paste(html: str, country: str = "", current_user_id: Optional[str] = None) -> dict:
+    """Parse rauwe HTML (bv. View Source van Google search results, Pages Jaunes,
+    Yamaha dealer-locator, etc.) → vind alle emails + bijhorende websites + namen.
+
+    Strategie:
+      1. Pak alle externe website-URLs uit href= attributes (filter spam/social).
+      2. Pak alle valide emails (filter spam-domeinen).
+      3. Voor elke email: zoek dichtstbijzijnde externe URL in de HTML als website-hint.
+      4. Genereer een leesbare naam uit het email-domein.
+      5. Insert in DB met opgegeven country (BE/FR/NL/IT) of TLD-fallback.
+
+    Returns: {emails_found, websites_found, inserted, duplicates, no_email, errors, details}
+    """
+    skip_hosts = {
+        "google.com", "google.fr", "google.be", "google.nl", "google.it",
+        "facebook.com", "instagram.com", "youtube.com", "twitter.com", "x.com",
+        "linkedin.com", "tiktok.com", "wa.me", "whatsapp.com",
+        "maps.google", "goo.gl", "googleapis.com", "gstatic.com",
+        "schema.org", "w3.org", "cookielaw.org", "iubenda.com",
+        "googletagmanager.com", "googleadservices.com", "doubleclick.net",
+        "wixstatic.com", "wordpress.com", "wp.com", "sentry.io",
+        "amazon-adsystem.com", "stcrm.it", "rcsmediagroup.it",
+        "pagesjaunes.fr", "pagespro.com", "yelp.com", "tripadvisor.com",
+        "gocar.be", "autoscout24.be", "autoscout24.fr",
+    }
+    skip_brand_hosts = (
+        "yamaha-motor", "honda.fr", "honda.be", "ducati.com", "ktm.com",
+        "bmw-motorrad", "piaggio.com", "vespa.com", "aprilia.com",
+        "kawasaki.fr", "kawasaki.be", "suzuki.fr", "suzuki.be",
+        "harley-davidson", "triumphmotorcycles", "royalenfield",
+        "betamotor", "husqvarna",
+    )
+
+    # 1) Vind alle externe URLs in href=
+    url_re = re.compile(r'href=["\'](https?://[^"\'<>\s]+)["\']', re.IGNORECASE)
+    raw_urls = url_re.findall(html)
+    websites = []
+    seen_hosts = set()
+    for u in raw_urls:
+        try:
+            host = u.split("/")[2].lower().lstrip("www.")
+        except IndexError:
+            continue
+        host_base = host[4:] if host.startswith("www.") else host
+        if any(s in host_base for s in skip_hosts):
+            continue
+        if any(b in host_base for b in skip_brand_hosts):
+            continue
+        if host_base in seen_hosts:
+            continue
+        seen_hosts.add(host_base)
+        websites.append({"host": host_base, "url": f"https://{host_base}", "pos": html.find(u)})
+
+    # 2) Vind alle emails (filter spam-domeinen)
+    raw_emails = EMAIL_RE.findall(html)
+    emails = []
+    seen_emails = set()
+    for e in raw_emails:
+        em = e.strip().lower()
+        if em in seen_emails:
+            continue
+        if not _is_valid_email(em):
+            continue
+        seen_emails.add(em)
+        # Positie in HTML voor matching met dichtstbijzijnde website
+        pos = html.lower().find(em)
+        emails.append({"email": em, "pos": pos})
+
+    return {
+        "html_emails": emails,
+        "html_websites": websites,
+        "country_hint": (country or "").upper(),
+    }
+
+
 async def scrape_moto_it(max_pages: int = 5, current_user_id: Optional[str] = None,
                          progress_cb=None) -> dict:
     """Scrape moto.it concessionari + zoek emails per dealer-website.

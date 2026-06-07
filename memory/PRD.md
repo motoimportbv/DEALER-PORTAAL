@@ -20,6 +20,13 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **HTML-paste scraper voor BE/FR (bypass anti-bot)** (Feb 2026): Major BE/FR directories (Pages Jaunes, GoCar, Yamaha-locator) blokkeren onze backend met HTTP 403. Oplossing: nieuw amber 🇧🇪🇫🇷 blok in `/admin/lead-scraper` met landselectie (FR/BE/NL/IT/DE/ES/LU) + grote textarea. User kopieert HTML-broncode uit eigen browser (Ctrl+U → Ctrl+A → Ctrl+C) en plakt. Backend (`extract_from_html_paste()` in `services/dealer_scraper.py`):
+  1. Vindt alle externe website-URLs uit `href=` attributen (filter spam-hosts + brand-sites zoals yamaha-motor, honda.fr, ducati.com).
+  2. Vindt alle valide emails via regex (skip-list: facebook/google/social/cookielaw/etc.).
+  3. Matcht elke email aan dichtstbijzijnde externe website-URL in de HTML (positionele match). Als email-domein zelf bestaat als URL: gebruik dat (betrouwbaarder).
+  4. Genereert leesbare dealer-naam uit email-domein (info@dupont-motos.fr → "Dupont Motos").
+  5. Country uit body-param (FR/BE/...) met TLD-fallback.
+  Endpoint: `POST /api/admin/leads/scrape-html-paste` body `{html, country, source_label}`. Idempotent via email_lower dedup. End-to-end getest met curl + fake HTML: 2 nieuwe leads correct ingevoerd, 2 spam-emails (FB+Google) filtered, websites correct gematched. Screenshot bevestigd: UI volledig functioneel met instructie-accordion, landselectie, textarea, run-knop en resultaat-blok.
 - **Land-filter tabs in Lead Scraper** (Feb 2026): User-request "emails moeten per land gegroepeerd, niet door elkaar". Toegevoegd: rij van 6 vlag-tab knoppen boven de tabel (🌐 Alle / 🇳🇱 NL / 🇫🇷 FR / 🇧🇪 BE / 🇮🇹 IT / 🌍 Overig) met live counters in een rode badge. Klik tab → tabel filtert direct + selectie wordt gereset. Tabel sorteert binnen land alfabetisch op naam. Nieuwe kolom "Land" met emoji-vlag toont per rij het land. Helper `countryOf()` fallback: leeg country + bron motoroccasion = NL (legacy fix). Visueel bevestigd: 341 NL / 7 IT / 2 FR / 4 BE — filter werkt instant.
 - **Universele URL-bulk email finder + uitgebreide FR/BE seed** (Feb 2026):
   1. **Quick-win**: 5 extra geverifieerde BE dealers (Honda Mertens Antwerpen, Caset Lichtervelde, Raes Motoren Oostende, Van Der Heyden, Honda Mertens Brussel) + 2 extra FR (Village Motos Orvault). Totaal FR/BE seed: **13 dealers**.

@@ -612,6 +612,128 @@ async def scrape_paste_generic(
 
 
 
+@router.post("/admin/leads/scrape-html-paste")
+async def scrape_html_paste(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """HTML-paste scraper voor BE/FR/etc. — bypasst anti-bot blokkades.
+
+    Workflow:
+      1. Gebruiker opent een dealer-zoekresultaat in zijn browser (bv.
+         Google Maps, Yamaha locator, Pages Jaunes, GoCar).
+      2. Rechtermuisknop → Paginabron weergeven (Ctrl+U) → kopieer alles.
+      3. Plak HTML hier + selecteer land (BE/FR/NL/IT).
+      4. Backend extraheert alle emails + matcht ze met dichtstbijzijnde
+         externe website-URL en geeft per dealer een leesbare naam.
+
+    Body: { html: "...", country: "BE"|"FR"|"NL"|"IT"|"", source_label: "google-maps" }
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+
+    html = (body or {}).get("html") or ""
+    country = ((body or {}).get("country") or "").upper().strip()
+    source_label = ((body or {}).get("source_label") or "html-paste").strip().lower()
+    if len(html) < 200:
+        raise HTTPException(status_code=400, detail="HTML lijkt leeg of te kort (min 200 tekens)")
+    if country and country not in {"BE", "FR", "NL", "IT", "DE", "ES", "LU"}:
+        raise HTTPException(status_code=400, detail="Ongeldige country code")
+
+    from services.dealer_scraper import extract_from_html_paste
+    parsed = extract_from_html_paste(html, country=country, current_user_id=current_user.get("id"))
+
+    emails = parsed.get("html_emails", [])
+    websites = parsed.get("html_websites", [])
+    country_hint = parsed.get("country_hint", "")
+
+    def _find_nearest_website(email_pos: int) -> str:
+        """Vind de website met positie het dichtst bij de email-positie."""
+        if not websites or email_pos < 0:
+            return ""
+        best = min(websites, key=lambda w: abs((w.get("pos") or 0) - email_pos))
+        return best.get("url", "")
+
+    def _name_from_email(em: str) -> str:
+        try:
+            domain = em.split("@", 1)[1].split(".")[0]
+            words = re.split(r'[-_\s]+', domain)
+            return " ".join(w.capitalize() for w in words if w)
+        except Exception:
+            return ""
+
+    def _country_from_email(em: str) -> str:
+        if country_hint:
+            return country_hint
+        try:
+            tld = em.rsplit(".", 1)[-1].lower()
+            return {"fr": "FR", "be": "BE", "lu": "LU", "nl": "NL",
+                    "de": "DE", "it": "IT", "es": "ES"}.get(tld, "")
+        except Exception:
+            return ""
+
+    inserted = 0
+    duplicates = 0
+    errors = 0
+    details = []
+
+    for em_obj in emails:
+        em = em_obj["email"]
+        try:
+            existing = await db.taxatie_leads.find_one({"email_lower": em}, {"_id": 0, "id": 1})
+            if existing:
+                duplicates += 1
+                details.append({"email": em, "status": "duplicate"})
+                continue
+            website = _find_nearest_website(em_obj.get("pos", -1))
+            # Als email-domein zelf bestaat als URL, gebruik die (betrouwbaarder)
+            try:
+                email_domain = em.split("@", 1)[1].lower()
+                for w in websites:
+                    if email_domain in (w.get("host") or ""):
+                        website = w.get("url", website)
+                        break
+            except Exception:
+                pass
+            name = _name_from_email(em)
+            doc = {
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "email": em,
+                "email_lower": em,
+                "address": "",
+                "postcode": "",
+                "city": "",
+                "website": website,
+                "country": _country_from_email(em),
+                "source_site": source_label,
+                "source_url": "",
+                "dealer_id": "",
+                "status": "new",
+                "notes": "Geëxtraheerd via HTML-paste tool",
+                "sent_at": None,
+                "batch_id": None,
+                "created_at": _now_iso(),
+                "updated_at": _now_iso(),
+                "created_by": current_user.get("id"),
+            }
+            await db.taxatie_leads.insert_one(doc)
+            inserted += 1
+            details.append({"email": em, "status": "ok", "name": name, "website": website})
+        except Exception as e:
+            errors += 1
+            details.append({"email": em, "status": "error", "error": str(e)[:120]})
+
+    return {
+        "emails_found": len(emails),
+        "websites_found": len(websites),
+        "inserted": inserted,
+        "duplicates": duplicates,
+        "errors": errors,
+        "details": details[:50],
+    }
+
+
 # ============ LIST / FILTER ============
 
 @router.get("/admin/leads")

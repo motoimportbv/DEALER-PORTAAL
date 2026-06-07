@@ -239,6 +239,34 @@ export default function LeadScraper() {
     setGenericBusy(false);
   };
 
+  const [htmlPaste, setHtmlPaste] = useState('');
+  const [htmlPasteCountry, setHtmlPasteCountry] = useState('FR');
+  const [htmlPasteBusy, setHtmlPasteBusy] = useState(false);
+  const [htmlPasteResult, setHtmlPasteResult] = useState(null);
+  const runHtmlPasteScrape = async () => {
+    if (htmlPaste.trim().length < 200) {
+      toast.error('Plak de complete HTML (min 200 tekens). Open de zoekresultaat-pagina, Ctrl+U → Ctrl+A → Ctrl+C.');
+      return;
+    }
+    setHtmlPasteBusy(true);
+    setHtmlPasteResult(null);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/scrape-html-paste`,
+        { html: htmlPaste, country: htmlPasteCountry, source_label: `html-paste-${htmlPasteCountry.toLowerCase()}` },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
+      );
+      const d = r.data;
+      setHtmlPasteResult(d);
+      toast.success(`✅ ${d.inserted} nieuwe leads (${d.emails_found} emails, ${d.websites_found} websites, ${d.duplicates} dup)`);
+      setHtmlPaste('');
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setHtmlPasteBusy(false);
+  };
+
   const deleteOne = async (id) => {
     if (!window.confirm('Lead verwijderen?')) return;
     try {
@@ -462,6 +490,76 @@ export default function LeadScraper() {
                 </div>
                 <p className="text-[10px] text-green-700">Tip: start met 2 pagina&apos;s (40 dealers) als testbatch — schaal daarna op.</p>
               </div>
+            </div>
+
+            {/* HTML-PASTE scraper voor BE/FR — bypasst anti-bot blokkades */}
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 space-y-3" data-testid="html-paste-block">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🇧🇪🇫🇷</span>
+                <h3 className="text-sm font-bold text-amber-900 uppercase tracking-wide">HTML-paste scraper (BE/FR · bypass anti-bot)</h3>
+              </div>
+              <p className="text-sm text-amber-800">
+                Pages Jaunes, GoCar &amp; Yamaha-locator blokkeren onze server (HTTP 403).
+                <strong> Oplossing:</strong> open de zoekresultaat in jouw browser, kopieer de HTML-broncode, en plak hieronder.
+                Onze parser haalt automatisch <strong>alle emails + websites + dealer-namen</strong> eruit.
+              </p>
+              <details className="bg-white border border-amber-200 rounded-lg p-3">
+                <summary className="cursor-pointer text-xs font-bold text-amber-900">📋 Stap-voor-stap (eerste keer · 2 min)</summary>
+                <ol className="mt-2 text-xs text-amber-800 list-decimal pl-5 space-y-1">
+                  <li>Open een dealer-zoekpagina in jouw browser, bv. <a href="https://www.google.com/maps/search/concessionnaire+moto+lyon" target="_blank" rel="noreferrer" className="underline font-bold">Google Maps &quot;concessionnaire moto Lyon&quot; <ExternalLink className="inline w-3 h-3" /></a>, <a href="https://www.pagesjaunes.fr/recherche/france/concessionnaire-moto" target="_blank" rel="noreferrer" className="underline font-bold">Pages Jaunes <ExternalLink className="inline w-3 h-3" /></a>, of <a href="https://www.yamaha-motor.eu/be/nl/find-dealer/" target="_blank" rel="noreferrer" className="underline font-bold">Yamaha BE locator <ExternalLink className="inline w-3 h-3" /></a></li>
+                  <li>Scroll naar beneden tot alle resultaten geladen zijn (op Google Maps: scroll in de zijbalk)</li>
+                  <li>Rechtermuisknop → <strong>Paginabron weergeven</strong> (<kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Ctrl+U</kbd> / <kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Cmd+Opt+U</kbd>)</li>
+                  <li>Selecteer alles (<kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Ctrl+A</kbd>) en kopieer (<kbd className="px-1.5 py-0.5 bg-white border rounded text-[10px]">Ctrl+C</kbd>)</li>
+                  <li>Plak hieronder, kies land &amp; klik <strong>Scrape HTML</strong></li>
+                </ol>
+              </details>
+              <div className="flex items-end gap-2 flex-wrap">
+                <div>
+                  <label className="text-[10px] text-amber-800 font-bold block">Land van resultaten:</label>
+                  <select
+                    value={htmlPasteCountry}
+                    onChange={(e) => setHtmlPasteCountry(e.target.value)}
+                    className="border-2 border-amber-300 rounded px-3 py-1.5 text-sm font-bold bg-white"
+                    data-testid="html-paste-country"
+                  >
+                    <option value="FR">🇫🇷 Frankrijk</option>
+                    <option value="BE">🇧🇪 België</option>
+                    <option value="NL">🇳🇱 Nederland</option>
+                    <option value="IT">🇮🇹 Italië</option>
+                    <option value="DE">🇩🇪 Duitsland</option>
+                    <option value="ES">🇪🇸 Spanje</option>
+                    <option value="LU">🇱🇺 Luxemburg</option>
+                  </select>
+                </div>
+                <p className="text-[10px] text-amber-700 self-center">Land = bron-land. Backend overschrijft per email als TLD afwijkt.</p>
+              </div>
+              <textarea
+                value={htmlPaste}
+                onChange={(e) => setHtmlPaste(e.target.value)}
+                placeholder={"Plak hier de complete HTML-broncode (Ctrl+U → Ctrl+A → Ctrl+C op de bron-pagina)\n\n<html>...<a href=\"https://www.dealer.fr\">Dealer Naam</a> ... info@dealer.fr ..."}
+                className="w-full h-40 border-2 border-amber-300 rounded-xl px-3 py-2 text-xs font-mono bg-white focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
+                data-testid="html-paste-textarea"
+              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  onClick={runHtmlPasteScrape}
+                  disabled={htmlPasteBusy || htmlPaste.trim().length < 200}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                  data-testid="run-html-paste-btn"
+                >
+                  {htmlPasteBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>🔍 Scrape HTML →</>}
+                </Button>
+                <span className="text-[11px] text-amber-700">{htmlPaste.length.toLocaleString()} tekens geplakt</span>
+              </div>
+              {htmlPasteResult && (
+                <div className="bg-white border border-amber-200 rounded-lg p-3 text-xs space-y-1" data-testid="html-paste-result">
+                  <p className="font-bold text-amber-900">Laatste resultaat:</p>
+                  <p>✅ {htmlPasteResult.inserted} nieuw · ⏭️ {htmlPasteResult.duplicates} dup · 📧 {htmlPasteResult.emails_found} emails gevonden · 🌐 {htmlPasteResult.websites_found} websites</p>
+                  {htmlPasteResult.details?.filter(d => d.status === 'ok').slice(0, 8).map((d, i) => (
+                    <p key={i} className="text-zinc-700 truncate">  <span className="text-green-600">✓</span> {d.name} <span className="text-zinc-500">— {d.email}</span></p>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* GENERIEKE URL-bulk email finder — werkt voor ELK land/website */}
