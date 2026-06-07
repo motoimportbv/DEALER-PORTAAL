@@ -273,29 +273,48 @@ async def import_seed_leads(current_user: dict = Depends(get_current_user)):
 
 # Statische startlijst — geverifieerd via dealer-websites (Feb 2026).
 FOREIGN_SEED_LEADS = [
+    # ===== BE =====
     {"name": "KM Motos", "email": "info@kmmotos.be", "city": "Lontzen", "postcode": "4710",
      "address": "Rue Mitoyenne 344", "website": "https://kmmotos.be", "country": "BE",
      "source_site": "kmmotos.be", "notes": "Yamaha officieel dealer"},
     {"name": "CLM Motos", "email": "info@clmmotos.be", "city": "Seraing", "postcode": "4100",
      "address": "Rue du Sewage 4", "website": "https://clmmotos.be", "country": "BE",
      "source_site": "clmmotos.be", "notes": "Yamaha officieel dealer Liège"},
-    {"name": "La Maison de la Moto", "email": "info@maisondelamoto.fr", "city": "Mougins",
-     "postcode": "06250", "address": "", "website": "https://www.maisondelamoto.fr", "country": "FR",
-     "source_site": "maisondelamoto.fr", "notes": "Multi-merk dealer Côte d'Azur"},
-    {"name": "Planet Racing", "email": "ventemotos@planet-racing.fr", "city": "", "postcode": "",
-     "address": "", "website": "https://www.planet-racing.fr", "country": "FR",
-     "source_site": "planet-racing.fr", "notes": "Yamaha dealer"},
     {"name": "Sud Moto", "email": "info@sudmoto.be", "city": "Uccle", "postcode": "1180",
      "address": "", "website": "https://sudmoto.be", "country": "BE",
      "source_site": "sudmoto.be", "notes": "Yamaha Sud Bruxelles"},
     {"name": "Zone Rouge", "email": "info@zonerouge.be", "city": "Fosses-la-Ville", "postcode": "",
      "address": "", "website": "https://www.zonerouge.be", "country": "BE",
      "source_site": "zonerouge.be", "notes": "Yamaha dealer Wallonië — meerdere vestigingen"},
+    {"name": "Brussels Moto Store", "email": "info@brussels-moto-store.be", "city": "Woluwe-Saint-Lambert",
+     "postcode": "1200", "address": "Chaussée de Louvain 1107", "website": "https://brussels-moto-store.be",
+     "country": "BE", "source_site": "brussels-moto-store.be", "notes": "Yamaha Center Brussels (500 m²)"},
+    {"name": "Honda Mertens Brussel", "email": "info@hondamertens.be", "city": "Zaventem",
+     "postcode": "1930", "address": "Mechelsesteenweg 560", "website": "https://www.hondamertensbrussel.be",
+     "country": "BE", "source_site": "hondamertensbrussel.be", "notes": "Honda exclusief dealer Brussel"},
+    # ===== FR =====
+    {"name": "La Maison de la Moto", "email": "info@maisondelamoto.fr", "city": "Mougins",
+     "postcode": "06250", "address": "", "website": "https://www.maisondelamoto.fr", "country": "FR",
+     "source_site": "maisondelamoto.fr", "notes": "Multi-merk dealer Côte d'Azur"},
+    {"name": "Planet Racing", "email": "ventemotos@planet-racing.fr", "city": "", "postcode": "",
+     "address": "", "website": "https://www.planet-racing.fr", "country": "FR",
+     "source_site": "planet-racing.fr", "notes": "Yamaha dealer"},
+    {"name": "Superbike Marseille", "email": "contact@superbike-marseille.fr", "city": "Marseille",
+     "postcode": "13004", "address": "80 Boulevard Françoise Duparc",
+     "website": "https://www.superbike-marseille.fr", "country": "FR",
+     "source_site": "superbike-marseille.fr", "notes": "Moto Morini / Royal Enfield / Kymco / Peugeot"},
+    {"name": "Moto Expert 31", "email": "motoexpert31@yahoo.com", "city": "Toulouse",
+     "postcode": "31200", "address": "2 Av. d'Atlanta", "website": "https://www.motoexpert.fr",
+     "country": "FR", "source_site": "motoexpert.fr", "notes": "Multi-merk Toulouse"},
+    {"name": "City2Roues", "email": "contact@city2roues.com", "city": "Toulouse",
+     "postcode": "31200", "address": "34 Rue Georges Ohnet", "website": "https://www.city2roues.com",
+     "country": "FR", "source_site": "city2roues.com", "notes": "Concessionnaire moto Toulouse"},
 ]
 
 
 # Italiaanse dealers — geverifieerd via officiële websites (Feb 2026).
 ITALIAN_SEED_LEADS = [
+    # ===== Roma =====
     {"name": "Euroscooter Moto", "email": "info@euroscootermoto.it", "city": "Roma", "postcode": "00189",
      "address": "Via Cassia 911/919", "website": "https://www.euroscootermoto.it", "country": "IT",
      "source_site": "euroscootermoto.it", "notes": "Rivenditore Ufficiale Honda Roma"},
@@ -317,9 +336,29 @@ ITALIAN_SEED_LEADS = [
     {"name": "La Moto Roma Ovest", "email": "info@lamotoroma.com", "city": "Roma", "postcode": "00146",
      "address": "LungoTevere degli Inventori, 110", "website": "https://www.lamotoroma.com", "country": "IT",
      "source_site": "lamotoroma.com", "notes": "Concessionaria multimarca"},
+    # ===== Milano / Brescia / Bergamo =====
     {"name": "Pogliani", "email": "infomotoescooter@pogliani.com", "city": "Sesto San Giovanni",
      "postcode": "20099", "address": "Viale Casiraghi 427", "website": "https://pogliani.com",
      "country": "IT", "source_site": "pogliani.com", "notes": "Specialisti 2 ruote Milano dal 1952"},
+    {"name": "Stamoto Milano", "email": "ricambi@stamoto.it", "city": "Milano", "postcode": "",
+     "address": "", "website": "https://stamoto.it", "country": "IT",
+     "source_site": "stamoto.it", "notes": "Concessionaria/officina Milano (2 sedi)"},
+    {"name": "CMT Motor Brescia", "email": "brescia@cmtmotor.com", "city": "Brescia", "postcode": "",
+     "address": "", "website": "https://www.cmtmotor.com", "country": "IT",
+     "source_site": "cmtmotor.com", "notes": "Concessionaria Brescia"},
+    {"name": "CMT Motor Milano", "email": "umilano@cmtmotor.com", "city": "Milano", "postcode": "",
+     "address": "", "website": "https://www.cmtmotor.com", "country": "IT",
+     "source_site": "cmtmotor.com", "notes": "Concessionaria Milano"},
+    # ===== Firenze / Bari =====
+    {"name": "Alma Moto", "email": "info@almamoto.it", "city": "Firenze", "postcode": "",
+     "address": "", "website": "https://www.almamoto.it", "country": "IT",
+     "source_site": "almamoto.it", "notes": "Concessionaria ufficiale Beta Firenze"},
+    {"name": "CeB Group Motor", "email": "info@cebmotor.it", "city": "Firenze", "postcode": "",
+     "address": "", "website": "https://cebmotor.it", "country": "IT",
+     "source_site": "cebmotor.it", "notes": "Concessionaria ufficiale Piaggio Firenze"},
+    {"name": "Baldassarre Moto", "email": "info@baldassarremoto.bmw.it", "city": "Bari", "postcode": "",
+     "address": "", "website": "https://www.baldassarremoto.it", "country": "IT",
+     "source_site": "baldassarremoto.it", "notes": "BMW Motorrad / Kawasaki / Vervemoto"},
 ]
 
 
@@ -383,6 +422,30 @@ async def import_italian_seed_leads(current_user: dict = Depends(get_current_use
     _require_admin(current_user)
     await _ensure_indexes()
     return await _import_seed(ITALIAN_SEED_LEADS, current_user, "italian-seed")
+
+
+@router.post("/admin/leads/scrape-moto-it")
+async def scrape_moto_it_endpoint(
+    body: dict = Body(default={}),
+    current_user: dict = Depends(get_current_user),
+):
+    """Automatisch dealers + emails scrapen van moto.it concessionari.
+
+    Body: { max_pages: 5 } → per pagina ~17 dealers, totaal ~85.
+    Loopt asynchroon door dealer.moto.it/{slug} profielen en /contatti subpaden
+    om emails te vinden. Idempotent via email_lower dedup.
+
+    Let op: 1.132 dealers totaal — voer eerst max_pages=2 uit (testbatch) om
+    te kijken hoe de site reageert vóór je een grote run doet.
+    """
+    _require_admin(current_user)
+    await _ensure_indexes()
+    from services.dealer_scraper import scrape_moto_it
+
+    max_pages = int((body or {}).get("max_pages", 5))
+    max_pages = max(1, min(max_pages, 70))  # cap op 70 (~1.190 dealers max)
+    result = await scrape_moto_it(max_pages=max_pages, current_user_id=current_user.get("id"))
+    return result
 
 
 # Generic email-extractor patroon — werkt voor Pages Jaunes, Google Maps copy-paste,

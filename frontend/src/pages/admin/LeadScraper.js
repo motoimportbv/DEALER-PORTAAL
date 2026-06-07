@@ -162,6 +162,27 @@ export default function LeadScraper() {
     setAutoBusy(false);
   };
 
+  const [motoItPages, setMotoItPages] = useState(5);
+  const [motoItBusy, setMotoItBusy] = useState(false);
+  const scrapeMotoIt = async () => {
+    const estimated = motoItPages * 20;
+    if (!window.confirm(`Automatisch ${estimated} Italiaanse dealers van moto.it scrapen?\n\n${motoItPages} pagina's × ~20 dealers = ~${estimated} dealers\nGeschatte tijd: ~${Math.max(1, Math.round(motoItPages * 0.6))} min\nGeschatte hit-rate: 65% (dus ~${Math.round(estimated * 0.65)} echte e-mails)\n\nDeze actie blokkeert je server tijdens uitvoering — start met max 5 pagina's.`)) return;
+    setMotoItBusy(true);
+    try {
+      const r = await axios.post(
+        `${API}/admin/leads/scrape-moto-it`,
+        { max_pages: motoItPages },
+        { headers: { Authorization: `Bearer ${token}` }, timeout: motoItPages * 180000 }
+      );
+      const d = r.data;
+      toast.success(`✅ moto.it scrape klaar: ${d.inserted} nieuwe leads (${d.duplicates} dup, ${d.no_email} zonder email, ${d.processed} dealers verwerkt)`);
+      fetchLeads();
+    } catch (e) {
+      toast.error('Mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+    setMotoItBusy(false);
+  };
+
   const [genericText, setGenericText] = useState('');
   const [genericBusy, setGenericBusy] = useState(false);
   const submitGenericPaste = async () => {
@@ -338,9 +359,9 @@ export default function LeadScraper() {
                 <h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">Italiaanse leveranciers</h3>
               </div>
               <p className="text-sm text-green-800">
-                Geverifieerde startlijst met <strong>7 Italiaanse motor-dealers</strong> (Euroscooter Roma,
-                Honda Moto Roma — 3 vestigingen, La Moto Roma Nord/Ovest, Pogliani Milano).
-                Verzamel meer via de plak-modus hieronder met paginegialle.it.
+                Geverifieerde startlijst met <strong>13 Italiaanse motor-dealers</strong> (Euroscooter Roma,
+                Honda Moto Roma — 3 vestigingen, La Moto Roma Nord/Ovest, Pogliani &amp; Stamoto Milano,
+                CMT Motor Brescia/Milano, Alma + CeB Firenze, Baldassarre Bari).
               </p>
               <Button
                 onClick={importItalianSeed}
@@ -348,8 +369,40 @@ export default function LeadScraper() {
                 className="bg-green-600 hover:bg-green-700 text-white font-bold w-full sm:w-auto"
                 data-testid="import-italian-seed-btn"
               >
-                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer 7 Italiaanse dealers</>}
+                {autoBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Bezig...</> : <>📥 Importeer 13 Italiaanse dealers</>}
               </Button>
+
+              <div className="mt-3 pt-3 border-t border-green-300 space-y-2" data-testid="moto-it-scrape-block">
+                <p className="text-xs font-bold text-green-900 uppercase tracking-wide">🤖 Auto-scrape moto.it</p>
+                <p className="text-xs text-green-800">
+                  Automatisch dealer-namen + websites + emails van <strong>moto.it/concessionari</strong> halen (1.132 dealers in totaal).
+                  ~20 dealers per pagina, hit-rate ±65% echte emails.
+                </p>
+                <div className="flex flex-wrap gap-2 items-end">
+                  <div>
+                    <label className="text-[10px] text-green-700 font-bold block">Aantal pagina's (max 70):</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={70}
+                      value={motoItPages}
+                      onChange={(e) => setMotoItPages(Math.max(1, Math.min(70, parseInt(e.target.value) || 1)))}
+                      className="w-20 border border-green-400 rounded px-2 py-1 text-sm"
+                      data-testid="moto-it-pages-input"
+                    />
+                  </div>
+                  <p className="text-[10px] text-green-700">≈ {motoItPages * 20} dealers, ~{Math.round(motoItPages * 0.65 * 20)} emails</p>
+                  <Button
+                    onClick={scrapeMotoIt}
+                    disabled={motoItBusy}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs"
+                    data-testid="scrape-moto-it-btn"
+                  >
+                    {motoItBusy ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />Scraping... (kan paar min duren)</> : <>🤖 Start auto-scrape</>}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-green-700">Tip: start met 2 pagina's (40 dealers) als testbatch — schaal daarna op.</p>
+              </div>
             </div>
 
             <div className="border-t pt-3" data-testid="generic-paste-block">

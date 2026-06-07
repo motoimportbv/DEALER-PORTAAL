@@ -20,6 +20,11 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 ## Prioritized Backlog
 
 ### P0 - Afgerond
+- **Auto-scraper moto.it + uitgebreide seed-lijsten** (Feb 2026):
+  1. **Quick-win seed uitbreiding**: 11 extra FR/BE dealers (Brussels Moto Store, Honda Mertens, Superbike Marseille, Moto Expert 31, City2Roues...) en 6 extra IT dealers (Stamoto Milano, CMT Motor Brescia/Milano, Alma Moto, CeB Group, Baldassarre Moto). Totaal seed: **11 FR/BE + 13 IT dealers**.
+  2. **Automatische moto.it scraper** in `backend/services/dealer_scraper.py`: parsed listing-pagina van `moto.it/concessionari`, gaat per dealer naar `dealer.moto.it/{slug}` om externe website-domein te extraheren (skip-list voor social/google/merk-sites), probeert dan `/contatti`, `/contact`, etc. paden om emails via regex te vinden. Async parallel pool (semaphore=5). Tested met 1 pagina: **13 van 20 dealers (65% hit-rate) — echte emails** zoals `info@hondapoint.it`, `hbs@harleybrescia.com`, `info@euromotogorini.com`.
+  3. **Endpoint**: `POST /api/admin/leads/scrape-moto-it` body `{max_pages: N}` (1-70 = ~1.400 dealers max). Idempotent via email_lower dedup.
+  4. **Frontend**: in groene 🇮🇹 blok in `/admin/lead-scraper` een sub-blok "🤖 Auto-scrape moto.it" met number-input voor pages + start-knop met live progress feedback en estimate (X dealers, ~Y emails).
 - **Italiaanse leveranciers — outreach compleet** (Feb 2026):
   1. **Italian seed knop** in `/admin/lead-scraper` (groen 🇮🇹 blok) — `POST /api/admin/leads/import-italian-seed` importeert 7 geverifieerde IT motor-dealers: Euroscooter Moto (Roma), Honda Moto Roma — 3 vestigingen (Tiburtina, Gregorio, Appia), La Moto Roma Nord, La Moto Roma Ovest, Pogliani (Sesto San Giovanni MI). Idempotent via email_lower dedup, helper `_import_seed()` shared met FR/BE seed.
   2. **Italiaanse mail-template** toegevoegd aan `/admin/taxatie-sales-mail` als 4e vlag-tegel 🇮🇹 "Concessionario outreach — Italiano". Volledig vertaald: subject, plain-text en HTML body met groen Italiaans thema. Link naar `?lang=it` (al bestaande Italiaanse landing-page i18n keys).
