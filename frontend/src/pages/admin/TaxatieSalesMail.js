@@ -141,8 +141,181 @@ const HTML_BODY = `<div style="font-family: -apple-system, BlinkMacSystemFont, '
   </div>
 </div>`;
 
+const SUPPLIER_NL_SUBJECT = "Verkoop uw motoren aan 100+ Nederlandse dealers — Moto Import B.V.";
+
+const SUPPLIER_NL_PLAIN = `Beste collega,
+
+Ik ben Sandro van Moto Import B.V. — wij zijn op zoek naar gespecialiseerde motorzaken in Vlaanderen en Nederland die hun voorraad willen verkopen aan ons NL-dealernetwerk.
+
+WAT WIJ AANBIEDEN:
+• Platform met 100+ Nederlandse motorzaken — ze zien uw motoren direct
+• 100% gratis — geen abonnement, geen commissie. U bepaalt de prijs voor Moto Import B.V.
+• Uitbetaling binnen 1 week per overschrijving
+• Wij komen de motor bij u ophalen
+• Moto Import B.V. regelt alles: RDW, BPM, tenaamstelling en transport
+• Geen Nederlandse btw of import-papieren voor u nodig
+
+ZO WERKT HET:
+1. Gratis aanmelden: https://www.motoimportbv.nl/register/supplier?lang=nl
+2. Upload uw motoren met prijs voor Moto Import B.V.
+3. Wij halen ze op en betalen u uit binnen 1 week
+
+LIEVER EERST EVEN OVERLEGGEN?
+> Tel: 06-24264861
+> WhatsApp: 06-24264861
+> Mail: motoimportbv@gmail.com
+
+Met vriendelijke groet,
+Team Moto Import B.V.
+Horsterhoekweg 11, 7433 SV Schalkhaar
+KVK 94622086
+www.motoimportbv.nl
+`;
+
+const SUPPLIER_NL_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafafa; color: #18181b;">
+  <div style="background: linear-gradient(135deg, #18181b 0%, #581c87 100%); color: white; padding: 36px 28px;">
+    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #c4b5fd; text-transform: uppercase;">Voor motorzaken in Vlaanderen &amp; NL</p>
+    <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 900; line-height: 1.1;">Verkoop uw motoren aan 100+ NL dealers.</h1>
+    <p style="margin: 0; color: #ddd6fe; font-size: 15px;">Wij halen ze op, regelen alles en betalen binnen 1 week uit.</p>
+  </div>
+  <div style="background: white; padding: 28px;">
+    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Beste collega,</p>
+    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+      Wij zijn <strong>Moto Import B.V.</strong> — we zoeken motorzaken die hun voorraad willen verkopen aan ons netwerk van Nederlandse dealers. Geen export-gedoe, geen wachttijden, geen verrassingen.
+    </p>
+    <h3 style="margin: 24px 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b;">Wat wij u bieden</h3>
+    <ul style="margin: 0 0 24px; padding-left: 18px; font-size: 14px; line-height: 1.8; color: #3f3f46;">
+      <li><strong>100+ Nederlandse dealers</strong> zien uw motoren direct via ons platform</li>
+      <li><strong>100% gratis</strong> — geen abonnement, geen commissie. U bepaalt de prijs voor Moto Import B.V.</li>
+      <li><strong>Uitbetaling binnen 1 week</strong> per overschrijving</li>
+      <li><strong>Wij halen de motor bij u op</strong> — RDW, BPM en transport: wij regelen het</li>
+      <li><strong>Geen NL-administratie</strong> voor u nodig</li>
+    </ul>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="https://www.motoimportbv.nl/register/supplier?lang=nl" style="display: inline-block; background: #7c3aed; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;">
+        Gratis account aanmaken →
+      </a>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #71717a;">geen creditcard · direct toegang</p>
+    </div>
+    <div style="margin: 32px 0 0; padding: 18px; background: #18181b; border-radius: 8px; text-align: center;">
+      <p style="margin: 0 0 6px; font-size: 13px; color: #fafafa;">Liever eerst even bellen of WhatsAppen?</p>
+      <p style="margin: 0; font-size: 16px; font-weight: 700;">
+        <a href="tel:+31624264861" style="color: #c4b5fd; text-decoration: none; margin: 0 12px;">📞 06-24264861</a>
+        <a href="https://wa.me/31624264861" style="color: #c4b5fd; text-decoration: none; margin: 0 12px;">💬 WhatsApp</a>
+      </p>
+    </div>
+  </div>
+  <div style="background: white; padding: 16px 28px 28px; font-size: 13px; color: #3f3f46;">
+    <p style="margin: 16px 0 4px;">Met vriendelijke groet,</p>
+    <p style="margin: 0 0 4px; font-weight: 700; color: #18181b;">Team Moto Import B.V.</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">Horsterhoekweg 11, 7433 SV Schalkhaar</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">KVK 94622086 · <a href="https://www.motoimportbv.nl" style="color: #7c3aed;">www.motoimportbv.nl</a></p>
+  </div>
+</div>`;
+
+const SUPPLIER_FR_SUBJECT = "Vendez vos motos à plus de 100 revendeurs néerlandais — Moto Import B.V.";
+
+const SUPPLIER_FR_PLAIN = `Bonjour,
+
+Je suis Sandro de Moto Import B.V. — nous recherchons des concessionnaires moto en France et en Belgique qui souhaitent vendre leur stock à notre réseau de revendeurs néerlandais.
+
+CE QUE NOUS OFFRONS :
+• Plateforme avec plus de 100 revendeurs moto néerlandais — ils voient vos motos immédiatement
+• 100% gratuit — pas d'abonnement, pas de commission. Vous fixez le prix pour Moto Import B.V.
+• Paiement par virement sous 1 semaine
+• Nous venons chercher la moto chez vous
+• Moto Import B.V. s'occupe de tout : RDW, BPM, immatriculation et transport
+• Aucune TVA néerlandaise ni papier d'importation à gérer
+
+COMMENT ÇA MARCHE :
+1. Inscription gratuite : https://www.motoimportbv.nl/register/supplier?lang=fr
+2. Mettez vos motos en ligne avec le prix pour Moto Import B.V.
+3. Nous venons les chercher et vous payons sous 1 semaine
+
+PRÉFÉREZ EN PARLER D'ABORD ?
+> Tél : +31 6 24264861
+> WhatsApp : +31 6 24264861
+> Email : motoimportbv@gmail.com
+
+Cordialement,
+L'équipe Moto Import B.V.
+Horsterhoekweg 11, 7433 SV Schalkhaar — Pays-Bas
+KVK 94622086
+www.motoimportbv.nl
+`;
+
+const SUPPLIER_FR_HTML = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fafafa; color: #18181b;">
+  <div style="background: linear-gradient(135deg, #18181b 0%, #581c87 100%); color: white; padding: 36px 28px;">
+    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #c4b5fd; text-transform: uppercase;">Pour les concessionnaires moto FR &amp; BE</p>
+    <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 900; line-height: 1.1;">Vendez vos motos à 100+ revendeurs néerlandais.</h1>
+    <p style="margin: 0; color: #ddd6fe; font-size: 15px;">Nous venons les chercher, nous gérons tout, paiement sous 1 semaine.</p>
+  </div>
+  <div style="background: white; padding: 28px;">
+    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Bonjour,</p>
+    <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+      Nous sommes <strong>Moto Import B.V.</strong> — nous recherchons des concessionnaires moto en France et en Belgique qui souhaitent vendre leur stock à notre réseau de revendeurs néerlandais. Pas de tracas d'export, pas d'attente, pas de mauvaise surprise.
+    </p>
+    <h3 style="margin: 24px 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #18181b;">Ce que nous vous offrons</h3>
+    <ul style="margin: 0 0 24px; padding-left: 18px; font-size: 14px; line-height: 1.8; color: #3f3f46;">
+      <li><strong>Plus de 100 revendeurs néerlandais</strong> voient vos motos immédiatement</li>
+      <li><strong>100% gratuit</strong> — pas d'abonnement, pas de commission. Vous fixez le prix pour Moto Import B.V.</li>
+      <li><strong>Paiement sous 1 semaine</strong> par virement bancaire</li>
+      <li><strong>Nous venons chercher la moto chez vous</strong> — RDW, BPM et transport : on s'en occupe</li>
+      <li><strong>Aucune démarche aux Pays-Bas</strong> à gérer de votre côté</li>
+    </ul>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="https://www.motoimportbv.nl/register/supplier?lang=fr" style="display: inline-block; background: #7c3aed; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px;">
+        Créer un compte gratuit →
+      </a>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #71717a;">sans carte bancaire · accès immédiat</p>
+    </div>
+    <div style="margin: 32px 0 0; padding: 18px; background: #18181b; border-radius: 8px; text-align: center;">
+      <p style="margin: 0 0 6px; font-size: 13px; color: #fafafa;">Vous préférez nous appeler ?</p>
+      <p style="margin: 0; font-size: 16px; font-weight: 700;">
+        <a href="tel:+31624264861" style="color: #c4b5fd; text-decoration: none; margin: 0 12px;">📞 +31 6 24264861</a>
+        <a href="https://wa.me/31624264861" style="color: #c4b5fd; text-decoration: none; margin: 0 12px;">💬 WhatsApp</a>
+      </p>
+    </div>
+  </div>
+  <div style="background: white; padding: 16px 28px 28px; font-size: 13px; color: #3f3f46;">
+    <p style="margin: 16px 0 4px;">Cordialement,</p>
+    <p style="margin: 0 0 4px; font-weight: 700; color: #18181b;">L'équipe Moto Import B.V.</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">Horsterhoekweg 11, 7433 SV Schalkhaar — Pays-Bas</p>
+    <p style="margin: 0; color: #71717a; font-size: 12px;">KVK 94622086 · <a href="https://www.motoimportbv.nl" style="color: #7c3aed;">www.motoimportbv.nl</a></p>
+  </div>
+</div>`;
+
+const TEMPLATES = {
+  bpm: {
+    label: 'BPM-taxatie — NL motorzaken',
+    flag: '🇳🇱',
+    subject: SUBJECT,
+    plain: PLAIN_TEXT,
+    html: HTML_BODY,
+    showFlyer: true,
+  },
+  supplier_nl: {
+    label: 'Leverancier outreach — NL/Vlaams',
+    flag: '🇧🇪',
+    subject: SUPPLIER_NL_SUBJECT,
+    plain: SUPPLIER_NL_PLAIN,
+    html: SUPPLIER_NL_HTML,
+    showFlyer: false,
+  },
+  supplier_fr: {
+    label: 'Fournisseur outreach — Français',
+    flag: '🇫🇷',
+    subject: SUPPLIER_FR_SUBJECT,
+    plain: SUPPLIER_FR_PLAIN,
+    html: SUPPLIER_FR_HTML,
+    showFlyer: false,
+  },
+};
+
 export default function TaxatieSalesMail() {
   const { user, token } = useAuth();
+  const [templateKey, setTemplateKey] = useState('bpm');
+  const T = TEMPLATES[templateKey];
   const [view, setView] = useState('preview');  // 'preview' | 'html' | 'plain' | 'send'
   const [copied, setCopied] = useState('');
   const [recipientText, setRecipientText] = useState('');
@@ -202,12 +375,12 @@ export default function TaxatieSalesMail() {
   const sendBulk = async () => {
     if (validCount === 0) { toast.error('Geen geldige e-mailadressen'); return; }
     if (validCount > 100) { toast.error(`Max 100 per keer (u heeft ${validCount})`); return; }
-    if (!window.confirm(`Verstuur deze sales-mail naar ${validCount} ontvangers?${attachFlyer ? ' (incl. flyer-bijlage)' : ''}`)) return;
+    if (!window.confirm(`Verstuur deze sales-mail (${T.label}) naar ${validCount} ontvangers?${attachFlyer && T.showFlyer ? ' (incl. flyer-bijlage)' : ''}`)) return;
     setSending(true);
     try {
       const r = await axios.post(
         `${API}/admin/taxatie-sales-mail/send`,
-        { subject: SUBJECT, html: HTML_BODY, recipients, attach_flyer: attachFlyer },
+        { subject: T.subject, html: T.html, recipients, attach_flyer: attachFlyer && T.showFlyer },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const d = r.data;
@@ -281,30 +454,60 @@ export default function TaxatieSalesMail() {
           </div>
         </div>
 
+        {/* Template selector */}
+        <div className="bg-white rounded-2xl border-2 border-purple-200 p-5" data-testid="template-selector-block">
+          <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2">Welke campagne?</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {Object.entries(TEMPLATES).map(([key, tpl]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTemplateKey(key)}
+                className={`text-left p-3 rounded-xl border-2 transition ${
+                  templateKey === key
+                    ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-200'
+                    : 'border-zinc-200 bg-white hover:border-purple-300'
+                }`}
+                data-testid={`tpl-${key}`}
+              >
+                <div className="text-2xl">{tpl.flag}</div>
+                <div className={`text-sm font-bold mt-1 ${templateKey === key ? 'text-purple-900' : 'text-zinc-900'}`}>{tpl.label}</div>
+                {templateKey === key && (
+                  <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 uppercase tracking-wider">
+                    <Check className="w-3 h-3" />Actief
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Onderwerp regel + acties */}
         <div className="bg-white rounded-2xl border p-5 space-y-4" data-testid="subject-block">
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Onderwerp</label>
             <div className="mt-2 flex items-center gap-2">
               <input
-                readOnly value={SUBJECT}
+                readOnly value={T.subject}
                 className="flex-1 border border-zinc-300 rounded-lg px-3 py-2 text-sm font-bold bg-zinc-50"
                 data-testid="subject-input"
               />
-              <Button onClick={() => copyTo('Onderwerp', SUBJECT)} variant="outline" size="sm" data-testid="copy-subject-btn">
+              <Button onClick={() => copyTo('Onderwerp', T.subject)} variant="outline" size="sm" data-testid="copy-subject-btn">
                 {copied === 'Onderwerp' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
           </div>
           <div className="flex gap-2 pt-2 border-t flex-wrap">
-            <Button onClick={downloadFlyer} className="bg-amber-600 hover:bg-amber-700 text-white" data-testid="download-flyer-btn">
-              <FileText className="w-4 h-4 mr-2" />Download flyer (bijlage)
-            </Button>
-            <Button onClick={() => copyTo('HTML body', HTML_BODY)} variant="outline" data-testid="copy-html-btn">
+            {T.showFlyer && (
+              <Button onClick={downloadFlyer} className="bg-amber-600 hover:bg-amber-700 text-white" data-testid="download-flyer-btn">
+                <FileText className="w-4 h-4 mr-2" />Download flyer (bijlage)
+              </Button>
+            )}
+            <Button onClick={() => copyTo('HTML body', T.html)} variant="outline" data-testid="copy-html-btn">
               {copied === 'HTML body' ? <Check className="w-4 h-4 text-emerald-600 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
               Kopieer HTML
             </Button>
-            <Button onClick={() => copyTo('Plain-text', PLAIN_TEXT)} variant="outline" data-testid="copy-plain-btn">
+            <Button onClick={() => copyTo('Plain-text', T.plain)} variant="outline" data-testid="copy-plain-btn">
               {copied === 'Plain-text' ? <Check className="w-4 h-4 text-emerald-600 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
               Kopieer plain-text
             </Button>
@@ -322,19 +525,19 @@ export default function TaxatieSalesMail() {
         {/* Content */}
         {view === 'preview' && (
           <div className="bg-zinc-100 rounded-2xl p-4 sm:p-8 border" data-testid="preview-block">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden mx-auto" style={{ maxWidth: '640px' }} dangerouslySetInnerHTML={{ __html: HTML_BODY }} />
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden mx-auto" style={{ maxWidth: '640px' }} dangerouslySetInnerHTML={{ __html: T.html }} />
           </div>
         )}
         {view === 'html' && (
           <textarea
-            readOnly value={HTML_BODY}
+            readOnly value={T.html}
             className="w-full h-[560px] border border-zinc-300 rounded-2xl px-4 py-3 text-xs font-mono bg-zinc-50 focus:outline-none"
             data-testid="html-textarea"
           />
         )}
         {view === 'plain' && (
           <textarea
-            readOnly value={PLAIN_TEXT}
+            readOnly value={T.plain}
             className="w-full h-[560px] border border-zinc-300 rounded-2xl px-4 py-3 text-sm font-mono bg-zinc-50 focus:outline-none whitespace-pre"
             data-testid="plain-textarea"
           />
