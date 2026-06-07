@@ -989,6 +989,72 @@ WEB_SEARCH_LEADS = [
     {"name": "Torino Moto SRL (Suzuki ufficiale)", "email": "info@torinomoto.com",
      "city": "Torino", "website": "https://www.suzuki.it/dealer/torinomoto",
      "country": "IT", "notes": "Suzuki concessionario ufficiale Torino"},
+
+    # ===== Batch 38 (Feb 2026 — IT Milano + BE West-Vlaanderen) =====
+    {"name": "S.N. Moto Milano", "email": "snmoto@libero.it", "city": "Milano",
+     "website": "https://dealer.moto.it/snmoto", "country": "IT",
+     "notes": "Via Tiraboschi 1 + Via Anfossi 32"},
+    {"name": "Moto's Maes Ledegem", "email": "info@motosmaes.be", "city": "Ledegem",
+     "website": "https://motosmaes.be/nl", "country": "BE",
+     "notes": "Roeselare/Kortrijk-regio motorzaak"},
+
+    # ===== Batch 39 (Feb 2026 — NL Brabant + IT BMW Motorrad ufficiali) =====
+    {"name": "Swinkels Motoren Tilburg", "email": "info@swinkelsmotoren.nl", "city": "Tilburg",
+     "postcode": "5046 GP", "website": "https://www.swinkelsmotoren.nl", "country": "NL",
+     "notes": "Goirkestraat 106 — Yamaha occasions"},
+    {"name": "Maestro Motors Tilburg", "email": "info@maestromotors.nl", "city": "Tilburg",
+     "postcode": "5048 AB", "website": "https://maestromotors.nl", "country": "NL",
+     "notes": "Kraaivenstraat 25-04"},
+    {"name": "Van de Pol Motoren Helmond", "email": "vandepolmotoren@gmail.com",
+     "city": "Helmond", "postcode": "5701 JG", "website": "https://www.vandepolmotoren.nl",
+     "country": "NL", "notes": "Wolfstraat 74"},
+    {"name": "DCA Motorcycles & EZS Sidecars Helmond", "email": "info@dcamotorcycles.nl",
+     "city": "Helmond", "website": "https://www.dcamotorcycles.nl", "country": "NL",
+     "notes": "Onderhoud + occasions + sidecars"},
+    {"name": "Motorfelsinea BMW Motorrad Bologna", "email": "segreteria@bmwmotorradclubbologna.it",
+     "city": "Bologna", "postcode": "40128", "website": "", "country": "IT",
+     "notes": "Via della Liberazione 1"},
+    {"name": "BMW Motorrad Club Firenze (Nova Moto)", "email": "info@bmwmotorradclubfirenze.it",
+     "city": "Firenze", "postcode": "50127", "website": "", "country": "IT",
+     "notes": "Via Stradivari 1/15"},
+    {"name": "Baldassarre Moto BMW Bari", "email": "vittoria.giannoccaro@mb.conc-bmw.com",
+     "city": "Bari", "postcode": "70124", "website": "", "country": "IT",
+     "notes": "Via Niceforo 4/B"},
+    {"name": "BMW Motorrad Club Catania (Nuova Sport Car)", "email": "info@bmwmotorradclubcatania.com",
+     "city": "Catania", "postcode": "95100", "website": "", "country": "IT",
+     "notes": "SS 192 km 81.700"},
+
+    # ===== Batch 40 (Feb 2026 — Gelderland NL) =====
+    {"name": "Premium Motors / ARN Motors Apeldoorn", "email": "info@arnmotors.nl",
+     "city": "Apeldoorn", "website": "https://www.premiummotors.nl", "country": "NL",
+     "notes": "150+ motor occasions Gelderland"},
+
+    # ===== Batch 41 (Feb 2026 — NL Limburg + Overijssel) =====
+    {"name": "MotoLeo Hoensbroek", "email": "info@motoleo.nl", "city": "Hoensbroek",
+     "website": "https://www.motoleo.nl", "country": "NL",
+     "notes": "Zuid-Limburg — 125 motoren showroom"},
+    {"name": "Schepers Motoren Design", "email": "info@motorendesign.nl", "city": "Zuid-Limburg",
+     "website": "https://motorendesign.nl", "country": "NL",
+     "notes": "Mooie occasions Zuid-Limburg"},
+    {"name": "Motor Centrum Almelo", "email": "info@motorcentrumalmelo.nl", "city": "Almelo",
+     "postcode": "7605 AX", "website": "https://www.motorcentrumalmelo.nl", "country": "NL",
+     "notes": "Rohofstraat 82"},
+
+    # ===== Batch 42 (Feb 2026 — NL Utrecht regio) =====
+    {"name": "HP Motoren Utrecht", "email": "info@hpmotoren.nl", "city": "Utrecht",
+     "website": "https://hpmotoren.nl", "country": "NL",
+     "notes": "Occasion motoren sinds 1996"},
+    {"name": "De Jong Motoren", "email": "info@dejongmotoren.nl", "city": "Utrecht-regio",
+     "website": "https://www.dejongmotoren.nl", "country": "NL",
+     "notes": "In/verkoop occasions"},
+
+    # ===== Batch 43 (Feb 2026 — IT Piaggio + BE Liège) =====
+    {"name": "Arco Piaggio", "email": "info@arcopiaggio.it", "city": "Italia",
+     "website": "https://arcopiaggio.it", "country": "IT",
+     "notes": "Piaggio/Vespa/Aprilia concessionario ufficiale"},
+    {"name": "MotoConti Milmort", "email": "info@moto-conti.be", "city": "Milmort",
+     "website": "https://www.moto-conti.be", "country": "BE",
+     "notes": "Liège-regio motor occasion"},
 ]
 
 
