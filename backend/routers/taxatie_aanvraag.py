@@ -30,14 +30,58 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 ADMIN_OWNER_EMAIL = "motoimportbv@gmail.com"  # Aanvragen koppelen aan dit admin-account
 TAXATIE_DEALER_ROLE = "taxatie_dealer"
 
+# Emergent Object Storage configuratie — foto's permanent opslaan zodat ze
+# een container-restart of redeploy overleven (lokale disk is ephemeral).
+_CLOUD_STORAGE_BASE = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+_OBJ_STORAGE_KEY = os.environ.get("OBJECT_STORAGE_KEY", "")
+_CLOUD_BUCKET_PATH = "moto-import/taxatie_aanvragen"
+
+
+def _cloud_object_url(filename: str) -> str:
+    """Server-side URL voor download/PUT (vereist X-Storage-Key header)."""
+    return f"{_CLOUD_STORAGE_BASE}/objects/{_CLOUD_BUCKET_PATH}/{filename}"
+
 
 def _save_file(prefix: str, upload: UploadFile, field_key: str = "") -> dict:
-    """Sla een uploadbestand op en retourneer metadata."""
+    """Sla een uploadbestand op in Emergent Object Storage (persistent).
+    Als cloud-upload faalt, fallback naar lokale disk zodat de aanvraag niet stuk gaat —
+    in dat geval is het bestand NIET persistent en verdwijnt het bij de volgende deploy.
+
+    URL die we in de DB opslaan is altijd ons eigen `/api/uploads/taxatie_aanvragen/{fname}`
+    pad. De proxy-route bepaalt dynamisch of de file uit cloud of disk komt.
+    """
     safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", upload.filename or "upload")
     fname = f"{prefix}_{uuid.uuid4().hex[:8]}_{safe_name}"
+    content = upload.file.read()
+    content_type = upload.content_type or "application/octet-stream"
+
+    # 1) Probeer eerst cloud-upload (permanent)
+    if _OBJ_STORAGE_KEY:
+        try:
+            import requests as _requests
+            resp = _requests.put(
+                _cloud_object_url(fname),
+                headers={"X-Storage-Key": _OBJ_STORAGE_KEY, "Content-Type": content_type},
+                data=content,
+                timeout=60,
+            )
+            if resp.status_code in (200, 201, 204):
+                return {
+                    "field": field_key,
+                    "filename": fname,
+                    "url": f"/api/uploads/taxatie_aanvragen/{fname}",
+                    "original_name": upload.filename,
+                    "size": len(content),
+                    "content_type": content_type,
+                    "storage": "cloud",
+                }
+            logger.warning(f"Cloud upload failed status={resp.status_code} for {fname}, falling back to disk. Body: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"Cloud upload exception for {fname}: {e} — falling back to disk")
+
+    # 2) Fallback: lokale disk (niet persistent, maar beter dan helemaal niet)
     path = os.path.join(UPLOAD_DIR, fname)
     with open(path, "wb") as f:
-        content = upload.file.read()
         f.write(content)
     return {
         "field": field_key,
@@ -45,8 +89,29 @@ def _save_file(prefix: str, upload: UploadFile, field_key: str = "") -> dict:
         "url": f"/api/uploads/taxatie_aanvragen/{fname}",
         "original_name": upload.filename,
         "size": len(content),
-        "content_type": upload.content_type,
+        "content_type": content_type,
+        "storage": "disk",
     }
+
+
+def _fetch_from_cloud(filename: str) -> Optional[tuple]:
+    """Probeer een file op te halen uit Emergent cloud storage.
+    Returns (content_bytes, content_type) of None als niet gevonden / niet beschikbaar.
+    """
+    if not _OBJ_STORAGE_KEY:
+        return None
+    try:
+        import requests as _requests
+        resp = _requests.get(
+            _cloud_object_url(filename),
+            headers={"X-Storage-Key": _OBJ_STORAGE_KEY},
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+    except Exception as e:
+        logger.warning(f"Cloud fetch error for {filename}: {e}")
+    return None
 
 
 async def _ensure_customer(record: dict) -> Optional[str]:
@@ -100,6 +165,38 @@ async def _ensure_customer(record: dict) -> Optional[str]:
     except Exception as e:
         logger.warning(f"_ensure_customer failed: {e}")
         return None
+
+
+# ============ FILE PROXY (cloud + disk fallback) ============
+
+@router.get("/uploads/taxatie_aanvragen/{filename}")
+async def serve_taxatie_upload(filename: str):
+    """Serveer een geüploade foto. Probeert eerst lokale disk, dan cloud storage.
+
+    Deze route overschrijft de generieke `/api/uploads` StaticFiles-mount voor
+    taxatie-aanvraag foto's zodat we transparant cloud-objecten kunnen serveren.
+    """
+    from fastapi.responses import Response, FileResponse
+
+    # Path-traversal beveiliging
+    safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
+    if safe_name != filename or "/" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Ongeldige bestandsnaam")
+
+    # 1) Lokale disk (legacy + fallback)
+    local_path = os.path.join(UPLOAD_DIR, filename)
+    if os.path.exists(local_path):
+        return FileResponse(local_path)
+
+    # 2) Cloud storage
+    result = _fetch_from_cloud(filename)
+    if result:
+        content, content_type = result
+        return Response(content=content, media_type=content_type)
+
+    raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+
+
 
 
 @router.post("/public/taxatie-aanvraag")
