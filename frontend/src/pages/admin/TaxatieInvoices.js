@@ -19,6 +19,8 @@ import {
   Bike,
   User,
   Edit,
+  Mail,
+  Send,
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -55,6 +57,48 @@ export default function TaxatieInvoices() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [saving, setSaving] = useState(false);
   const printRef = useRef(null);
+
+  // ===== Email factuur modal =====
+  const [emailModal, setEmailModal] = useState(null); // null | {invoice}
+  const [emailTo, setEmailTo] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+
+  const openEmailModal = (inv) => {
+    setEmailModal({ invoice: inv });
+    setEmailTo(inv?.customer_email || '');
+    setEmailMessage('');
+  };
+  const closeEmailModal = () => {
+    if (emailSending) return;
+    setEmailModal(null);
+    setEmailTo('');
+    setEmailMessage('');
+  };
+  const handleSendEmail = async () => {
+    const inv = emailModal?.invoice;
+    if (!inv) return;
+    const to = (emailTo || '').trim();
+    if (!to || !to.includes('@')) {
+      toast.error('Geef een geldig e-mailadres op');
+      return;
+    }
+    setEmailSending(true);
+    try {
+      const res = await axios.post(
+        `${API}/taxatie/invoices/${inv.id}/send-email`,
+        { to_email: to, message: emailMessage.trim() || undefined },
+        { headers }
+      );
+      toast.success(`Factuur #${res.data.invoice_number} verstuurd naar ${res.data.to}`);
+      closeEmailModal();
+      fetchInvoices();
+    } catch (e) {
+      const detail = e?.response?.data?.detail || 'Verzenden mislukt';
+      toast.error(detail);
+    }
+    setEmailSending(false);
+  };
 
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -747,6 +791,9 @@ export default function TaxatieInvoices() {
             <Button onClick={() => handleStatusToggle(inv)} variant="outline" className="text-sm" data-testid="toggle-status-btn">
               {inv.status === 'concept' ? <><Clock className="w-4 h-4 mr-1" /> Naar Open</> : inv.status === 'open' ? <><CheckCircle className="w-4 h-4 mr-1" /> Markeer Betaald</> : <><Clock className="w-4 h-4 mr-1" /> Markeer Open</>}
             </Button>
+            <Button onClick={() => openEmailModal(inv)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm" data-testid="email-invoice-btn">
+              <Mail className="w-4 h-4 mr-2" /> Mail factuur
+            </Button>
             <Button onClick={handlePrint} className="bg-zinc-900 hover:bg-zinc-800 text-white text-sm" data-testid="print-invoice-btn">
               <Printer className="w-4 h-4 mr-2" /> Printen / PDF
             </Button>
@@ -905,6 +952,86 @@ export default function TaxatieInvoices() {
             </div>
           </div>
         </div>
+
+        {/* Email factuur modal */}
+        {emailModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={closeEmailModal}
+            data-testid="email-modal-backdrop"
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+              data-testid="email-modal"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-zinc-900">Factuur mailen</h2>
+                    <p className="text-xs text-zinc-500">Factuur #{emailModal.invoice.invoice_number} · {emailModal.invoice.customer_name}</p>
+                  </div>
+                </div>
+                <button onClick={closeEmailModal} className="text-zinc-400 hover:text-zinc-900 p-1" data-testid="close-email-modal">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 uppercase tracking-wide mb-1.5">
+                    Naar (e-mail klant)
+                  </label>
+                  <input
+                    type="email"
+                    value={emailTo}
+                    onChange={(e) => setEmailTo(e.target.value)}
+                    placeholder="dealer@bedrijf.nl"
+                    className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    data-testid="email-to-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 uppercase tracking-wide mb-1.5">
+                    Persoonlijk bericht <span className="font-normal text-zinc-400 normal-case">(optioneel — verschijnt boven de factuur-samenvatting)</span>
+                  </label>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={4}
+                    placeholder="Bijv. Hierbij de factuur voor de taxaties van vorige week. Laat het me weten als er vragen zijn!"
+                    className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+                    data-testid="email-message-input"
+                  />
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                  📎 Een nette PDF-factuur met SEPA QR-code wordt automatisch als bijlage meegestuurd. Verzonden vanaf <strong>motoimportbv@gmail.com</strong>.
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-zinc-100">
+                <Button variant="outline" onClick={closeEmailModal} disabled={emailSending} data-testid="cancel-email-btn">
+                  Annuleren
+                </Button>
+                <Button
+                  onClick={handleSendEmail}
+                  disabled={emailSending}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  data-testid="send-email-btn"
+                >
+                  {emailSending ? (
+                    <><Clock className="w-4 h-4 mr-2 animate-spin" /> Versturen...</>
+                  ) : (
+                    <><Send className="w-4 h-4 mr-2" /> Verstuur factuur</>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Layout>
     );
   }

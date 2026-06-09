@@ -171,6 +171,374 @@ async def delete_taxatie_invoice(invoice_id: str, current_user: dict = Depends(g
         raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     return {"status": "deleted"}
 
+
+# ============ EMAIL FACTUUR NAAR KLANT ============
+
+def _compute_invoice_totals(inv: dict) -> dict:
+    """Mirror of frontend totals computation (TaxatieInvoices.js)."""
+    items = inv.get("taxatie_items") or []
+    invoice_type = inv.get("invoice_type", "both")
+    show_taxatie = invoice_type != "fee_only"
+    show_fee = invoice_type in ("fee_only", "both") or inv.get("include_extra_fee")
+    btw_pct = float(inv.get("btw_percentage") or 21)
+
+    if show_taxatie:
+        taxatie_fee = sum(float(i.get("fee") or 0) for i in items) if items else float(inv.get("fee") or 0)
+    else:
+        taxatie_fee = 0.0
+    taxatie_btw = taxatie_fee * (btw_pct / 100.0)
+
+    fee_amount = float(inv.get("extra_fee") or 0) if show_fee else 0.0
+
+    extra_lines = [ln for ln in (inv.get("extra_lines") or [])
+                   if (ln.get("description") or "").strip() and float(ln.get("amount") or 0) > 0]
+    extra_lines_ex = sum(float(ln.get("amount") or 0) for ln in extra_lines)
+    extra_lines_btw = sum(float(ln.get("amount") or 0) * (float(ln.get("btw_pct") or 0) / 100.0) for ln in extra_lines)
+
+    total = taxatie_fee + taxatie_btw + fee_amount + extra_lines_ex + extra_lines_btw
+    return {
+        "items": items, "show_taxatie": show_taxatie, "show_fee": show_fee,
+        "btw_pct": btw_pct, "taxatie_fee": taxatie_fee, "taxatie_btw": taxatie_btw,
+        "fee_amount": fee_amount, "extra_lines": extra_lines,
+        "extra_lines_ex": extra_lines_ex, "extra_lines_btw": extra_lines_btw,
+        "total": round(total, 2),
+    }
+
+
+def _fmt_eur(v) -> str:
+    return f"\u20ac {float(v or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+async def _generate_taxatie_invoice_pdf(inv: dict) -> bytes:
+    """Server-side PDF generator for a taxatie invoice (incl. SEPA QR)."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
+    from io import BytesIO
+
+    bank_iban = (inv.get("bank_iban") or TAXATIE_BANK_IBAN).replace(" ", "")
+    bank_name = inv.get("bank_name") or TAXATIE_BANK_NAME
+    iban_display = " ".join([bank_iban[i:i+4] for i in range(0, len(bank_iban), 4)])
+    totals = _compute_invoice_totals(inv)
+    inv_num = inv.get("invoice_number") or "-"
+    reference = f"Factuur #{inv_num}"
+
+    def _build_qr(amount, ref, size_mm=28):
+        payload = "\n".join([
+            "BCD", "002", "1", "SCT", "",
+            bank_name, bank_iban, f"EUR{amount:.2f}",
+            "", "", ref[:140],
+        ])
+        qr = QrCodeWidget(payload, barLevel='M')
+        b = qr.getBounds()
+        w, h = b[2]-b[0], b[3]-b[1]
+        t = size_mm * mm
+        d = Drawing(t, t, transform=[t/w, 0, 0, t/h, 0, 0])
+        d.add(qr)
+        return d
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            leftMargin=18*mm, rightMargin=18*mm,
+                            topMargin=16*mm, bottomMargin=16*mm)
+    styles = getSampleStyleSheet()
+    n = ParagraphStyle('N', parent=styles['Normal'], fontSize=10, leading=14)
+    sm = ParagraphStyle('SM', parent=n, fontSize=8.5, textColor=colors.HexColor('#666'))
+    nb = ParagraphStyle('NB', parent=n, fontName='Helvetica-Bold')
+    title = ParagraphStyle('T', parent=n, fontSize=22, textColor=colors.HexColor('#dc2626'),
+                           fontName='Helvetica-Bold', leading=26)
+    right = ParagraphStyle('R', parent=n, alignment=TA_RIGHT)
+    rightb = ParagraphStyle('RB', parent=nb, alignment=TA_RIGHT)
+    white_b = ParagraphStyle('WB', parent=nb, textColor=colors.white)
+
+    elements = []
+
+    # Header
+    header = Table([[
+        [Paragraph("TAXATIE FACTUUR", title),
+         Paragraph(f"<b>Factuurnummer:</b> #{inv_num}", n),
+         Paragraph(f"<b>Datum:</b> {inv.get('date', '-')}", n)],
+        [Paragraph("<b>motoimport bv</b>", right),
+         Paragraph("motoimportbv@gmail.com", right),
+         Paragraph("+31 6 24264861", right),
+         Paragraph("Horsterhoekweg 11<br/>7433 SV Schalkhaar", right),
+         Paragraph("KvK: 94622086 — BTW: NL867456982B01", sm)],
+    ]], colWidths=[95*mm, 79*mm])
+    header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LINEBELOW', (0,0), (-1,0), 2, colors.HexColor('#dc2626')),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+    ]))
+    elements.append(header)
+    elements.append(Spacer(1, 8*mm))
+
+    # Klant + motor blokken
+    def _block(label, lines):
+        body = [Paragraph(f"<font color='#888' size=8><b>{label.upper()}</b></font>", n)]
+        for ln in lines:
+            if ln:
+                body.append(Paragraph(ln, n))
+        return body
+
+    customer_lines = [
+        f"<b>{inv.get('customer_name','-')}</b>",
+        inv.get("customer_address", ""),
+        inv.get("customer_city", ""),
+        inv.get("customer_phone", ""),
+        inv.get("customer_email", ""),
+    ]
+    items = totals["items"]
+    if items:
+        motor_lines = [f"<b>{len(items)}× motor(en)</b>"] + [
+            f"{(it.get('brand') or '').strip()} {(it.get('model') or '').strip()}"
+            + (f" ({it.get('year')})" if it.get('year') else "")
+            + (f" — {it.get('vin')}" if it.get('vin') else "")
+            for it in items[:6]
+        ]
+    else:
+        motor_lines = [
+            f"<b>{inv.get('motorcycle_brand','')} {inv.get('motorcycle_model','')}</b>",
+            f"Bouwjaar: {inv.get('motorcycle_year', '-')}",
+            f"Chassis: {inv.get('motorcycle_vin', '-')}",
+            (f"Kenteken: {inv.get('motorcycle_license_plate')}" if inv.get('motorcycle_license_plate') else ""),
+        ]
+    blocks = Table(
+        [[_block("Klantgegevens", customer_lines), _block("Motorgegevens", motor_lines)]],
+        colWidths=[87*mm, 87*mm],
+    )
+    blocks.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fafafa')),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#eee')),
+        ('LEFTPADDING', (0,0), (-1,-1), 10),
+        ('RIGHTPADDING', (0,0), (-1,-1), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+    ]))
+    elements.append(blocks)
+    elements.append(Spacer(1, 8*mm))
+
+    # Items table
+    rows = [[Paragraph("Omschrijving", white_b), Paragraph("Bedrag", ParagraphStyle('X', parent=white_b, alignment=TA_RIGHT))]]
+    if totals["show_taxatie"]:
+        if items:
+            for it in items:
+                desc = f"Taxatie {(it.get('brand') or '').strip()} {(it.get('model') or '').strip()}"
+                if it.get('year'):
+                    desc += f" ({it.get('year')})"
+                if it.get('vin'):
+                    desc += f" — {it.get('vin')}"
+                rows.append([Paragraph(desc, n), Paragraph(_fmt_eur(it.get("fee")), right)])
+        else:
+            rows.append([Paragraph("Taxatie kosten", n), Paragraph(_fmt_eur(inv.get("fee")), right)])
+        rows.append([Paragraph(f"BTW {int(totals['btw_pct'])}%", n), Paragraph(_fmt_eur(totals["taxatie_btw"]), right)])
+    if totals["show_fee"]:
+        suffix = " (zonder BTW)" if inv.get("extra_fee_no_btw") else ""
+        rows.append([Paragraph(f"Fee kosten{suffix}", n), Paragraph(_fmt_eur(totals["fee_amount"]), right)])
+    for l_ in totals["extra_lines"]:
+        suffix = "" if l_.get("btw_pct") else " (zonder BTW)"
+        rows.append([Paragraph(f"{l_.get('description','')}{suffix}", n), Paragraph(_fmt_eur(l_.get("amount")), right)])
+    if totals["extra_lines_btw"] > 0:
+        rows.append([Paragraph("BTW extra regels", n), Paragraph(_fmt_eur(totals["extra_lines_btw"]), right)])
+    rows.append([Paragraph("<b>Te betalen</b>", nb), Paragraph(f"<b>{_fmt_eur(totals['total'])}</b>", rightb)])
+
+    table = Table(rows, colWidths=[125*mm, 49*mm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
+        ('GRID', (0,0), (-1,-2), 0.4, colors.HexColor('#eee')),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#fafafa')),
+        ('LINEABOVE', (0,-1), (-1,-1), 1.5, colors.black),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 10),
+        ('RIGHTPADDING', (0,0), (-1,-1), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 8*mm))
+
+    # Payment box + QR
+    pay = [
+        Paragraph("<b><font color='#92400e'>Betaalinformatie</font></b>", n),
+        Spacer(1, 2*mm),
+        Paragraph(f"Gelieve het bedrag van <b>{_fmt_eur(totals['total'])}</b> over te maken naar:", n),
+        Paragraph(f"<b>t.n.v. {bank_name}</b>", n),
+        Paragraph(f"<b>IBAN: {iban_display}</b>", n),
+        Paragraph(f"<b>o.v.v. Factuurnummer #{inv_num}</b>", n),
+        Spacer(1, 2*mm),
+        Paragraph("<font size=8 color='#666'>Scan de QR-code met je bank-app voor automatische betaling →</font>", n),
+    ]
+    qr = _build_qr(totals["total"], reference, size_mm=30)
+    pay_table = Table([[pay, qr]], colWidths=[125*mm, 49*mm])
+    pay_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#fef3c7')),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#f59e0b')),
+        ('LEFTPADDING', (0,0), (-1,-1), 14),
+        ('RIGHTPADDING', (0,0), (-1,-1), 14),
+        ('TOPPADDING', (0,0), (-1,-1), 14),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 14),
+        ('ALIGN', (1,0), (1,0), 'CENTER'),
+    ]))
+    elements.append(pay_table)
+
+    if (inv.get("notes") or "").strip():
+        elements.append(Spacer(1, 6*mm))
+        elements.append(Paragraph(f"<b>Opmerkingen:</b> {inv['notes']}", sm))
+
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+@router.post("/taxatie/invoices/{invoice_id}/send-email")
+async def send_taxatie_invoice_email(
+    invoice_id: str,
+    body: dict = Body(default={}),
+    current_user: dict = Depends(get_current_user),
+):
+    """Email a single taxatie invoice (PDF attached) to the customer.
+
+    Body (optional): { to_email?: "override@x.nl", cc?: ["..."], message?: "extra notes" }
+    """
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    inv = await db.taxatie_invoices.find_one(
+        {"id": invoice_id, **_owner_filter_for_user(current_user)}, {"_id": 0}
+    )
+    if not inv:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+
+    to_email = ((body or {}).get("to_email") or inv.get("customer_email") or "").strip()
+    if not to_email or "@" not in to_email:
+        raise HTTPException(status_code=400, detail="Geen geldig e-mailadres voor de klant")
+    extra_msg = ((body or {}).get("message") or "").strip()
+    cc_list = [c.strip() for c in (body or {}).get("cc", []) if isinstance(c, str) and "@" in c]
+
+    # Build PDF
+    try:
+        pdf_bytes = await _generate_taxatie_invoice_pdf(inv)
+    except Exception as e:
+        logger.exception("PDF generatie faalde")
+        raise HTTPException(status_code=500, detail=f"PDF generatie faalde: {e}")
+
+    totals = _compute_invoice_totals(inv)
+    inv_num = inv.get("invoice_number") or "-"
+    bank_iban = (inv.get("bank_iban") or TAXATIE_BANK_IBAN).replace(" ", "")
+    iban_display = " ".join([bank_iban[i:i+4] for i in range(0, len(bank_iban), 4)])
+    bank_name = inv.get("bank_name") or TAXATIE_BANK_NAME
+
+    customer_first = (inv.get("customer_name") or "Geachte klant").split()[0]
+    motor_summary = ""
+    items = totals["items"]
+    if items:
+        motor_summary = f"{len(items)} motor{'en' if len(items) > 1 else ''}"
+    elif inv.get("motorcycle_brand"):
+        motor_summary = f"{inv.get('motorcycle_brand','')} {inv.get('motorcycle_model','')}".strip()
+
+    extra_html = ""
+    if extra_msg:
+        safe = (extra_msg.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")).replace("\n", "<br/>")
+        extra_html = f"""<div style="background:#f0f9ff;border-left:4px solid #0284c7;padding:14px 18px;margin:18px 0;border-radius:4px;font-size:14px;color:#0c4a6e;">{safe}</div>"""
+
+    html_body = f"""<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
+<div style="max-width:640px;margin:0 auto;padding:24px;">
+  <div style="background:#18181b;color:white;padding:24px 28px;border-radius:12px 12px 0 0;">
+    <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.3px;">motoimport bv</h1>
+    <p style="margin:4px 0 0;font-size:13px;color:#a1a1aa;">Taxatie Factuur · #{inv_num}</p>
+  </div>
+  <div style="background:white;padding:28px;border:1px solid #e4e4e7;border-top:none;">
+    <p style="margin:0 0 14px;font-size:16px;">Beste {customer_first},</p>
+    <p style="margin:0 0 14px;font-size:14.5px;line-height:1.65;color:#3f3f46;">
+      Bedankt voor het vertrouwen in <strong>motoimport bv</strong>. Hierbij ontvang je de factuur
+      voor de taxatie{(' van ' + motor_summary) if motor_summary else ''}.
+      Het bedrag staat hieronder samengevat — de volledige factuur zit als <strong>PDF in de bijlage</strong>.
+    </p>
+    {extra_html}
+    <div style="background:#fafafa;border:1px solid #e4e4e7;border-radius:8px;padding:18px;margin:18px 0;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#71717a;">Factuurnummer</td><td style="padding:6px 0;text-align:right;font-weight:600;">#{inv_num}</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;">Datum</td><td style="padding:6px 0;text-align:right;font-weight:600;">{inv.get('date', '-')}</td></tr>
+        <tr style="border-top:1px solid #e4e4e7;"><td style="padding:10px 0 6px;font-weight:700;font-size:15px;">Te betalen</td><td style="padding:10px 0 6px;text-align:right;font-weight:700;font-size:18px;color:#dc2626;">{_fmt_eur(totals['total'])}</td></tr>
+      </table>
+    </div>
+    <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:18px;margin:18px 0;">
+      <h3 style="margin:0 0 10px;color:#92400e;font-size:14px;">Betaalinformatie</h3>
+      <p style="margin:0;font-size:14px;color:#78350f;line-height:1.75;">
+        Gelieve het bedrag binnen <strong>14 dagen</strong> over te maken naar:<br>
+        <strong>t.n.v. {bank_name}</strong><br>
+        IBAN: <strong>{iban_display}</strong><br>
+        o.v.v. <strong>Factuurnummer #{inv_num}</strong>
+      </p>
+      <p style="margin:10px 0 0;font-size:12.5px;color:#92400e;">
+        💡 Tip: open je bank-app en scan de QR-code in de bijgevoegde PDF voor automatische betaling.
+      </p>
+    </div>
+    <p style="margin:20px 0 6px;font-size:14px;color:#3f3f46;line-height:1.6;">
+      Heb je vragen over deze factuur? Antwoord gewoon op deze mail of bel ons op <strong>+31 6 24264861</strong>.
+    </p>
+    <p style="margin:0;font-size:14px;color:#3f3f46;">Met vriendelijke groet,<br><strong>motoimport bv</strong></p>
+  </div>
+  <div style="background:#18181b;color:#a1a1aa;padding:16px 28px;border-radius:0 0 12px 12px;font-size:12px;text-align:center;">
+    <strong style="color:white;">motoimport bv</strong> · Horsterhoekweg 11, 7433 SV Schalkhaar · KvK 94622086<br>
+    motoimportbv@gmail.com · +31 6 24264861 · www.motoimportbv.nl
+  </div>
+</div>
+</body></html>"""
+
+    subject = f"Taxatie Factuur #{inv_num} — motoimport bv"
+
+    # Write PDF to temp file and reuse send_email_with_attachment
+    import tempfile, os as _os
+    tmp = tempfile.NamedTemporaryFile(prefix=f"factuur-{inv_num}-", suffix=".pdf", delete=False)
+    try:
+        tmp.write(pdf_bytes)
+        tmp.flush()
+        tmp.close()
+
+        # send_email_with_attachment doesn't support cc, so send to+cc separately if cc given.
+        ok = await send_email_with_attachment(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_body,
+            attachment_path=tmp.name,
+            attachment_display_name=f"Taxatie-Factuur-{inv_num}.pdf",
+        )
+        if not ok:
+            raise HTTPException(status_code=502, detail="Email verzenden mislukt (Gmail SMTP)")
+        for cc_addr in cc_list:
+            await send_email_with_attachment(
+                to_email=cc_addr, subject=f"[CC] {subject}",
+                html_content=html_body, attachment_path=tmp.name,
+                attachment_display_name=f"Taxatie-Factuur-{inv_num}.pdf",
+            )
+    finally:
+        try: _os.unlink(tmp.name)
+        except Exception: pass
+
+    # Log on the invoice
+    await db.taxatie_invoices.update_one(
+        {"id": invoice_id},
+        {"$set": {"last_emailed_to": to_email, "last_emailed_at": datetime.now(timezone.utc).isoformat()},
+         "$inc": {"email_send_count": 1}}
+    )
+
+    return {
+        "status": "sent",
+        "to": to_email,
+        "cc": cc_list,
+        "invoice_number": inv_num,
+        "total": totals["total"],
+    }
+
+
+
 # ============ GOOGLE MOTOREN (DEALER SEO LISTINGS) ============
 
 

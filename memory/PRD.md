@@ -19,6 +19,12 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **📧 Mail taxatie-factuur naar klant** (Feb 2026): User-request "Ik wil graag de taxati facturen mailen naar me delaers". Knop **"Mail factuur"** (emerald) toegevoegd in detail-view van `/admin/taxatie-invoices` naast Print/PDF. Modal vraagt om: (1) bevestiging klant-email (pre-gevuld uit factuur), (2) optioneel persoonlijk bericht. Backend endpoint `POST /api/taxatie/invoices/{id}/send-email`:
+  - Genereert server-side PDF via reportlab (helper `_generate_taxatie_invoice_pdf()`) — bevat factuurgegevens, klant/motor-blokken, items-tabel met BTW-regels, betaalinformatie + **SEPA QR-code** (zelfde EPC069-12 standaard als parts-factuur)
+  - Mirror van frontend totals-berekening (`_compute_invoice_totals()`)
+  - Verstuurt via bestaande Gmail SMTP (`motoimportbv@gmail.com`) — professionele HTML-email met motoimport bv branding (zwarte header, samenvatting-tabel, gele betaal-box, footer met KvK)
+  - Tracking: `email_send_count` + `last_emailed_at` + `last_emailed_to` opgeslagen op factuur
+  - End-to-end getest: factuur #1002 (€253.60) verzonden → status sent, log "Email sent to motoimportbv@gmail.com"
 - **SEPA/iDEAL QR-code op parts-factuur** (Feb 2026): User-request "ja is goed" op suggestie. EPC069-12 QR-code toegevoegd aan factuur-PDF naast betaalinstructies. Werkt in alle NL banking-apps (ING/Rabobank/ABN AMRO/Bunq) + alle EU SEPA-apps. QR-payload bevat: IBAN NL09BUNQ2159361135, T.n.v. "motoimport bv", exact factuurbedrag in EUR, en order-referentie als omschrijving. Geïmplementeerd via `reportlab.graphics.barcode.qr.QrCodeWidget` (helper `_build_sepa_qr()` in `parts.py`). PDF-size: 2438 → 5362 bytes (QR ingebed). End-to-end getest met test-order PO-2026-0001 €160.95.
 - **Bedrijfsgegevens update naar motoimport bv + nieuwe IBAN** (Feb 2026): User-request "Dit moet worden t.n.v motoimport bv NL09 BUNQ 2159 3611 35". Alleen betalingsgerelateerde plekken aangepast (taxateur-naam in juridische rapporten ongewijzigd gelaten). Bestanden gewijzigd:
   - `backend/routers/parts.py`: factuur-PDF header + betaalinstructies + email body → "motoimport bv" / "NL09 BUNQ 2159 3611 35"
