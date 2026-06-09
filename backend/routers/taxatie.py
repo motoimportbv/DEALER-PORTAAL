@@ -73,8 +73,8 @@ def _stamp_owner(doc: dict, user: dict) -> dict:
 
 
 # ==================== TAXATIE INVOICES ====================
-TAXATIE_BANK_NAME = "S. Milone"
-TAXATIE_BANK_IBAN = "NL84BUNQ2159356875"
+TAXATIE_BANK_NAME = "motoimport bv"
+TAXATIE_BANK_IBAN = "NL09BUNQ2159361135"
 
 @router.post("/taxatie/invoices")
 async def create_taxatie_invoice(body: dict = Body(...), current_user: dict = Depends(get_current_user)):

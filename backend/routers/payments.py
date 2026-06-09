@@ -276,8 +276,8 @@ async def get_payment_status(session_id: str, user: dict = Depends(require_appro
                                     <h3 style="margin-top: 0; color: #92400e;">⚠️ Restbedrag Overmaken</h3>
                                     <p style="margin-bottom: 15px;">Maak het restbedrag binnen <strong>5 werkdagen</strong> na ontvangst van de factuur over naar:</p>
                                     <div style="background: white; padding: 15px; border-radius: 6px; font-family: monospace;">
-                                        <p style="margin: 5px 0;"><strong>IBAN:</strong> NL23 INGB 0107 0760 63</p>
-                                        <p style="margin: 5px 0;"><strong>T.n.v.:</strong> Moto Import B.V.</p>
+                                        <p style="margin: 5px 0;"><strong>IBAN:</strong> NL09 BUNQ 2159 3611 35</p>
+                                        <p style="margin: 5px 0;"><strong>T.n.v.:</strong> motoimport bv</p>
                                         <p style="margin: 5px 0;"><strong>Kenmerk:</strong> {order['id'][:8].upper()}</p>
                                     </div>
                                 </div>

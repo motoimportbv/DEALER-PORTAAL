@@ -228,7 +228,7 @@ async def generate_parts_invoice_pdf(order: dict, dealer: dict) -> bytes:
     
     # Company info (left side) and Order info (right side) in a table
     header_data = [
-        [Paragraph("<b>S. Milone</b><br/>Moto Import B.V.<br/>IBAN: NL90 REVO 9997 6557 88", styles['Normal']),
+        [Paragraph("<b>motoimport bv</b><br/>IBAN: NL09 BUNQ 2159 3611 35", styles['Normal']),
          Paragraph(f"<b>Factuurnummer:</b> {order['order_number']}<br/><b>Datum:</b> {order['created_at'][:10]}", styles['Normal'])]
     ]
     header_table = Table(header_data, colWidths=[90*mm, 75*mm])
@@ -288,8 +288,8 @@ async def generate_parts_invoice_pdf(order: dict, dealer: dict) -> bytes:
     # Payment info
     elements.append(Paragraph("<b>Betaalinstructies:</b>", styles['Normal']))
     elements.append(Paragraph(f"Gelieve het totaalbedrag van €{order['total']:.2f} over te maken naar:", styles['Normal']))
-    elements.append(Paragraph("<b>IBAN: NL90 REVO 9997 6557 88</b>", styles['Normal']))
-    elements.append(Paragraph(f"<b>t.n.v. S. Milone</b>", styles['Normal']))
+    elements.append(Paragraph("<b>IBAN: NL09 BUNQ 2159 3611 35</b>", styles['Normal']))
+    elements.append(Paragraph(f"<b>t.n.v. motoimport bv</b>", styles['Normal']))
     elements.append(Paragraph(f"<b>o.v.v. {order['order_number']}</b>", styles['Normal']))
     
     doc.build(elements)
@@ -382,8 +382,8 @@ Totaalbedrag: €{total:.2f}
 {"Verzending: €9,95" if data.needs_shipping else "Ophalen: Gratis"}
 
 Gelieve het totaalbedrag over te maken naar:
-IBAN: NL90 REVO 9997 6557 88
-t.n.v. S. Milone
+IBAN: NL09 BUNQ 2159 3611 35
+t.n.v. motoimport bv
 o.v.v. {order_number}
 
 Na ontvangst van uw betaling wordt uw bestelling verwerkt.
@@ -391,7 +391,7 @@ Na ontvangst van uw betaling wordt uw bestelling verwerkt.
 Bijgevoegd vindt u de factuur als PDF.
 
 Met vriendelijke groet,
-S. Milone
+motoimport bv
 Moto Import
             """
             msg.attach(MIMEText(body, 'plain'))
