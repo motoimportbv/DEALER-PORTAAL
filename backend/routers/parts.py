@@ -212,7 +212,32 @@ async def generate_parts_invoice_pdf(order: dict, dealer: dict) -> bytes:
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
     from io import BytesIO
+
+    def _build_sepa_qr(amount: float, reference: str, size_mm: float = 30):
+        """Build EPC069-12 SEPA Credit Transfer QR code (works in NL/EU banking apps)."""
+        payload = "\n".join([
+            "BCD",                       # service tag
+            "002",                       # version
+            "1",                         # UTF-8
+            "SCT",                       # SEPA Credit Transfer
+            "",                          # BIC (empty allowed)
+            "motoimport bv",             # beneficiary
+            "NL09BUNQ2159361135",        # IBAN (no spaces)
+            f"EUR{amount:.2f}",          # amount
+            "",                          # purpose
+            "",                          # structured reference
+            reference[:140],             # remittance info
+        ])
+        qr = QrCodeWidget(payload, barLevel='M')
+        bounds = qr.getBounds()
+        w, h = bounds[2] - bounds[0], bounds[3] - bounds[1]
+        target = size_mm * mm
+        d = Drawing(target, target, transform=[target / w, 0, 0, target / h, 0, 0])
+        d.add(qr)
+        return d
     
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20*mm, rightMargin=20*mm, topMargin=20*mm, bottomMargin=20*mm)
@@ -285,12 +310,26 @@ async def generate_parts_invoice_pdf(order: dict, dealer: dict) -> bytes:
     
     elements.append(Spacer(1, 15*mm))
     
-    # Payment info
-    elements.append(Paragraph("<b>Betaalinstructies:</b>", styles['Normal']))
-    elements.append(Paragraph(f"Gelieve het totaalbedrag van €{order['total']:.2f} over te maken naar:", styles['Normal']))
-    elements.append(Paragraph("<b>IBAN: NL09 BUNQ 2159 3611 35</b>", styles['Normal']))
-    elements.append(Paragraph(f"<b>t.n.v. motoimport bv</b>", styles['Normal']))
-    elements.append(Paragraph(f"<b>o.v.v. {order['order_number']}</b>", styles['Normal']))
+    # Payment info + SEPA QR (works in ING/Rabo/ABN/Bunq apps)
+    pay_text = []
+    pay_text.append(Paragraph("<b>Betaalinstructies:</b>", styles['Normal']))
+    pay_text.append(Paragraph(f"Gelieve het totaalbedrag van €{order['total']:.2f} over te maken naar:", styles['Normal']))
+    pay_text.append(Paragraph("<b>IBAN: NL09 BUNQ 2159 3611 35</b>", styles['Normal']))
+    pay_text.append(Paragraph(f"<b>t.n.v. motoimport bv</b>", styles['Normal']))
+    pay_text.append(Paragraph(f"<b>o.v.v. {order['order_number']}</b>", styles['Normal']))
+    pay_text.append(Spacer(1, 4*mm))
+    pay_text.append(Paragraph("<font size=8 color='#666666'>Scan de QR-code met je bank-app voor automatische betaling →</font>", styles['Normal']))
+
+    qr_drawing = _build_sepa_qr(order['total'], order['order_number'])
+    pay_table = Table(
+        [[pay_text, qr_drawing]],
+        colWidths=[110*mm, 50*mm],
+    )
+    pay_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+    ]))
+    elements.append(pay_table)
     
     doc.build(elements)
     return buffer.getvalue()

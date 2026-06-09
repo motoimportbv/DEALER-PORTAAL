@@ -19,6 +19,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **SEPA/iDEAL QR-code op parts-factuur** (Feb 2026): User-request "ja is goed" op suggestie. EPC069-12 QR-code toegevoegd aan factuur-PDF naast betaalinstructies. Werkt in alle NL banking-apps (ING/Rabobank/ABN AMRO/Bunq) + alle EU SEPA-apps. QR-payload bevat: IBAN NL09BUNQ2159361135, T.n.v. "motoimport bv", exact factuurbedrag in EUR, en order-referentie als omschrijving. Geïmplementeerd via `reportlab.graphics.barcode.qr.QrCodeWidget` (helper `_build_sepa_qr()` in `parts.py`). PDF-size: 2438 → 5362 bytes (QR ingebed). End-to-end getest met test-order PO-2026-0001 €160.95.
 - **Bedrijfsgegevens update naar motoimport bv + nieuwe IBAN** (Feb 2026): User-request "Dit moet worden t.n.v motoimport bv NL09 BUNQ 2159 3611 35". Alleen betalingsgerelateerde plekken aangepast (taxateur-naam in juridische rapporten ongewijzigd gelaten). Bestanden gewijzigd:
   - `backend/routers/parts.py`: factuur-PDF header + betaalinstructies + email body → "motoimport bv" / "NL09 BUNQ 2159 3611 35"
   - `backend/routers/payments.py`: restbedrag-email → IBAN "NL09 BUNQ 2159 3611 35" + T.n.v. "motoimport bv"
