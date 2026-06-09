@@ -678,7 +678,7 @@ export default function TaxatieInvoices() {
           {/* Bank info preview */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 text-sm">
             <p className="font-bold text-amber-800 mb-1">Betaalinformatie op factuur:</p>
-            <p className="text-amber-700">t.n.v. <strong>S. Milone</strong> — IBAN: <strong>NL84 BUNQ 2159 3568 75</strong></p>
+            <p className="text-amber-700">t.n.v. <strong>motoimport bv</strong> — IBAN: <strong>NL09 BUNQ 2159 3611 35</strong></p>
           </div>
 
           <Button type="submit" disabled={saving} data-testid="save-invoice" className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 font-semibold rounded-xl">
@@ -885,8 +885,8 @@ export default function TaxatieInvoices() {
                     <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>Betaalinformatie</h3>
                     <p style={{ fontSize: '14px', color: '#78350f', lineHeight: '1.8' }}>
                       Gelieve het bedrag van <strong>{formatCurrency(total)}</strong> over te maken naar:<br />
-                      <strong>t.n.v. {inv.bank_name || 'S. Milone'}</strong><br />
-                      IBAN: <strong>{inv.bank_iban || 'NL84BUNQ2159356875'}</strong><br />
+                      <strong>t.n.v. {inv.bank_name || 'motoimport bv'}</strong><br />
+                      IBAN: <strong>{inv.bank_iban || 'NL09BUNQ2159361135'}</strong><br />
                       o.v.v. Factuurnummer <strong>#{inv.invoice_number}</strong>
                     </p>
                   </div>

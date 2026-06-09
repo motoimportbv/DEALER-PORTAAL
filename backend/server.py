@@ -110,6 +110,18 @@ async def startup_db_client():
         {"$set": {"role": "pakbon"}}
     )
 
+    # Migrate old taxatie_invoices to new motoimport bv / NL09 BUNQ IBAN (Feb 2026)
+    iban_mig = await db.taxatie_invoices.update_many(
+        {"$or": [
+            {"bank_iban": "NL84BUNQ2159356875"},
+            {"bank_iban": "NL03SNSB8846497880"},
+            {"bank_name": "S. Milone"},
+        ]},
+        {"$set": {"bank_name": "motoimport bv", "bank_iban": "NL09BUNQ2159361135"}}
+    )
+    if iban_mig.modified_count:
+        logger.info(f"Migrated {iban_mig.modified_count} taxatie invoices to motoimport bv / NL09 BUNQ")
+
 
 async def monthly_taxatie_reminder():
     """Background task: sends monthly email on the 1st with pending taxatie invoices"""
