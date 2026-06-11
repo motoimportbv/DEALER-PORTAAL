@@ -688,6 +688,106 @@ async def get_aanvraag(aanvraag_id: str, current_user: dict = Depends(get_curren
     return doc
 
 
+# ============ BPM TEGENBEWIJS TAXATIERAPPORT ============
+
+def _is_admin_only(user: dict) -> bool:
+    """Strictere check dan _is_admin_team: enkel motoimport admin-team, géén taxateur."""
+    if not user:
+        return False
+    if user.get("role") != "admin":
+        return False
+    from routers.taxatie import ADMIN_TEAM_EMAILS
+    email = (user.get("email") or "").lower()
+    return email in ADMIN_TEAM_EMAILS
+
+
+@router.put("/admin/taxatie-aanvragen/{aanvraag_id}/bpm-report")
+async def save_bpm_report(
+    aanvraag_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Save the BPM-rapport data + branding-override on a taxatie-aanvraag."""
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team mag BPM-rapporten beheren")
+
+    existing = await db.taxatie_aanvragen.find_one({"id": aanvraag_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+
+    # Whitelist fields om te bewaren
+    report = {
+        "rapportnummer": (body.get("rapportnummer") or "").strip(),
+        "rapport_datum": (body.get("rapport_datum") or "").strip(),
+        "voertuig": body.get("voertuig") or {},
+        "opname": body.get("opname") or {},
+        "schade": body.get("schade") or {},
+        "waarde": body.get("waarde") or {},
+        "branding": body.get("branding") or {},
+        "bijlage_inkoop": (body.get("bijlage_inkoop") or "").strip(),
+        "extra_bijlagen": (body.get("extra_bijlagen") or "").strip(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": (current_user.get("email") or "").lower(),
+    }
+    await db.taxatie_aanvragen.update_one(
+        {"id": aanvraag_id},
+        {"$set": {"bpm_report": report}},
+    )
+    return {"status": "saved", "report": report}
+
+
+@router.get("/admin/taxatie-aanvragen/{aanvraag_id}/bpm-report/pdf")
+async def download_bpm_report_pdf(
+    aanvraag_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Generate and stream the official BPM-tegenbewijs taxatierapport PDF."""
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team mag BPM-rapporten downloaden")
+    aanvraag = await db.taxatie_aanvragen.find_one({"id": aanvraag_id}, {"_id": 0})
+    if not aanvraag:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+    report = aanvraag.get("bpm_report") or {}
+
+    from services.bpm_report_pdf import generate_bpm_report_pdf
+    try:
+        pdf_bytes = generate_bpm_report_pdf(aanvraag, report)
+    except Exception as e:
+        logger.exception("BPM rapport PDF-generatie mislukt")
+        raise HTTPException(status_code=500, detail=f"PDF-generatie mislukt: {e}")
+
+    from fastapi.responses import Response
+    fname = f"BPM-rapport-{aanvraag.get('ref_nr') or aanvraag_id[:8]}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{fname}"'},
+    )
+
+
+@router.post("/admin/taxatie-aanvragen/{aanvraag_id}/bpm-report/ocr")
+async def ocr_aanvraag_photos(
+    aanvraag_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Run Gemini Vision OCR on the aanvraag's photos and return extracted voertuig/inkoop data."""
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team mag OCR draaien")
+    aanvraag = await db.taxatie_aanvragen.find_one({"id": aanvraag_id}, {"_id": 0})
+    if not aanvraag:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+
+    from services.photo_ocr import ocr_aanvraag
+    try:
+        data = await ocr_aanvraag(aanvraag)
+    except Exception as e:
+        logger.exception("OCR mislukt")
+        raise HTTPException(status_code=500, detail=f"OCR mislukt: {e}")
+    return data
+
+
+
+
 @router.post("/admin/taxatie-aanvragen/{aanvraag_id}/start-bpm")
 async def start_bpm_from_aanvraag(
     aanvraag_id: str,

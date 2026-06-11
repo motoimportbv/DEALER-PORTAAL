@@ -19,6 +19,22 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🔒 Strikter access-control BPM-rapport + 🤖 OCR via Gemini Vision** (Feb 2026): User-eis "alleen admin mag dit zien" + akkoord op OCR-voorstel. Wijzigingen:
+  - Nieuwe `_is_admin_only()` check in `backend/routers/taxatie_aanvraag.py`: vereist `role == 'admin'` AND `email in ADMIN_TEAM_EMAILS`. Toegepast op alle 3 BPM-rapport endpoints (PUT save, GET pdf, POST ocr). Taxateur Deniz en andere rollen krijgen nu 403
+  - Frontend `AdminTaxatieAanvragen.js`: BPM-rapport knop alleen zichtbaar wanneer `user?.role === 'admin'` (DetailModal krijgt nieuwe prop `isAdminOnly`)
+  - **OCR-integratie via Gemini 3 Flash Preview** (`backend/services/photo_ocr.py`, ~150 regels): parallelle vision-extractie van VIN/kilometerstand/kenteken/inkoopfactuur uit alle relevante aanvraag-foto's. Gebruikt EMERGENT_LLM_KEY + `emergentintegrations.LlmChat.send_message(file_contents=FileContentWithMimeType(...))`. Field-specifieke prompts voor structured JSON output
+  - Nieuw endpoint `POST /api/admin/taxatie-aanvragen/{id}/bpm-report/ocr` → returns `{voertuig, inkoop, files_processed}`
+  - Frontend OCR-knop in BPM editor Voertuig-tab: paarse/blauwe gradient "Auto-vul uit foto's (N foto's)" met loading state. Bevestiging-modal voor het overschrijven van bestaande velden. Inkoopfactuur-tekst wordt automatisch samengesteld
+  - End-to-end getest met test VIN-image: Gemini herkende `WB10K0303PZB12345` exact, in ~2 seconden
+- **📄 BPM-tegenbewijs taxatierapport PDF generator + whitelabel branding** (Feb 2026): User-request "Bpm tegenbewijs … op hun eigen naam … voorbeeld ten kate motoren". Volledig nieuwe feature die voldoet aan **Bijlage 1 — Uitvoeringsregeling BPM 1992** (alle 10 Belastingdienst-eisen). Bestanden:
+  - `backend/services/bpm_report_pdf.py` (nieuw, ~340 regels): genereert officieel rapport-PDF met 8 secties (taxateur / aanvrager / voertuiggegevens / opname / staat&schade / waardebepaling met live afschr. berekening / bijlagen / verklaring+ondertekening) + foto-bijlage pagina (Bijlage A) + page footer. Default branding = motoimport bv; bij `branding`-override (per rapport) wordt company_name, address, taxateur_name, KvK, BTW, IBAN, etc. vervangen door whitelabel-dealer (bv. Ten Kate Motoren BV).
+  - `backend/routers/taxatie_aanvraag.py`: 2 nieuwe endpoints:
+    - `PUT /api/admin/taxatie-aanvragen/{id}/bpm-report` → bewaart `bpm_report` sub-object op aanvraag (voertuig/opname/schade/waarde/branding/bijlage_inkoop)
+    - `GET /api/admin/taxatie-aanvragen/{id}/bpm-report/pdf` → streamt PDF (inline)
+  - `frontend/src/pages/admin/BpmReportEditor.js` (nieuw, ~440 regels): modal met 6 tabs (Voertuig/Opname/Schade/Waarde/Bijlagen/Branding), live afschrijvings-berekening, "Gebruik eigen branding" toggle, "Opslaan" + "Genereer PDF" knoppen
+  - `frontend/src/pages/admin/AdminTaxatieAanvragen.js`: nieuwe knop "🛡 Maak BPM-rapport / BPM-rapport bewerken" in detail-modal (kleur wisselt blauw→groen wanneer rapport bestaat). Bewaar-state synchronizeert fetchData
+  - End-to-end getest: PUT+GET endpoints HTTP 200, PDF 7253 bytes met 6× Ten Kate / 0× motoimport (volledig whitelabel), UI smoke-test toont editor met alle velden vooringevuld
+  - **Legaal**: rapport vermeldt expliciet de verklaring van onafhankelijkheid + erkenning conform Belastingdienst-eis. Default = motoimport bv als taxateur. Whitelabel toggle alleen gebruiken indien dealer (Ten Kate etc.) een eigen erkende taxateur in dienst heeft
 - **📧 Mail taxatie-factuur naar klant** (Feb 2026): User-request "Ik wil graag de taxati facturen mailen naar me delaers". Knop **"Mail factuur"** (emerald) toegevoegd in detail-view van `/admin/taxatie-invoices` naast Print/PDF. Modal vraagt om: (1) bevestiging klant-email (pre-gevuld uit factuur), (2) optioneel persoonlijk bericht. Backend endpoint `POST /api/taxatie/invoices/{id}/send-email`:
   - Genereert server-side PDF via reportlab (helper `_generate_taxatie_invoice_pdf()`) — bevat factuurgegevens, klant/motor-blokken, items-tabel met BTW-regels, betaalinformatie + **SEPA QR-code** (zelfde EPC069-12 standaard als parts-factuur)
   - Mirror van frontend totals-berekening (`_compute_invoice_totals()`)

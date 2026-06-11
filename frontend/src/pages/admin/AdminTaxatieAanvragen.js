@@ -7,9 +7,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, FileText, Mail, Phone, MapPin, Building2, Hash,
   Calendar, X, Trash2, ExternalLink, Inbox, CheckCircle2, Clock, AlertCircle,
-  Users, ChevronDown,
+  Users, ChevronDown, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import BpmReportEditor from './BpmReportEditor';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
@@ -420,10 +421,13 @@ export default function AdminTaxatieAanvragen() {
       {selected && (
         <DetailModal
           aanvraag={selected}
+          token={token}
+          isAdminOnly={user?.role === 'admin'}
           onClose={() => setSelected(null)}
           onUpdateStatus={(s) => updateStatus(selected.id, s)}
           onDelete={() => deleteAanvraag(selected.id)}
           onStartBpm={() => startBpm(selected)}
+          onReportSaved={() => fetchData()}
           backend={BACKEND}
         />
       )}
@@ -443,11 +447,13 @@ function StatTile({ label, value, accent }) {
   );
 }
 
-function DetailModal({ aanvraag, onClose, onUpdateStatus, onDelete, onStartBpm, backend }) {
+function DetailModal({ aanvraag, token, isAdminOnly, onClose, onUpdateStatus, onDelete, onStartBpm, onReportSaved, backend }) {
   const a = aanvraag;
   const st = STATUS_LABELS[a.status || 'nieuw'];
   const fixedFiles = (a.files || []).filter(f => !f.filename.includes('_detail_'));
   const detailFiles = (a.files || []).filter(f => f.filename.includes('_detail_'));
+  const [bpmEditor, setBpmEditor] = useState(false);
+  const hasReport = !!a.bpm_report;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center overflow-y-auto p-4" onClick={onClose} data-testid="aanvraag-detail-modal">
@@ -485,6 +491,14 @@ function DetailModal({ aanvraag, onClose, onUpdateStatus, onDelete, onStartBpm, 
               </select>
             </div>
             <div className="flex gap-2">
+              {isAdminOnly && (
+                <Button onClick={() => setBpmEditor(true)}
+                  className={hasReport ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
+                  data-testid="open-bpm-report-btn">
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  {hasReport ? 'BPM-rapport bewerken' : 'Maak BPM-rapport'}
+                </Button>
+              )}
               <Button onClick={onStartBpm} className="bg-red-600 hover:bg-red-700 text-white" data-testid="start-bpm-btn">
                 <FileText className="w-4 h-4 mr-2" />Start BPM Taxatie
               </Button>
@@ -549,6 +563,14 @@ function DetailModal({ aanvraag, onClose, onUpdateStatus, onDelete, onStartBpm, 
           )}
         </div>
       </div>
+      {bpmEditor && (
+        <BpmReportEditor
+          aanvraag={aanvraag}
+          token={token}
+          onClose={() => setBpmEditor(false)}
+          onSaved={() => { onReportSaved && onReportSaved(); }}
+        />
+      )}
     </div>
   );
 }
