@@ -21,6 +21,7 @@ const EMPTY_PROFILE = {
   btw: '',
   taxateur_name: '',
   taxateur_title: 'Erkend BPM-taxateur',
+  linked_emails: [],
 };
 
 /**
@@ -137,6 +138,31 @@ export default function BpmBrandingPicker({ token, onPick, onClose }) {
                 onChange={v => setEditing({ ...editing, btw: v })}
                 placeholder="NL811234567B01" />
             </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mt-3">
+              <label className="block text-xs font-bold text-emerald-900 uppercase mb-1">
+                ✨ Auto-koppelen op email (optioneel)
+              </label>
+              <p className="text-xs text-emerald-800 mb-2">
+                Voeg de e-mailadressen toe van deze dealer. Wanneer iemand met een van deze adressen een aanvraag indient via je website, wordt dit profiel <strong>automatisch geselecteerd</strong> — je hoeft niets meer handmatig in te stellen.
+              </p>
+              <textarea
+                value={(editing.linked_emails || []).join('\n')}
+                onChange={e => setEditing({
+                  ...editing,
+                  linked_emails: e.target.value.split(/[\n,;]+/).map(s => s.trim()).filter(s => s.includes('@')),
+                })}
+                rows={3}
+                placeholder="info@bloemert.nl&#10;jan@bloemert.nl&#10;..."
+                className="w-full px-3 py-2 border border-emerald-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none bg-white"
+                data-testid="linked-emails-textarea"
+              />
+              {(editing.linked_emails || []).length > 0 && (
+                <p className="text-xs text-emerald-700 mt-1">
+                  {editing.linked_emails.length} adres{editing.linked_emails.length !== 1 ? 'sen' : ''} gekoppeld
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="border-t p-4 flex items-center justify-end gap-2 bg-zinc-50 rounded-b-2xl">
@@ -209,6 +235,12 @@ export default function BpmBrandingPicker({ token, onPick, onClose }) {
                       {p.address ? `${p.address}, ` : ''}{p.postal_code} {p.city}
                       {p.kvk ? ` · KvK ${p.kvk}` : ''}
                     </p>
+                    {(p.linked_emails || []).length > 0 && (
+                      <p className="text-[11px] text-emerald-600 mt-0.5 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Auto-match op {p.linked_emails.length} email{p.linked_emails.length > 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <button

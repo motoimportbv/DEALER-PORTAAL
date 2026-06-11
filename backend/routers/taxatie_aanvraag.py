@@ -301,6 +301,21 @@ async def submit_taxatie_aanvraag(
     ref_nr = f"TX-{aanvraag_id[:8].upper()}"
     record["ref_nr"] = ref_nr
 
+    # Auto-match branding profiel op email (whitelabel-dealers)
+    try:
+        email_lc = (record.get("email") or "").strip().lower()
+        if email_lc:
+            matched = await db.bpm_branding_profiles.find_one(
+                {"linked_emails": email_lc}, {"_id": 0}
+            )
+            if matched:
+                record["branding_profile_id"] = matched.get("id")
+                record["branding_profile_snapshot"] = matched
+                record["branding_assigned_at"] = datetime.now(timezone.utc).isoformat()
+                record["branding_assigned_by"] = "auto-match-email"
+    except Exception:
+        logger.exception("auto-match branding op email faalde")
+
     await db.taxatie_aanvragen.insert_one(record)
 
     # 1) Admin notificatie-email
@@ -563,6 +578,21 @@ async def finalize_taxatie_aanvraag(
         "status": "nieuw",
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    # Auto-match branding profiel op email (whitelabel-dealers)
+    try:
+        email_lc = (doc.get("email") or "").strip().lower()
+        if email_lc and not doc.get("branding_profile_id"):
+            matched = await db.bpm_branding_profiles.find_one(
+                {"linked_emails": email_lc}, {"_id": 0}
+            )
+            if matched:
+                update_fields["branding_profile_id"] = matched.get("id")
+                update_fields["branding_profile_snapshot"] = matched
+                update_fields["branding_assigned_at"] = datetime.now(timezone.utc).isoformat()
+                update_fields["branding_assigned_by"] = "auto-match-email"
+    except Exception:
+        logger.exception("auto-match branding op email (finalize) faalde")
     if customer_id:
         update_fields["customer_id"] = customer_id
     await db.taxatie_aanvragen.update_one({"id": aanvraag_id}, {"$set": update_fields})
@@ -737,6 +767,11 @@ async def upsert_branding_profile(
         "btw": (body.get("btw") or "").strip(),
         "taxateur_name": (body.get("taxateur_name") or "").strip(),
         "taxateur_title": (body.get("taxateur_title") or "").strip(),
+        "linked_emails": [
+            (e or "").strip().lower()
+            for e in (body.get("linked_emails") or [])
+            if isinstance(e, str) and "@" in e
+        ],
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.bpm_branding_profiles.update_one(

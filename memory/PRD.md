@@ -19,6 +19,17 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🔗 Auto-koppelen branding-profiel op email** (Feb 2026): User-eis "geld dit nu bij alle dealers dit dat willen als ik ze aanmaak" + akkoord "D" op volledig pakket. Implementatie:
+  - Branding-profielen krijgen nieuw veld `linked_emails: []` — admin vult bij elke dealer 1+ emails in (info@bloemert.nl, jan@bloemert.nl, etc.)
+  - In `BpmBrandingPicker.js` edit-modal: nieuwe emerald-groene sectie **"✨ Auto-koppelen op email"** met textarea (een per regel). Toont teller "N adressen gekoppeld"
+  - In profiel-lijst: badge "✓ Auto-match op N emails" zichtbaar onder dealer-info
+  - Backend: in **3 plekken** auto-match logica toegevoegd:
+    1. `POST /public/taxatie-aanvraag` (direct submit met foto's) → match bij insert
+    2. `POST /public/taxatie-aanvraag/{id}/finalize` (draft → submit) → match bij finalize
+    3. Update endpoint slaat normalized lowercase emails op
+  - Bij match: `branding_profile_id` + `branding_profile_snapshot` + `branding_assigned_by="auto-match-email"` worden direct op de aanvraag opgeslagen
+  - End-to-end getest: profiel Ten Kate met `linked_emails=["jan@tenkate.nl"]` → test-aanvraag van `jan@tenkate.nl` → branding_profile_snapshot.company_name = "Ten Kate Motoren BV" ✅
+  - Onderbouwing-tekst aanpassen (Optie C uit user-keuze D) is reeds beschikbaar via bestaande AI-knop + handmatige textarea in TaxatieProgramma edit-form (geen nieuwe code nodig)
 - **🔧 Fix: Whitelabel branding nu OOK op de bestaande BPM-taxatie-rapport** (Feb 2026): User-bug "Ik heb voor bloemert motoren een taxati gemaakt maar nu zie ik nog wel degelijk motoimport staan dat mag niet ook de onderbouwing van het verslag wordt vastgesteld door motoimport". Het bestaande `TaxatieProgramma.js` BpmReport was hardcoded `Moto Import B.V.` via `getBranding(user)` — branding-override werd niet gerespecteerd. Fixes:
   - `frontend/src/utils/branding.js`: `getBranding()` accepteert nu een 2e arg `taxatie`. Volgorde: 1. `taxatie.branding_override` (whitelabel) → 2. logged-in taxateur eigen branding → 3. Moto Import B.V. default. Override mapt `company_name/address/postal_code/city/phone/email/kvk/btw/taxateur_name` naar de standaard `cb.*` keys
   - `frontend/src/pages/admin/TaxatieProgramma.js` BpmReport: gebruikt nu `getBranding(user, taxatie)` → header, footer, signature blok tonen automatisch de branding van het profiel
