@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { MOTORCYCLE_DATABASE, MOTORCYCLE_BRANDS } from '../../data/motorcycleDatabase';
+import BpmBrandingPicker from './BpmBrandingPicker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmtEur = (p) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(p || 0);
@@ -847,15 +848,35 @@ function AangifteBpmEditor({ taxatie, onClose }) {
 }
 
 /* ── Print / Report view ── */
-function BpmReport({ taxatie, onClose }) {
-  const { user } = useAuth();
-  const cb = getBranding(user);
+function BpmReport({ taxatie, onClose, onTaxatieUpdate }) {
+  const { user, token } = useAuth();
+  const [localTaxatie, setLocalTaxatie] = useState(taxatie);
+  const cb = getBranding(user, localTaxatie);
   const handlePrint = () => window.print();
-  const avgScore = taxatie.average_score || 0;
+  const avgScore = localTaxatie.average_score || 0;
   const ml = { forfaitair: 'Forfaitaire tabel', koerslijst: 'Koerslijst', taxatierapport: 'Taxatierapport' };
-  const checkedDamage = (taxatie.damage_items || []).filter(d => d.checked);
+  const checkedDamage = (localTaxatie.damage_items || []).filter(d => d.checked);
   const totalHerstel = checkedDamage.reduce((s, i) => s + (i.cost || 0), 0);
   const [aangifteOpen, setAangifteOpen] = useState(false);
+  const [brandingPicker, setBrandingPicker] = useState(false);
+
+  const applyBranding = async (profile) => {
+    try {
+      const r = await axios.post(
+        `${API}/taxatie-programma/${localTaxatie.id}/set-branding`,
+        { branding_profile_id: profile.id === 'motoimport-default' ? '' : profile.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const newBranding = r.data?.branding || {};
+      const updated = { ...localTaxatie, branding_override: profile.id === 'motoimport-default' ? {} : newBranding };
+      setLocalTaxatie(updated);
+      onTaxatieUpdate && onTaxatieUpdate(updated);
+      toast.success(`Taxateur gewijzigd: ${profile.label}`);
+      setBrandingPicker(false);
+    } catch (e) {
+      toast.error('Wijzigen mislukt: ' + (e.response?.data?.detail || e.message));
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-white overflow-auto print:relative" data-testid="bpm-report">
@@ -970,8 +991,31 @@ function BpmReport({ taxatie, onClose }) {
             <Download className="w-4 h-4 mr-2" />Rapport + Taxatieverslag
           </Button>
           <Button onClick={handlePrint} variant="outline" data-testid="print-report-btn"><Printer className="w-4 h-4 mr-2" />Printen</Button>
+          {user?.role === 'admin' && (
+            <Button
+              onClick={() => setBrandingPicker(true)}
+              variant="outline"
+              className={localTaxatie.branding_override?.company_name
+                ? "border-purple-300 text-purple-700 hover:bg-purple-50"
+                : "border-amber-300 text-amber-700 hover:bg-amber-50"}
+              data-testid="change-taxateur-btn"
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              {localTaxatie.branding_override?.company_name
+                ? `Taxateur: ${localTaxatie.branding_override.company_name}`
+                : 'Wijzig taxateur'}
+            </Button>
+          )}
         </div>
       </div>
+
+      {brandingPicker && (
+        <BpmBrandingPicker
+          token={token}
+          onPick={applyBranding}
+          onClose={() => setBrandingPicker(false)}
+        />
+      )}
 
       <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
         {/* Header */}

@@ -978,6 +978,8 @@ async def start_bpm_from_aanvraag(
         "source_aanvraag_id": aanvraag_id,
         "source_aanvraag_ref": aanvraag.get("ref_nr", ""),
         "source_aanvraag_files": source_files,
+        # Whitelabel branding override (Bloemert Motoren etc.)
+        "branding_override": aanvraag.get("branding_profile_snapshot") or {},
         # RDW
         "rdw_goedkeuring_datum": aanvraag.get("rdw_goedkeuring_datum", ""),
         # Audit

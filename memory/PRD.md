@@ -19,6 +19,13 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🔧 Fix: Whitelabel branding nu OOK op de bestaande BPM-taxatie-rapport** (Feb 2026): User-bug "Ik heb voor bloemert motoren een taxati gemaakt maar nu zie ik nog wel degelijk motoimport staan dat mag niet ook de onderbouwing van het verslag wordt vastgesteld door motoimport". Het bestaande `TaxatieProgramma.js` BpmReport was hardcoded `Moto Import B.V.` via `getBranding(user)` — branding-override werd niet gerespecteerd. Fixes:
+  - `frontend/src/utils/branding.js`: `getBranding()` accepteert nu een 2e arg `taxatie`. Volgorde: 1. `taxatie.branding_override` (whitelabel) → 2. logged-in taxateur eigen branding → 3. Moto Import B.V. default. Override mapt `company_name/address/postal_code/city/phone/email/kvk/btw/taxateur_name` naar de standaard `cb.*` keys
+  - `frontend/src/pages/admin/TaxatieProgramma.js` BpmReport: gebruikt nu `getBranding(user, taxatie)` → header, footer, signature blok tonen automatisch de branding van het profiel
+  - Bij `start-bpm-from-aanvraag` wordt nu `branding_override = aanvraag.branding_profile_snapshot` automatisch in de taxatie doc opgeslagen
+  - Nieuw endpoint `POST /api/taxatie-programma/{id}/set-branding` (admin-only) om bestaande taxaties achteraf van branding te veranderen
+  - Nieuwe knop **"Wijzig taxateur"** in BpmReport toolbar (rechtsboven, naast Printen) — opent de BpmBrandingPicker → klik op profiel → taxatie krijgt direct nieuwe branding (UI ververst lokaal, geen page refresh nodig)
+  - End-to-end getest: `POST /set-branding` → 200 + branding object teruggegeven ✅
 - **🏢 Taxateur-kolom op aanvragen-lijst** (Feb 2026): User-eis "bij taxati aanvragen een knop met wie maakt de taxatie ik of de dealer". Implementatie:
   - Backend endpoint `POST /api/admin/taxatie-aanvragen/{id}/assign-taxateur` (admin-only) — slaat `branding_profile_id` + snapshot op aanvraag
   - Frontend: nieuwe kolom **"Taxateur"** in `/admin/taxatie-aanvragen` lijst tussen Locatie en Foto's

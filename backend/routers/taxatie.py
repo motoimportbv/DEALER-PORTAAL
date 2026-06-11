@@ -1140,6 +1140,34 @@ async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dic
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
     return await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
 
+
+@router.post("/taxatie-programma/{taxatie_id}/set-branding")
+async def set_taxatie_branding(
+    taxatie_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(require_taxatie_access),
+):
+    """Stel de branding-override in op een taxatie (whitelabel — bv. Bloemert Motoren)."""
+    if not _is_admin_team(current_user):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    profile_id = (body.get("branding_profile_id") or "").strip()
+    if not profile_id:
+        # Reset → terug naar Moto Import default
+        await db.taxatie_programma.update_one(
+            {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+            {"$set": {"branding_override": {}}},
+        )
+        return {"status": "cleared"}
+    profile = await db.bpm_branding_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profiel niet gevonden")
+    await db.taxatie_programma.update_one(
+        {"id": taxatie_id, **_owner_filter_for_user(current_user)},
+        {"$set": {"branding_override": profile}},
+    )
+    return {"status": "assigned", "branding": profile}
+
+
 @router.post("/taxatie-programma/{taxatie_id}/finalize")
 async def finalize_taxatie(taxatie_id: str, body: dict | None = None, current_user: dict = Depends(require_taxatie_access)):
     if not _is_admin_team(current_user):
