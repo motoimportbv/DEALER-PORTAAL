@@ -335,6 +335,7 @@ export default function AdminTaxatieAanvragen() {
                   <th className="px-4 py-3 text-left">Bedrijf</th>
                   <th className="px-4 py-3 text-left">Contact</th>
                   <th className="px-4 py-3 text-left">Locatie</th>
+                  <th className="px-4 py-3 text-left">Taxateur</th>
                   <th className="px-4 py-3 text-left">Foto's</th>
                   <th className="px-4 py-3 text-left">RDW</th>
                   <th className="px-4 py-3 text-left">Status</th>
@@ -357,6 +358,9 @@ export default function AdminTaxatieAanvragen() {
                         <div className="text-xs text-zinc-400">{a.email}</div>
                       </td>
                       <td className="px-4 py-3 text-zinc-600 text-xs">{a.woonplaats}</td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <TaxateurCell aanvraag={a} token={token} onChanged={fetchData} isAdmin={user?.role === 'admin'} />
+                      </td>
                       <td className="px-4 py-3 text-zinc-600">
                         {(a.files || []).length === 0 ? (
                           <span className="text-xs text-zinc-300">geen</span>
@@ -462,16 +466,36 @@ function DetailModal({ aanvraag, token, isAdminOnly, onClose, onUpdateStatus, on
     if (hasReport) {
       // Bestaand rapport: skip picker, ga direct naar editor (branding zit al in rapport)
       setBpmEditor(true);
+    } else if (a.branding_profile_snapshot) {
+      // Taxateur al toegewezen via kolom-knop → skip picker, gebruik die branding
+      setSelectedBranding(a.branding_profile_snapshot);
+      setBpmEditor(true);
     } else {
-      // Nieuw rapport: eerst branding kiezen
+      // Nieuw rapport zonder vooraf toegewezen taxateur: eerst branding kiezen
       setBrandingPicker(true);
     }
   };
 
-  const handleBrandingPicked = (profile) => {
+  const handleBrandingPicked = async (profile) => {
+    // Persist assignment on aanvraag (so it survives modal close)
+    try {
+      await axios.post(
+        `${API}/admin/taxatie-aanvragen/${aanvraag.id}/assign-taxateur`,
+        { branding_profile_id: profile.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`Taxateur ingesteld: ${profile.label}`);
+    } catch (e) {
+      // Niet fataal — gewoon door
+    }
     setSelectedBranding(profile);
     setBrandingPicker(false);
-    setBpmEditor(true);
+    // Refresh aanvraag list zodat UI bijgewerkt is
+    onReportSaved && onReportSaved();
+    // Open de editor alleen als we vanuit "Maak BPM-rapport" kwamen (geen rapport + niet al toegewezen)
+    if (!hasReport && !a.branding_profile_snapshot) {
+      setBpmEditor(true);
+    }
   };
 
   return (
@@ -509,7 +533,22 @@ function DetailModal({ aanvraag, token, isAdminOnly, onClose, onUpdateStatus, on
                 <option value="afgewezen">Afgewezen</option>
               </select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {isAdminOnly && (
+                <Button
+                  onClick={() => setBrandingPicker(true)}
+                  variant="outline"
+                  className={a.branding_profile_snapshot
+                    ? "border-purple-300 text-purple-700 hover:bg-purple-50"
+                    : "border-amber-300 text-amber-700 hover:bg-amber-50 animate-pulse"}
+                  data-testid="assign-taxateur-btn"
+                >
+                  <Building2 className="w-4 h-4 mr-2" />
+                  {a.branding_profile_snapshot
+                    ? `Taxateur: ${a.branding_profile_snapshot.label || a.branding_profile_snapshot.company_name}`
+                    : 'Kies taxateur'}
+                </Button>
+              )}
               {isAdminOnly && (
                 <Button onClick={openBpmFlow}
                   className={hasReport ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
@@ -611,5 +650,67 @@ function Info({ icon: Icon, label, value }) {
         <p className="text-zinc-900">{value || '—'}</p>
       </div>
     </div>
+  );
+}
+
+function TaxateurCell({ aanvraag, token, onChanged, isAdmin }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const snap = aanvraag.branding_profile_snapshot;
+  const assigned = !!aanvraag.branding_profile_id;
+  const isDefault = aanvraag.branding_profile_id === 'motoimport-default';
+
+  const handlePick = async (profile) => {
+    try {
+      await axios.post(
+        `${API}/admin/taxatie-aanvragen/${aanvraag.id}/assign-taxateur`,
+        { branding_profile_id: profile.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`Taxateur ingesteld: ${profile.label}`);
+      setPickerOpen(false);
+      onChanged && onChanged();
+    } catch (e) {
+      toast.error('Toewijzen mislukt');
+    }
+  };
+
+  if (!isAdmin) {
+    return <span className="text-xs text-zinc-400">—</span>;
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setPickerOpen(true)}
+        className={`text-xs px-2.5 py-1.5 rounded-md font-semibold border transition-colors max-w-[180px] truncate ${
+          !assigned
+            ? 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
+            : isDefault
+              ? 'bg-blue-50 border-blue-300 text-blue-800 hover:bg-blue-100'
+              : 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100'
+        }`}
+        data-testid={`taxateur-cell-${aanvraag.id}`}
+        title={snap ? `${snap.company_name} · ${snap.taxateur_name}` : 'Klik om taxateur te kiezen'}
+      >
+        {assigned ? (
+          <span className="flex items-center gap-1">
+            <Building2 className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{isDefault ? 'Ik (motoimport)' : (snap?.label || snap?.company_name || 'Onbekend')}</span>
+          </span>
+        ) : (
+          <span className="flex items-center gap-1">
+            <AlertCircle className="w-3 h-3 flex-shrink-0" />
+            <span>Kies taxateur</span>
+          </span>
+        )}
+      </button>
+      {pickerOpen && (
+        <BpmBrandingPicker
+          token={token}
+          onPick={handlePick}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
   );
 }

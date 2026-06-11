@@ -19,6 +19,16 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🏢 Taxateur-kolom op aanvragen-lijst** (Feb 2026): User-eis "bij taxati aanvragen een knop met wie maakt de taxatie ik of de dealer". Implementatie:
+  - Backend endpoint `POST /api/admin/taxatie-aanvragen/{id}/assign-taxateur` (admin-only) — slaat `branding_profile_id` + snapshot op aanvraag
+  - Frontend: nieuwe kolom **"Taxateur"** in `/admin/taxatie-aanvragen` lijst tussen Locatie en Foto's
+    - Geel "Kies taxateur" knop (animate-pulse) als nog niet toegewezen
+    - Blauw "Ik (motoimport)" bij default profiel
+    - Paars "Ten Kate Motoren" (of welk profiel dan ook) bij whitelabel
+  - Klik op kolom-knop → opent dezelfde `BpmBrandingPicker` modal → kies → snapshot opgeslagen + UI ververst
+  - Knop ook beschikbaar in detail-modal (`Kies taxateur` of `Taxateur: Ten Kate Motoren`)
+  - `openBpmFlow()` logica: als taxateur al toegewezen → skip picker, gebruik die branding direct in BPM-rapport editor
+  - End-to-end getest: Ten Kate toegewezen aan TX-TEST0001 → toast bevestiging + UI toont paarse "Ten Kate Motoren" pill ✅
 - **🎯 Branding-keuze popup vóór BPM-rapport editor** (Feb 2026): User-eis "ik wil als ik op nieuwe bpm taxati druk dat ik dan eerst een melding krijg op welke naam de taxatie moet staan dus als voorbeeld tenkate motoren dat dan ook tenkate de taxateur is". UX flow gewijzigd:
   - Klik op "Maak BPM-rapport" → **eerst** popup "Op welke naam moet het rapport?" → toont opgeslagen branding-profielen → kiezen → editor opent met alle branding-velden vooringevuld (company, taxateur, KvK, adres, telefoon, email)
   - Bij bestaand rapport (al opgeslagen) → skip picker, ga direct naar editor (gebruikt bestaande branding)

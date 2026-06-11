@@ -756,6 +756,38 @@ async def delete_branding_profile(
     return {"status": "deleted"}
 
 
+@router.post("/admin/taxatie-aanvragen/{aanvraag_id}/assign-taxateur")
+async def assign_taxateur(
+    aanvraag_id: str,
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Wijst een branding-profiel toe aan een aanvraag (= wie maakt de taxatie)."""
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team")
+    profile_id = (body.get("branding_profile_id") or "").strip()
+    if not profile_id:
+        # Reset/unassign
+        await db.taxatie_aanvragen.update_one(
+            {"id": aanvraag_id},
+            {"$unset": {"branding_profile_id": "", "branding_profile_snapshot": ""}},
+        )
+        return {"status": "cleared"}
+    profile = await db.bpm_branding_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profiel niet gevonden")
+    await db.taxatie_aanvragen.update_one(
+        {"id": aanvraag_id},
+        {"$set": {
+            "branding_profile_id": profile_id,
+            "branding_profile_snapshot": profile,
+            "branding_assigned_at": datetime.now(timezone.utc).isoformat(),
+            "branding_assigned_by": (current_user.get("email") or "").lower(),
+        }},
+    )
+    return {"status": "assigned", "profile": profile}
+
+
 
 @router.put("/admin/taxatie-aanvragen/{aanvraag_id}/bpm-report")
 async def save_bpm_report(
