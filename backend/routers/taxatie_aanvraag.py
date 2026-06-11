@@ -701,6 +701,62 @@ def _is_admin_only(user: dict) -> bool:
     return email in ADMIN_TEAM_EMAILS
 
 
+# --- Branding profielen (Ten Kate / motoimport / etc.) ---
+
+@router.get("/admin/bpm-branding-profiles")
+async def list_branding_profiles(current_user: dict = Depends(get_current_user)):
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team")
+    out = []
+    async for d in db.bpm_branding_profiles.find({}, {"_id": 0}).sort("label", 1):
+        out.append(d)
+    return {"profiles": out}
+
+
+@router.post("/admin/bpm-branding-profiles")
+async def upsert_branding_profile(
+    body: dict = Body(...),
+    current_user: dict = Depends(get_current_user),
+):
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team")
+    label = (body.get("label") or "").strip()
+    if not label:
+        raise HTTPException(status_code=400, detail="Label is verplicht")
+    profile_id = (body.get("id") or "").strip() or str(uuid.uuid4())
+    fields = {
+        "id": profile_id,
+        "label": label,
+        "company_name": (body.get("company_name") or "").strip(),
+        "address": (body.get("address") or "").strip(),
+        "postal_code": (body.get("postal_code") or "").strip(),
+        "city": (body.get("city") or "").strip(),
+        "phone": (body.get("phone") or "").strip(),
+        "email": (body.get("email") or "").strip(),
+        "kvk": (body.get("kvk") or "").strip(),
+        "btw": (body.get("btw") or "").strip(),
+        "taxateur_name": (body.get("taxateur_name") or "").strip(),
+        "taxateur_title": (body.get("taxateur_title") or "").strip(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.bpm_branding_profiles.update_one(
+        {"id": profile_id}, {"$set": fields}, upsert=True
+    )
+    return fields
+
+
+@router.delete("/admin/bpm-branding-profiles/{profile_id}")
+async def delete_branding_profile(
+    profile_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team")
+    await db.bpm_branding_profiles.delete_one({"id": profile_id})
+    return {"status": "deleted"}
+
+
+
 @router.put("/admin/taxatie-aanvragen/{aanvraag_id}/bpm-report")
 async def save_bpm_report(
     aanvraag_id: str,

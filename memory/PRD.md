@@ -19,6 +19,14 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🎯 Branding-keuze popup vóór BPM-rapport editor** (Feb 2026): User-eis "ik wil als ik op nieuwe bpm taxati druk dat ik dan eerst een melding krijg op welke naam de taxatie moet staan dus als voorbeeld tenkate motoren dat dan ook tenkate de taxateur is". UX flow gewijzigd:
+  - Klik op "Maak BPM-rapport" → **eerst** popup "Op welke naam moet het rapport?" → toont opgeslagen branding-profielen → kiezen → editor opent met alle branding-velden vooringevuld (company, taxateur, KvK, adres, telefoon, email)
+  - Bij bestaand rapport (al opgeslagen) → skip picker, ga direct naar editor (gebruikt bestaande branding)
+  - Nieuwe collection `bpm_branding_profiles` + CRUD endpoints `GET/POST/DELETE /api/admin/bpm-branding-profiles` (admin-only)
+  - Startup-migratie seedt automatisch het default "Moto Import BV (standaard)" profiel
+  - Nieuw frontend component `BpmBrandingPicker.js`: lijst van profielen + edit/delete per profiel + "Nieuw branding-profiel toevoegen" knop. Bij aanmaken/bewerken vraagt om label, bedrijfsnaam, taxateur-naam (verplicht) + adres/KvK/email/telefoon (optioneel)
+  - Editor-header toont nu een banner met geselecteerde branding: "Rapport op naam van: Ten Kate Motoren BV · Taxateur: J. ten Kate"
+  - End-to-end getest: profiel "Ten Kate Motoren" aangemaakt via API → screenshot toont picker met 2 profielen (motoimport-default + Ten Kate) ✅
 - **🔒 Strikter access-control BPM-rapport + 🤖 OCR via Gemini Vision** (Feb 2026): User-eis "alleen admin mag dit zien" + akkoord op OCR-voorstel. Wijzigingen:
   - Nieuwe `_is_admin_only()` check in `backend/routers/taxatie_aanvraag.py`: vereist `role == 'admin'` AND `email in ADMIN_TEAM_EMAILS`. Toegepast op alle 3 BPM-rapport endpoints (PUT save, GET pdf, POST ocr). Taxateur Deniz en andere rollen krijgen nu 403
   - Frontend `AdminTaxatieAanvragen.js`: BPM-rapport knop alleen zichtbaar wanneer `user?.role === 'admin'` (DetailModal krijgt nieuwe prop `isAdminOnly`)

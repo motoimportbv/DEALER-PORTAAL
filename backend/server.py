@@ -122,6 +122,27 @@ async def startup_db_client():
     if iban_mig.modified_count:
         logger.info(f"Migrated {iban_mig.modified_count} taxatie invoices to motoimport bv / NL09 BUNQ")
 
+    # Seed default BPM branding profile (motoimport bv) — idempotent
+    await db.bpm_branding_profiles.update_one(
+        {"id": "motoimport-default"},
+        {"$set": {
+            "id": "motoimport-default",
+            "label": "Moto Import BV (standaard)",
+            "company_name": "motoimport bv",
+            "address": "Horsterhoekweg 11",
+            "postal_code": "7433 SV",
+            "city": "Schalkhaar",
+            "phone": "+31 6 24264861",
+            "email": "motoimportbv@gmail.com",
+            "kvk": "94622086",
+            "btw": "NL867456982B01",
+            "taxateur_name": "S. Milone",
+            "taxateur_title": "Erkend BPM-taxateur",
+            "is_default": True,
+        }},
+        upsert=True,
+    )
+
 
 async def monthly_taxatie_reminder():
     """Background task: sends monthly email on the 1st with pending taxatie invoices"""

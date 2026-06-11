@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import BpmReportEditor from './BpmReportEditor';
+import BpmBrandingPicker from './BpmBrandingPicker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND = process.env.REACT_APP_BACKEND_URL;
@@ -453,7 +454,25 @@ function DetailModal({ aanvraag, token, isAdminOnly, onClose, onUpdateStatus, on
   const fixedFiles = (a.files || []).filter(f => !f.filename.includes('_detail_'));
   const detailFiles = (a.files || []).filter(f => f.filename.includes('_detail_'));
   const [bpmEditor, setBpmEditor] = useState(false);
+  const [brandingPicker, setBrandingPicker] = useState(false);
+  const [selectedBranding, setSelectedBranding] = useState(null);
   const hasReport = !!a.bpm_report;
+
+  const openBpmFlow = () => {
+    if (hasReport) {
+      // Bestaand rapport: skip picker, ga direct naar editor (branding zit al in rapport)
+      setBpmEditor(true);
+    } else {
+      // Nieuw rapport: eerst branding kiezen
+      setBrandingPicker(true);
+    }
+  };
+
+  const handleBrandingPicked = (profile) => {
+    setSelectedBranding(profile);
+    setBrandingPicker(false);
+    setBpmEditor(true);
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center overflow-y-auto p-4" onClick={onClose} data-testid="aanvraag-detail-modal">
@@ -492,7 +511,7 @@ function DetailModal({ aanvraag, token, isAdminOnly, onClose, onUpdateStatus, on
             </div>
             <div className="flex gap-2">
               {isAdminOnly && (
-                <Button onClick={() => setBpmEditor(true)}
+                <Button onClick={openBpmFlow}
                   className={hasReport ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
                   data-testid="open-bpm-report-btn">
                   <ShieldCheck className="w-4 h-4 mr-2" />
@@ -563,11 +582,19 @@ function DetailModal({ aanvraag, token, isAdminOnly, onClose, onUpdateStatus, on
           )}
         </div>
       </div>
+      {brandingPicker && (
+        <BpmBrandingPicker
+          token={token}
+          onPick={handleBrandingPicked}
+          onClose={() => setBrandingPicker(false)}
+        />
+      )}
       {bpmEditor && (
         <BpmReportEditor
           aanvraag={aanvraag}
           token={token}
-          onClose={() => setBpmEditor(false)}
+          initialBranding={selectedBranding}
+          onClose={() => { setBpmEditor(false); setSelectedBranding(null); }}
           onSaved={() => { onReportSaved && onReportSaved(); }}
         />
       )}

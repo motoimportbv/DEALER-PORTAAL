@@ -44,7 +44,7 @@ const empty = {
 
 function num(v) { const x = parseFloat(v); return isFinite(x) ? x : 0; }
 
-export default function BpmReportEditor({ aanvraag, token, onClose, onSaved }) {
+export default function BpmReportEditor({ aanvraag, token, initialBranding, onClose, onSaved }) {
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -69,14 +69,31 @@ export default function BpmReportEditor({ aanvraag, token, onClose, onSaved }) {
         setUseCustomBranding(true);
       }
     } else {
-      // Auto-fill from aanvraag basic data
+      // Auto-fill from aanvraag basic data + initial branding from picker
+      const isNonDefault = initialBranding && initialBranding.id !== 'motoimport-default';
+      const brandingForForm = initialBranding ? {
+        company_name: initialBranding.company_name,
+        address: initialBranding.address,
+        postal_code: initialBranding.postal_code,
+        city: initialBranding.city,
+        phone: initialBranding.phone,
+        email: initialBranding.email,
+        kvk: initialBranding.kvk,
+        btw: initialBranding.btw,
+        taxateur_name: initialBranding.taxateur_name,
+        taxateur_title: initialBranding.taxateur_title,
+      } : {};
       setForm({
         ...empty,
         rapportnummer: aanvraag.ref_nr ? `BPM-${aanvraag.ref_nr.replace('TX-', '')}` : '',
         opname: { ...empty.opname, datum: new Date().toISOString().slice(0, 10) },
+        branding: isNonDefault ? brandingForForm : {},
       });
+      if (isNonDefault) {
+        setUseCustomBranding(true);
+      }
     }
-  }, [aanvraag]);
+  }, [aanvraag, initialBranding]);
 
   const update = (section, key, value) => {
     setForm(prev => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
@@ -187,6 +204,16 @@ export default function BpmReportEditor({ aanvraag, token, onClose, onSaved }) {
               {aanvraag.bedrijfsnaam} · {aanvraag.ref_nr || aanvraag.id.slice(0, 8)} ·
               Belastingdienst Bijlage 1 — Uitvoeringsregeling BPM 1992
             </p>
+            {initialBranding && (
+              <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-full text-xs">
+                <Building2 className="w-3 h-3 text-blue-600" />
+                <span className="text-zinc-600">Rapport op naam van:</span>
+                <strong className="text-blue-700">{initialBranding.company_name}</strong>
+                <span className="text-zinc-400">·</span>
+                <span className="text-zinc-600">Taxateur:</span>
+                <strong className="text-blue-700">{initialBranding.taxateur_name}</strong>
+              </div>
+            )}
           </div>
           <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-lg" data-testid="close-bpm-editor">
             <X className="w-5 h-5" />
