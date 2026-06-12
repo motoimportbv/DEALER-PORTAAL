@@ -1098,7 +1098,11 @@ async def create_taxatie(data: TaxatieCreate, current_user: dict = Depends(requi
 async def get_taxaties(current_user: dict = Depends(require_taxatie_access)):
     if not _is_admin_team(current_user):
         raise HTTPException(status_code=403, detail="Geen toegang")
-    return await db.taxatie_programma.find(_owner_filter_for_user(current_user), {"_id": 0}).sort("created_at", -1).to_list(500)
+    docs = await db.taxatie_programma.find(_owner_filter_for_user(current_user), {"_id": 0}).sort("created_at", -1).to_list(500)
+    # Auto-resolve missing branding_override via email-match (silent fallback)
+    for d in docs:
+        await _auto_resolve_branding(d, persist=True)
+    return docs
 
 @router.get("/taxatie-programma/{taxatie_id}")
 async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxatie_access)):
@@ -1107,7 +1111,44 @@ async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxa
     doc = await db.taxatie_programma.find_one({"id": taxatie_id, **_owner_filter_for_user(current_user)}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Taxatie niet gevonden")
+    await _auto_resolve_branding(doc, persist=True)
     return doc
+
+
+async def _auto_resolve_branding(taxatie_doc: dict, persist: bool = True) -> dict:
+    """Als taxatie geen branding_override heeft maar customer_email matcht
+    een branding-profiel's linked_emails → automatisch toepassen."""
+    if not taxatie_doc:
+        return taxatie_doc
+    existing = taxatie_doc.get("branding_override") or {}
+    if existing.get("company_name"):
+        return taxatie_doc  # already set
+    # Probeer email-match
+    candidate_emails = []
+    for k in ("customer_email", "email", "klant_email"):
+        v = (taxatie_doc.get(k) or "").strip().lower()
+        if v and "@" in v:
+            candidate_emails.append(v)
+    # Ook in data sub-object
+    data = taxatie_doc.get("data") or {}
+    for k in ("customer_email", "email"):
+        v = (data.get(k) or "").strip().lower()
+        if v and "@" in v:
+            candidate_emails.append(v)
+    if not candidate_emails:
+        return taxatie_doc
+    matched = await db.bpm_branding_profiles.find_one(
+        {"linked_emails": {"$in": candidate_emails}}, {"_id": 0}
+    )
+    if not matched:
+        return taxatie_doc
+    taxatie_doc["branding_override"] = matched
+    if persist:
+        await db.taxatie_programma.update_one(
+            {"id": taxatie_doc["id"]},
+            {"$set": {"branding_override": matched, "branding_resolved_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    return taxatie_doc
 
 @router.put("/taxatie-programma/{taxatie_id}")
 async def update_taxatie(taxatie_id: str, data: TaxatieCreate, current_user: dict = Depends(require_taxatie_access)):

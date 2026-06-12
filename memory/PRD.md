@@ -19,6 +19,11 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🔧 Auto-resolutie branding voor BESTAANDE taxaties** (Feb 2026): User-bug "Waarom zie ik dan nog mijn naam deze taxati is van bloemert motoren" — bestaande taxaties (gemaakt vóór de branding-fix) toonden nog steeds "Moto Import B.V." omdat hun `branding_override` veld nog leeg was. Fix:
+  - Nieuwe helper `_auto_resolve_branding(taxatie_doc, persist=True)` in `backend/routers/taxatie.py`: zoekt `customer_email` of `email` in een matching profiel via `linked_emails` lijst en past hem automatisch toe + persisteert (`branding_resolved_at` timestamp)
+  - Aangeroepen vanuit `GET /taxatie-programma` (lijst) en `GET /taxatie-programma/{id}` (detail) — taxaties krijgen zo bij volgende load automatisch de juiste branding zonder dat user iets hoeft te doen
+  - Werkflow voor user: maak branding-profiel **Bloemert Motoren** aan met `linked_emails: ["info@roybloemert.nl"]` → bestaande Bloemert-taxaties krijgen direct de juiste header bij volgende open
+  - End-to-end getest: profiel met linked email → bestaande taxatie zonder branding_override → na `_auto_resolve_branding()` → company_name = "Bloemert Motoren BV" ✅
 - **🔗 Auto-koppelen branding-profiel op email** (Feb 2026): User-eis "geld dit nu bij alle dealers dit dat willen als ik ze aanmaak" + akkoord "D" op volledig pakket. Implementatie:
   - Branding-profielen krijgen nieuw veld `linked_emails: []` — admin vult bij elke dealer 1+ emails in (info@bloemert.nl, jan@bloemert.nl, etc.)
   - In `BpmBrandingPicker.js` edit-modal: nieuwe emerald-groene sectie **"✨ Auto-koppelen op email"** met textarea (een per regel). Toont teller "N adressen gekoppeld"
