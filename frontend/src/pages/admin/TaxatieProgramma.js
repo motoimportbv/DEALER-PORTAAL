@@ -1025,6 +1025,18 @@ function BpmReport({ taxatie, onClose, onTaxatieUpdate }) {
               <h1 className="text-3xl font-bold tracking-tight">BPM VERMINDERING</h1>
               <p className="text-zinc-400 mt-1">Taxatierapport {cb.vehicleLabel.charAt(0).toUpperCase() + cb.vehicleLabel.slice(1)}</p>
               <p className="text-zinc-500 text-sm mt-1">{cb.name}{cb.kvk ? ` | KVK: ${cb.kvk}` : ''}</p>
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => setBrandingPicker(true)}
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white rounded-lg text-xs font-semibold print:hidden transition-colors"
+                  data-testid="banner-change-taxateur-btn"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  {localTaxatie.branding_override?.company_name
+                    ? `Wijzig taxateur (nu: ${localTaxatie.branding_override.company_name})`
+                    : '⚠️ Wijzig taxateur — momenteel staat het op Moto Import'}
+                </button>
+              )}
             </div>
             <div className="text-right">
               <p className="font-mono text-lg">{taxatie.taxatie_nummer}</p>

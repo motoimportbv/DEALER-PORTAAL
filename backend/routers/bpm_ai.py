@@ -151,8 +151,31 @@ async def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
     branding_taxateur = cb.get("taxateur_full_name") or cb.get("taxateur_name") or ""
     if taxatie_id:
         try:
-            tx = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0, "branding_override": 1})
+            tx = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0})
             override = (tx or {}).get("branding_override") or {}
+            # Als override nog niet gezet → probeer auto-resolve via customer_email
+            if not override.get("company_name") and tx:
+                candidates = []
+                for k in ("customer_email", "email", "klant_email"):
+                    v = (tx.get(k) or "").strip().lower()
+                    if v and "@" in v:
+                        candidates.append(v)
+                data = tx.get("data") or {}
+                for k in ("customer_email", "email"):
+                    v = (data.get(k) or "").strip().lower()
+                    if v and "@" in v:
+                        candidates.append(v)
+                if candidates:
+                    matched = await db.bpm_branding_profiles.find_one(
+                        {"linked_emails": {"$in": candidates}}, {"_id": 0}
+                    )
+                    if matched:
+                        override = matched
+                        # Persist zodat volgende AI-calls + PDF-exports direct goed staan
+                        await db.taxatie_programma.update_one(
+                            {"id": taxatie_id},
+                            {"$set": {"branding_override": matched}},
+                        )
             if override.get("company_name"):
                 branding_company = override["company_name"]
             if override.get("taxateur_name"):
