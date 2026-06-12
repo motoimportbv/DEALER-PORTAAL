@@ -1599,6 +1599,7 @@ export default function TaxatieProgramma() {
         total_herstelkosten: bpmCalc?.herstelkosten || 0,
         bruto_bpm: bpmCalc?.bruto_bpm || 0,
         target_bpm: bpmCalc?.netto_bpm || 0,
+        taxatie_id: form.id || null,
       }, { timeout: 15000 });
       const taskId = startRes.data?.task_id;
       if (!taskId) throw new Error('Geen task_id ontvangen');

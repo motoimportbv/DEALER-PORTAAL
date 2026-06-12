@@ -113,7 +113,7 @@ def _pick_style_card() -> dict:
     }
 
 
-def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
+async def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
     """Bouwt (system_msg, prompt) op basis van body + user context."""
     brand = body.get("brand", "")
     model = body.get("model", "")
@@ -143,15 +143,34 @@ def _build_prompt(body: dict, user: dict) -> tuple[str, str]:
     from services.branding import get_branding
     cb = get_branding(user)
     vehicle_label = cb['vehicle_label']
+
+    # Whitelabel override: als de taxatie aan een ander bedrijf is toegewezen
+    # (bv. Bloemert Motoren), gebruik die branding voor taxateur-naam + bedrijfsnaam
+    taxatie_id = (body.get("taxatie_id") or "").strip()
+    branding_company = cb.get("name") or "Moto Import B.V."
+    branding_taxateur = cb.get("taxateur_full_name") or cb.get("taxateur_name") or ""
+    if taxatie_id:
+        try:
+            tx = await db.taxatie_programma.find_one({"id": taxatie_id}, {"_id": 0, "branding_override": 1})
+            override = (tx or {}).get("branding_override") or {}
+            if override.get("company_name"):
+                branding_company = override["company_name"]
+            if override.get("taxateur_name"):
+                branding_taxateur = override["taxateur_name"]
+        except Exception:
+            logger.exception("Whitelabel branding ophalen mislukt — fallback naar default")
+
     is_motorfiets = vehicle_label == 'motorfiets'
 
     # Random stijl-kaart: 5 orthogonale dimensies ⇒ >100k unieke combinaties
     style = _pick_style_card()
 
     system_msg = (
-        "Je bent een professionele BPM-taxateur in Nederland. "
+        f"Je bent {branding_taxateur or 'een erkende BPM-taxateur'} van het bedrijf "
+        f"{branding_company}, gevestigd in Nederland. "
         "Je schrijft gedetailleerde, technisch onderbouwde teksten voor BPM-taxatierapporten "
         "die voldoen aan de eisen van de Belastingdienst. Schrijf in vlot, formeel Nederlands. "
+        "Refereer NIET aan andere bedrijven of taxatiebureaus dan het bovengenoemde. "
         "BELANGRIJK: elke onderbouwing die je schrijft moet fundamenteel anders klinken dan eerdere — "
         "varieer openingszin, zinsbouw, woordkeuze, volgorde van argumentatie en afsluitende formulering. "
         f"Werk deze taxatie uit volgens stijl-variant #{style['variatie_nr']}."
@@ -210,7 +229,7 @@ Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel."""
 async def _run_generation_task(task_id: str, body: dict, user: dict) -> None:
     """Background task: roept Claude aan en slaat resultaat op in MongoDB."""
     try:
-        system_msg, prompt = _build_prompt(body, user)
+        system_msg, prompt = await _build_prompt(body, user)
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"bpm-onderbouwing-{task_id}",

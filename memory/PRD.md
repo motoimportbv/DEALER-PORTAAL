@@ -19,6 +19,12 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🤖 AI-onderbouwing gebruikt nu whitelabel branding** (Feb 2026): User-bug "Nu voer ik een ai verslag uit en zie ik weer motoimport staan". De AI-prompt in `backend/routers/bpm_ai.py` gebruikte hardcoded `get_branding(user)` → kreeg altijd "Moto Import / S. Milone" voor admin. Fix:
+  - `_build_prompt()` is nu `async` en accepteert `body.taxatie_id`
+  - Bij aanwezigheid van `taxatie_id`: leest `branding_override` van het taxatie-doc → gebruikt dealer's `company_name` + `taxateur_name` in system message
+  - Nieuwe system message: *"Je bent R. Bloemert van het bedrijf Bloemert Motoren BV ... Refereer NIET aan andere bedrijven of taxatiebureaus dan het bovengenoemde."* — voorkomt dat AI hallucineert/verwijst naar Moto Import
+  - Frontend `TaxatieProgramma.js`: `generate-onderbouwing` POST stuurt nu `taxatie_id: form.id`
+  - End-to-end getest: AI prompt voor Bloemert-taxatie bevat "R. Bloemert van het bedrijf Bloemert Motoren BV" en geen "Moto Import" ✅
 - **🔧 Auto-resolutie branding voor BESTAANDE taxaties** (Feb 2026): User-bug "Waarom zie ik dan nog mijn naam deze taxati is van bloemert motoren" — bestaande taxaties (gemaakt vóór de branding-fix) toonden nog steeds "Moto Import B.V." omdat hun `branding_override` veld nog leeg was. Fix:
   - Nieuwe helper `_auto_resolve_branding(taxatie_doc, persist=True)` in `backend/routers/taxatie.py`: zoekt `customer_email` of `email` in een matching profiel via `linked_emails` lijst en past hem automatisch toe + persisteert (`branding_resolved_at` timestamp)
   - Aangeroepen vanuit `GET /taxatie-programma` (lijst) en `GET /taxatie-programma/{id}` (detail) — taxaties krijgen zo bij volgende load automatisch de juiste branding zonder dat user iets hoeft te doen
