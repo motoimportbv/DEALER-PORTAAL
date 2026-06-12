@@ -1115,6 +1115,41 @@ async def get_taxatie(taxatie_id: str, current_user: dict = Depends(require_taxa
     return doc
 
 
+def _apply_branding_override(cb: dict, taxatie: dict | None) -> dict:
+    """Overlay een whitelabel branding_override van een taxatie op het standaard cb-dict.
+    Geeft een nieuw dict terug — muteert het origineel niet."""
+    if not taxatie:
+        return cb
+    override = taxatie.get("branding_override") or {}
+    if not override.get("company_name"):
+        return cb
+    merged = dict(cb or {})
+    # Map override keys naar cb keys (zelfde naming behalve company_name → name)
+    if override.get("company_name"):
+        merged["name"] = override["company_name"]
+    for src, dst in [
+        ("address", "address"),
+        ("postal_code", None),  # combined into address
+        ("city", "city"),
+        ("phone", "phone"),
+        ("email", "email"),
+        ("kvk", "kvk"),
+        ("btw", "btw"),
+        ("taxateur_name", "taxateur_name"),
+        ("taxateur_name", "taxateur_full_name"),
+        ("taxateur_title", "taxateur_title"),
+    ]:
+        if override.get(src) and dst:
+            merged[dst] = override[src]
+    # Combineer adres
+    if override.get("address") or override.get("postal_code") or override.get("city"):
+        parts = [override.get("address", ""), override.get("postal_code", ""), override.get("city", "")]
+        merged["address"] = ", ".join([p for p in parts if p]).strip(", ")
+    # RSIN heeft geen direct equivalent — leeg laten bij whitelabel
+    merged["rsin"] = override.get("rsin", "") or merged.get("rsin", "")
+    return merged
+
+
 async def _auto_resolve_branding(taxatie_doc: dict, persist: bool = True) -> dict:
     """Als taxatie geen branding_override heeft maar customer_email matcht
     een branding-profiel's linked_emails → automatisch toepassen."""
@@ -1895,6 +1930,7 @@ async def export_taxatie_pdf(taxatie_id: str, current_user: dict = Depends(requi
     
     from services.branding import get_branding
     cb = get_branding(current_user)
+    cb = _apply_branding_override(cb, doc)
     
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
@@ -3163,6 +3199,7 @@ async def get_volmacht_overrides(taxatie_id: str, current_user: dict = Depends(r
     # Auto-fill defaults vanuit taxatie + customer + branding
     from services.branding import get_branding
     cb = get_branding(current_user)
+    cb = _apply_branding_override(cb, doc)
 
     customer_rsin = ""
     customer_name = (doc.get("customer_name") or "").strip()
@@ -3680,6 +3717,7 @@ async def export_taxatieverslag_pdf(taxatie_id: str, current_user: dict = Depend
     
     from services.branding import get_branding
     cb = get_branding(current_user)
+    cb = _apply_branding_override(cb, doc)
     
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors

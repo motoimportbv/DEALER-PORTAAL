@@ -19,6 +19,11 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **✍️ Handtekening-pagina + bedrijfsinfo blokken whitelabel** (Feb 2026): User-akkoord "Ja ook dat veranderen" op suggestie. De **PDF-generators** (bundle PDF, taxatieverslag PDF, aangifte-PDF) gebruikten hardcoded `cb = get_branding(current_user)` → admin = motoimport. Fix:
+  - Nieuwe helper `_apply_branding_override(cb, taxatie)` in `backend/routers/taxatie.py`: overlay's branding_override van taxatie op het standaard cb-dict (name/taxateur_name/address/kvk/email/phone)
+  - 3 PDF-generators gepatcht waar `doc` (taxatie) in scope is: bundle-pdf (line 3720), Aangifte BPM data (line 3202), Taxatieverslag (line 1933) — krijgen nu allemaal automatisch de juiste branding
+  - End-to-end getest: Bloemert override → cb.name = "Bloemert Motoren BV", taxateur_name = "R. Bloemert", adres+KvK+email allemaal van Bloemert. Zonder override → fallback Moto Import / S. Milone ✅
+  - **Niet aangepast** (bewust): BPM-aangifte form-field mappings (lijn 2270+) blijven motoimport — dat is de officiële Belastingdienst-formulier en moet door motoimport worden ingediend, niet door whitelabel-dealer
 - **🤖 AI-onderbouwing gebruikt nu whitelabel branding** (Feb 2026): User-bug "Nu voer ik een ai verslag uit en zie ik weer motoimport staan". De AI-prompt in `backend/routers/bpm_ai.py` gebruikte hardcoded `get_branding(user)` → kreeg altijd "Moto Import / S. Milone" voor admin. Fix:
   - `_build_prompt()` is nu `async` en accepteert `body.taxatie_id`
   - Bij aanwezigheid van `taxatie_id`: leest `branding_override` van het taxatie-doc → gebruikt dealer's `company_name` + `taxateur_name` in system message
