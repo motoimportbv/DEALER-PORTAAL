@@ -244,7 +244,12 @@ OPDRACHT:
 {6 if is_motorfiets else 5}. Vermijd: bullets, koppen, opsommingen. Alleen vloeiende paragrafen.
 {7 if is_motorfiets else 6}. Lengte: {'350-500' if is_motorfiets else '250-400'} woorden.
 
-Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel."""
+Geef ALLEEN de onderbouwingstekst terug, geen JSON, geen titel.
+
+VERBODEN IN DE TEKST:
+- Vermeld GEEN enkele bedrijfsnaam, taxatiebureau, of merknaam (bv. "Moto Import", "ondergetekende namens ...", "ons bedrijf"). De branding staat al in de header van het rapport.
+- Gebruik geen "ik" of "ondergetekende"; schrijf onpersoonlijk in derde persoon ("De waarde wordt vastgesteld op ...", "De taxatie laat zien dat ...").
+- Refereer NIET aan eerdere taxaties of vergelijkbare rapporten van andere bureaus."""
 
     return system_msg, prompt
 
