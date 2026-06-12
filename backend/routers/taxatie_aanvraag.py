@@ -765,6 +765,7 @@ async def upsert_branding_profile(
         "email": (body.get("email") or "").strip(),
         "kvk": (body.get("kvk") or "").strip(),
         "btw": (body.get("btw") or "").strip(),
+        "rsin": (body.get("rsin") or "").strip(),
         "taxateur_name": (body.get("taxateur_name") or "").strip(),
         "taxateur_title": (body.get("taxateur_title") or "").strip(),
         "linked_emails": [

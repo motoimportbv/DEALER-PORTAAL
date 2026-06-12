@@ -19,6 +19,7 @@ const EMPTY_PROFILE = {
   email: '',
   kvk: '',
   btw: '',
+  rsin: '',
   taxateur_name: '',
   taxateur_title: 'Erkend BPM-taxateur',
   linked_emails: [],
@@ -134,6 +135,10 @@ export default function BpmBrandingPicker({ token, onPick, onClose }) {
               <PField label="KvK-nummer" value={editing.kvk}
                 onChange={v => setEditing({ ...editing, kvk: v })}
                 placeholder="08123456" />
+              <PField label="RSIN-nummer" value={editing.rsin}
+                onChange={v => setEditing({ ...editing, rsin: v })}
+                placeholder="123456789"
+                hint="Fiscaal nummer (9 cijfers) — staat op de aangifte BPM" />
               <PField label="BTW-nummer" value={editing.btw}
                 onChange={v => setEditing({ ...editing, btw: v })}
                 placeholder="NL811234567B01" />

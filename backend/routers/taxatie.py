@@ -1135,6 +1135,7 @@ def _apply_branding_override(cb: dict, taxatie: dict | None) -> dict:
         ("email", "email"),
         ("kvk", "kvk"),
         ("btw", "btw"),
+        ("rsin", "rsin"),
         ("taxateur_name", "taxateur_name"),
         ("taxateur_name", "taxateur_full_name"),
         ("taxateur_title", "taxateur_title"),
@@ -1145,8 +1146,8 @@ def _apply_branding_override(cb: dict, taxatie: dict | None) -> dict:
     if override.get("address") or override.get("postal_code") or override.get("city"):
         parts = [override.get("address", ""), override.get("postal_code", ""), override.get("city", "")]
         merged["address"] = ", ".join([p for p in parts if p]).strip(", ")
-    # RSIN heeft geen direct equivalent — leeg laten bij whitelabel
-    merged["rsin"] = override.get("rsin", "") or merged.get("rsin", "")
+    # Bij whitelabel: GEEN motoimport-RSIN fallback (forceer leeg als niet gespecificeerd)
+    merged["rsin"] = override.get("rsin", "")
     return merged
 
 
