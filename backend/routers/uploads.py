@@ -375,6 +375,25 @@ async def upload_multiple_images(request: Request, files: List[UploadFile] = Fil
                 new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             
+            # Blur dealer-logo in opgegeven hoek (~22% breedte × 16% hoogte)
+            if blur_corner in ("bottom-right", "bottom-left", "top-right", "top-left"):
+                try:
+                    w, h = img.size
+                    box_w = int(w * 0.22)
+                    box_h = int(h * 0.16)
+                    if blur_corner == "bottom-right":
+                        box = (w - box_w, h - box_h, w, h)
+                    elif blur_corner == "bottom-left":
+                        box = (0, h - box_h, box_w, h)
+                    elif blur_corner == "top-right":
+                        box = (w - box_w, 0, w, box_h)
+                    else:  # top-left
+                        box = (0, 0, box_w, box_h)
+                    region = img.crop(box).filter(ImageFilter.GaussianBlur(radius=20))
+                    img.paste(region, box)
+                except Exception:
+                    pass  # blur failure is non-fatal — keep original
+            
             # Compress to JPEG
             output = io.BytesIO()
             img.save(output, format='JPEG', quality=80, optimize=True)

@@ -135,6 +135,9 @@ const MotorcycleForm = () => {
   const [uploading, setUploading] = useState(false);
   const [fetching, setFetching] = useState(isEditing);
   const fileInputRef = useRef(null);
+
+  // Dealer-logo blur hoek bij upload. '' = geen blur.
+  const [blurCorner, setBlurCorner] = useState('');
   
   // CHF supplier price editing
   const [supplierChfPrice, setSupplierChfPrice] = useState('');
@@ -315,7 +318,10 @@ const MotorcycleForm = () => {
       formDataUpload.append('file', file);
 
       try {
-        const response = await axios.post(`${API}/upload`, formDataUpload, {
+        const url = blurCorner
+          ? `${API}/upload?blur_corner=${encodeURIComponent(blurCorner)}`
+          : `${API}/upload`;
+        const response = await axios.post(url, formDataUpload, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         uploadedUrls.push(response.data.url);
@@ -497,6 +503,12 @@ const MotorcycleForm = () => {
                         <select value={selectedSupplierId} onChange={(e) => {
                           setSelectedSupplierId(e.target.value);
                           if (e.target.value) setFormData(prev => ({ ...prev, currency: 'CHF' }));
+                          // Auto-detect Mundi Moto → blur rechtsonder
+                          const picked = foreignDealers.find(s => s.id === e.target.value);
+                          if (picked && /mundi/i.test(picked.company_name || '')) {
+                            setBlurCorner('bottom-right');
+                            toast.info('Mundi Moto gedetecteerd — logo wordt automatisch geblurd (rechtsonder).');
+                          }
                         }}
                           className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500"
                           data-testid="supplier-select-form">
@@ -826,6 +838,30 @@ const MotorcycleForm = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Dealer-logo blur selector */}
+                  <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
+                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-600 whitespace-nowrap">
+                      Dealer-logo blurren
+                    </Label>
+                    <select
+                      value={blurCorner}
+                      onChange={(e) => setBlurCorner(e.target.value)}
+                      className="flex-1 border border-zinc-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-red-500"
+                      data-testid="blur-corner-select"
+                    >
+                      <option value="">Geen blur</option>
+                      <option value="bottom-right">Rechtsonder</option>
+                      <option value="bottom-left">Linksonder</option>
+                      <option value="top-right">Rechtsboven</option>
+                      <option value="top-left">Linksboven</option>
+                    </select>
+                    {blurCorner && (
+                      <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 rounded px-2 py-1">
+                        Actief
+                      </span>
+                    )}
+                  </div>
+
                   {/* Upload buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     <input
