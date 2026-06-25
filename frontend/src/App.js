@@ -73,7 +73,6 @@ import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
 import TaxatieProgramma from "./pages/admin/TaxatieProgramma";
 import MaandfactuurOverzicht from "./pages/admin/MaandfactuurOverzicht";
 import CustomerDirectory from "./pages/admin/CustomerDirectory";
-import TaxatieLanding from "./pages/TaxatieLanding";
 import TaxatieDealerRegister from "./pages/TaxatieDealerRegister";
 import TaxatieDealerLogin from "./pages/TaxatieDealerLogin";
 import TaxatieDealerDashboard from "./pages/TaxatieDealerDashboard";
@@ -236,7 +235,7 @@ function App() {
             <Route path="/suppliers" element={<SupplierLandingPage />} />
             <Route path="/dealers" element={<DealerLandingPage />} />
             <Route path="/particulier-verkopen" element={<ParticulierLandingPage />} />
-            <Route path="/taxatie" element={<TaxatieLanding />} />
+            <Route path="/taxatie" element={<Navigate to="/" replace />} />
             <Route path="/taxatie-dealer/register" element={<TaxatieDealerRegister />} />
             <Route path="/taxatie-dealer/login" element={<TaxatieDealerLogin />} />
             <Route path="/taxatie-dealer/dashboard" element={<TaxatieDealerDashboard />} />
