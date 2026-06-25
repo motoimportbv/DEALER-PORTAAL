@@ -1139,6 +1139,7 @@ def _apply_branding_override(cb: dict, taxatie: dict | None) -> dict:
         ("taxateur_name", "taxateur_name"),
         ("taxateur_name", "taxateur_full_name"),
         ("taxateur_title", "taxateur_title"),
+        ("logo_url", "logo_url"),
     ]:
         if override.get(src) and dst:
             merged[dst] = override[src]

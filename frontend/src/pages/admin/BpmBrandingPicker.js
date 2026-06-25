@@ -70,9 +70,19 @@ export default function BpmBrandingPicker({ token, onPick, onClose }) {
     }
     setSaving(true);
     try {
-      await axios.post(`${API}/admin/bpm-branding-profiles`, editing, {
+      const r = await axios.post(`${API}/admin/bpm-branding-profiles`, editing, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      // Upload logo if a file was selected
+      if (editing._logo_file) {
+        const fd = new FormData();
+        fd.append('file', editing._logo_file);
+        await axios.post(
+          `${API}/admin/bpm-branding-profiles/${r.data.id}/logo`,
+          fd,
+          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+        );
+      }
       toast.success('Profiel opgeslagen');
       setEditing(null);
       load();
@@ -102,6 +112,46 @@ export default function BpmBrandingPicker({ token, onPick, onClose }) {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900">
               💡 Dit profiel verschijnt straks in de keuzelijst bij <strong>"Maak BPM-rapport"</strong>.
               De ingevulde gegevens worden automatisch op het rapport gezet (bedrijfsnaam, taxateur, KvK, etc.).
+            </div>
+
+            <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+              <label className="block text-xs font-bold text-zinc-700 uppercase mb-2">
+                🖼 Logo (verschijnt linksbovenin het rapport)
+              </label>
+              {(editing.logo_url || editing._logo_preview) && (
+                <div className="mb-2 flex items-center gap-3">
+                  <img
+                    src={editing._logo_preview || `${process.env.REACT_APP_BACKEND_URL}${editing.logo_url}`}
+                    alt="Logo preview"
+                    className="h-14 w-auto max-w-[120px] object-contain bg-white border rounded p-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditing({ ...editing, logo_url: '', _logo_preview: '', _logo_file: null })}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Verwijderen
+                  </button>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  if (f.size > 2 * 1024 * 1024) {
+                    toast.error('Logo te groot (max 2MB)');
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => setEditing(prev => ({ ...prev, _logo_file: f, _logo_preview: reader.result }));
+                  reader.readAsDataURL(f);
+                }}
+                className="text-xs"
+                data-testid="logo-upload-input"
+              />
+              <p className="text-[10px] text-zinc-500 mt-1">PNG/JPG/WEBP/SVG, max 2MB. Wordt opgeslagen na klik op "Profiel opslaan".</p>
             </div>
 
             <PField label="Profiel-label (intern) *" value={editing.label}

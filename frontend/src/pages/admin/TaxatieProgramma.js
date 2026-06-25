@@ -1020,8 +1020,17 @@ function BpmReport({ taxatie, onClose, onTaxatieUpdate }) {
       <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
         {/* Header */}
         <div className="bg-zinc-900 text-white p-8 rounded-t-xl print:rounded-none" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}>
-          <div className="flex justify-between items-start">
-            <div>
+          <div className="flex justify-between items-start gap-6">
+            <div className="flex items-center gap-5">
+              {localTaxatie.branding_override?.logo_url && (
+                <img
+                  src={localTaxatie.branding_override.logo_url}
+                  alt={localTaxatie.branding_override.company_name || 'Logo'}
+                  className="h-16 w-auto max-w-[140px] object-contain bg-white rounded-lg p-2"
+                  data-testid="report-logo"
+                />
+              )}
+              <div>
               <h1 className="text-3xl font-bold tracking-tight">BPM VERMINDERING</h1>
               <p className="text-zinc-400 mt-1">Taxatierapport {cb.vehicleLabel.charAt(0).toUpperCase() + cb.vehicleLabel.slice(1)}</p>
               <p className="text-zinc-500 text-sm mt-1">{cb.name}{cb.kvk ? ` | KVK: ${cb.kvk}` : ''}</p>
@@ -1037,6 +1046,7 @@ function BpmReport({ taxatie, onClose, onTaxatieUpdate }) {
                     : '⚠️ Wijzig taxateur — momenteel staat het op Moto Import'}
                 </button>
               )}
+              </div>
             </div>
             <div className="text-right">
               <p className="font-mono text-lg">{taxatie.taxatie_nummer}</p>

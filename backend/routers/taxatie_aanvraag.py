@@ -768,6 +768,7 @@ async def upsert_branding_profile(
         "rsin": (body.get("rsin") or "").strip(),
         "taxateur_name": (body.get("taxateur_name") or "").strip(),
         "taxateur_title": (body.get("taxateur_title") or "").strip(),
+        "logo_url": (body.get("logo_url") or "").strip(),
         "linked_emails": [
             (e or "").strip().lower()
             for e in (body.get("linked_emails") or [])
@@ -779,6 +780,38 @@ async def upsert_branding_profile(
         {"id": profile_id}, {"$set": fields}, upsert=True
     )
     return fields
+
+
+@router.post("/admin/bpm-branding-profiles/{profile_id}/logo")
+async def upload_branding_logo(
+    profile_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    """Upload een logo voor een branding-profiel. Returns {logo_url}."""
+    if not _is_admin_only(current_user):
+        raise HTTPException(status_code=403, detail="Alleen admin-team")
+    profile = await db.bpm_branding_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profiel niet gevonden")
+    # Save to local dir
+    logo_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "uploads", "branding_logos")
+    os.makedirs(logo_dir, exist_ok=True)
+    ext = (os.path.splitext(file.filename or "")[1] or ".png").lower()
+    if ext not in (".png", ".jpg", ".jpeg", ".webp", ".svg"):
+        raise HTTPException(status_code=400, detail="Alleen PNG/JPG/WEBP/SVG toegestaan")
+    fname = f"{profile_id}{ext}"
+    fpath = os.path.join(logo_dir, fname)
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Logo te groot (max 2MB)")
+    with open(fpath, "wb") as f:
+        f.write(content)
+    url = f"/api/uploads/branding_logos/{fname}"
+    await db.bpm_branding_profiles.update_one(
+        {"id": profile_id}, {"$set": {"logo_url": url}}
+    )
+    return {"logo_url": url}
 
 
 @router.delete("/admin/bpm-branding-profiles/{profile_id}")

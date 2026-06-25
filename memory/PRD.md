@@ -19,6 +19,14 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🖼 Logo-upload per branding-profiel** (Feb 2026): User-eis "Als mundi moto motoren eropzet dan wil ik graag dat hun logo straks die linksbovenin verdwijnt [verschijnt]". Wijzigingen:
+  - Backend nieuw endpoint `POST /api/admin/bpm-branding-profiles/{id}/logo` — accepteert multipart PNG/JPG/WEBP/SVG (max 2MB), opslag in `/app/backend/uploads/branding_logos/{profile_id}.{ext}`, returns `{logo_url: "/api/uploads/branding_logos/..."}`
+  - Profiel-veld `logo_url` toegevoegd aan upsert + `_apply_branding_override()` mapping → komt automatisch op `cb.logo_url`
+  - Frontend `BpmBrandingPicker.js`: nieuwe sectie "🖼 Logo (verschijnt linksbovenin het rapport)" met file-upload, preview, verwijderen-knop. Logo wordt automatisch geupload na klik op "Profiel opslaan"
+  - Frontend `TaxatieProgramma.js` BpmReport: render `<img src={branding_override.logo_url}>` links van "BPM VERMINDERING" titel (alleen als logo_url aanwezig is). 64px hoog, max 140px breed, witte bg + rounded
+  - Verwijdert is route `/taxatie` + alle `/taxatie-dealer/*` routes (dealers kunnen het portal niet meer zien)
+  - 5 dealer-bestanden + TaxatieLanding.js blijven in codebase voor referentie maar zijn niet meer routeerbaar
+  - End-to-end getest: profiel met logo_url → `_apply_branding_override` returneert correcte URL ✅
 - **✍️ Handtekening-pagina + bedrijfsinfo blokken whitelabel** (Feb 2026): User-akkoord "Ja ook dat veranderen" op suggestie. De **PDF-generators** (bundle PDF, taxatieverslag PDF, aangifte-PDF) gebruikten hardcoded `cb = get_branding(current_user)` → admin = motoimport. Fix:
   - Nieuwe helper `_apply_branding_override(cb, taxatie)` in `backend/routers/taxatie.py`: overlay's branding_override van taxatie op het standaard cb-dict (name/taxateur_name/address/kvk/email/phone)
   - 3 PDF-generators gepatcht waar `doc` (taxatie) in scope is: bundle-pdf (line 3720), Aangifte BPM data (line 3202), Taxatieverslag (line 1933) — krijgen nu allemaal automatisch de juiste branding
