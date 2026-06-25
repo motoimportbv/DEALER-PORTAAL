@@ -154,7 +154,7 @@ const LoginPage = () => {
             } else if (role === 'particulier') {
               redirectUrl = '/particulier';
             } else if (role === 'taxatie_dealer') {
-              redirectUrl = '/taxatie-dealer/dashboard';
+              redirectUrl = '/';
             } else if (isForeignDealer) {
               redirectUrl = '/foreign-dealer';
             }

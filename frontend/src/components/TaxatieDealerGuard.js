@@ -51,8 +51,8 @@ export default function TaxatieDealerGuard() {
     if (!user) return;
     if (user.role !== 'taxatie_dealer') return;
     if (isAllowedForTaxatieDealer(location.pathname)) return;
-    // Redirect naar dealer-dashboard
-    navigate('/taxatie-dealer/dashboard', { replace: true });
+    // Dealer-portaal is verwijderd (Feb 2026) — stuur dealers naar homepage
+    navigate('/', { replace: true });
   }, [user, location.pathname, navigate]);
 
   return null;

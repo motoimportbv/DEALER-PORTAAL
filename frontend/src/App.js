@@ -73,11 +73,6 @@ import AdminGoogleMotors from "./pages/admin/AdminGoogleMotors";
 import TaxatieProgramma from "./pages/admin/TaxatieProgramma";
 import MaandfactuurOverzicht from "./pages/admin/MaandfactuurOverzicht";
 import CustomerDirectory from "./pages/admin/CustomerDirectory";
-import TaxatieDealerRegister from "./pages/TaxatieDealerRegister";
-import TaxatieDealerLogin from "./pages/TaxatieDealerLogin";
-import TaxatieDealerDashboard from "./pages/TaxatieDealerDashboard";
-import TaxatieDealerForgotPassword from "./pages/TaxatieDealerForgotPassword";
-import TaxatieDealerResetPassword from "./pages/TaxatieDealerResetPassword";
 import AdminTaxatieAanvragen from "./pages/admin/AdminTaxatieAanvragen";
 import TaxatieSalesMail from "./pages/admin/TaxatieSalesMail";
 import LeadScraper from "./pages/admin/LeadScraper";
@@ -236,11 +231,7 @@ function App() {
             <Route path="/dealers" element={<DealerLandingPage />} />
             <Route path="/particulier-verkopen" element={<ParticulierLandingPage />} />
             <Route path="/taxatie" element={<Navigate to="/" replace />} />
-            <Route path="/taxatie-dealer/register" element={<TaxatieDealerRegister />} />
-            <Route path="/taxatie-dealer/login" element={<TaxatieDealerLogin />} />
-            <Route path="/taxatie-dealer/dashboard" element={<TaxatieDealerDashboard />} />
-            <Route path="/taxatie-dealer/forgot" element={<TaxatieDealerForgotPassword />} />
-            <Route path="/taxatie-dealer/reset/:token" element={<TaxatieDealerResetPassword />} />
+            <Route path="/taxatie-dealer/*" element={<Navigate to="/" replace />} />
             <Route path="/motoren" element={<PublicMotorListing />} />
             <Route path="/motor/:id/:slug?" element={<PublicMotorDetail />} />
             <Route path="/klant/motor/:id" element={<CustomerMotorView />} />
