@@ -71,9 +71,6 @@ export default function TaxatieDealerDashboard() {
             MOTO IMPORT B.V. <span className="text-xs font-bold text-red-600 ml-2">DEALER</span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link to="/taxatie" className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg flex items-center gap-1.5" data-testid="new-aanvraag-btn">
-              <Plus className="w-4 h-4" />Nieuwe aanvraag
-            </Link>
             <button onClick={logout} className="p-2 text-zinc-500 hover:text-red-600 rounded-lg" title="Uitloggen" data-testid="logout-btn">
               <LogOut className="w-4 h-4" />
             </button>
@@ -121,17 +118,13 @@ export default function TaxatieDealerDashboard() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-black text-zinc-900" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Mijn taxatie-aanvragen</h2>
-            <Link to="/taxatie" className="text-sm text-red-600 font-bold hover:underline">+ Nieuwe aanvraag indienen</Link>
           </div>
 
           {aanvragen.length === 0 ? (
             <div className="bg-white rounded-2xl border p-10 text-center" data-testid="dealer-no-aanvragen">
               <Building2 className="w-12 h-12 mx-auto text-zinc-300 mb-3" />
               <p className="font-bold text-zinc-700 mb-1">Nog geen aanvragen</p>
-              <p className="text-sm text-zinc-500 mb-5">Dien uw eerste taxatieverslag-aanvraag in via het aanmeldformulier.</p>
-              <Link to="/taxatie" className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold">
-                <Plus className="w-4 h-4" />Eerste aanvraag indienen
-              </Link>
+              <p className="text-sm text-zinc-500">Neem contact met ons op voor het indienen van een nieuwe taxatie-aanvraag.</p>
             </div>
           ) : (
             <div className="bg-white rounded-2xl border overflow-hidden">
