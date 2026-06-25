@@ -28,9 +28,14 @@ router = APIRouter(tags=["Uploads"])
 # ============ UPLOAD ENDPOINT ============
 
 @router.post("/upload")
-async def upload_image(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Upload image to cloud storage for fast delivery"""
-    from PIL import Image
+async def upload_image(request: Request, file: UploadFile = File(...), blur_corner: str = "", user: dict = Depends(get_current_user)):
+    """Upload image to cloud storage for fast delivery.
+    
+    blur_corner: optionele hoek waar dealer-logo's worden geblurd.
+      Mogelijke waardes: 'bottom-right', 'bottom-left', 'top-right', 'top-left'.
+      Leeg = geen blur.
+    """
+    from PIL import Image, ImageFilter
     import io
     
     # Check file type
@@ -59,6 +64,25 @@ async def upload_image(request: Request, file: UploadFile = File(...), user: dic
             ratio = max_size / max(img.size)
             new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
             img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+        # Blur dealer-logo in opgegeven hoek (~20% breedte × 15% hoogte)
+        if blur_corner in ("bottom-right", "bottom-left", "top-right", "top-left"):
+            try:
+                w, h = img.size
+                box_w = int(w * 0.22)
+                box_h = int(h * 0.16)
+                if blur_corner == "bottom-right":
+                    box = (w - box_w, h - box_h, w, h)
+                elif blur_corner == "bottom-left":
+                    box = (0, h - box_h, box_w, h)
+                elif blur_corner == "top-right":
+                    box = (w - box_w, 0, w, box_h)
+                else:  # top-left
+                    box = (0, 0, box_w, box_h)
+                region = img.crop(box).filter(ImageFilter.GaussianBlur(radius=20))
+                img.paste(region, box)
+            except Exception as _e:
+                pass  # blur failure is non-fatal — keep original
         
         # Compress to JPEG with quality 80
         output = io.BytesIO()
@@ -307,10 +331,11 @@ async def migrate_images_to_cloud(user: dict = Depends(require_admin), batch_siz
     }
 
 @router.post("/upload/multiple")
-async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), user: dict = Depends(get_current_user)):
-    """Upload multiple images and store in MongoDB - with compression"""
+async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), blur_corner: str = "", user: dict = Depends(get_current_user)):
+    """Upload multiple images and store in MongoDB - with compression.
+    blur_corner: 'bottom-right' / 'bottom-left' / 'top-right' / 'top-left' om dealer-logo te blurren. Leeg = geen blur."""
     import base64
-    from PIL import Image
+    from PIL import Image, ImageFilter
     import io
     
     urls = []
