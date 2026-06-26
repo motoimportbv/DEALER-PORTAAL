@@ -34,9 +34,17 @@ async def upload_image(request: Request, file: UploadFile = File(...), blur_corn
     blur_corner: optionele hoek waar dealer-logo's worden geblurd.
       Mogelijke waardes: 'bottom-right', 'bottom-left', 'top-right', 'top-left'.
       Leeg = geen blur.
+    
+    Auto-detect: als de geauthenticeerde user een foreign dealer is met 'mundi' in
+    de company_name, en geen expliciete blur_corner is meegegeven → automatisch top-left.
     """
     from PIL import Image, ImageFilter
     import io
+    
+    # Auto-detect Mundi Moto foreign dealer → linksboven blurren
+    if not blur_corner and user.get("is_foreign_dealer") and "mundi" in (user.get("company_name") or "").lower():
+        blur_corner = "top-left"
+        logger.info(f"Auto-blur top-left geactiveerd voor Mundi-dealer {user.get('email')}")
     
     # Check file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
@@ -438,10 +446,17 @@ async def blur_motorcycle_images(motorcycle_id: str, corner: str = "top-left", u
 @router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), blur_corner: str = "", user: dict = Depends(get_current_user)):
     """Upload multiple images and store in MongoDB - with compression.
-    blur_corner: 'bottom-right' / 'bottom-left' / 'top-right' / 'top-left' om dealer-logo te blurren. Leeg = geen blur."""
+    blur_corner: 'bottom-right' / 'bottom-left' / 'top-right' / 'top-left' om dealer-logo te blurren. Leeg = geen blur.
+    
+    Auto-detect: als de user een foreign dealer is met 'mundi' in company_name → automatisch top-left."""
     import base64
     from PIL import Image, ImageFilter
     import io
+    
+    # Auto-detect Mundi Moto foreign dealer → linksboven blurren
+    if not blur_corner and user.get("is_foreign_dealer") and "mundi" in (user.get("company_name") or "").lower():
+        blur_corner = "top-left"
+        logger.info(f"Auto-blur top-left (bulk) voor Mundi-dealer {user.get('email')}")
     
     urls = []
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]

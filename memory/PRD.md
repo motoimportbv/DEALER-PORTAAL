@@ -19,11 +19,10 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
-- **🌫️ Dealer-logo blurren bij marketplace upload** (Feb 2026): User-eis "Als mundi moto motoren erop zet dan moet je hun logo verwijderen zonder logo op de fotos". Mundi Moto plaatst hun logo **linksboven (top-left)**. Backend `/api/upload` + `/api/upload/multiple` ondersteunen `?blur_corner=top-left|top-right|bottom-left|bottom-right` via PIL `ImageFilter.GaussianBlur(radius=20)` op een 22%×16% region. Plus nieuw endpoint **`POST /api/motorcycles/{id}/blur-images?corner=top-left`** dat alle bestaande foto's van een motor in-place reprocesst (overschrijft cloud-object + thumbnail, URL blijft hetzelfde). Frontend:
-  - `MotorcycleForm.js`: nieuwe selector "Dealer-logo blurren" boven upload-sectie + auto-detect bij leverancier Mundi Moto → `top-left` + toast.
-  - `BulkMotorcycleForm.js`: zelfde selector handmatig.
-  - `PendingForeignListings.js`: nieuwe **"Blur dealer-logo's op N foto's"** knop op elke kaart, vraagt prompt voor hoek (default top-left), roept blur-endpoint aan + cache-buster ?v=timestamp om nieuwe foto te tonen.
-  - Backend curl-test bevestigd: edge-pixel (155,90) origineel (200,200,200) → na blur (78,79,223), `{processed:1, errors:0}` ✅
+- **🌫️ Dealer-logo blurren bij marketplace upload** (Feb 2026): User-eis "Als mundi moto motoren erop zet dan moet je hun logo verwijderen zonder logo op de fotos". Mundi Moto plaatst hun logo **linksboven (top-left)**. Backend `/api/upload` + `/api/upload/multiple` ondersteunen `?blur_corner=top-left|top-right|bottom-left|bottom-right` via PIL `ImageFilter.GaussianBlur(radius=20)` op een 22%×16% region. Plus nieuw endpoint **`POST /api/motorcycles/{id}/blur-images?corner=top-left`** dat alle bestaande foto's van een motor in-place reprocesst (overschrijft cloud-object + thumbnail, URL blijft hetzelfde). 
+  - **Automatisch voor Mundi**: `/upload` + `/upload/multiple` auto-detecten een foreign dealer met "mundi" in `company_name` → past direct `top-left` blur toe bij upload. `POST /motorcycles/foreign-listing` triggert daarnaast nog een full-reblur op alle foto's via `blur_motorcycle_images()` (vangnet voor URLs die via andere kanalen waren ge-upload).
+  - Frontend: `MotorcycleForm.js` + `BulkMotorcycleForm.js` handmatige selector, `PendingForeignListings.js` knop "Blur dealer-logo's op N foto's" + cache-buster `?v=ts`.
+  - Curl-test bevestigd: edge-pixel (155,90) origineel (200,200,200) → na blur (78,79,223), `{processed:1, errors:0}` ✅
 
 - **🖼 Logo-upload per branding-profiel** (Feb 2026): User-eis "Als mundi moto motoren eropzet dan wil ik graag dat hun logo straks die linksbovenin verdwijnt [verschijnt]". Wijzigingen:
   - Backend nieuw endpoint `POST /api/admin/bpm-branding-profiles/{id}/logo` — accepteert multipart PNG/JPG/WEBP/SVG (max 2MB), opslag in `/app/backend/uploads/branding_logos/{profile_id}.{ext}`, returns `{logo_url: "/api/uploads/branding_logos/..."}`
