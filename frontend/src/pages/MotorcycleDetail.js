@@ -84,8 +84,10 @@ const MotorcycleDetail = () => {
     const brand = (motorcycle?.brand || '').trim().toLowerCase();
     return COC_PRICES[brand] || 0;
   };
-  const cocAvailable = () => getCocPrice() > 0;
+  const cocAvailable = () => getCocPrice() > 0 && !isEuOnlyModel();
   const isHonda = () => (motorcycle?.brand || '').trim().toLowerCase() === 'honda';
+  // EU-typegoedgekeurde modellen (geen keuring/COC door Moto Import). Mundi Moto = Italiaanse EU-leverancier.
+  const isEuOnlyModel = () => /mundi/i.test(motorcycle?.foreign_dealer_company || '');
 
   // Redirect from preview URLs to production
   useEffect(() => {
@@ -457,6 +459,16 @@ const MotorcycleDetail = () => {
                   )}
                 </div>
 
+                {isEuOnlyModel() && (
+                  <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-start gap-2" data-testid="eu-model-banner">
+                    <span className="text-2xl leading-none">🇪🇺</span>
+                    <div className="text-sm">
+                      <p className="font-bold text-blue-900">EU-model — geen keuring nodig</p>
+                      <p className="text-blue-700 text-xs mt-0.5">Deze motor heeft EU-typegoedkeuring. Moto Import verzorgt géén keuring/COC.</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Price */}
                 <div className="mb-6 p-4 bg-zinc-900 rounded-lg text-white">
                   <p className="font-barlow uppercase tracking-wider text-xs text-zinc-400 mb-1">
@@ -744,6 +756,15 @@ const MotorcycleDetail = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
+            {isEuOnlyModel() && (
+              <div className="p-3 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-start gap-2" data-testid="eu-model-dialog-banner">
+                <span className="text-xl leading-none">🇪🇺</span>
+                <div className="text-sm">
+                  <p className="font-bold text-blue-900">EU-typegoedkeuring</p>
+                  <p className="text-blue-700 text-xs">Geen keuring/COC nodig — direct te kentekenen in NL.</p>
+                </div>
+              </div>
+            )}
             {/* Price Summary */}
             <div className="p-4 bg-zinc-900 rounded-lg text-white">
               <div className="space-y-2">
@@ -1020,7 +1041,7 @@ const MotorcycleDetail = () => {
             )}
 
             {/* Honda: info-link, dealer regelt zelf */}
-            {isHonda() && (
+            {isHonda() && !isEuOnlyModel() && (
               <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg" data-testid="honda-coc-info">
                 <div className="flex items-start gap-3">
                   <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />

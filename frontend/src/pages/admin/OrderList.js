@@ -297,6 +297,9 @@ const OrderList = () => {
                           )}
                           {/* Order options badges */}
                           <div className="flex flex-wrap gap-1 mt-2" data-testid={`order-options-${order.id}`}>
+                            {/mundi/i.test(order.motorcycle?.foreign_dealer_company || order.motorcycle_snapshot?.foreign_dealer_company || '') && (
+                              <Badge className="bg-blue-100 text-blue-800 border border-blue-200 text-xs" data-testid={`eu-model-${order.id}`}>🇪🇺 EU-model — geen keuring</Badge>
+                            )}
                             {order.needs_coc && (
                               <Badge className="bg-purple-100 text-purple-800 text-xs">
                                 COC/CVO €{order.coc_cost || 0}

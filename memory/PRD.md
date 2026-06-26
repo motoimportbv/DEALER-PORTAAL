@@ -19,6 +19,13 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🇪🇺 EU-modellen krijgen geen keuring/COC via Moto Import** (Feb 2026): User-eis "Alle motoren van mundi moto die de dealers bestellen kunnen niet gekeurd worden door motoimport omdat het europese modellen zijn". Mundi Moto = Italiaanse EU-leverancier met typegoedgekeurde modellen.
+  - Detectie: helper `isEuOnlyModel()` matched `/mundi/i` op `motorcycle.foreign_dealer_company`.
+  - `MotorcycleDetail.js` (dealer-koopflow): toont blauwe banner "🇪🇺 EU-model — geen keuring nodig" boven prijs, verbergt **COC-checkbox** (`cocAvailable()` returns false), verbergt **Honda COC-link**, toont extra banner in bestel-dialoog.
+  - `DealerOrders.js`: EU-badge naast brand/model op order-kaart.
+  - `OrderList.js` (admin): EU-badge in order-options rij.
+  - Backend `/orders/buy-now`: defensief — als motor Mundi is → `needs_inspection=False`, `needs_coc=False` worden geforceerd (negeert client-side bypass).
+
 - **🌫️ Dealer-logo blurren bij marketplace upload** (Feb 2026): User-eis "Als mundi moto motoren erop zet dan moet je hun logo verwijderen zonder logo op de fotos". Mundi Moto plaatst hun logo **linksboven (top-left)**. Backend `/api/upload` + `/api/upload/multiple` ondersteunen `?blur_corner=top-left|top-right|bottom-left|bottom-right` via PIL `ImageFilter.GaussianBlur(radius=20)` op een 22%×16% region. Plus nieuw endpoint **`POST /api/motorcycles/{id}/blur-images?corner=top-left`** dat alle bestaande foto's van een motor in-place reprocesst (overschrijft cloud-object + thumbnail, URL blijft hetzelfde). 
   - **Automatisch voor Mundi**: `/upload` + `/upload/multiple` auto-detecten een foreign dealer met "mundi" in `company_name` → past direct `top-left` blur toe bij upload. `POST /motorcycles/foreign-listing` triggert daarnaast nog een full-reblur op alle foto's via `blur_motorcycle_images()` (vangnet voor URLs die via andere kanalen waren ge-upload).
   - Frontend: `MotorcycleForm.js` + `BulkMotorcycleForm.js` handmatige selector, `PendingForeignListings.js` knop "Blur dealer-logo's op N foto's" + cache-buster `?v=ts`.

@@ -583,6 +583,14 @@ async def create_buy_now_order(data: BuyNowRequest, user: dict = Depends(require
     inspection_cost = INSPECTION_COST if data.needs_inspection else 0.0
     valuation_cost = VALUATION_COST if data.needs_valuation else 0.0
     
+    # EU-typegoedgekeurde modellen (Mundi Moto): geen keuring/COC via Moto Import
+    is_eu_only = "mundi" in (motorcycle.get("foreign_dealer_company") or "").lower()
+    if is_eu_only:
+        # Force-disable inspection + COC voor EU-modellen
+        data.needs_inspection = False
+        inspection_cost = 0.0
+        data.needs_coc = False
+    
     # COC/CVO cost based on motorcycle brand (only supported brands)
     coc_cost = 0.0
     if data.needs_coc:

@@ -301,6 +301,11 @@ const DealerOrders = () => {
                               <p className="text-zinc-500 mb-2">
                                 {order.motorcycle.year} • {order.motorcycle.mileage?.toLocaleString('nl-NL')} km • {order.motorcycle.color}
                               </p>
+                              {/mundi/i.test(order.motorcycle?.foreign_dealer_company || order.motorcycle_snapshot?.foreign_dealer_company || '') && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 rounded-md text-xs font-semibold mb-2" data-testid={`eu-badge-${order.id}`}>
+                                  🇪🇺 EU-model — geen keuring
+                                </span>
+                              )}
                             </>
                           ) : (
                             <p className="text-zinc-400">{t('motorcycle.deleted')}</p>
