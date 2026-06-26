@@ -506,8 +506,8 @@ const MotorcycleForm = () => {
                           // Auto-detect Mundi Moto → blur rechtsonder
                           const picked = foreignDealers.find(s => s.id === e.target.value);
                           if (picked && /mundi/i.test(picked.company_name || '')) {
-                            setBlurCorner('bottom-right');
-                            toast.info('Mundi Moto gedetecteerd — logo wordt automatisch geblurd (rechtsonder).');
+                            setBlurCorner('top-left');
+                            toast.info('Mundi Moto gedetecteerd — logo wordt automatisch geblurd (linksboven).');
                           }
                         }}
                           className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500"

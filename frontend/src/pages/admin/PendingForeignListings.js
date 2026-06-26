@@ -17,7 +17,8 @@ import {
   DollarSign,
   MapPin,
   MessageCircle,
-  X
+  X,
+  Eraser
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -43,6 +44,40 @@ const PendingForeignListings = () => {
   const [activating, setActivating] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [activatedMotorcycleId, setActivatedMotorcycleId] = useState(null);
+  const [blurringId, setBlurringId] = useState(null);
+  const [imageCacheBust, setImageCacheBust] = useState({}); // motorcycle_id -> timestamp
+
+  const handleBlurLogos = async (motorcycle) => {
+    const isMundi = /mundi/i.test(motorcycle.foreign_dealer_company || '');
+    const defaultCorner = isMundi ? 'top-left' : 'top-left';
+    const corner = window.prompt(
+      'Welke hoek bevat het dealer-logo dat geblurd moet worden?\n\nGeef in: top-left, top-right, bottom-left, of bottom-right',
+      defaultCorner
+    );
+    if (!corner) return;
+    if (!['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(corner)) {
+      toast.error('Ongeldige hoek');
+      return;
+    }
+    setBlurringId(motorcycle.id);
+    try {
+      const res = await axios.post(
+        `${API}/motorcycles/${motorcycle.id}/blur-images?corner=${corner}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const d = res.data || {};
+      toast.success(`${d.processed || 0} foto('s) geblurd (${d.errors || 0} fouten)`);
+      // Force browser cache-refresh by adding ?v=
+      setImageCacheBust(prev => ({ ...prev, [motorcycle.id]: Date.now() }));
+      await fetchPendingListings();
+    } catch (err) {
+      console.error('Blur error:', err);
+      toast.error(err.response?.data?.detail || 'Blur mislukt');
+    } finally {
+      setBlurringId(null);
+    }
+  };
 
   useEffect(() => {
     fetchPendingListings();
@@ -170,7 +205,7 @@ const PendingForeignListings = () => {
                   <div className="w-48 h-48 flex-shrink-0 bg-zinc-100">
                     {motorcycle.images?.[0] ? (
                       <img
-                        src={motorcycle.images[0]}
+                        src={imageCacheBust[motorcycle.id] ? `${motorcycle.images[0]}?v=${imageCacheBust[motorcycle.id]}` : motorcycle.images[0]}
                         alt={`${motorcycle.brand} ${motorcycle.model}`}
                         className="w-full h-full object-cover"
                       />
@@ -246,13 +281,26 @@ const PendingForeignListings = () => {
                     </div>
 
                     {/* Activate Button */}
-                    <Button
-                      className="w-full bg-purple-600 hover:bg-purple-700"
-                      onClick={() => openActivateDialog(motorcycle)}
-                    >
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      {t('adminPending.setPriceActivate')}
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-amber-300 text-amber-800 hover:bg-amber-50"
+                        onClick={() => handleBlurLogos(motorcycle)}
+                        disabled={blurringId === motorcycle.id || !(motorcycle.images && motorcycle.images.length)}
+                        data-testid={`blur-logos-btn-${motorcycle.id}`}
+                      >
+                        <Eraser className="w-4 h-4 mr-2" />
+                        {blurringId === motorcycle.id ? 'Bezig met blurren...' : `Blur dealer-logo's op ${motorcycle.images?.length || 0} foto's`}
+                      </Button>
+                      <Button
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        onClick={() => openActivateDialog(motorcycle)}
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        {t('adminPending.setPriceActivate')}
+                      </Button>
+                    </div>
                   </CardContent>
                 </div>
               </Card>

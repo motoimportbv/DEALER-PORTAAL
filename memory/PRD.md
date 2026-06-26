@@ -19,10 +19,11 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
-- **🌫️ Dealer-logo blurren bij marketplace upload** (Feb 2026): User-eis "Als mundi moto motoren erop zet dan moet je hun logo verwijderen zonder logo op de fotos". Backend `/api/upload` + `/api/upload/multiple` ondersteunen `?blur_corner=bottom-right|bottom-left|top-right|top-left` query-param via PIL `ImageFilter.GaussianBlur(radius=20)` op een 22%×16% region in de gekozen hoek. Frontend:
-  - `MotorcycleForm.js`: nieuwe selector "Dealer-logo blurren" (Geen/Rechtsonder/Linksonder/Rechtsboven/Linksboven) bovenaan de upload-sectie + auto-detect: zodra leverancier Mundi Moto wordt geselecteerd → `setBlurCorner('bottom-right')` + toast.
-  - `BulkMotorcycleForm.js`: zelfde selector handmatig (geen leverancier-keuze in bulk-flow).
-  - Backend curl-test bevestigd: pixel (630,540) in blur-zone: origineel (201,199,202) → na blur (220,124,125) ✅. Beide endpoints werken.
+- **🌫️ Dealer-logo blurren bij marketplace upload** (Feb 2026): User-eis "Als mundi moto motoren erop zet dan moet je hun logo verwijderen zonder logo op de fotos". Mundi Moto plaatst hun logo **linksboven (top-left)**. Backend `/api/upload` + `/api/upload/multiple` ondersteunen `?blur_corner=top-left|top-right|bottom-left|bottom-right` via PIL `ImageFilter.GaussianBlur(radius=20)` op een 22%×16% region. Plus nieuw endpoint **`POST /api/motorcycles/{id}/blur-images?corner=top-left`** dat alle bestaande foto's van een motor in-place reprocesst (overschrijft cloud-object + thumbnail, URL blijft hetzelfde). Frontend:
+  - `MotorcycleForm.js`: nieuwe selector "Dealer-logo blurren" boven upload-sectie + auto-detect bij leverancier Mundi Moto → `top-left` + toast.
+  - `BulkMotorcycleForm.js`: zelfde selector handmatig.
+  - `PendingForeignListings.js`: nieuwe **"Blur dealer-logo's op N foto's"** knop op elke kaart, vraagt prompt voor hoek (default top-left), roept blur-endpoint aan + cache-buster ?v=timestamp om nieuwe foto te tonen.
+  - Backend curl-test bevestigd: edge-pixel (155,90) origineel (200,200,200) → na blur (78,79,223), `{processed:1, errors:0}` ✅
 
 - **🖼 Logo-upload per branding-profiel** (Feb 2026): User-eis "Als mundi moto motoren eropzet dan wil ik graag dat hun logo straks die linksbovenin verdwijnt [verschijnt]". Wijzigingen:
   - Backend nieuw endpoint `POST /api/admin/bpm-branding-profiles/{id}/logo` — accepteert multipart PNG/JPG/WEBP/SVG (max 2MB), opslag in `/app/backend/uploads/branding_logos/{profile_id}.{ext}`, returns `{logo_url: "/api/uploads/branding_logos/..."}`

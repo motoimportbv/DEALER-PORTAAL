@@ -330,6 +330,111 @@ async def migrate_images_to_cloud(user: dict = Depends(require_admin), batch_siz
         "batch_size": batch_size
     }
 
+@router.post("/motorcycles/{motorcycle_id}/blur-images")
+async def blur_motorcycle_images(motorcycle_id: str, corner: str = "top-left", user: dict = Depends(require_admin)):
+    """Re-process all images of a motorcycle: blur the chosen corner in-place.
+    
+    Doesn't change image URLs — overwrites stored data (cloud + MongoDB fallback).
+    corner: 'top-left' / 'top-right' / 'bottom-left' / 'bottom-right'.
+    """
+    from PIL import Image, ImageFilter
+    import io
+    import base64
+    
+    if corner not in ("bottom-right", "bottom-left", "top-right", "top-left"):
+        raise HTTPException(status_code=400, detail="Ongeldige corner waarde")
+    
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0, "images": 1})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    image_urls = motorcycle.get("images") or []
+    processed = 0
+    errors = 0
+    
+    def _apply_blur(jpeg_bytes: bytes) -> bytes:
+        img = Image.open(io.BytesIO(jpeg_bytes))
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        w, h = img.size
+        box_w = int(w * 0.22)
+        box_h = int(h * 0.16)
+        if corner == "bottom-right":
+            box = (w - box_w, h - box_h, w, h)
+        elif corner == "bottom-left":
+            box = (0, h - box_h, box_w, h)
+        elif corner == "top-right":
+            box = (w - box_w, 0, w, box_h)
+        else:
+            box = (0, 0, box_w, box_h)
+        region = img.crop(box).filter(ImageFilter.GaussianBlur(radius=20))
+        img.paste(region, box)
+        out = io.BytesIO()
+        img.save(out, format='JPEG', quality=85, optimize=True)
+        return out.getvalue()
+    
+    for url in image_urls:
+        try:
+            # Extract image_id from URL: .../api/images/{image_id}
+            image_id = url.rstrip("/").split("/api/images/")[-1].split("?")[0].split(".")[0]
+            img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
+            if not img_doc:
+                errors += 1
+                continue
+            
+            # Get current full-size bytes (cloud or MongoDB)
+            full_bytes = None
+            if img_doc.get("cloud_stored") and img_doc.get("storage_path") and init_storage():
+                try:
+                    full_bytes, _ = get_object(img_doc["storage_path"])
+                except Exception as ce:
+                    logger.error(f"Cloud read failed for {image_id}: {ce}")
+            if full_bytes is None and img_doc.get("data"):
+                full_bytes = base64.b64decode(img_doc["data"])
+            if full_bytes is None:
+                errors += 1
+                continue
+            
+            blurred = _apply_blur(full_bytes)
+            
+            # Re-generate thumbnail from blurred full image
+            timg = Image.open(io.BytesIO(blurred))
+            thumb_size = 400
+            ratio = thumb_size / max(timg.size)
+            thumb_dim = (int(timg.size[0] * ratio), int(timg.size[1] * ratio))
+            tb = timg.resize(thumb_dim, Image.Resampling.LANCZOS)
+            tout = io.BytesIO()
+            tb.save(tout, format='JPEG', quality=70, optimize=True)
+            thumb_bytes = tout.getvalue()
+            
+            # Overwrite storage
+            if img_doc.get("cloud_stored") and init_storage():
+                put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", blurred, "image/jpeg")
+                if img_doc.get("thumb_path"):
+                    put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
+            else:
+                await db.images.update_one(
+                    {"id": image_id},
+                    {"$set": {
+                        "data": base64.b64encode(blurred).decode('utf-8'),
+                        "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
+                        "compressed_size": len(blurred),
+                    }}
+                )
+            
+            await db.images.update_one(
+                {"id": image_id},
+                {"$set": {"blurred_corner": corner, "blurred_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            processed += 1
+            logger.info(f"Blurred image {image_id} corner={corner}")
+        except Exception as e:
+            logger.error(f"Blur failed for url {url}: {e}")
+            errors += 1
+    
+    return {"processed": processed, "errors": errors, "total": len(image_urls), "corner": corner}
+
+
 @router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), blur_corner: str = "", user: dict = Depends(get_current_user)):
     """Upload multiple images and store in MongoDB - with compression.
