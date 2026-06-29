@@ -27,6 +27,10 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   const [saving, setSaving] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
+  // Result-preview state (slider before/after)
+  const [resultUrl, setResultUrl] = useState(null);
+  const [sliderPos, setSliderPos] = useState(50);
+  const [undoing, setUndoing] = useState(false);
 
   // Wait until image is loaded → size canvas accordingly
   useEffect(() => {
@@ -34,6 +38,8 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       setImgLoaded(false);
       setImgError(false);
       setHasMask(false);
+      setResultUrl(null);
+      setSliderPos(50);
     }
   }, [open]);
 
@@ -106,6 +112,28 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
     return url.split('/api/images/').pop().split('?')[0].split('.')[0];
   };
 
+  const handleUndo = async () => {
+    const imageId = extractImageId(imageUrl);
+    if (!imageId) return;
+    setUndoing(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API}/images/${imageId}/undo-inpaint`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 30000 }
+      );
+      toast.success('↶ Ongedaan gemaakt');
+      if (onDone) onDone(Date.now());
+      onClose();
+    } catch (err) {
+      console.error('Undo error:', err);
+      toast.error(err.response?.data?.detail || 'Ongedaan maken mislukt');
+    } finally {
+      setUndoing(false);
+    }
+  };
+
   /**
    * Build a black/white PNG mask at the NATURAL image resolution.
    * Painted pixels (alpha > 0) → white. Rest → black.
@@ -175,8 +203,9 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
         { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
       );
       toast.success('🧽 Logo weggegumd!');
+      // Toon resultaat in slider (cache-busted)
+      setResultUrl(`${imageUrl}?v=${Date.now()}`);
       if (onDone) onDone(Date.now());
-      onClose();
     } catch (err) {
       console.error('Manual inpaint error:', err.response?.status, err.response?.data, err.message);
       const detail = err.response?.data?.detail;
@@ -205,6 +234,51 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
         </DialogHeader>
 
         <div className="space-y-3">
+          {resultUrl ? (
+            /* RESULT VIEW: before/after slider */
+            <div className="space-y-3">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                ✅ <strong>Klaar!</strong> Sleep de slider om vóór/na te vergelijken. Niet tevreden? Klik &quot;Ongedaan maken&quot;.
+              </div>
+              <div
+                className="relative border-2 border-zinc-200 rounded-lg overflow-hidden bg-zinc-100 select-none"
+                style={{ width: displaySize.w || '100%', height: displaySize.h || 'auto', margin: '0 auto' }}
+              >
+                {/* AFTER (full, behind) */}
+                <img src={resultUrl} alt="Na" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+                {/* BEFORE (clipped to slider position) */}
+                <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
+                  <img src={imageUrl} alt="Voor" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+                </div>
+                {/* Slider line + handle */}
+                <div className="absolute top-0 bottom-0 w-1 bg-white pointer-events-none" style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg border-2 border-fuchsia-600 flex items-center justify-center text-fuchsia-600 font-bold text-xs">⇆</div>
+                </div>
+                {/* Labels */}
+                <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">VOOR</div>
+                <div className="absolute top-2 right-2 bg-emerald-600 text-white text-xs px-2 py-1 rounded">NA</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={sliderPos}
+                onChange={(e) => setSliderPos(parseInt(e.target.value, 10))}
+                className="w-full"
+                data-testid="before-after-slider"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleUndo} disabled={undoing} data-testid="undo-inpaint-btn">
+                  {undoing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
+                  Ongedaan maken
+                </Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={onClose} data-testid="confirm-inpaint-btn">
+                  ✓ Bevestigen
+                </Button>
+              </div>
+            </div>
+          ) : (
+          <>
           <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
             <label className="text-sm font-semibold whitespace-nowrap">Kwast:</label>
             <input
@@ -286,6 +360,8 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
               {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Bezig...</> : <><Eraser className="w-4 h-4 mr-2" /> Toepassen</>}
             </Button>
           </div>
+          </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

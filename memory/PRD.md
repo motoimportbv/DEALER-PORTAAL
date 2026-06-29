@@ -27,7 +27,8 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
   - `MotorcycleForm.js`: gum-knop alleen op `/api/images/`-foto's (eigen storage), niet op externe URL-paste.
   - **Cloudflare 520 fix** (Feb 2026): SHIFTMAP op volledige 3200x2400 foto duurde >100s + OOM-risico. Nu wordt alleen het cropped gebied rond de mask verwerkt (mask-bbox + 5% padding) en het resultaat in de originele foto gecomposite. Resultaat: **3.1s** ipv. 60+ voor grote foto's. Geen Cloudflare timeout meer.
   - Dependency: `opencv-contrib-python-headless==4.13.0.92` (vervangt `opencv-python-headless`).
-  - Curl-test: bakstenen muur met wit logo → na inpaint logo-regio = (141,114,97) matched met muur-randen elders (143,115,96) ✅
+  - **Vóór/na slider + Ongedaan maken** (Feb 2026): Na succesvolle inpaint blijft modal open en toont een drag-slider om vóór/na te vergelijken. "Bevestigen" sluit. "Ongedaan maken" roept `POST /api/images/{id}/undo-inpaint` aan → backend herstelt bytes uit `inpaint_previous_data` (1 stap terug, geregenereerd thumbnail). Backup wordt opgeslagen als base64 in `db.images.inpaint_previous_data` field vóór elke overwrite.
+  - Curl-test bevestigd: wit → baksteen → wit (full roundtrip via inpaint + undo) ✅
 
 - **🪄 Magische gum (AI inpaint via Gemini Nano Banana)** (Feb 2026): User-eis "Ik wil dat alle fotos waar een logo of een naam staat weg wordt gegumd". Generieke AI-inpaint voor ÉLKE foreign-dealer upload (niet alleen Mundi).
   - Nieuw endpoint `POST /api/motorcycles/{id}/erase-logo` — gebruikt `emergentintegrations.llm.chat.LlmChat` met model `gemini-3.1-flash-image-preview` (modalities=`["image","text"]`). Generieke prompt: "Remove ALL watermarks, logos, dealer names, brand stamps and overlay text. Inpaint the background naturally. Do NOT change the motorcycle itself."

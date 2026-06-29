@@ -673,6 +673,9 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     tb.save(tout, format='JPEG', quality=70, optimize=True)
     thumb_bytes = tout.getvalue()
     
+    # 💾 Backup huidige bytes vóór overwrite (voor undo)
+    backup_b64 = base64.b64encode(full_bytes).decode('utf-8')
+    
     # Overwrite storage
     if img_doc.get("cloud_stored") and init_storage():
         put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", jpeg_bytes, "image/jpeg")
@@ -690,9 +693,62 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     
     await db.images.update_one(
         {"id": image_id},
-        {"$set": {"manually_inpainted_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {
+            "manually_inpainted_at": datetime.now(timezone.utc).isoformat(),
+            "inpaint_previous_data": backup_b64,
+        }}
     )
-    logger.info(f"🧽 Manual inpaint applied to {image_id}")
+    logger.info(f"🧽 Manual inpaint applied to {image_id} (backup stored)")
+    return {"success": True, "image_id": image_id}
+
+
+@router.post("/images/{image_id}/undo-inpaint")
+async def undo_inpaint(image_id: str, user: dict = Depends(require_admin)):
+    """↶ Ongedaan maken: herstel de foto naar de versie vóór de laatste gum-actie."""
+    import base64
+    import io
+    from PIL import Image
+    
+    img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
+    if not img_doc:
+        raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
+    backup_b64 = img_doc.get("inpaint_previous_data")
+    if not backup_b64:
+        raise HTTPException(status_code=400, detail="Geen backup beschikbaar (gum-actie is al ongedaan gemaakt of er was geen actie)")
+    
+    backup_bytes = base64.b64decode(backup_b64)
+    
+    # Regenerate thumbnail
+    timg = Image.open(io.BytesIO(backup_bytes))
+    if timg.mode in ('RGBA', 'P'):
+        timg = timg.convert('RGB')
+    thumb_size = 400
+    ratio = thumb_size / max(timg.size)
+    tb = timg.resize((int(timg.size[0] * ratio), int(timg.size[1] * ratio)), Image.Resampling.LANCZOS)
+    tout = io.BytesIO()
+    tb.save(tout, format='JPEG', quality=70, optimize=True)
+    thumb_bytes = tout.getvalue()
+    
+    if img_doc.get("cloud_stored") and init_storage():
+        put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", backup_bytes, "image/jpeg")
+        if img_doc.get("thumb_path"):
+            put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
+    else:
+        await db.images.update_one(
+            {"id": image_id},
+            {"$set": {
+                "data": backup_b64,
+                "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
+                "compressed_size": len(backup_bytes),
+            }}
+        )
+    
+    # Verwijder backup (kan maar 1 stap terug)
+    await db.images.update_one(
+        {"id": image_id},
+        {"$unset": {"inpaint_previous_data": "", "manually_inpainted_at": ""}}
+    )
+    logger.info(f"↶ Inpaint undone for {image_id}")
     return {"success": True, "image_id": image_id}
 
 
