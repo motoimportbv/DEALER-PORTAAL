@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { Switch } from '../../components/ui/switch';
 import { Checkbox } from '../../components/ui/checkbox';
-import { ArrowLeft, Save, Plus, X, ImageIcon, Camera, Upload, Loader2, MessageCircle, Share2, Users, Eye, EyeOff, ChevronUp, ChevronDown, Star } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, ImageIcon, Camera, Upload, Loader2, MessageCircle, Share2, Users, Eye, EyeOff, ChevronUp, ChevronDown, Star, Eraser } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
+import ManualInpaintModal from '../../components/ManualInpaintModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -138,6 +139,9 @@ const MotorcycleForm = () => {
 
   // Dealer-logo blur hoek bij upload. '' = geen blur.
   const [blurCorner, setBlurCorner] = useState('');
+  // Manual inpaint editor state
+  const [inpaintUrl, setInpaintUrl] = useState(null);
+  const [inpaintCacheBust, setInpaintCacheBust] = useState({});
   
   // CHF supplier price editing
   const [supplierChfPrice, setSupplierChfPrice] = useState('');
@@ -926,7 +930,7 @@ const MotorcycleForm = () => {
                     <div className="grid grid-cols-2 gap-2">
                       {formData.images.map((url, index) => (
                         <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-zinc-100 group">
-                          <img src={`${url}?thumb=true`} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                          <img src={`${url}?thumb=true&v=${inpaintCacheBust[url] || ''}`} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
                           
                           {/* Main image badge */}
                           {index === 0 && (
@@ -973,6 +977,17 @@ const MotorcycleForm = () => {
                               </button>
                             )}
                             
+                            {/* Magische gum */}
+                            <button
+                              type="button"
+                              onClick={() => setInpaintUrl(url)}
+                              className="w-8 h-8 bg-fuchsia-600 rounded-full flex items-center justify-center text-white hover:bg-fuchsia-700"
+                              title="Logo weggummen (gratis)"
+                              data-testid={`inpaint-image-${index}`}
+                            >
+                              <Eraser className="w-4 h-4" />
+                            </button>
+
                             {/* Delete */}
                             <button
                               type="button"
@@ -1157,6 +1172,14 @@ const MotorcycleForm = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 🧽 Manual inpaint editor */}
+      <ManualInpaintModal
+        open={!!inpaintUrl}
+        onClose={() => setInpaintUrl(null)}
+        imageUrl={inpaintUrl}
+        onDone={(ts) => setInpaintCacheBust(prev => ({ ...prev, [inpaintUrl]: ts }))}
+      />
     </Layout>
   );
 };
