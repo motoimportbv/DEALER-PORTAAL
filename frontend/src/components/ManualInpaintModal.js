@@ -31,6 +31,8 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   const [resultUrl, setResultUrl] = useState(null);
   const [sliderPos, setSliderPos] = useState(50);
   const [undoing, setUndoing] = useState(false);
+  // Stable cache-buster — gegenereerd 1× per modal-open zodat de img niet herlaadt bij re-renders
+  const [openTs, setOpenTs] = useState(0);
 
   // Wait until image is loaded → size canvas accordingly
   useEffect(() => {
@@ -40,6 +42,10 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       setHasMask(false);
       setResultUrl(null);
       setSliderPos(50);
+      setOpenTs(0);
+    } else {
+      // Genereer 1× cache-buster per open
+      setOpenTs(Date.now());
     }
   }, [open]);
 
@@ -49,6 +55,8 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   };
 
   const handleImgLoad = (e) => {
+    // Voorkom dubbele initialisatie (wist je tekening niet bij re-render)
+    if (imgLoaded) return;
     const img = e.target;
     const natW = img.naturalWidth;
     const natH = img.naturalHeight;
@@ -298,7 +306,7 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
             >
               <img
                 ref={imgRef}
-                src={imageUrl ? `${imageUrl}?v=${(open && imageUrl) ? Date.now() : ''}` : ''}
+                src={imageUrl && openTs ? `${imageUrl}?v=${openTs}` : ''}
                 alt="Te bewerken foto"
                 onLoad={handleImgLoad}
                 onError={handleImgError}
