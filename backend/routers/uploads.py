@@ -565,6 +565,105 @@ async def erase_motorcycle_logo(motorcycle_id: str, prompt_hint: str = "", user:
     return {"processed": processed, "errors": errors, "total": len(image_urls), "method": "ai-inpaint"}
 
 
+@router.post("/images/{image_id}/inpaint-manual")
+async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: dict = Depends(require_admin)):
+    """🧽 Handmatige magische gum (gratis, geen AI). 
+    
+    Body: {"mask_base64": "data:image/png;base64,..."} — een PNG-mask met witte verf op de te verwijderen plekken (zwart = behouden).
+    Gebruikt OpenCV cv2.inpaint (Telea algoritme) om de gemaskerde regio te vullen met omliggende pixels.
+    Overschrijft de opgeslagen image — URL blijft hetzelfde.
+    """
+    import base64
+    import io
+    import numpy as np
+    import cv2
+    from PIL import Image
+    
+    img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
+    if not img_doc:
+        raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
+    
+    mask_b64 = payload.get("mask_base64") or ""
+    if "," in mask_b64:
+        mask_b64 = mask_b64.split(",", 1)[1]
+    if not mask_b64:
+        raise HTTPException(status_code=400, detail="mask_base64 ontbreekt")
+    
+    # Get original image bytes
+    full_bytes = None
+    if img_doc.get("cloud_stored") and img_doc.get("storage_path") and init_storage():
+        try:
+            full_bytes, _ = get_object(img_doc["storage_path"])
+        except Exception as ce:
+            logger.error(f"Cloud read failed for {image_id}: {ce}")
+    if full_bytes is None and img_doc.get("data"):
+        full_bytes = base64.b64decode(img_doc["data"])
+    if full_bytes is None:
+        raise HTTPException(status_code=404, detail="Image-data niet beschikbaar")
+    
+    # Decode source image
+    src_np = cv2.imdecode(np.frombuffer(full_bytes, np.uint8), cv2.IMREAD_COLOR)
+    if src_np is None:
+        raise HTTPException(status_code=500, detail="Kon afbeelding niet decoderen")
+    src_h, src_w = src_np.shape[:2]
+    
+    # Decode mask
+    try:
+        mask_bytes = base64.b64decode(mask_b64)
+        mask_pil = Image.open(io.BytesIO(mask_bytes)).convert("L")  # grayscale
+        # Resize mask to match source
+        if mask_pil.size != (src_w, src_h):
+            mask_pil = mask_pil.resize((src_w, src_h), Image.NEAREST)
+        mask_np = np.array(mask_pil)
+        # Binarize: anything >50 = inpaint area
+        _, mask_bin = cv2.threshold(mask_np, 50, 255, cv2.THRESH_BINARY)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Ongeldige mask: {e}")
+    
+    if int(mask_bin.sum()) == 0:
+        raise HTTPException(status_code=400, detail="Mask is leeg — teken eerst over het logo")
+    
+    # OpenCV inpaint (TELEA algorithm, radius 10 — works well for typical dealer logos)
+    result = cv2.inpaint(src_np, mask_bin, 10, cv2.INPAINT_TELEA)
+    
+    # Encode back to JPEG
+    ok, buf = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    if not ok:
+        raise HTTPException(status_code=500, detail="Kon resultaat niet encoderen")
+    jpeg_bytes = buf.tobytes()
+    
+    # Thumbnail
+    timg = Image.open(io.BytesIO(jpeg_bytes))
+    thumb_size = 400
+    ratio = thumb_size / max(timg.size)
+    tb = timg.resize((int(timg.size[0] * ratio), int(timg.size[1] * ratio)), Image.Resampling.LANCZOS)
+    tout = io.BytesIO()
+    tb.save(tout, format='JPEG', quality=70, optimize=True)
+    thumb_bytes = tout.getvalue()
+    
+    # Overwrite storage
+    if img_doc.get("cloud_stored") and init_storage():
+        put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", jpeg_bytes, "image/jpeg")
+        if img_doc.get("thumb_path"):
+            put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
+    else:
+        await db.images.update_one(
+            {"id": image_id},
+            {"$set": {
+                "data": base64.b64encode(jpeg_bytes).decode('utf-8'),
+                "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
+                "compressed_size": len(jpeg_bytes),
+            }}
+        )
+    
+    await db.images.update_one(
+        {"id": image_id},
+        {"$set": {"manually_inpainted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    logger.info(f"🧽 Manual inpaint applied to {image_id}")
+    return {"success": True, "image_id": image_id}
+
+
 @router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), blur_corner: str = "", user: dict = Depends(get_current_user)):
     """Upload multiple images and store in MongoDB - with compression.

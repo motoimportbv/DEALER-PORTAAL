@@ -29,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
+import ManualInpaintModal from '../../components/ManualInpaintModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,6 +47,8 @@ const PendingForeignListings = () => {
   const [activatedMotorcycleId, setActivatedMotorcycleId] = useState(null);
   const [blurringId, setBlurringId] = useState(null);
   const [imageCacheBust, setImageCacheBust] = useState({}); // motorcycle_id -> timestamp
+  const [manualInpaintMoto, setManualInpaintMoto] = useState(null);
+  const [manualImageIdx, setManualImageIdx] = useState(0);
 
   const handleBlurLogos = async (motorcycle) => {
     if (!window.confirm(
@@ -284,6 +287,17 @@ const PendingForeignListings = () => {
                         <Eraser className="w-4 h-4 mr-2" />
                         {blurringId === motorcycle.id ? '🪄 Bezig met gummen (AI)...' : `🪄 Magische gum (AI) — ${motorcycle.images?.length || 0} foto's`}
                       </Button>
+                      {motorcycle.images && motorcycle.images.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+                          onClick={() => { setManualInpaintMoto(motorcycle); setManualImageIdx(0); }}
+                          data-testid={`manual-eraser-btn-${motorcycle.id}`}
+                        >
+                          🧽 Zelf gummen (gratis) — kies foto & teken
+                        </Button>
+                      )}
                       <Button
                         className="w-full bg-purple-600 hover:bg-purple-700"
                         onClick={() => openActivateDialog(motorcycle)}
@@ -401,6 +415,48 @@ const PendingForeignListings = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* 🧽 Handmatige magische gum: foto-picker */}
+        {manualInpaintMoto && !manualInpaintMoto.__editing && (
+          <Dialog open onOpenChange={(v) => { if (!v) setManualInpaintMoto(null); }}>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>Kies een foto om te bewerken</DialogTitle>
+                <DialogDescription>
+                  {manualInpaintMoto.brand} {manualInpaintMoto.model} — {manualInpaintMoto.images?.length || 0} foto's. Klik op een foto om de gum-editor te openen.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
+                {(manualInpaintMoto.images || []).map((url, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => { setManualImageIdx(idx); setManualInpaintMoto({ ...manualInpaintMoto, __editing: true }); }}
+                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-zinc-200 hover:border-emerald-500 hover:ring-2 hover:ring-emerald-200 transition"
+                    data-testid={`pick-photo-${idx}`}
+                  >
+                    <img src={`${url}?v=${imageCacheBust[manualInpaintMoto.id] || ''}`} alt={`foto ${idx + 1}`} className="w-full h-full object-cover" />
+                    <span className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 rounded">{idx + 1}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-end mt-3">
+                <Button variant="outline" onClick={() => setManualInpaintMoto(null)}>Sluiten</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Inpaint editor modal */}
+        <ManualInpaintModal
+          open={!!(manualInpaintMoto && manualInpaintMoto.__editing)}
+          onClose={() => setManualInpaintMoto(manualInpaintMoto ? { ...manualInpaintMoto, __editing: false } : null)}
+          imageUrl={manualInpaintMoto?.images?.[manualImageIdx]}
+          onDone={(ts) => {
+            setImageCacheBust(prev => ({ ...prev, [manualInpaintMoto.id]: ts }));
+            fetchPendingListings();
+          }}
+        />
       </div>
     </Layout>
   );
