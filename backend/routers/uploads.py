@@ -623,8 +623,27 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     if int(mask_bin.sum()) == 0:
         raise HTTPException(status_code=400, detail="Mask is leeg — teken eerst over het logo")
     
-    # OpenCV inpaint (TELEA algorithm, radius 10 — works well for typical dealer logos)
-    result = cv2.inpaint(src_np, mask_bin, 10, cv2.INPAINT_TELEA)
+    # Dilate mask iets zodat randen ook geinpaint worden (anti-halo)
+    kernel = np.ones((5, 5), np.uint8)
+    mask_dilated = cv2.dilate(mask_bin, kernel, iterations=1)
+    
+    # 🎨 Texture-continuation inpainting via xphoto SHIFTMAP
+    # SHIFTMAP zoekt vergelijkbare patches elders in de foto en plakt die in,
+    # waardoor texturen (bv. muur, baksteen) natuurlijk doorgetrokken worden.
+    # NB: xphoto verwacht INVERSE mask (non-zero = behouden, zero = inpaint).
+    try:
+        # Convert to LAB voor betere SHIFTMAP resultaten
+        src_lab = cv2.cvtColor(src_np, cv2.COLOR_BGR2LAB)
+        # Inverse mask: white where to KEEP (logo region = black)
+        inv_mask = cv2.bitwise_not(mask_dilated)
+        dst_lab = np.zeros_like(src_lab)
+        cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_SHIFTMAP)
+        result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
+        logger.info(f"Inpainted {image_id} via xphoto SHIFTMAP (textuur-doortrekking)")
+    except Exception as e:
+        # Fallback naar standaard NS algoritme
+        logger.warning(f"xphoto SHIFTMAP faalde ({e}), fallback naar NS")
+        result = cv2.inpaint(src_np, mask_dilated, 3, cv2.INPAINT_NS)
     
     # Encode back to JPEG
     ok, buf = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 85])

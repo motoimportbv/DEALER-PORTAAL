@@ -19,12 +19,15 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
-- **🧽 Handmatige magische gum (gratis, OpenCV)** (Feb 2026): User-eis "Kan ik ook zelf met een magiche gum werken zonder dat het geld kost". Geen AI-credits nodig.
-  - Nieuw endpoint `POST /api/images/{id}/inpaint-manual` accepteert `{mask_base64}` PNG (wit = inpainten). Backend gebruikt `cv2.inpaint(src, mask_bin, 10, INPAINT_TELEA)` om gemaskerde regio te vullen met omliggende pixels. Overschrijft cloud-object + thumbnail in-place.
-  - Nieuwe `ManualInpaintModal.js` component: canvas-editor met kwast (5-80px slider), reset-knop, mask wordt client-side gebouwd door verschil tussen geverfde canvas en origineel, dan PNG b64 → backend.
-  - `PendingForeignListings.js`: 2e knop "🧽 Zelf gummen (gratis)" naast de paarse AI-knop → opent foto-picker → klik op foto → opent gum-editor.
-  - Dependency: `opencv-python-headless==4.13.0.92` toegevoegd aan `requirements.txt`.
-  - Curl-test bevestigd: rood logo-region (255,0,0) → na inpaint (231,166,164), `{success: true}` ✅
+- **🧽 Handmatige magische gum (gratis, OpenCV)** (Feb 2026): User-eis "Kan ik ook zelf met een magiche gum werken zonder dat het geld kost". Plus opvolg-eis "Het werkt alleen als je de magiche gun gebruikt is een deel van de motor en de Mauro ook geblurd je moet het doortrekken zodat het lijkt dat de fotos orgineel zijn" — vervangen door textuur-doortrekkende inpaint.
+  - Endpoint `POST /api/images/{id}/inpaint-manual` accepteert `{mask_base64}` PNG. Gebruikt nu **`cv2.xphoto.inpaint(src_LAB, inv_mask, dst, INPAINT_SHIFTMAP)`** — Shiftmap-algoritme zoekt vergelijkbare patches elders in de foto en kopieert die naar de gemaskerde regio. Resultaat: bakstenen/muren/motor-onderdelen worden natuurlijk doorgetrokken (geen blur meer).
+  - Mask wordt 5px gedilateerd voor anti-halo. Mask-semantics omgekeerd voor xphoto (non-zero = behouden).
+  - Fallback: `cv2.inpaint(NS, radius=3)` als SHIFTMAP faalt.
+  - `ManualInpaintModal.js` herschreven: transparante overlay-canvas boven `<img>` element (geen CORS-tainted canvas meer). Image-load error handling. Verbeterde toast met HTTP-status + detail.
+  - `MotorcycleForm.js`: gum-knop alleen op `/api/images/`-foto's (eigen storage), niet op externe URL-paste.
+  - Dependency: `opencv-contrib-python-headless==4.13.0.92` (vervangt `opencv-python-headless`).
+  - Curl-test: bakstenen muur met wit logo → na inpaint logo-regio = (141,114,97) matched met muur-randen elders (143,115,96) ✅
+
 - **🪄 Magische gum (AI inpaint via Gemini Nano Banana)** (Feb 2026): User-eis "Ik wil dat alle fotos waar een logo of een naam staat weg wordt gegumd". Generieke AI-inpaint voor ÉLKE foreign-dealer upload (niet alleen Mundi).
   - Nieuw endpoint `POST /api/motorcycles/{id}/erase-logo` — gebruikt `emergentintegrations.llm.chat.LlmChat` met model `gemini-3.1-flash-image-preview` (modalities=`["image","text"]`). Generieke prompt: "Remove ALL watermarks, logos, dealer names, brand stamps and overlay text. Inpaint the background naturally. Do NOT change the motorcycle itself."
   - In-place: overschrijft cloud-object + thumbnail. URL blijft hetzelfde, cache-buster `?v=ts` op frontend voor refresh.
