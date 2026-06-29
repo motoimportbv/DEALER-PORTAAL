@@ -25,6 +25,7 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
   - Fallback: `cv2.inpaint(NS, radius=3)` als SHIFTMAP faalt.
   - `ManualInpaintModal.js` herschreven: transparante overlay-canvas boven `<img>` element (geen CORS-tainted canvas meer). Image-load error handling. Verbeterde toast met HTTP-status + detail.
   - `MotorcycleForm.js`: gum-knop alleen op `/api/images/`-foto's (eigen storage), niet op externe URL-paste.
+  - **Cloudflare 520 fix** (Feb 2026): SHIFTMAP op volledige 3200x2400 foto duurde >100s + OOM-risico. Nu wordt alleen het cropped gebied rond de mask verwerkt (mask-bbox + 5% padding) en het resultaat in de originele foto gecomposite. Resultaat: **3.1s** ipv. 60+ voor grote foto's. Geen Cloudflare timeout meer.
   - Dependency: `opencv-contrib-python-headless==4.13.0.92` (vervangt `opencv-python-headless`).
   - Curl-test: bakstenen muur met wit logo → na inpaint logo-regio = (141,114,97) matched met muur-randen elders (143,115,96) ✅
 

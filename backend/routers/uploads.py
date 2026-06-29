@@ -627,23 +627,36 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     kernel = np.ones((5, 5), np.uint8)
     mask_dilated = cv2.dilate(mask_bin, kernel, iterations=1)
     
+    # 🚀 Performance: alleen het gebied rond de mask verwerken (niet hele foto).
+    # Voorkomt Cloudflare 520 (OOM/timeout) bij grote foto's (4000x3000+).
+    ys, xs = np.where(mask_dilated > 0)
+    y0, y1 = int(ys.min()), int(ys.max())
+    x0, x1 = int(xs.min()), int(xs.max())
+    pad = max(80, int(0.05 * max(src_w, src_h)))  # 5% padding voor patch-search
+    cy0 = max(0, y0 - pad)
+    cy1 = min(src_h, y1 + pad)
+    cx0 = max(0, x0 - pad)
+    cx1 = min(src_w, x1 + pad)
+    
+    src_crop = src_np[cy0:cy1, cx0:cx1]
+    mask_crop = mask_dilated[cy0:cy1, cx0:cx1]
+    
     # 🎨 Texture-continuation inpainting via xphoto SHIFTMAP
-    # SHIFTMAP zoekt vergelijkbare patches elders in de foto en plakt die in,
-    # waardoor texturen (bv. muur, baksteen) natuurlijk doorgetrokken worden.
     # NB: xphoto verwacht INVERSE mask (non-zero = behouden, zero = inpaint).
     try:
-        # Convert to LAB voor betere SHIFTMAP resultaten
-        src_lab = cv2.cvtColor(src_np, cv2.COLOR_BGR2LAB)
-        # Inverse mask: white where to KEEP (logo region = black)
-        inv_mask = cv2.bitwise_not(mask_dilated)
+        src_lab = cv2.cvtColor(src_crop, cv2.COLOR_BGR2LAB)
+        inv_mask = cv2.bitwise_not(mask_crop)
         dst_lab = np.zeros_like(src_lab)
         cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_SHIFTMAP)
-        result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
-        logger.info(f"Inpainted {image_id} via xphoto SHIFTMAP (textuur-doortrekking)")
+        crop_result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
+        logger.info(f"Inpainted {image_id} via SHIFTMAP op crop {src_crop.shape}")
     except Exception as e:
-        # Fallback naar standaard NS algoritme
         logger.warning(f"xphoto SHIFTMAP faalde ({e}), fallback naar NS")
-        result = cv2.inpaint(src_np, mask_dilated, 3, cv2.INPAINT_NS)
+        crop_result = cv2.inpaint(src_crop, mask_crop, 3, cv2.INPAINT_NS)
+    
+    # Composite het inpainted crop terug in de originele foto
+    result = src_np.copy()
+    result[cy0:cy1, cx0:cx1] = crop_result
     
     # Encode back to JPEG
     ok, buf = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 85])
