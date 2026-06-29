@@ -856,6 +856,91 @@ async def send_sold_elsewhere_email(dealer: dict, motorcycle: dict, supplier_com
         print(f"Failed to send sold elsewhere email: {e}")
 
 
+@router.post("/motorcycles/{motorcycle_id}/reject-too-expensive")
+async def reject_foreign_listing_too_expensive(
+    motorcycle_id: str,
+    payload: dict = Body(...),
+    user: dict = Depends(require_admin)
+):
+    """Wijs een foreign-listing af wegens te hoge prijs. Stuurt e-mail aan leverancier.
+    
+    Body: {"suggested_price": optional float, "message": optional extra text}
+    """
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    if not motorcycle.get("is_foreign_listing", False):
+        raise HTTPException(status_code=400, detail="Dit is geen buitenlandse dealer motor")
+    
+    supplier = await db.users.find_one(
+        {"id": motorcycle.get("foreign_dealer_id")},
+        {"_id": 0, "email": 1, "company_name": 1, "username": 1}
+    )
+    if not supplier or not supplier.get("email"):
+        raise HTTPException(status_code=400, detail="Leverancier e-mail niet gevonden")
+    
+    suggested_price = payload.get("suggested_price")
+    extra_message = (payload.get("message") or "").strip()
+    
+    # Mark as rejected
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {
+            "is_rejected": True,
+            "rejection_reason": "too_expensive",
+            "rejected_at": datetime.now(timezone.utc).isoformat(),
+            "rejected_by": user.get("id"),
+            "suggested_price": suggested_price,
+            "is_pending_approval": False,
+            "is_available": False,
+        }}
+    )
+    
+    # Compose e-mail
+    currency = motorcycle.get("original_currency") or "EUR"
+    asking = motorcycle.get("original_price") or motorcycle.get("price") or 0
+    moto_label = f"{motorcycle.get('brand','')} {motorcycle.get('model','')} {motorcycle.get('year','')}".strip()
+    
+    suggested_html = ""
+    if suggested_price is not None:
+        suggested_html = f"""
+        <p style="background:#ecfdf5;border-left:4px solid #10b981;padding:10px 14px;margin:14px 0;">
+          <strong>💡 Onze tegenvoorstel:</strong> {currency} {float(suggested_price):,.0f}
+        </p>"""
+    
+    extra_html = ""
+    if extra_message:
+        extra_html = f"""
+        <p style="background:#fafafa;border-left:4px solid #71717a;padding:10px 14px;margin:14px 0;font-style:italic;">
+          {extra_message}
+        </p>"""
+    
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#27272a;">
+      <h2 style="color:#dc2626;border-bottom:2px solid #dc2626;padding-bottom:8px;">Aanbod afgewezen — prijs te hoog</h2>
+      <p>Beste {supplier.get('company_name') or supplier.get('username') or 'partner'},</p>
+      <p>Bedankt voor je aanbod van de <strong>{moto_label}</strong>. Helaas kunnen we deze niet op het platform plaatsen tegen de gevraagde prijs:</p>
+      <p style="font-size:18px;background:#fef2f2;padding:10px 14px;border-radius:6px;">
+        Vraagprijs: <strong>{currency} {float(asking):,.0f}</strong>
+      </p>
+      {suggested_html}
+      {extra_html}
+      <p>Wil je de prijs aanpassen? Plaats de motor opnieuw op het portaal met een aangepaste prijs, en we beoordelen hem snel opnieuw.</p>
+      <p style="margin-top:24px;">Met vriendelijke groet,<br/><strong>Moto Import B.V.</strong></p>
+    </div>
+    """
+    
+    from services import send_email
+    sent = await send_email(
+        to_email=supplier["email"],
+        subject=f"Aanbod afgewezen: {moto_label} — prijs te hoog",
+        html_content=html
+    )
+    
+    logger.info(f"Foreign listing {motorcycle_id} rejected (too expensive). Email to {supplier['email']}: sent={sent}")
+    return {"success": True, "email_sent": sent, "supplier_email": supplier["email"]}
+
+
 @router.post("/motorcycles/{motorcycle_id}/activate")
 async def activate_foreign_listing(motorcycle_id: str, price: float, starting_price: Optional[float] = None, user: dict = Depends(require_admin)):
     """Activate a foreign dealer listing with new price (admin only)"""

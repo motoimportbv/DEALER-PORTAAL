@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import ManualInpaintModal from '../../components/ManualInpaintModal';
+import { Textarea } from '../../components/ui/textarea';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -49,6 +50,38 @@ const PendingForeignListings = () => {
   const [imageCacheBust, setImageCacheBust] = useState({}); // motorcycle_id -> timestamp
   const [manualInpaintMoto, setManualInpaintMoto] = useState(null);
   const [manualImageIdx, setManualImageIdx] = useState(0);
+  // Reject (too expensive) dialog
+  const [rejectMoto, setRejectMoto] = useState(null);
+  const [suggestedPrice, setSuggestedPrice] = useState('');
+  const [rejectMessage, setRejectMessage] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+
+  const handleReject = async () => {
+    if (!rejectMoto) return;
+    setRejecting(true);
+    try {
+      const body = {};
+      if (suggestedPrice) body.suggested_price = parseFloat(suggestedPrice);
+      if (rejectMessage) body.message = rejectMessage;
+      const res = await axios.post(
+        `${API}/motorcycles/${rejectMoto.id}/reject-too-expensive`,
+        body,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(res.data?.email_sent
+        ? `Afgewezen. E-mail verstuurd naar ${res.data.supplier_email}`
+        : 'Afgewezen, maar e-mail kon niet worden verstuurd');
+      setRejectMoto(null);
+      setSuggestedPrice('');
+      setRejectMessage('');
+      await fetchPendingListings();
+    } catch (err) {
+      console.error('Reject error:', err);
+      toast.error(err.response?.data?.detail || 'Afwijzen mislukt');
+    } finally {
+      setRejecting(false);
+    }
+  };
 
   const handleBlurLogos = async (motorcycle) => {
     if (!window.confirm(
@@ -305,6 +338,16 @@ const PendingForeignListings = () => {
                         <DollarSign className="w-4 h-4 mr-2" />
                         {t('adminPending.setPriceActivate')}
                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                        onClick={() => { setRejectMoto(motorcycle); setSuggestedPrice(''); setRejectMessage(''); }}
+                        data-testid={`reject-too-expensive-${motorcycle.id}`}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Te duur — afwijzen + e-mail
+                      </Button>
                     </div>
                   </CardContent>
                 </div>
@@ -415,6 +458,49 @@ const PendingForeignListings = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* 🚫 Te duur — afwijzen + email */}
+        {rejectMoto && (
+          <Dialog open onOpenChange={(v) => { if (!v) setRejectMoto(null); }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Motor afwijzen — te duur</DialogTitle>
+                <DialogDescription>
+                  {rejectMoto.brand} {rejectMoto.model} {rejectMoto.year} — vraagprijs {rejectMoto.original_currency || ''} {(rejectMoto.original_price || rejectMoto.price)?.toLocaleString('nl-NL')}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-zinc-600 uppercase">Tegenvoorstel prijs (optioneel)</label>
+                  <Input
+                    type="number"
+                    placeholder="Bijv. 8500"
+                    value={suggestedPrice}
+                    onChange={(e) => setSuggestedPrice(e.target.value)}
+                    data-testid="reject-suggested-price"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1">Optioneel — verschijnt in de e-mail aan de leverancier</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-zinc-600 uppercase">Bericht (optioneel)</label>
+                  <Textarea
+                    placeholder="Bijv. 'Vergelijkbare modellen zijn marktconform op €X'"
+                    value={rejectMessage}
+                    onChange={(e) => setRejectMessage(e.target.value)}
+                    rows={3}
+                    data-testid="reject-message"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRejectMoto(null)} disabled={rejecting}>Annuleren</Button>
+                <Button className="bg-red-600 hover:bg-red-700" onClick={handleReject} disabled={rejecting} data-testid="confirm-reject-btn">
+                  {rejecting ? 'Versturen...' : 'Afwijzen + e-mail versturen'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* 🧽 Handmatige magische gum: foto-picker */}
         {manualInpaintMoto && !manualInpaintMoto.__editing && (
