@@ -842,30 +842,6 @@ const MotorcycleForm = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Dealer-logo blur selector */}
-                  <div className="flex items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg">
-                    <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-zinc-600 whitespace-nowrap">
-                      Dealer-logo blurren
-                    </Label>
-                    <select
-                      value={blurCorner}
-                      onChange={(e) => setBlurCorner(e.target.value)}
-                      className="flex-1 border border-zinc-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-red-500"
-                      data-testid="blur-corner-select"
-                    >
-                      <option value="">Geen blur</option>
-                      <option value="bottom-right">Rechtsonder</option>
-                      <option value="bottom-left">Linksonder</option>
-                      <option value="top-right">Rechtsboven</option>
-                      <option value="top-left">Linksboven</option>
-                    </select>
-                    {blurCorner && (
-                      <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 rounded px-2 py-1">
-                        Actief
-                      </span>
-                    )}
-                  </div>
-
                   {/* Upload buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     <input

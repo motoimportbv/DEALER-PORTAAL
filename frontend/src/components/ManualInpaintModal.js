@@ -31,6 +31,9 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   const [resultUrl, setResultUrl] = useState(null);
   const [sliderPos, setSliderPos] = useState(50);
   const [undoing, setUndoing] = useState(false);
+  // Progress: 'idle' | 'sending' | 'waiting' | 'done'
+  const [progressStatus, setProgressStatus] = useState('idle');
+  const [progressSecs, setProgressSecs] = useState(0);
   // Stable cache-buster — gegenereerd 1× per modal-open zodat de img niet herlaadt bij re-renders
   const [openTs, setOpenTs] = useState(0);
 
@@ -184,6 +187,9 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       return;
     }
     setSaving(true);
+    setProgressStatus('sending');
+    setProgressSecs(0);
+    const tickInterval = setInterval(() => setProgressSecs(s => s + 1), 1000);
     try {
       const mask = buildMaskPng();
       if (!mask) {
@@ -203,6 +209,7 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       const jobId = startRes.data?.job_id;
       if (!jobId) throw new Error('Geen job_id ontvangen');
       console.log('[Inpaint] job started:', jobId);
+      setProgressStatus('waiting');
 
       // 2) Poll for completion (max 5 min — production cloud-IO kan langzaam zijn)
       const maxAttempts = 150; // 150 × 2s = 300s = 5 min
@@ -242,6 +249,9 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       toast.error(msg);
     } finally {
       setSaving(false);
+      setProgressStatus('idle');
+      setProgressSecs(0);
+      clearInterval(tickInterval);
     }
   };
 
@@ -382,7 +392,14 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
               disabled={saving || !hasMask}
               data-testid="apply-inpaint-btn"
             >
-              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Bezig...</> : <><Eraser className="w-4 h-4 mr-2" /> Toepassen</>}
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {progressStatus === 'sending' ? 'Verzenden...' : `AI verwerkt foto... ${progressSecs}s`}
+                </>
+              ) : (
+                <><Eraser className="w-4 h-4 mr-2" /> Toepassen</>
+              )}
             </Button>
           </div>
           </>
