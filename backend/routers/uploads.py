@@ -703,8 +703,8 @@ def _inpaint_blocking(job_id: str, image_id: str, img_doc: dict, mask_b64: str) 
     mask_crop = mask_dilated[cy0:cy1, cx0:cx1]
     
     crop_h, crop_w = src_crop.shape[:2]
-    if max(crop_w, crop_h) > 800:
-        scale = 800 / max(crop_w, crop_h)
+    if max(crop_w, crop_h) > 1000:
+        scale = 1000 / max(crop_w, crop_h)
         nw, nh = int(crop_w * scale), int(crop_h * scale)
         src_work = cv2.resize(src_crop, (nw, nh), interpolation=cv2.INTER_AREA)
         mask_work = cv2.resize(mask_crop, (nw, nh), interpolation=cv2.INTER_NEAREST)
@@ -716,11 +716,11 @@ def _inpaint_blocking(job_id: str, image_id: str, img_doc: dict, mask_b64: str) 
         src_lab = cv2.cvtColor(src_work, cv2.COLOR_BGR2LAB)
         inv_mask = cv2.bitwise_not(mask_work)
         dst_lab = np.zeros_like(src_lab)
-        # FSR_FAST is ~5x sneller dan SHIFTMAP en geeft vergelijkbare kwaliteit
-        cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_FSR_FAST)
+        # SHIFTMAP geeft scherpe textuur-doortrekking (bakstenen, muren), FSR_FAST is te wazig
+        cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_SHIFTMAP)
         work_result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
     except Exception as e:
-        logger.warning(f"[job {job_id}] FSR_FAST fail ({e}), NS fallback")
+        logger.warning(f"[job {job_id}] SHIFTMAP fail ({e}), NS fallback")
         work_result = cv2.inpaint(src_work, mask_work, 3, cv2.INPAINT_NS)
     
     if work_result.shape[:2] != src_crop.shape[:2]:
