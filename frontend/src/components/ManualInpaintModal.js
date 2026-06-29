@@ -204,8 +204,8 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       if (!jobId) throw new Error('Geen job_id ontvangen');
       console.log('[Inpaint] job started:', jobId);
 
-      // 2) Poll for completion (max 90s)
-      const maxAttempts = 45; // 45 × 2s = 90s
+      // 2) Poll for completion (max 5 min — production cloud-IO kan langzaam zijn)
+      const maxAttempts = 150; // 150 × 2s = 300s = 5 min
       let finalStatus = null;
       let lastError = null;
       for (let i = 0; i < maxAttempts; i++) {
@@ -229,7 +229,7 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       } else if (finalStatus === 'failed') {
         toast.error(lastError || 'Gum-actie mislukt');
       } else {
-        toast.error('Time-out: gum-job duurde te lang (>90s)');
+        toast.error('Time-out: gum-job duurde te lang (>5 min)');
       }
     } catch (err) {
       console.error('Manual inpaint error:', err.response?.status, err.response?.data, err.message);
