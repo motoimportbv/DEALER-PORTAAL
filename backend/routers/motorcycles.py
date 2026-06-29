@@ -346,14 +346,15 @@ async def create_foreign_listing(data: MotorcycleCreate, user: dict = Depends(ge
     doc = motorcycle.model_dump()
     await db.motorcycles.insert_one(doc)
     
-    # 🪄 Auto-magische gum voor Mundi Moto (AI-inpaint) — best-effort, non-fatal
-    if "mundi" in (user.get("company_name") or "").lower() and motorcycle.images:
+    # 🪄 Auto-magische gum voor ÉLKE foreign-listing — verwijdert ALLE dealer-logo's/namen/watermerken
+    # (Mundi, Mundimoto, of welke andere leverancier dan ook). Best-effort, non-fatal.
+    if motorcycle.images:
         try:
             from routers.uploads import erase_motorcycle_logo
-            await erase_motorcycle_logo(motorcycle.id, prompt_hint=user.get("company_name", "Mundi Moto"), user=user)
-            logger.info(f"Auto-AI-erase toegepast op {len(motorcycle.images)} Mundi foto's voor motor {motorcycle.id}")
+            await erase_motorcycle_logo(motorcycle.id, prompt_hint=user.get("company_name") or "the dealer", user=user)
+            logger.info(f"🪄 Auto-AI-erase toegepast op {len(motorcycle.images)} foto's voor foreign-listing {motorcycle.id} (dealer={user.get('company_name')})")
         except Exception as e:
-            logger.error(f"Auto-AI-erase na Mundi foreign-listing mislukt: {e}")
+            logger.error(f"Auto-AI-erase na foreign-listing mislukt: {e}")
     
     # Format price display for email
     price_display = f"CHF {original_price:,.0f}" if currency == "CHF" else f"€{original_price:,.0f}"

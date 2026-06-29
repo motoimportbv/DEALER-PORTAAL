@@ -500,9 +500,10 @@ async def erase_motorcycle_logo(motorcycle_id: str, prompt_hint: str = "", user:
             chat.with_model("gemini", "gemini-3.1-flash-image-preview").with_params(modalities=["image", "text"])
             
             prompt = (
-                f"Remove the dealer watermark/logo (especially '{dealer_hint}', 'moto', 'mundi' text) "
-                f"from this motorcycle photo and inpaint the background naturally. "
-                f"Keep the motorcycle unchanged."
+                f"Remove ALL watermarks, logos, dealer names, brand stamps and overlay text from this motorcycle photo "
+                f"(any dealer name like '{dealer_hint}', 'moto', 'mundi', 'dealer', shop names, URLs, phone numbers, etc.). "
+                f"Inpaint the background naturally so it looks original and untouched. "
+                f"Do NOT change the motorcycle itself."
             )
             msg = UserMessage(text=prompt, file_contents=[ImageContent(b64_in)])
             

@@ -49,7 +49,7 @@ const PendingForeignListings = () => {
 
   const handleBlurLogos = async (motorcycle) => {
     if (!window.confirm(
-      `🪄 Magische gum starten?\n\nDe AI verwijdert het dealer-logo (Mundi Moto, watermarks) van ${motorcycle.images?.length || 0} foto's.\n\nDit kan ~30-60 sec per foto duren.`
+      `🪄 Magische gum starten?\n\nDe AI verwijdert ALLE dealer-logo's, namen, watermerken en overlay-tekst van ${motorcycle.images?.length || 0} foto's.\n\nDit kan ~30-60 sec per foto duren.`
     )) return;
     setBlurringId(motorcycle.id);
     try {
