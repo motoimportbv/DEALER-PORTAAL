@@ -135,29 +135,22 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   };
 
   /**
-   * Build a black/white PNG mask at the NATURAL image resolution.
-   * Painted pixels (alpha > 0) → white. Rest → black.
+   * Build a black/white PNG mask at DISPLAY resolution (kleinere upload).
+   * Backend schaalt op naar natural. Bespaart 90% upload-size.
    */
   const buildMaskPng = () => {
     const c = canvasRef.current;
     if (!c) return null;
-    // Read the painted overlay (only contains user strokes — no CORS)
     const overlayData = c.getContext('2d').getImageData(0, 0, c.width, c.height);
 
-    // Build mask at NATURAL resolution
+    // Mask op display-resolutie (kleiner = sneller uploaden)
     const m = document.createElement('canvas');
-    m.width = imgSize.w;
-    m.height = imgSize.h;
+    m.width = c.width;
+    m.height = c.height;
     const mctx = m.getContext('2d');
     mctx.fillStyle = 'black';
     mctx.fillRect(0, 0, m.width, m.height);
-
-    // Build small white-mask from overlay alpha
-    const smallMask = document.createElement('canvas');
-    smallMask.width = c.width;
-    smallMask.height = c.height;
-    const smctx = smallMask.getContext('2d');
-    const out = smctx.createImageData(c.width, c.height);
+    const out = mctx.getImageData(0, 0, m.width, m.height);
     for (let i = 0; i < overlayData.data.length; i += 4) {
       if (overlayData.data[i + 3] > 10) {
         out.data[i] = 255;
@@ -165,14 +158,10 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
         out.data[i + 2] = 255;
         out.data[i + 3] = 255;
       } else {
-        out.data[i + 3] = 255; // black opaque
+        out.data[i + 3] = 255;
       }
     }
-    smctx.putImageData(out, 0, 0);
-
-    // Scale up to natural size
-    mctx.imageSmoothingEnabled = false;
-    mctx.drawImage(smallMask, 0, 0, m.width, m.height);
+    mctx.putImageData(out, 0, 0);
     return m.toDataURL('image/png');
   };
 

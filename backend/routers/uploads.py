@@ -641,18 +641,37 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     src_crop = src_np[cy0:cy1, cx0:cx1]
     mask_crop = mask_dilated[cy0:cy1, cx0:cx1]
     
+    # ⚡ Performance: als crop te groot is voor SHIFTMAP (>1200px), downscale → process → upscale
+    crop_h, crop_w = src_crop.shape[:2]
+    work_max = 1200
+    if max(crop_w, crop_h) > work_max:
+        scale = work_max / max(crop_w, crop_h)
+        new_w = int(crop_w * scale)
+        new_h = int(crop_h * scale)
+        src_work = cv2.resize(src_crop, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        mask_work = cv2.resize(mask_crop, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+        logger.info(f"Downscale crop {crop_w}x{crop_h} → {new_w}x{new_h} voor SHIFTMAP")
+    else:
+        src_work = src_crop
+        mask_work = mask_crop
+    
     # 🎨 Texture-continuation inpainting via xphoto SHIFTMAP
-    # NB: xphoto verwacht INVERSE mask (non-zero = behouden, zero = inpaint).
     try:
-        src_lab = cv2.cvtColor(src_crop, cv2.COLOR_BGR2LAB)
-        inv_mask = cv2.bitwise_not(mask_crop)
+        src_lab = cv2.cvtColor(src_work, cv2.COLOR_BGR2LAB)
+        inv_mask = cv2.bitwise_not(mask_work)
         dst_lab = np.zeros_like(src_lab)
         cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_SHIFTMAP)
-        crop_result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
-        logger.info(f"Inpainted {image_id} via SHIFTMAP op crop {src_crop.shape}")
+        work_result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
+        logger.info(f"Inpainted {image_id} via SHIFTMAP op work-crop {src_work.shape}")
     except Exception as e:
         logger.warning(f"xphoto SHIFTMAP faalde ({e}), fallback naar NS")
-        crop_result = cv2.inpaint(src_crop, mask_crop, 3, cv2.INPAINT_NS)
+        work_result = cv2.inpaint(src_work, mask_work, 3, cv2.INPAINT_NS)
+    
+    # Upscale terug naar originele crop-grootte indien gedownscaled
+    if work_result.shape[:2] != src_crop.shape[:2]:
+        crop_result = cv2.resize(work_result, (crop_w, crop_h), interpolation=cv2.INTER_LINEAR)
+    else:
+        crop_result = work_result
     
     # Composite het inpainted crop terug in de originele foto
     result = src_np.copy()
