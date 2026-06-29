@@ -33,18 +33,10 @@ async def upload_image(request: Request, file: UploadFile = File(...), blur_corn
     
     blur_corner: optionele hoek waar dealer-logo's worden geblurd.
       Mogelijke waardes: 'bottom-right', 'bottom-left', 'top-right', 'top-left'.
-      Leeg = geen blur.
-    
-    Auto-detect: als de geauthenticeerde user een foreign dealer is met 'mundi' in
-    de company_name, en geen expliciete blur_corner is meegegeven → automatisch top-left.
+      Leeg = geen blur. Mundi Moto gebruikt 🪄 Magische Gum (AI) bij foreign-listing creation — geen auto-blur meer.
     """
     from PIL import Image, ImageFilter
     import io
-    
-    # Auto-detect Mundi Moto foreign dealer → linksboven blurren
-    if not blur_corner and user.get("is_foreign_dealer") and "mundi" in (user.get("company_name") or "").lower():
-        blur_corner = "top-left"
-        logger.info(f"Auto-blur top-left geactiveerd voor Mundi-dealer {user.get('email')}")
     
     # Check file type
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
@@ -443,20 +435,144 @@ async def blur_motorcycle_images(motorcycle_id: str, corner: str = "top-left", u
     return {"processed": processed, "errors": errors, "total": len(image_urls), "corner": corner}
 
 
+@router.post("/motorcycles/{motorcycle_id}/erase-logo")
+async def erase_motorcycle_logo(motorcycle_id: str, prompt_hint: str = "", user: dict = Depends(require_admin)):
+    """🪄 Magische gum: gebruikt Gemini Nano Banana om dealer-logo's / watermarks AI-matig te verwijderen.
+    
+    Verwerkt alle foto's van een motor in-place (URLs blijven gelijk).
+    prompt_hint: optionele extra hint zoals "Mundi Moto" om de AI te helpen.
+    """
+    import base64
+    import io
+    from PIL import Image
+    
+    motorcycle = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0, "images": 1, "foreign_dealer_company": 1})
+    if not motorcycle:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    
+    image_urls = motorcycle.get("images") or []
+    if not image_urls:
+        return {"processed": 0, "errors": 0, "total": 0}
+    
+    # Bepaal hint
+    dealer_hint = prompt_hint or (motorcycle.get("foreign_dealer_company") or "the dealer")
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"emergentintegrations niet geïnstalleerd: {e}")
+    
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY ontbreekt in .env")
+    
+    processed = 0
+    errors = 0
+    
+    for url in image_urls:
+        try:
+            image_id = url.rstrip("/").split("/api/images/")[-1].split("?")[0].split(".")[0]
+            img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
+            if not img_doc:
+                errors += 1
+                continue
+            
+            # Get current full-size bytes
+            full_bytes = None
+            if img_doc.get("cloud_stored") and img_doc.get("storage_path") and init_storage():
+                try:
+                    full_bytes, _ = get_object(img_doc["storage_path"])
+                except Exception as ce:
+                    logger.error(f"Cloud read failed for {image_id}: {ce}")
+            if full_bytes is None and img_doc.get("data"):
+                full_bytes = base64.b64decode(img_doc["data"])
+            if full_bytes is None:
+                errors += 1
+                continue
+            
+            # Call Gemini Nano Banana for inpainting
+            b64_in = base64.b64encode(full_bytes).decode('utf-8')
+            chat = LlmChat(
+                api_key=api_key,
+                session_id=f"erase-{motorcycle_id}-{image_id}",
+                system_message="You are an expert photo editor specialized in removing dealer watermarks and logos cleanly."
+            )
+            chat.with_model("gemini", "gemini-3.1-flash-image-preview").with_params(modalities=["image", "text"])
+            
+            prompt = (
+                f"Remove the dealer watermark/logo (especially '{dealer_hint}', 'moto', 'mundi' text) "
+                f"from this motorcycle photo and inpaint the background naturally. "
+                f"Keep the motorcycle unchanged."
+            )
+            msg = UserMessage(text=prompt, file_contents=[ImageContent(b64_in)])
+            
+            try:
+                _txt, images = await chat.send_message_multimodal_response(msg)
+            except Exception as ai_err:
+                logger.error(f"Nano Banana call failed for {image_id}: {ai_err}")
+                errors += 1
+                continue
+            
+            if not images:
+                logger.warning(f"Nano Banana returned no image for {image_id}")
+                errors += 1
+                continue
+            
+            edited_bytes = base64.b64decode(images[0]['data'])
+            
+            # Re-encode to JPEG (Nano Banana returns PNG)
+            timg = Image.open(io.BytesIO(edited_bytes))
+            if timg.mode in ('RGBA', 'P'):
+                timg = timg.convert('RGB')
+            jout = io.BytesIO()
+            timg.save(jout, format='JPEG', quality=85, optimize=True)
+            jpeg_bytes = jout.getvalue()
+            
+            # Thumbnail
+            thumb_size = 400
+            ratio = thumb_size / max(timg.size)
+            tb = timg.resize((int(timg.size[0] * ratio), int(timg.size[1] * ratio)), Image.Resampling.LANCZOS)
+            tout = io.BytesIO()
+            tb.save(tout, format='JPEG', quality=70, optimize=True)
+            thumb_bytes = tout.getvalue()
+            
+            # Overwrite storage
+            if img_doc.get("cloud_stored") and init_storage():
+                put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", jpeg_bytes, "image/jpeg")
+                if img_doc.get("thumb_path"):
+                    put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
+            else:
+                await db.images.update_one(
+                    {"id": image_id},
+                    {"$set": {
+                        "data": base64.b64encode(jpeg_bytes).decode('utf-8'),
+                        "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
+                        "compressed_size": len(jpeg_bytes),
+                    }}
+                )
+            
+            await db.images.update_one(
+                {"id": image_id},
+                {"$set": {"ai_erased": True, "ai_erased_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            processed += 1
+            logger.info(f"🪄 AI-erased logo from image {image_id}")
+        except Exception as e:
+            logger.error(f"Magic eraser failed for url {url}: {e}")
+            errors += 1
+    
+    return {"processed": processed, "errors": errors, "total": len(image_urls), "method": "ai-inpaint"}
+
+
 @router.post("/upload/multiple")
 async def upload_multiple_images(request: Request, files: List[UploadFile] = File(...), blur_corner: str = "", user: dict = Depends(get_current_user)):
     """Upload multiple images and store in MongoDB - with compression.
     blur_corner: 'bottom-right' / 'bottom-left' / 'top-right' / 'top-left' om dealer-logo te blurren. Leeg = geen blur.
     
-    Auto-detect: als de user een foreign dealer is met 'mundi' in company_name → automatisch top-left."""
+    (Mundi Moto: AI Magische Gum draait apart op foreign-listing creation.)"""
     import base64
     from PIL import Image, ImageFilter
     import io
-    
-    # Auto-detect Mundi Moto foreign dealer → linksboven blurren
-    if not blur_corner and user.get("is_foreign_dealer") and "mundi" in (user.get("company_name") or "").lower():
-        blur_corner = "top-left"
-        logger.info(f"Auto-blur top-left (bulk) voor Mundi-dealer {user.get('email')}")
     
     urls = []
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg"]

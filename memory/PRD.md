@@ -19,6 +19,14 @@ server.py: 170 regels (orchestrator) + routers/, models/, services/, config.py
 
 ## Prioritized Backlog
 
+- **🪄 Magische gum (AI inpaint via Gemini Nano Banana)** (Feb 2026): User-eis "Het blurren van de logo werkt niet goed beter is een magiche gum zodat waar het logo van mundi moto staat met de magiche gum wordt weggehaald automatich". Vervangt corner-based blur door echte AI inpainting.
+  - Nieuw endpoint `POST /api/motorcycles/{id}/erase-logo` — gebruikt `emergentintegrations.llm.chat.LlmChat` met model `gemini-3.1-flash-image-preview` (modalities=`["image","text"]`). Prompt: "Remove the dealer watermark/logo from this motorcycle photo and inpaint the background naturally. Keep the motorcycle unchanged."
+  - In-place: overschrijft cloud-object + thumbnail. URL blijft hetzelfde, cache-buster `?v=ts` op frontend voor refresh.
+  - Auto-trigger: `POST /motorcycles/foreign-listing` roept `erase_motorcycle_logo()` als `user.company_name` "mundi" bevat → admin krijgt al opgeschoonde foto's in "Moto estere in attesa".
+  - Frontend `PendingForeignListings.js`: knop nu **"🪄 Magische gum (AI) — N foto's"** (fuchsia kleur), confirm-prompt waarschuwt 30-60 sec per foto, axios timeout 10 min.
+  - Removed: auto-blur in `/upload` + `/upload/multiple` (corner-blur wel beschikbaar als param maar niet meer automatisch).
+  - Curl-test bevestigd: logo wit (255,255,255) → grijs (178,178,178) na erase, ~17s per foto via Nano Banana ✅
+
 - **🇪🇺 EU-modellen krijgen geen keuring/COC via Moto Import** (Feb 2026): User-eis "Alle motoren van mundi moto die de dealers bestellen kunnen niet gekeurd worden door motoimport omdat het europese modellen zijn". Mundi Moto = Italiaanse EU-leverancier met typegoedgekeurde modellen.
   - Detectie: helper `isEuOnlyModel()` matched `/mundi/i` op `motorcycle.foreign_dealer_company`.
   - `MotorcycleDetail.js` (dealer-koopflow): toont blauwe banner "🇪🇺 EU-model — geen keuring nodig" boven prijs, verbergt **COC-checkbox** (`cocAvailable()` returns false), verbergt **Honda COC-link**, toont extra banner in bestel-dialoog.

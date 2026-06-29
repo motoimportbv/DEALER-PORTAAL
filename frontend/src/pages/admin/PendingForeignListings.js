@@ -48,32 +48,23 @@ const PendingForeignListings = () => {
   const [imageCacheBust, setImageCacheBust] = useState({}); // motorcycle_id -> timestamp
 
   const handleBlurLogos = async (motorcycle) => {
-    const isMundi = /mundi/i.test(motorcycle.foreign_dealer_company || '');
-    const defaultCorner = isMundi ? 'top-left' : 'top-left';
-    const corner = window.prompt(
-      'Welke hoek bevat het dealer-logo dat geblurd moet worden?\n\nGeef in: top-left, top-right, bottom-left, of bottom-right',
-      defaultCorner
-    );
-    if (!corner) return;
-    if (!['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(corner)) {
-      toast.error('Ongeldige hoek');
-      return;
-    }
+    if (!window.confirm(
+      `🪄 Magische gum starten?\n\nDe AI verwijdert het dealer-logo (Mundi Moto, watermarks) van ${motorcycle.images?.length || 0} foto's.\n\nDit kan ~30-60 sec per foto duren.`
+    )) return;
     setBlurringId(motorcycle.id);
     try {
       const res = await axios.post(
-        `${API}/motorcycles/${motorcycle.id}/blur-images?corner=${corner}`,
+        `${API}/motorcycles/${motorcycle.id}/erase-logo`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 600000 }
       );
       const d = res.data || {};
-      toast.success(`${d.processed || 0} foto('s) geblurd (${d.errors || 0} fouten)`);
-      // Force browser cache-refresh by adding ?v=
+      toast.success(`🪄 ${d.processed || 0} foto's gegumd (${d.errors || 0} fouten)`);
       setImageCacheBust(prev => ({ ...prev, [motorcycle.id]: Date.now() }));
       await fetchPendingListings();
     } catch (err) {
-      console.error('Blur error:', err);
-      toast.error(err.response?.data?.detail || 'Blur mislukt');
+      console.error('Magic eraser error:', err);
+      toast.error(err.response?.data?.detail || 'Magische gum mislukt');
     } finally {
       setBlurringId(null);
     }
@@ -285,13 +276,13 @@ const PendingForeignListings = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full border-amber-300 text-amber-800 hover:bg-amber-50"
+                        className="w-full border-fuchsia-300 text-fuchsia-800 hover:bg-fuchsia-50"
                         onClick={() => handleBlurLogos(motorcycle)}
                         disabled={blurringId === motorcycle.id || !(motorcycle.images && motorcycle.images.length)}
-                        data-testid={`blur-logos-btn-${motorcycle.id}`}
+                        data-testid={`magic-eraser-btn-${motorcycle.id}`}
                       >
                         <Eraser className="w-4 h-4 mr-2" />
-                        {blurringId === motorcycle.id ? 'Bezig met blurren...' : `Blur dealer-logo's op ${motorcycle.images?.length || 0} foto's`}
+                        {blurringId === motorcycle.id ? '🪄 Bezig met gummen (AI)...' : `🪄 Magische gum (AI) — ${motorcycle.images?.length || 0} foto's`}
                       </Button>
                       <Button
                         className="w-full bg-purple-600 hover:bg-purple-700"
