@@ -977,16 +977,18 @@ const MotorcycleForm = () => {
                               </button>
                             )}
                             
-                            {/* Magische gum */}
-                            <button
-                              type="button"
-                              onClick={() => setInpaintUrl(url)}
-                              className="w-8 h-8 bg-fuchsia-600 rounded-full flex items-center justify-center text-white hover:bg-fuchsia-700"
-                              title="Logo weggummen (gratis)"
-                              data-testid={`inpaint-image-${index}`}
-                            >
-                              <Eraser className="w-4 h-4" />
-                            </button>
+                            {/* Magische gum — alleen voor foto's op onze eigen storage */}
+                            {url.includes('/api/images/') && (
+                              <button
+                                type="button"
+                                onClick={() => setInpaintUrl(url)}
+                                className="w-8 h-8 bg-fuchsia-600 rounded-full flex items-center justify-center text-white hover:bg-fuchsia-700"
+                                title="Logo weggummen (gratis)"
+                                data-testid={`inpaint-image-${index}`}
+                              >
+                                <Eraser className="w-4 h-4" />
+                              </button>
+                            )}
 
                             {/* Delete */}
                             <button

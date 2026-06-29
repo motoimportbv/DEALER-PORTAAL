@@ -9,63 +9,83 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 /**
  * 🧽 Manual Magic Eraser — geen AI, geen credits.
+ * Gebruikt een transparante overlay-canvas bovenop de foto (geen CORS-issues).
+ *
  * Props:
  *  - open, onClose
- *  - imageUrl: bron-foto (https://.../api/images/{id})
+ *  - imageUrl: bron-foto
  *  - onDone: callback met nieuwe cache-buster timestamp
  */
 const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   const canvasRef = useRef(null);
   const imgRef = useRef(null);
+  const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
+  const [displaySize, setDisplaySize] = useState({ w: 0, h: 0 });
   const [brushSize, setBrushSize] = useState(30);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasMask, setHasMask] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
-  // Load image into canvas
+  // Wait until image is loaded → size canvas accordingly
   useEffect(() => {
-    if (!open || !imageUrl) return;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const c = canvasRef.current;
-      if (!c) return;
-      const maxW = 900;
-      const scale = Math.min(1, maxW / img.naturalWidth);
-      c.width = img.naturalWidth * scale;
-      c.height = img.naturalHeight * scale;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0, c.width, c.height);
-      imgRef.current = img;
+    if (!open) {
+      setImgLoaded(false);
+      setImgError(false);
       setHasMask(false);
-    };
-    img.onerror = () => toast.error('Kon afbeelding niet laden');
-    img.src = `${imageUrl}?v=${Date.now()}`;
-  }, [open, imageUrl]);
+    }
+  }, [open]);
+
+  const handleImgError = () => {
+    console.error('[Inpaint] Failed to load image:', imageUrl);
+    setImgError(true);
+  };
+
+  const handleImgLoad = (e) => {
+    const img = e.target;
+    const natW = img.naturalWidth;
+    const natH = img.naturalHeight;
+    const maxW = Math.min(900, window.innerWidth - 80);
+    const scale = Math.min(1, maxW / natW);
+    const dispW = Math.round(natW * scale);
+    const dispH = Math.round(natH * scale);
+    setImgSize({ w: natW, h: natH });
+    setDisplaySize({ w: dispW, h: dispH });
+    // Sync canvas to displayed image dimensions
+    const c = canvasRef.current;
+    if (c) {
+      c.width = dispW;
+      c.height = dispH;
+    }
+    setImgLoaded(true);
+    setHasMask(false);
+  };
 
   const getCanvasPoint = (e) => {
     const c = canvasRef.current;
+    if (!c) return { x: 0, y: 0 };
     const rect = c.getBoundingClientRect();
     const scaleX = c.width / rect.width;
     const scaleY = c.height / rect.height;
-    const x = ((e.clientX ?? e.touches?.[0]?.clientX) - rect.left) * scaleX;
-    const y = ((e.clientY ?? e.touches?.[0]?.clientY) - rect.top) * scaleY;
-    return { x, y };
+    const cx = (e.clientX ?? e.touches?.[0]?.clientX) - rect.left;
+    const cy = (e.clientY ?? e.touches?.[0]?.clientY) - rect.top;
+    return { x: cx * scaleX, y: cy * scaleY };
   };
 
   const startDraw = (e) => {
     e.preventDefault();
     setIsDrawing(true);
-    drawAt(e);
+    drawAt(e, true);
   };
 
-  const drawAt = (e) => {
-    if (!isDrawing && e.type !== 'mousedown' && e.type !== 'touchstart') return;
+  const drawAt = (e, force = false) => {
+    if (!force && !isDrawing) return;
     const c = canvasRef.current;
     if (!c) return;
     const ctx = c.getContext('2d');
     const { x, y } = getCanvasPoint(e);
-    ctx.fillStyle = 'rgba(255, 0, 255, 0.55)';
+    ctx.fillStyle = 'rgba(255, 0, 255, 0.6)';
     ctx.beginPath();
     ctx.arc(x, y, brushSize, 0, Math.PI * 2);
     ctx.fill();
@@ -75,53 +95,57 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
   const stopDraw = () => setIsDrawing(false);
 
   const resetCanvas = () => {
-    const img = imgRef.current;
     const c = canvasRef.current;
-    if (!img || !c) return;
-    const ctx = c.getContext('2d');
-    ctx.drawImage(img, 0, 0, c.width, c.height);
+    if (!c) return;
+    c.getContext('2d').clearRect(0, 0, c.width, c.height);
     setHasMask(false);
   };
 
-  // Extract image_id from URL
   const extractImageId = (url) => {
     if (!url) return '';
     return url.split('/api/images/').pop().split('?')[0].split('.')[0];
   };
 
+  /**
+   * Build a black/white PNG mask at the NATURAL image resolution.
+   * Painted pixels (alpha > 0) → white. Rest → black.
+   */
   const buildMaskPng = () => {
-    // Build a separate canvas where painted areas = white, rest = black
     const c = canvasRef.current;
-    const img = imgRef.current;
-    if (!c || !img) return null;
-    const mask = document.createElement('canvas');
-    mask.width = c.width;
-    mask.height = c.height;
-    const mctx = mask.getContext('2d');
+    if (!c) return null;
+    // Read the painted overlay (only contains user strokes — no CORS)
+    const overlayData = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+
+    // Build mask at NATURAL resolution
+    const m = document.createElement('canvas');
+    m.width = imgSize.w;
+    m.height = imgSize.h;
+    const mctx = m.getContext('2d');
     mctx.fillStyle = 'black';
-    mctx.fillRect(0, 0, mask.width, mask.height);
-    // Compare painted canvas vs original image — painted pixels = white in mask
-    const painted = c.getContext('2d').getImageData(0, 0, c.width, c.height);
-    const orig = document.createElement('canvas');
-    orig.width = c.width;
-    orig.height = c.height;
-    orig.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    const origData = orig.getContext('2d').getImageData(0, 0, c.width, c.height);
-    const maskData = mctx.getImageData(0, 0, mask.width, mask.height);
-    for (let i = 0; i < painted.data.length; i += 4) {
-      const dr = Math.abs(painted.data[i] - origData.data[i]);
-      const dg = Math.abs(painted.data[i + 1] - origData.data[i + 1]);
-      const db_ = Math.abs(painted.data[i + 2] - origData.data[i + 2]);
-      // If significantly different = painted = inpaint
-      if (dr + dg + db_ > 40) {
-        maskData.data[i] = 255;
-        maskData.data[i + 1] = 255;
-        maskData.data[i + 2] = 255;
-        maskData.data[i + 3] = 255;
+    mctx.fillRect(0, 0, m.width, m.height);
+
+    // Build small white-mask from overlay alpha
+    const smallMask = document.createElement('canvas');
+    smallMask.width = c.width;
+    smallMask.height = c.height;
+    const smctx = smallMask.getContext('2d');
+    const out = smctx.createImageData(c.width, c.height);
+    for (let i = 0; i < overlayData.data.length; i += 4) {
+      if (overlayData.data[i + 3] > 10) {
+        out.data[i] = 255;
+        out.data[i + 1] = 255;
+        out.data[i + 2] = 255;
+        out.data[i + 3] = 255;
+      } else {
+        out.data[i + 3] = 255; // black opaque
       }
     }
-    mctx.putImageData(maskData, 0, 0);
-    return mask.toDataURL('image/png');
+    smctx.putImageData(out, 0, 0);
+
+    // Scale up to natural size
+    mctx.imageSmoothingEnabled = false;
+    mctx.drawImage(smallMask, 0, 0, m.width, m.height);
+    return m.toDataURL('image/png');
   };
 
   const handleApply = async () => {
@@ -137,9 +161,16 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
     setSaving(true);
     try {
       const mask = buildMaskPng();
+      if (!mask) {
+        toast.error('Kon mask niet bouwen — probeer opnieuw te tekenen');
+        setSaving(false);
+        return;
+      }
       const token = localStorage.getItem('token');
+      const url = `${API}/images/${imageId}/inpaint-manual`;
+      console.log('[Inpaint] POST', url, '| mask size:', Math.round(mask.length / 1024), 'KB');
       await axios.post(
-        `${API}/images/${imageId}/inpaint-manual`,
+        url,
         { mask_base64: mask },
         { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
       );
@@ -147,8 +178,14 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       if (onDone) onDone(Date.now());
       onClose();
     } catch (err) {
-      console.error('Manual inpaint error:', err);
-      toast.error(err.response?.data?.detail || 'Gum-actie mislukt');
+      console.error('Manual inpaint error:', err.response?.status, err.response?.data, err.message);
+      const detail = err.response?.data?.detail;
+      const status = err.response?.status;
+      let msg = 'Gum-actie mislukt';
+      if (detail) msg = `${detail} (HTTP ${status || '?'})`;
+      else if (status === 404) msg = 'Endpoint niet gevonden — check deploy';
+      else if (err.message) msg = err.message;
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -163,7 +200,7 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
             Handmatige Magische Gum (gratis)
           </DialogTitle>
           <DialogDescription>
-            Teken met de kwast over het logo. Klik op "Toepassen" om het gemaskerde gebied te vullen met omliggende pixels.
+            Teken met de kwast over het logo. Klik op &quot;Toepassen&quot; om het gemaskerde gebied te vullen met omliggende pixels.
           </DialogDescription>
         </DialogHeader>
 
@@ -185,19 +222,56 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
             </Button>
           </div>
 
-          <div className="border-2 border-zinc-200 rounded-lg overflow-hidden bg-zinc-100 flex justify-center">
-            <canvas
-              ref={canvasRef}
-              onMouseDown={startDraw}
-              onMouseMove={drawAt}
-              onMouseUp={stopDraw}
-              onMouseLeave={stopDraw}
-              onTouchStart={startDraw}
-              onTouchMove={drawAt}
-              onTouchEnd={stopDraw}
-              style={{ cursor: 'crosshair', maxWidth: '100%', touchAction: 'none' }}
-              data-testid="inpaint-canvas"
-            />
+          <div className="border-2 border-zinc-200 rounded-lg overflow-hidden bg-zinc-100 flex justify-center min-h-[200px]">
+            {imgError ? (
+              <div className="p-8 text-center text-red-600">
+                <p className="font-semibold">Foto kon niet geladen worden</p>
+                <p className="text-xs text-zinc-500 mt-1">Controleer of de foto-URL bereikbaar is. Sluit dit venster en probeer opnieuw.</p>
+              </div>
+            ) : (
+            <div
+              className="relative"
+              style={{ width: displaySize.w || 'auto', height: displaySize.h || 'auto' }}
+            >
+              <img
+                ref={imgRef}
+                src={imageUrl ? `${imageUrl}?v=${(open && imageUrl) ? Date.now() : ''}` : ''}
+                alt="Te bewerken foto"
+                onLoad={handleImgLoad}
+                onError={handleImgError}
+                style={{
+                  display: 'block',
+                  width: displaySize.w || 'auto',
+                  height: displaySize.h || 'auto',
+                  maxWidth: '100%',
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                }}
+                draggable={false}
+              />
+              {imgLoaded && (
+                <canvas
+                  ref={canvasRef}
+                  onMouseDown={startDraw}
+                  onMouseMove={drawAt}
+                  onMouseUp={stopDraw}
+                  onMouseLeave={stopDraw}
+                  onTouchStart={startDraw}
+                  onTouchMove={drawAt}
+                  onTouchEnd={stopDraw}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: displaySize.w,
+                    height: displaySize.h,
+                    cursor: 'crosshair',
+                    touchAction: 'none',
+                  }}
+                  data-testid="inpaint-canvas"
+                />
+              )}
+            </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">
