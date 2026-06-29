@@ -692,8 +692,15 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     tb.save(tout, format='JPEG', quality=70, optimize=True)
     thumb_bytes = tout.getvalue()
     
-    # 💾 Backup huidige bytes vóór overwrite (voor undo)
-    backup_b64 = base64.b64encode(full_bytes).decode('utf-8')
+    # 💾 Backup huidige bytes vóór overwrite — opslaan in cloud (sneller dan MongoDB voor grote files)
+    backup_key = None
+    try:
+        if img_doc.get("cloud_stored") and init_storage():
+            backup_key = f"{APP_NAME}/backups/{image_id}_before_inpaint.jpg"
+            put_object(backup_key, full_bytes, "image/jpeg")
+    except Exception as be:
+        logger.warning(f"Backup naar cloud faalde voor {image_id}: {be}")
+        backup_key = None
     
     # Overwrite storage
     if img_doc.get("cloud_stored") and init_storage():
@@ -701,12 +708,15 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
         if img_doc.get("thumb_path"):
             put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
     else:
+        # Fallback voor non-cloud: backup als base64 in mongo
+        backup_b64 = base64.b64encode(full_bytes).decode('utf-8')
         await db.images.update_one(
             {"id": image_id},
             {"$set": {
                 "data": base64.b64encode(jpeg_bytes).decode('utf-8'),
                 "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
                 "compressed_size": len(jpeg_bytes),
+                "inpaint_previous_data": backup_b64,
             }}
         )
     
@@ -714,10 +724,10 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
         {"id": image_id},
         {"$set": {
             "manually_inpainted_at": datetime.now(timezone.utc).isoformat(),
-            "inpaint_previous_data": backup_b64,
+            **({"inpaint_backup_key": backup_key} if backup_key else {}),
         }}
     )
-    logger.info(f"🧽 Manual inpaint applied to {image_id} (backup stored)")
+    logger.info(f"🧽 Manual inpaint applied to {image_id}")
     return {"success": True, "image_id": image_id}
 
 
@@ -731,11 +741,22 @@ async def undo_inpaint(image_id: str, user: dict = Depends(require_admin)):
     img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
     if not img_doc:
         raise HTTPException(status_code=404, detail="Afbeelding niet gevonden")
-    backup_b64 = img_doc.get("inpaint_previous_data")
-    if not backup_b64:
-        raise HTTPException(status_code=400, detail="Geen backup beschikbaar (gum-actie is al ongedaan gemaakt of er was geen actie)")
     
-    backup_bytes = base64.b64decode(backup_b64)
+    # Probeer eerst cloud-backup (snelste route), dan MongoDB-backup
+    backup_bytes = None
+    backup_key = img_doc.get("inpaint_backup_key")
+    if backup_key and init_storage():
+        try:
+            backup_bytes, _ = get_object(backup_key)
+        except Exception as e:
+            logger.warning(f"Cloud-backup ophalen faalde: {e}")
+    if backup_bytes is None:
+        backup_b64 = img_doc.get("inpaint_previous_data")
+        if backup_b64:
+            backup_bytes = base64.b64decode(backup_b64)
+    
+    if backup_bytes is None:
+        raise HTTPException(status_code=400, detail="Geen backup beschikbaar (gum-actie is al ongedaan gemaakt of er was geen actie)")
     
     # Regenerate thumbnail
     timg = Image.open(io.BytesIO(backup_bytes))
@@ -762,10 +783,15 @@ async def undo_inpaint(image_id: str, user: dict = Depends(require_admin)):
             }}
         )
     
-    # Verwijder backup (kan maar 1 stap terug)
+    # Verwijder backup-referenties (cloud-object blijft staan, geen delete-functie beschikbaar)
+    unset_fields = {"manually_inpainted_at": ""}
+    if img_doc.get("inpaint_previous_data"):
+        unset_fields["inpaint_previous_data"] = ""
+    if img_doc.get("inpaint_backup_key"):
+        unset_fields["inpaint_backup_key"] = ""
     await db.images.update_one(
         {"id": image_id},
-        {"$unset": {"inpaint_previous_data": "", "manually_inpainted_at": ""}}
+        {"$unset": unset_fields}
     )
     logger.info(f"↶ Inpaint undone for {image_id}")
     return {"success": True, "image_id": image_id}
