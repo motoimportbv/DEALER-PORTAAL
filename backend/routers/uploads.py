@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, Query, Body, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Request, Query, Body, UploadFile, File, BackgroundTasks
 from fastapi.responses import Response, FileResponse
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
@@ -566,18 +566,14 @@ async def erase_motorcycle_logo(motorcycle_id: str, prompt_hint: str = "", user:
 
 
 @router.post("/images/{image_id}/inpaint-manual")
-async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: dict = Depends(require_admin)):
-    """🧽 Handmatige magische gum (gratis, geen AI). 
+async def inpaint_image_manual(image_id: str, payload: dict = Body(...), background_tasks: BackgroundTasks = None, user: dict = Depends(require_admin)):
+    """🧽 Handmatige magische gum (async). Returnt direct met job_id; frontend polt status.
     
-    Body: {"mask_base64": "data:image/png;base64,..."} — een PNG-mask met witte verf op de te verwijderen plekken (zwart = behouden).
-    Gebruikt OpenCV cv2.inpaint (Telea algoritme) om de gemaskerde regio te vullen met omliggende pixels.
-    Overschrijft de opgeslagen image — URL blijft hetzelfde.
+    Body: {"mask_base64": "data:image/png;base64,..."}
+    Returns: {"job_id": "...", "status": "processing"}
     """
-    import base64
-    import io
-    import numpy as np
-    import cv2
-    from PIL import Image
+    import base64 as _b64
+    import uuid as _uuid
     
     img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
     if not img_doc:
@@ -589,146 +585,188 @@ async def inpaint_image_manual(image_id: str, payload: dict = Body(...), user: d
     if not mask_b64:
         raise HTTPException(status_code=400, detail="mask_base64 ontbreekt")
     
-    # Get original image bytes
-    full_bytes = None
-    if img_doc.get("cloud_stored") and img_doc.get("storage_path") and init_storage():
-        try:
-            full_bytes, _ = get_object(img_doc["storage_path"])
-        except Exception as ce:
-            logger.error(f"Cloud read failed for {image_id}: {ce}")
-    if full_bytes is None and img_doc.get("data"):
-        full_bytes = base64.b64decode(img_doc["data"])
-    if full_bytes is None:
-        raise HTTPException(status_code=404, detail="Image-data niet beschikbaar")
-    
-    # Decode source image
-    src_np = cv2.imdecode(np.frombuffer(full_bytes, np.uint8), cv2.IMREAD_COLOR)
-    if src_np is None:
-        raise HTTPException(status_code=500, detail="Kon afbeelding niet decoderen")
-    src_h, src_w = src_np.shape[:2]
-    
-    # Decode mask
+    # Quick mask validation (decode + check non-empty)
     try:
+        _b64.b64decode(mask_b64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Ongeldige mask base64")
+    
+    # Create job
+    job_id = str(_uuid.uuid4())
+    await db.inpaint_jobs.insert_one({
+        "job_id": job_id,
+        "image_id": image_id,
+        "status": "processing",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    
+    # Launch background worker
+    if background_tasks is not None:
+        background_tasks.add_task(_run_inpaint_job, job_id, image_id, mask_b64)
+    else:
+        # Fallback: spawn asyncio task
+        asyncio.create_task(_run_inpaint_job(job_id, image_id, mask_b64))
+    
+    logger.info(f"🚀 Inpaint job {job_id} queued for image {image_id}")
+    return {"job_id": job_id, "status": "processing"}
+
+
+async def _run_inpaint_job(job_id: str, image_id: str, mask_b64: str):
+    """Achtergrond-worker voor SHIFTMAP inpaint. Update job-status bij voltooiing/fout."""
+    import base64
+    import io
+    import numpy as np
+    import cv2
+    from PIL import Image
+    
+    try:
+        img_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
+        if not img_doc:
+            await db.inpaint_jobs.update_one({"job_id": job_id}, {"$set": {"status": "failed", "error": "Afbeelding niet gevonden"}})
+            return
+        
+        # Get original bytes
+        full_bytes = None
+        if img_doc.get("cloud_stored") and img_doc.get("storage_path") and init_storage():
+            try:
+                full_bytes, _ = get_object(img_doc["storage_path"])
+            except Exception as ce:
+                logger.error(f"[job {job_id}] Cloud read failed: {ce}")
+        if full_bytes is None and img_doc.get("data"):
+            full_bytes = base64.b64decode(img_doc["data"])
+        if full_bytes is None:
+            await db.inpaint_jobs.update_one({"job_id": job_id}, {"$set": {"status": "failed", "error": "Image-data niet beschikbaar"}})
+            return
+        
+        src_np = cv2.imdecode(np.frombuffer(full_bytes, np.uint8), cv2.IMREAD_COLOR)
+        if src_np is None:
+            await db.inpaint_jobs.update_one({"job_id": job_id}, {"$set": {"status": "failed", "error": "Decode failed"}})
+            return
+        src_h, src_w = src_np.shape[:2]
+        
+        # Mask
         mask_bytes = base64.b64decode(mask_b64)
-        mask_pil = Image.open(io.BytesIO(mask_bytes)).convert("L")  # grayscale
-        # Resize mask to match source
+        mask_pil = Image.open(io.BytesIO(mask_bytes)).convert("L")
         if mask_pil.size != (src_w, src_h):
             mask_pil = mask_pil.resize((src_w, src_h), Image.NEAREST)
         mask_np = np.array(mask_pil)
-        # Binarize: anything >50 = inpaint area
         _, mask_bin = cv2.threshold(mask_np, 50, 255, cv2.THRESH_BINARY)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Ongeldige mask: {e}")
-    
-    if int(mask_bin.sum()) == 0:
-        raise HTTPException(status_code=400, detail="Mask is leeg — teken eerst over het logo")
-    
-    # Dilate mask iets zodat randen ook geinpaint worden (anti-halo)
-    kernel = np.ones((5, 5), np.uint8)
-    mask_dilated = cv2.dilate(mask_bin, kernel, iterations=1)
-    
-    # 🚀 Performance: alleen het gebied rond de mask verwerken (niet hele foto).
-    # Voorkomt Cloudflare 520 (OOM/timeout) bij grote foto's (4000x3000+).
-    ys, xs = np.where(mask_dilated > 0)
-    y0, y1 = int(ys.min()), int(ys.max())
-    x0, x1 = int(xs.min()), int(xs.max())
-    pad = max(80, int(0.05 * max(src_w, src_h)))  # 5% padding voor patch-search
-    cy0 = max(0, y0 - pad)
-    cy1 = min(src_h, y1 + pad)
-    cx0 = max(0, x0 - pad)
-    cx1 = min(src_w, x1 + pad)
-    
-    src_crop = src_np[cy0:cy1, cx0:cx1]
-    mask_crop = mask_dilated[cy0:cy1, cx0:cx1]
-    
-    # ⚡ Performance: als crop te groot is voor SHIFTMAP (>1200px), downscale → process → upscale
-    crop_h, crop_w = src_crop.shape[:2]
-    work_max = 1200
-    if max(crop_w, crop_h) > work_max:
-        scale = work_max / max(crop_w, crop_h)
-        new_w = int(crop_w * scale)
-        new_h = int(crop_h * scale)
-        src_work = cv2.resize(src_crop, (new_w, new_h), interpolation=cv2.INTER_AREA)
-        mask_work = cv2.resize(mask_crop, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
-        logger.info(f"Downscale crop {crop_w}x{crop_h} → {new_w}x{new_h} voor SHIFTMAP")
-    else:
-        src_work = src_crop
-        mask_work = mask_crop
-    
-    # 🎨 Texture-continuation inpainting via xphoto SHIFTMAP
-    try:
-        src_lab = cv2.cvtColor(src_work, cv2.COLOR_BGR2LAB)
-        inv_mask = cv2.bitwise_not(mask_work)
-        dst_lab = np.zeros_like(src_lab)
-        cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_SHIFTMAP)
-        work_result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
-        logger.info(f"Inpainted {image_id} via SHIFTMAP op work-crop {src_work.shape}")
-    except Exception as e:
-        logger.warning(f"xphoto SHIFTMAP faalde ({e}), fallback naar NS")
-        work_result = cv2.inpaint(src_work, mask_work, 3, cv2.INPAINT_NS)
-    
-    # Upscale terug naar originele crop-grootte indien gedownscaled
-    if work_result.shape[:2] != src_crop.shape[:2]:
-        crop_result = cv2.resize(work_result, (crop_w, crop_h), interpolation=cv2.INTER_LINEAR)
-    else:
-        crop_result = work_result
-    
-    # Composite het inpainted crop terug in de originele foto
-    result = src_np.copy()
-    result[cy0:cy1, cx0:cx1] = crop_result
-    
-    # Encode back to JPEG
-    ok, buf = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 85])
-    if not ok:
-        raise HTTPException(status_code=500, detail="Kon resultaat niet encoderen")
-    jpeg_bytes = buf.tobytes()
-    
-    # Thumbnail
-    timg = Image.open(io.BytesIO(jpeg_bytes))
-    thumb_size = 400
-    ratio = thumb_size / max(timg.size)
-    tb = timg.resize((int(timg.size[0] * ratio), int(timg.size[1] * ratio)), Image.Resampling.LANCZOS)
-    tout = io.BytesIO()
-    tb.save(tout, format='JPEG', quality=70, optimize=True)
-    thumb_bytes = tout.getvalue()
-    
-    # 💾 Backup huidige bytes vóór overwrite — opslaan in cloud (sneller dan MongoDB voor grote files)
-    backup_key = None
-    try:
-        if img_doc.get("cloud_stored") and init_storage():
-            backup_key = f"{APP_NAME}/backups/{image_id}_before_inpaint.jpg"
-            put_object(backup_key, full_bytes, "image/jpeg")
-    except Exception as be:
-        logger.warning(f"Backup naar cloud faalde voor {image_id}: {be}")
+        if int(mask_bin.sum()) == 0:
+            await db.inpaint_jobs.update_one({"job_id": job_id}, {"$set": {"status": "failed", "error": "Mask is leeg"}})
+            return
+        
+        kernel = np.ones((5, 5), np.uint8)
+        mask_dilated = cv2.dilate(mask_bin, kernel, iterations=1)
+        
+        # Crop bbox + padding
+        ys, xs = np.where(mask_dilated > 0)
+        y0, y1 = int(ys.min()), int(ys.max())
+        x0, x1 = int(xs.min()), int(xs.max())
+        pad = max(80, int(0.05 * max(src_w, src_h)))
+        cy0 = max(0, y0 - pad); cy1 = min(src_h, y1 + pad)
+        cx0 = max(0, x0 - pad); cx1 = min(src_w, x1 + pad)
+        src_crop = src_np[cy0:cy1, cx0:cx1]
+        mask_crop = mask_dilated[cy0:cy1, cx0:cx1]
+        
+        # Downscale crop if needed
+        crop_h, crop_w = src_crop.shape[:2]
+        if max(crop_w, crop_h) > 1200:
+            scale = 1200 / max(crop_w, crop_h)
+            nw, nh = int(crop_w * scale), int(crop_h * scale)
+            src_work = cv2.resize(src_crop, (nw, nh), interpolation=cv2.INTER_AREA)
+            mask_work = cv2.resize(mask_crop, (nw, nh), interpolation=cv2.INTER_NEAREST)
+        else:
+            src_work = src_crop
+            mask_work = mask_crop
+        
+        # SHIFTMAP inpaint
+        try:
+            src_lab = cv2.cvtColor(src_work, cv2.COLOR_BGR2LAB)
+            inv_mask = cv2.bitwise_not(mask_work)
+            dst_lab = np.zeros_like(src_lab)
+            cv2.xphoto.inpaint(src_lab, inv_mask, dst_lab, cv2.xphoto.INPAINT_SHIFTMAP)
+            work_result = cv2.cvtColor(dst_lab, cv2.COLOR_LAB2BGR)
+        except Exception as e:
+            logger.warning(f"[job {job_id}] SHIFTMAP fail ({e}), NS fallback")
+            work_result = cv2.inpaint(src_work, mask_work, 3, cv2.INPAINT_NS)
+        
+        if work_result.shape[:2] != src_crop.shape[:2]:
+            crop_result = cv2.resize(work_result, (crop_w, crop_h), interpolation=cv2.INTER_LINEAR)
+        else:
+            crop_result = work_result
+        
+        result = src_np.copy()
+        result[cy0:cy1, cx0:cx1] = crop_result
+        
+        # JPEG encode
+        ok, buf = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if not ok:
+            await db.inpaint_jobs.update_one({"job_id": job_id}, {"$set": {"status": "failed", "error": "Encode failed"}})
+            return
+        jpeg_bytes = buf.tobytes()
+        
+        # Thumbnail
+        timg = Image.open(io.BytesIO(jpeg_bytes))
+        ratio = 400 / max(timg.size)
+        tb = timg.resize((int(timg.size[0] * ratio), int(timg.size[1] * ratio)), Image.Resampling.LANCZOS)
+        tout = io.BytesIO()
+        tb.save(tout, format='JPEG', quality=70, optimize=True)
+        thumb_bytes = tout.getvalue()
+        
+        # Backup vóór overwrite
         backup_key = None
-    
-    # Overwrite storage
-    if img_doc.get("cloud_stored") and init_storage():
-        put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", jpeg_bytes, "image/jpeg")
-        if img_doc.get("thumb_path"):
-            put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
-    else:
-        # Fallback voor non-cloud: backup als base64 in mongo
-        backup_b64 = base64.b64encode(full_bytes).decode('utf-8')
+        try:
+            if img_doc.get("cloud_stored") and init_storage():
+                backup_key = f"{APP_NAME}/backups/{image_id}_before_inpaint.jpg"
+                put_object(backup_key, full_bytes, "image/jpeg")
+        except Exception as be:
+            logger.warning(f"[job {job_id}] backup faalde: {be}")
+            backup_key = None
+        
+        # Storage overwrite
+        if img_doc.get("cloud_stored") and init_storage():
+            put_object(img_doc.get("storage_path") or f"{APP_NAME}/images/{image_id}.jpg", jpeg_bytes, "image/jpeg")
+            if img_doc.get("thumb_path"):
+                put_object(img_doc["thumb_path"], thumb_bytes, "image/jpeg")
+        else:
+            backup_b64 = base64.b64encode(full_bytes).decode('utf-8')
+            await db.images.update_one(
+                {"id": image_id},
+                {"$set": {
+                    "data": base64.b64encode(jpeg_bytes).decode('utf-8'),
+                    "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
+                    "compressed_size": len(jpeg_bytes),
+                    "inpaint_previous_data": backup_b64,
+                }}
+            )
+        
         await db.images.update_one(
             {"id": image_id},
             {"$set": {
-                "data": base64.b64encode(jpeg_bytes).decode('utf-8'),
-                "thumbnail": base64.b64encode(thumb_bytes).decode('utf-8'),
-                "compressed_size": len(jpeg_bytes),
-                "inpaint_previous_data": backup_b64,
+                "manually_inpainted_at": datetime.now(timezone.utc).isoformat(),
+                **({"inpaint_backup_key": backup_key} if backup_key else {}),
             }}
         )
-    
-    await db.images.update_one(
-        {"id": image_id},
-        {"$set": {
-            "manually_inpainted_at": datetime.now(timezone.utc).isoformat(),
-            **({"inpaint_backup_key": backup_key} if backup_key else {}),
-        }}
-    )
-    logger.info(f"🧽 Manual inpaint applied to {image_id}")
-    return {"success": True, "image_id": image_id}
+        await db.inpaint_jobs.update_one(
+            {"job_id": job_id},
+            {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        logger.info(f"✅ [job {job_id}] inpaint completed for {image_id}")
+    except Exception as e:
+        logger.exception(f"[job {job_id}] FAILED: {e}")
+        await db.inpaint_jobs.update_one(
+            {"job_id": job_id},
+            {"$set": {"status": "failed", "error": str(e)[:200]}}
+        )
+
+
+@router.get("/inpaint-jobs/{job_id}")
+async def get_inpaint_job(job_id: str, user: dict = Depends(require_admin)):
+    """Status van een lopende of voltooide inpaint-job."""
+    job = await db.inpaint_jobs.find_one({"job_id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job niet gevonden")
+    return job
 
 
 @router.post("/images/{image_id}/undo-inpaint")

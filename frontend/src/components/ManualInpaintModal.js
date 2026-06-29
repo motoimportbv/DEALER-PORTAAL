@@ -194,15 +194,43 @@ const ManualInpaintModal = ({ open, onClose, imageUrl, onDone }) => {
       const token = localStorage.getItem('token');
       const url = `${API}/images/${imageId}/inpaint-manual`;
       console.log('[Inpaint] POST', url, '| mask size:', Math.round(mask.length / 1024), 'KB');
-      await axios.post(
+      // 1) Start async job
+      const startRes = await axios.post(
         url,
         { mask_base64: mask },
-        { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
+        { headers: { Authorization: `Bearer ${token}` }, timeout: 30000 }
       );
-      toast.success('🧽 Logo weggegumd!');
-      // Toon resultaat in slider (cache-busted)
-      setResultUrl(`${imageUrl}?v=${Date.now()}`);
-      if (onDone) onDone(Date.now());
+      const jobId = startRes.data?.job_id;
+      if (!jobId) throw new Error('Geen job_id ontvangen');
+      console.log('[Inpaint] job started:', jobId);
+
+      // 2) Poll for completion (max 90s)
+      const maxAttempts = 45; // 45 × 2s = 90s
+      let finalStatus = null;
+      let lastError = null;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const st = await axios.get(`${API}/inpaint-jobs/${jobId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000,
+          });
+          const s = st.data?.status;
+          if (s === 'completed') { finalStatus = 'completed'; break; }
+          if (s === 'failed') { finalStatus = 'failed'; lastError = st.data?.error; break; }
+        } catch (pe) {
+          console.warn('[Inpaint] poll error, retry...', pe.message);
+        }
+      }
+      if (finalStatus === 'completed') {
+        toast.success('🧽 Logo weggegumd!');
+        setResultUrl(`${imageUrl}?v=${Date.now()}`);
+        if (onDone) onDone(Date.now());
+      } else if (finalStatus === 'failed') {
+        toast.error(lastError || 'Gum-actie mislukt');
+      } else {
+        toast.error('Time-out: gum-job duurde te lang (>90s)');
+      }
     } catch (err) {
       console.error('Manual inpaint error:', err.response?.status, err.response?.data, err.message);
       const detail = err.response?.data?.detail;
