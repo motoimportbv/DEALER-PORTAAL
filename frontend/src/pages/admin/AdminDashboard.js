@@ -50,6 +50,7 @@ const AdminDashboard = () => {
   const [topDealers, setTopDealers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [conversionData, setConversionData] = useState(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState('alltime');
   const [marketingFiles, setMarketingFiles] = useState(null);
   const [migrating, setMigrating] = useState(false);
   
@@ -65,7 +66,8 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analyticsPeriod]);
 
   // Auto-refresh when tab/app becomes visible again
   useEffect(() => {
@@ -82,7 +84,7 @@ const AdminDashboard = () => {
         axios.get(`${API}/stats`),
         axios.get(`${API}/orders`),
         axios.get(`${API}/stats/top-dealers`).catch(() => ({ data: [] })),
-        axios.get(`${API}/admin/analytics/conversion`).catch(() => ({ data: null })),
+        axios.get(`${API}/admin/analytics/conversion?period=${analyticsPeriod}`).catch(() => ({ data: null })),
         axios.get(`${API}/admin/marketing-files`).catch(() => ({ data: null }))
       ]);
       setStats(statsRes.data);
@@ -463,8 +465,26 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-500" />
-                  Dealer Analytics (all-time)
+                  Dealer Analytics ({analyticsPeriod === 'alltime' ? 'all-time' : analyticsPeriod === 'year' ? 'dit jaar' : analyticsPeriod === 'month' ? 'deze maand' : 'deze week'})
                 </CardTitle>
+              </div>
+              <div className="flex gap-1 mt-2 flex-wrap" data-testid="analytics-period-toggle">
+                {[
+                  { key: 'alltime', label: 'All-time' },
+                  { key: 'year', label: 'Dit jaar' },
+                  { key: 'month', label: 'Deze maand' },
+                  { key: 'week', label: 'Deze week' },
+                ].map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setAnalyticsPeriod(opt.key)}
+                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition ${analyticsPeriod === opt.key ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-zinc-700 border-zinc-300 hover:border-purple-400'}`}
+                    data-testid={`period-${opt.key}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </CardHeader>
             <CardContent className="p-6">

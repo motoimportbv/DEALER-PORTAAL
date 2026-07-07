@@ -124,16 +124,28 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
 
 
 @router.get("/admin/analytics/conversion")
-async def get_conversion_analytics(user: dict = Depends(require_admin)):
-    """Get detailed conversion analytics - views to purchases (all-time)"""
-    # All-time — geen datum-filter
+async def get_conversion_analytics(period: str = "alltime", user: dict = Depends(require_admin)):
+    """Get detailed conversion analytics - views to purchases.
+    period: 'alltime' (default) / 'year' / 'month' / 'week'
+    """
+    from datetime import timedelta
+    
+    date_filter = {}
+    view_date_filter = {"type": "motorcycle_view"}
+    if period != "alltime":
+        days_map = {"week": 7, "month": 30, "year": 365}
+        days = days_map.get(period, 30)
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        date_filter = {"created_at": {"$gte": cutoff}}
+        view_date_filter["timestamp"] = {"$gte": cutoff}
+    
     orders = await db.orders.find(
-        {},
+        date_filter,
         {"_id": 0, "motorcycle_id": 1, "dealer_id": 1, "created_at": 1, "total_price": 1}
     ).to_list(50000)
     
     views = await db.activity_logs.find(
-        {"type": "motorcycle_view"},
+        view_date_filter,
         {"_id": 0}
     ).to_list(500000)
     
