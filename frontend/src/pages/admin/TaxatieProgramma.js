@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '../../components/ui/searchable-select';
 import { MOTORCYCLE_DATABASE, MOTORCYCLE_BRANDS } from '../../data/motorcycleDatabase';
+import { CAR_DATABASE, CAR_BRANDS } from '../../data/carDatabase';
 import BpmBrandingPicker from './BpmBrandingPicker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -2217,21 +2218,21 @@ export default function TaxatieProgramma() {
           <div className="bg-white rounded-2xl border p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Bike className="w-5 h-5 text-red-600" />Voertuiggegevens</h2>
             <div className="grid sm:grid-cols-3 gap-4">
-              {/* Merk dropdown */}
+              {/* Merk dropdown — auto's of motoren afhankelijk van user vehicle_type */}
               <div>
                 <label className="text-xs font-bold text-zinc-600 block mb-1">Merk *</label>
                 <SearchableSelect
-                  options={MOTORCYCLE_BRANDS}
+                  options={isAuto ? CAR_BRANDS : MOTORCYCLE_BRANDS}
                   value={form.brand}
                   onValueChange={(v) => {
                     updateField('brand', v);
-                    // Reset model wanneer merk wijzigt zodat geen ongeldige combinatie blijft
-                    if (form.model && !(MOTORCYCLE_DATABASE[v] || []).includes(form.model)) {
+                    const modelsDb = isAuto ? CAR_DATABASE : MOTORCYCLE_DATABASE;
+                    if (form.model && !(modelsDb[v] || []).includes(form.model)) {
                       updateField('model', '');
                     }
                   }}
                   placeholder="Kies een merk"
-                  searchPlaceholder="Zoek merk... (bijv. Vespa)"
+                  searchPlaceholder={isAuto ? "Zoek merk... (bijv. Volkswagen)" : "Zoek merk... (bijv. Vespa)"}
                   emptyText="Geen merk gevonden"
                   data-testid="field-brand"
                 />
@@ -2240,7 +2241,7 @@ export default function TaxatieProgramma() {
               <div>
                 <label className="text-xs font-bold text-zinc-600 block mb-1">Model *</label>
                 <SearchableSelect
-                  options={form.brand ? (MOTORCYCLE_DATABASE[form.brand] || []) : []}
+                  options={form.brand ? ((isAuto ? CAR_DATABASE : MOTORCYCLE_DATABASE)[form.brand] || []) : []}
                   value={form.model}
                   onValueChange={(v) => updateField('model', v)}
                   placeholder={form.brand ? "Kies een model" : "Kies eerst een merk"}
