@@ -125,24 +125,17 @@ async def get_activity_stats(user: dict = Depends(require_admin)):
 
 @router.get("/admin/analytics/conversion")
 async def get_conversion_analytics(user: dict = Depends(require_admin)):
-    """Get detailed conversion analytics - views to purchases"""
-    from datetime import timedelta
-    
-    now = datetime.now(timezone.utc)
-    week_ago = (now - timedelta(days=7)).isoformat()
-    month_ago = (now - timedelta(days=30)).isoformat()
-    
-    # Get all orders from last 30 days
+    """Get detailed conversion analytics - views to purchases (all-time)"""
+    # All-time — geen datum-filter
     orders = await db.orders.find(
-        {"created_at": {"$gte": month_ago}},
+        {},
         {"_id": 0, "motorcycle_id": 1, "dealer_id": 1, "created_at": 1, "total_price": 1}
-    ).to_list(1000)
+    ).to_list(50000)
     
-    # Get all views from last 30 days
     views = await db.activity_logs.find(
-        {"type": "motorcycle_view", "timestamp": {"$gte": month_ago}},
+        {"type": "motorcycle_view"},
         {"_id": 0}
-    ).to_list(10000)
+    ).to_list(500000)
     
     # Calculate conversion rate
     unique_viewed_motorcycles = set(v.get("motorcycle_id") for v in views if v.get("motorcycle_id"))
@@ -258,27 +251,23 @@ async def get_conversion_analytics(user: dict = Depends(require_admin)):
 
 @router.get("/admin/analytics/dealer/{dealer_id}")
 async def get_dealer_analytics(dealer_id: str, user: dict = Depends(require_admin)):
-    """Get detailed analytics for a specific dealer"""
-    from datetime import timedelta
-    
+    """Get detailed analytics for a specific dealer — all-time (vanaf moment 0)"""
     dealer = await db.users.find_one({"id": dealer_id}, {"_id": 0, "email": 1, "company_name": 1, "contact_person": 1})
     if not dealer:
         raise HTTPException(status_code=404, detail="Dealer niet gevonden")
     
-    now = datetime.now(timezone.utc)
-    month_ago = (now - timedelta(days=30)).isoformat()
-    
-    # Dealer's views
+    # ⚠️ Geen datum-filter — all-time analytics vanaf begin.
+    # Dealer's views (all-time)
     views = await db.activity_logs.find(
-        {"type": "motorcycle_view", "dealer_id": dealer_id, "timestamp": {"$gte": month_ago}},
+        {"type": "motorcycle_view", "dealer_id": dealer_id},
         {"_id": 0}
-    ).to_list(1000)
+    ).to_list(50000)
     
-    # Dealer's orders
+    # Dealer's orders (all-time)
     orders = await db.orders.find(
-        {"dealer_id": dealer_id, "created_at": {"$gte": month_ago}},
+        {"dealer_id": dealer_id},
         {"_id": 0}
-    ).to_list(100)
+    ).to_list(10000)
     
     # Most viewed brands by this dealer
     brand_views = {}
@@ -288,23 +277,28 @@ async def get_dealer_analytics(dealer_id: str, user: dict = Depends(require_admi
     
     top_brands = sorted(brand_views.items(), key=lambda x: x[1], reverse=True)[:5]
     
-    # Activity timeline (views per day)
+    # Activity timeline (views per day) — vanaf eerste view tot heden
     daily_activity = {}
     for view in views:
-        day = view.get("timestamp", "")[:10]  # Get date part
-        daily_activity[day] = daily_activity.get(day, 0) + 1
+        day = view.get("timestamp", "")[:10]
+        if day:
+            daily_activity[day] = daily_activity.get(day, 0) + 1
     
     return {
         "dealer": dealer,
         "stats": {
-            "total_views_30d": len(views),
+            "total_views_30d": len(views),  # Legacy naam — nu all-time (frontend blijft werken)
             "total_orders_30d": len(orders),
             "total_spent_30d": sum(o.get("total_price", 0) for o in orders),
-            "conversion_rate": round((len(orders) / len(views) * 100) if views else 0, 1)
+            "conversion_rate": round((len(orders) / len(views) * 100) if views else 0, 1),
+            "total_views_alltime": len(views),
+            "total_orders_alltime": len(orders),
+            "total_spent_alltime": sum(o.get("total_price", 0) for o in orders),
+            "period": "all-time"
         },
         "top_brands": [{"brand": b, "views": c} for b, c in top_brands],
         "daily_activity": daily_activity,
-        "recent_orders": orders[:5]
+        "recent_orders": sorted(orders, key=lambda o: o.get("created_at", ""), reverse=True)[:5]
     }
 
 

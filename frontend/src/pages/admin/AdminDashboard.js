@@ -463,7 +463,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="font-barlow text-xl font-bold uppercase tracking-tight flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-500" />
-                  Dealer Analytics (30 dagen)
+                  Dealer Analytics (all-time)
                 </CardTitle>
               </div>
             </CardHeader>
