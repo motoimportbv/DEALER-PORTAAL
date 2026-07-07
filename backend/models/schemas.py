@@ -149,11 +149,16 @@ class BulkMotorcycleCreate(BaseModel):
     model: str
     year: int
     price: float
+    currency: str = "EUR"
     color: str = ""
     condition: str = "good"
     description: str = ""
     images: List[str] = []
     motorcycles: List[BulkMotorcycleItem]
+    auction_duration_hours: int = 72
+    auto_delete_hours: int = 0
+    visibility: str = "public"
+    visible_to_dealers: List[str] = []
 
 
 # ============ BID MODELS ============
