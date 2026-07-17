@@ -46,7 +46,7 @@ const MOTORCYCLE_DATABASE = {
   'Acces': ['ATV'],
   'Aprilia': ['Atlantic 500', 'Caponord 1200', 'Dorsoduro 750', 'Dorsoduro 900', 'Dorsoduro 1200', 'ETV 1000 Caponord', 'Mana 850', 'Pegaso 650', 'RS 125', 'RS 250', 'RS 457', 'RS 660', 'RS4', 'RST Mille Futura', 'RSV 1000 R', 'RSV4', 'RSV4 Factory', 'Scarabeo 500', 'Shiver 750', 'Shiver 900', 'SR Max 300', 'SX 125', 'Tuareg 660', 'Tuono 660', 'Tuono V4'],
   'Arctic Leopard': ['ATV'],
-  'Benelli': ['302 S', '502 C', '752 S', 'BN 125', 'BN 251', 'BN 302', 'BN 600', 'Imperiale 400', 'Leoncino 250', 'Leoncino 500', 'Leoncino 800', 'TNT 125', 'TNT 300', 'TNT 600', 'TNT 899', 'TNT 1130', 'TRK 251', 'TRK 502', 'TRK 702'],
+  'Benelli': ['302 S', '502 C', '752 S', 'BN 125', 'BN 251', 'BN 302', 'BN 600', 'Imperiale 400', 'Leoncino 250', 'Leoncino 500', 'Leoncino 800', 'TNT 125', 'TNT 300', 'TNT 600', 'TNT 899', 'TNT 1130', 'TRK 251', 'TRK 502', 'TRK 702', 'TRK 902 Stradale', 'TRK 902 Explorer'],
   'Beta': ['RR 125', 'RR 250', 'RR 300', 'RR 350', 'RR 390', 'RR 430', 'RR 480', 'Xtrainer 250', 'Xtrainer 300'],
   'Bimota': ['DB5', 'DB6', 'DB7', 'DB8', 'DB9', 'KB4', 'Tesi H2'],
   'BMW': ['C 400 GT', 'C 400 X', 'C 650 GT', 'C 650 Sport', 'CE 04', 'F 650 GS', 'F 700 GS', 'F 750 GS', 'F 800 GS', 'F 800 GT', 'F 800 R', 'F 800 S', 'F 850 GS', 'F 900 R', 'F 900 XR', 'G 310 GS', 'G 310 R', 'G 650 GS', 'K 1200 GT', 'K 1200 R', 'K 1200 S', 'K 1300 GT', 'K 1300 R', 'K 1300 S', 'K 1600 B', 'K 1600 GT', 'K 1600 GTL', 'M 1000 R', 'M 1000 RR', 'M 1000 XR', 'R 1200 GS', 'R 1200 R', 'R 1200 RS', 'R 1200 RT', 'R 1250 GS', 'R 1250 R', 'R 1250 RS', 'R 1250 RT', 'R 18', 'R NineT', 'S 1000 R', 'S 1000 RR', 'S 1000 XR'],
