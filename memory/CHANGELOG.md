@@ -1,5 +1,9 @@
 # Moto Import - Changelog
 
+
+## Feb 2026 - Benelli TRK 902 modellen toegevoegd
+- `motorcycleDatabase.js`: 'TRK 902 Stradale' en 'TRK 902 Explorer' toegevoegd aan Benelli array
+
 ## 12 april 2026 - Backend Refactoring (P0)
 - **server.py** van 9.875 regels opgesplitst naar 170 regels (lean orchestrator)
 - 18 modulaire router bestanden aangemaakt in `/app/backend/routers/`
