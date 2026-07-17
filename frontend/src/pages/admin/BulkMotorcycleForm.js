@@ -12,21 +12,9 @@ import { SearchableSelect } from '../../components/ui/searchable-select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { ArrowLeft, Save, Plus, X, Trash2, Copy, Upload, ImageIcon, Loader2, Users, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { MOTORCYCLE_DATABASE } from '../../data/motorcycleDatabase';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-// Motorcycle brands and models (copied from MotorcycleForm.js)
-const MOTORCYCLE_DATABASE = {
-  'BMW': ['C 400 GT', 'C 400 X', 'C 650 GT', 'C 650 Sport', 'CE 04', 'F 650 GS', 'F 700 GS', 'F 750 GS', 'F 800 GS', 'F 800 GS Adventure', 'F 800 GT', 'F 800 R', 'F 800 S', 'F 850 GS', 'F 850 GS Adventure', 'F 900 R', 'F 900 XR', 'G 310 GS', 'G 310 R', 'G 650 GS', 'K 1200 GT', 'K 1200 R', 'K 1200 S', 'K 1300 GT', 'K 1300 R', 'K 1300 S', 'K 1600 B', 'K 1600 GT', 'K 1600 GTL', 'M 1000 R', 'M 1000 RR', 'M 1000 XR', 'R 1200 GS', 'R 1200 GS Adventure', 'R 1200 R', 'R 1200 RS', 'R 1200 RT', 'R 1250 GS', 'R 1250 GS Adventure', 'R 1250 R', 'R 1250 RS', 'R 1250 RT', 'R 18', 'R NineT', 'S 1000 R', 'S 1000 RR', 'S 1000 XR'],
-  'Ducati': ['1098', '1198', '1199 Panigale', '1299 Panigale', '748', '749', '848', '899 Panigale', '959 Panigale', 'Desert X', 'Diavel', 'Diavel V4', 'Hypermotard 698', 'Hypermotard 821', 'Hypermotard 939', 'Hypermotard 950', 'Monster 600', 'Monster 696', 'Monster 797', 'Monster 821', 'Monster 937', 'Monster 1200', 'Multistrada 950', 'Multistrada 1200', 'Multistrada 1260', 'Multistrada V2', 'Multistrada V4', 'Panigale V2', 'Panigale V4', 'Scrambler', 'Streetfighter V2', 'Streetfighter V4', 'SuperSport', 'SuperSport 950'],
-  'Harley-Davidson': ['Breakout', 'Electra Glide', 'Fat Bob', 'Fat Boy', 'Forty-Eight', 'Heritage Classic', 'Iron 883', 'Low Rider', 'Nightster', 'Pan America', 'Road Glide', 'Road King', 'Softail', 'Sportster', 'Sportster S', 'Street Bob', 'Street Glide', 'Ultra Limited'],
-  'Honda': ['Africa Twin', 'CB 500 F', 'CB 500 X', 'CB 650 R', 'CB 1000 R', 'CBR 500 R', 'CBR 650 R', 'CBR 1000 RR Fireblade', 'CMX 500 Rebel', 'CMX 1100 Rebel', 'CRF 1100 L', 'Forza 750', 'GL 1800 Gold Wing', 'NC 750 X', 'NT 1100', 'X-ADV'],
-  'Kawasaki': ['ER-6n', 'H2', 'H2 SX', 'Ninja 400', 'Ninja 650', 'Ninja 1000 SX', 'Ninja ZX-6R', 'Ninja ZX-10R', 'Versys 650', 'Versys 1000', 'Vulcan S', 'Z650', 'Z900', 'Z900RS', 'Z1000', 'ZH2'],
-  'KTM': ['125 Duke', '200 Duke', '390 Duke', '690 Duke', '790 Duke', '890 Duke', '1290 Super Duke', '390 Adventure', '790 Adventure', '890 Adventure', '1290 Super Adventure', 'RC 390'],
-  'Suzuki': ['GSX-R600', 'GSX-R750', 'GSX-R1000', 'GSX-S750', 'GSX-S1000', 'Hayabusa', 'SV650', 'V-Strom 650', 'V-Strom 1050'],
-  'Triumph': ['Bobber', 'Bonneville', 'Bonneville T100', 'Bonneville T120', 'Daytona 600', 'Daytona 650', 'Daytona 675', 'Daytona Moto2 765', 'Explorer', 'Rocket 3', 'Scrambler', 'Scrambler 400X', 'Scrambler 900', 'Scrambler 1200', 'Speed Four', 'Speed Triple', 'Speed Triple 1200', 'Speed Twin', 'Speed Twin 900', 'Sprint GT', 'Sprint RS', 'Sprint ST', 'Street Cup', 'Street Scrambler', 'Street Triple', 'Street Triple R', 'Street Triple RS', 'Street Twin', 'Thruxton', 'Thruxton R', 'Thruxton RS', 'Tiger 660', 'Tiger 800', 'Tiger 800 XC', 'Tiger 800 XR', 'Tiger 850', 'Tiger 850 Sport', 'Tiger 900', 'Tiger 900 GT', 'Tiger 900 Rally', 'Tiger 1050', 'Tiger 1200', 'Tiger 1200 GT', 'Tiger 1200 Rally', 'Tiger Explorer', 'Tiger Sport 660', 'Trident 660', 'Trophy'],
-  'Yamaha': ['FZ6', 'FZ8', 'FZS 600 Fazer', 'FZS 1000 Fazer', 'MT-01', 'MT-03', 'MT-07', 'MT-09', 'MT-09 SP', 'MT-10', 'MT-10 SP', 'MT-125', 'Niken', 'R1', 'R1M', 'R3', 'R6', 'R7', 'R125', 'TMAX', 'TMAX 560', 'Ténéré 700', 'Ténéré 700 World Raid', 'Tracer 700', 'Tracer 900', 'Tracer 900 GT', 'Tracer 9', 'Tracer 9 GT', 'Tracer 9 GT+', 'V-Max', 'XJ6', 'XJR 1300', 'XSR125', 'XSR700', 'XSR900', 'YZF-R1', 'YZF-R6', 'YZF-R125'],
-};
 
 const BulkMotorcycleForm = () => {
   const navigate = useNavigate();
