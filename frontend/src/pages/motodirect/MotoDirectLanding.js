@@ -91,7 +91,7 @@ export default function MotoDirectLanding() {
           {[
             { step: '01', title: 'Registreer', desc: 'Maak een account met je NAW-gegevens en BSN. Dit hebben we nodig om jouw motor bij de RDW te registreren.' },
             { step: '02', title: 'Kies & reserveer', desc: 'Blader door beschikbare motoren. Reserveer jouw favoriet met 35% aanbetaling via iDEAL of creditcard (Stripe).' },
-            { step: '03', title: 'Wij regelen import', desc: 'Wij halen de motor uit het buitenland, doen APK en registreren op jouw naam. Restant betaal je bij aflevering.' },
+            { step: '03', title: 'Wij regelen import', desc: 'Wij halen de motor uit het buitenland en zorgen voor de RDW-registratie op jouw naam. Restant betaal je bij aflevering.' },
           ].map((item, i) => (
             <div key={i} className="bg-[#0a0a0a] border border-[#1c1c1c] p-8 hover:border-[#0047FF] transition-colors">
               <div className="heading text-6xl font-bold text-[#0047FF]/40 mb-6">{item.step}</div>

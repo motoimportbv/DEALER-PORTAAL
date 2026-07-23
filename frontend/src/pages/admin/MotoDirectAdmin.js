@@ -104,6 +104,7 @@ export default function MotoDirectAdmin() {
                     <th className="text-left px-4 py-3">Klant</th>
                     <th className="text-left px-4 py-3">Motor</th>
                     <th className="text-left px-4 py-3">Keuring</th>
+                    <th className="text-left px-4 py-3">Taxatie</th>
                     <th className="text-right px-4 py-3">Aanbetaling</th>
                     <th className="text-right px-4 py-3">Totaal</th>
                     <th className="text-left px-4 py-3">Status</th>
@@ -122,7 +123,10 @@ export default function MotoDirectAdmin() {
                         <div className="text-xs text-gray-500">{o.motorcycle_snapshot?.year}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
-                        {o.inspection_choice === 'motodirect' ? 'Moto-direct' : 'MotoImport'}
+                        {o.keuring_choice === 'self' ? 'Klant zelf' : (o.keuring_choice === 'motodirect' ? 'Moto-direct' : (o.inspection_choice === 'motodirect' ? 'Moto-direct' : 'MotoImport'))}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {o.include_taxatie ? <span className="text-green-600 font-medium">Ja (+€160)</span> : <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">{formatPrice(o.deposit_amount)}</td>
                       <td className="px-4 py-3 text-right font-semibold">{formatPrice(o.total_price)}</td>

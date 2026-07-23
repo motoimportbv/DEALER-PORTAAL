@@ -1,0 +1,39 @@
+{
+  "summary": "MotoDirect keuring_choice + include_taxatie flow (iteration 38) volledig getest — backend + frontend. Backend: 41/41 pytest cases geslaagd inclusief 7 nieuwe testen voor keuring_choice/include_taxatie/fees. Alle 6 checkout scenarios verified: (1) motodirect+taxatie -> total=motor+125+160, deposit=35%*motor+285; (2) self+geen taxatie -> total=motor, deposit=35%*motor; (3) self+taxatie -> total=motor+160, deposit=35%*motor+160; (4) missing keuring_choice defaults naar 'motodirect'; (5) ongeldige waarde 'motoimport' valt terug naar 'motodirect'; (6) alle vereiste velden (keuring_choice, include_taxatie, keuring_fee, taxatie_fee, extras_total, motor_price, total_price, deposit_amount, remaining_amount) aanwezig in DB. GET /motodirect/catalog/{id} retourneert correct keuring_fee=125 + taxatie_fee=160. Markup reset naar 500 aan einde. Frontend /motodirect/motor/:id: 2 radio buttons (Moto-direct regelt keuring €125 + Ik keur zelf op eigen rekening), checkbox 'Taxatie voor BPM-vermindering' +€160, kostenoverzicht update LIVE bij toggles zonder page reload — geverifieerd voor motor Suzuki SV 650 (€3.443): (default motodirect+geen taxatie) €3.568/€1.330, (motodirect+taxatie) €3.728/€1.490, (self+taxatie) €3.603/€1.365, (self+geen taxatie) €3.443/€1.205 — exact overeenkomend met backend berekeningen. Alle data-testids aanwezig (keuring-motodirect, keuring-self, include-taxatie, keuring-line, taxatie-line, total-price, deposit-amount, reserve-motor-button). Bij 'Ik keur zelf' verdwijnt de RDW-keuring regel; bij taxatie uit verdwijnt taxatie regel. GEEN 'MotoImport' als keuring optie meer zichtbaar (alleen als footer 'Onderdeel van MotoImport BV' - legitiem corporate). Admin /admin/motodirect Bestellingen tab toont kolommen Datum|Klant|Motor|Keuring|Taxatie|Aanbetaling|Totaal|Status met correcte labels 'Moto-direct'/'Klant zelf' en 'Ja (+€160)'/'—'. Legacy orders van iter 37 tonen nog 'MotoImport' (backward-compat display fallback op inspection_choice) — correct gedrag.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/motodirect/checkout", "issue": "Ongeldige keuring_choice waarden (bv 'motoimport', 'banana') vallen silently terug op 'motodirect' zonder 400 error of log. Overwegen pydantic Literal['motodirect','self'] voor duidelijker API contract."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect.xml"
+  ],
+  "action_items": [
+    "Optioneel: strikte validatie op keuring_choice in checkout (400 ipv silent fallback).",
+    "Optioneel: cleanup van pending test-orders (7 nieuwe pending orders van deze testrun blijven in db.motodirect_orders, plus 4 uit iter 37 en oude test_buyer orders)."
+  ],
+  "critical_code_review_comments": [
+    "motodirect.py: MOTODIRECT_KEURING_FEE en MOTODIRECT_TAXATIE_FEE zijn hardcoded constants. Overweeg om ze admin-configurable te maken via db.settings (net als markup) zodat prijzen zonder deploy aangepast kunnen worden.",
+    "motodirect.py checkout: keuring_choice fallback op 'motodirect' is client-friendly maar log-loos - overwegen logger.warning bij onbekende waarde voor debug audit trail.",
+    "MotoDirectAdmin.js:126 gebruikt geneste ternary die zowel keuring_choice als legacy inspection_choice checkt - werkt correct maar iets minder leesbaar; overwegen expliciete helper functie renderKeuringLabel(order).",
+    "MotoDirectMotorDetail.js kostenoverzicht berekening (regels 227, 230-231) dupliceert dezelfde extras-som 2x - kan naar single useMemo of const extras extraheren om DRY te blijven.",
+    "MotoDirectMotorDetail.js gebruikt hardcoded fallbacks 125/160 als motor.keuring_fee/taxatie_fee ontbreken - alle backend endpoints retourneren deze nu altijd, dus fallbacks zijn defensief maar creëren stille inconsistentie als backend defaults ooit veranderen."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (41/41 motodirect tests)", "frontend": "100% (keuring/taxatie live UI + admin bestellingen tabel)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! ; MotoDirect buyer: test-keuring@example.com / password123 (bestaand) + TEST_buyer_{uuid}@example.com aangemaakt per testrun.",
+  "seed_data_creation": "Geen permanente seed. Testrun maakt 1 nieuwe TEST_buyer + 7 pending motodirect_orders (checkout tests met echte Stripe sessions - blijven pending). Markup expliciet gereset naar 500 aan einde.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "MotoDirect flow correctie (iter 38) is volledig verified: keuring_choice='motodirect'|'self' (default motodirect), include_taxatie=bool. Prijzen: motor_price + (125 als motodirect keuring) + (160 als taxatie) = total_price. Deposit = 35%*motor_price + volledige extras. Admin table (/admin/motodirect Bestellingen) toont beide legacy inspection_choice en nieuwe keuring_choice records correct. Test suite: /app/backend/tests/test_motodirect.py (41 pass). Data-testids op motor detail: keuring-motodirect, keuring-self, include-taxatie, keuring-line, taxatie-line, total-price, deposit-amount, reserve-motor-button. HostnameGuard is puur client-side (niet testbaar op preview). Markup default = 500 EUR.",
+  "rca of the issue": "N/A - geen bugs gevonden. Alle iter 38 wijzigingen werken correct."
+}

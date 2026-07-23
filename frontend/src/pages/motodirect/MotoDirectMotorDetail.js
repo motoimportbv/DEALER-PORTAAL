@@ -14,7 +14,8 @@ export default function MotoDirectMotorDetail() {
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [reserving, setReserving] = useState(false);
-  const [inspectionChoice, setInspectionChoice] = useState('motoimport');
+  const [keuringChoice, setKeuringChoice] = useState('motodirect');
+  const [includeTaxatie, setIncludeTaxatie] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -47,7 +48,12 @@ export default function MotoDirectMotorDetail() {
       const origin_url = window.location.origin;
       const res = await axios.post(
         `${API}/motodirect/checkout`,
-        { motorcycle_id: id, origin_url, inspection_choice: inspectionChoice },
+        {
+          motorcycle_id: id,
+          origin_url,
+          keuring_choice: keuringChoice,
+          include_taxatie: includeTaxatie,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       window.location.href = res.data.checkout_url;
@@ -134,53 +140,109 @@ export default function MotoDirectMotorDetail() {
               <div className="heading text-4xl font-bold leading-none">{formatPrice(motor.price)}</div>
               <div className="text-xs text-neutral-500 mt-1">All-in prijs, geen verborgen kosten</div>
 
-              {/* Inspection choice */}
+              {/* RDW keuring keuze */}
               <div className="border-t border-neutral-200 mt-5 pt-5">
-                <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold mb-3">Keuring / APK — kies wie</div>
+                <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold mb-3">RDW-keuring — kies wie</div>
                 <div className="space-y-2">
-                  <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${inspectionChoice === 'motoimport' ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                  <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${keuringChoice === 'motodirect' ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
                     <input
                       type="radio"
-                      name="inspection"
-                      value="motoimport"
-                      checked={inspectionChoice === 'motoimport'}
-                      onChange={() => setInspectionChoice('motoimport')}
-                      data-testid="inspection-motoimport"
+                      name="keuring"
+                      value="motodirect"
+                      checked={keuringChoice === 'motodirect'}
+                      onChange={() => setKeuringChoice('motodirect')}
+                      data-testid="keuring-motodirect"
                       className="mt-1 accent-[#0047FF]"
                     />
-                    <div className="text-xs">
-                      <div className="font-semibold text-black">MotoImport keurt</div>
-                      <div className="text-neutral-500 mt-0.5">Onze eigen garage regelt APK en RDW-registratie</div>
+                    <div className="text-xs flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold text-black">Moto-direct regelt keuring</span>
+                        <span className="text-black font-semibold">{formatPrice(motor.keuring_fee || 125)}</span>
+                      </div>
+                      <div className="text-neutral-500 mt-0.5">Wij regelen de RDW-keuring bij ons keurings­station</div>
                     </div>
                   </label>
-                  <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${inspectionChoice === 'motodirect' ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                  <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${keuringChoice === 'self' ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
                     <input
                       type="radio"
-                      name="inspection"
-                      value="motodirect"
-                      checked={inspectionChoice === 'motodirect'}
-                      onChange={() => setInspectionChoice('motodirect')}
-                      data-testid="inspection-motodirect"
+                      name="keuring"
+                      value="self"
+                      checked={keuringChoice === 'self'}
+                      onChange={() => setKeuringChoice('self')}
+                      data-testid="keuring-self"
                       className="mt-1 accent-[#0047FF]"
                     />
-                    <div className="text-xs">
-                      <div className="font-semibold text-black">Moto-direct regelt het</div>
-                      <div className="text-neutral-500 mt-0.5">Wij regelen het van A tot Z via onze partners</div>
+                    <div className="text-xs flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold text-black">Ik keur zelf</span>
+                        <span className="text-neutral-500 text-[11px]">Op eigen rekening</span>
+                      </div>
+                      <div className="text-neutral-500 mt-0.5">Je regelt de RDW-keuring zelf na aflevering</div>
                     </div>
                   </label>
                 </div>
-                <div className="text-[11px] text-neutral-500 mt-3">Beide opties inclusief — geen extra kosten</div>
               </div>
 
-              <div className="border-t border-neutral-200 mt-5 pt-5 space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-600">Aanbetaling (35%)</span>
-                  <span className="font-semibold">{formatPrice(motor.deposit_amount)}</span>
-                </div>
+              {/* Taxatie optie */}
+              <div className="border-t border-neutral-200 mt-5 pt-5">
+                <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold mb-3">Extra service</div>
+                <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${includeTaxatie ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                  <input
+                    type="checkbox"
+                    checked={includeTaxatie}
+                    onChange={(e) => setIncludeTaxatie(e.target.checked)}
+                    data-testid="include-taxatie"
+                    className="mt-1 accent-[#0047FF]"
+                  />
+                  <div className="text-xs flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-semibold text-black">Taxatie voor BPM-vermindering</span>
+                      <span className="text-black font-semibold">+{formatPrice(motor.taxatie_fee || 160)}</span>
+                    </div>
+                    <div className="text-neutral-500 mt-0.5">Officiële taxatie waarmee je minder BPM betaalt</div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Kostenoverzicht */}
+              <div className="border-t border-neutral-200 mt-5 pt-5 space-y-2 text-sm">
                 <div className="flex items-center justify-between text-xs text-neutral-500">
-                  <span>Restant bij aflevering</span>
-                  <span>{formatPrice((motor.price || 0) - (motor.deposit_amount || 0))}</span>
+                  <span>Motor</span>
+                  <span>{formatPrice(motor.price)}</span>
                 </div>
+                {keuringChoice === 'motodirect' && (
+                  <div className="flex items-center justify-between text-xs text-neutral-500" data-testid="keuring-line">
+                    <span>RDW-keuring</span>
+                    <span>+{formatPrice(motor.keuring_fee || 125)}</span>
+                  </div>
+                )}
+                {includeTaxatie && (
+                  <div className="flex items-center justify-between text-xs text-neutral-500" data-testid="taxatie-line">
+                    <span>Taxatie BPM</span>
+                    <span>+{formatPrice(motor.taxatie_fee || 160)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t border-neutral-200 font-semibold">
+                  <span>Totaal</span>
+                  <span data-testid="total-price">{formatPrice((motor.price || 0) + (keuringChoice === 'motodirect' ? (motor.keuring_fee || 125) : 0) + (includeTaxatie ? (motor.taxatie_fee || 160) : 0))}</span>
+                </div>
+                {(() => {
+                  const extras = (keuringChoice === 'motodirect' ? (motor.keuring_fee || 125) : 0) + (includeTaxatie ? (motor.taxatie_fee || 160) : 0);
+                  const deposit = (motor.deposit_amount || 0) + extras;
+                  const total = (motor.price || 0) + extras;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-xs text-neutral-600 pt-2">
+                        <span>Aanbetaling nu (35% + extras)</span>
+                        <span className="font-semibold text-black" data-testid="deposit-amount">{formatPrice(deposit)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-neutral-500">
+                        <span>Restant bij aflevering</span>
+                        <span>{formatPrice(total - deposit)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               <button

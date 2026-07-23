@@ -24,6 +24,8 @@ router = APIRouter(tags=["MotoDirect"])
 
 MOTODIRECT_DEPOSIT_PERCENTAGE = 0.35  # 35% aanbetaling voor particulieren
 MOTODIRECT_DEFAULT_MARKUP = 500.0     # Standaard marge boven op dealerprijs
+MOTODIRECT_KEURING_FEE = 125.0        # RDW-keuring als Moto-direct het regelt
+MOTODIRECT_TAXATIE_FEE = 160.0        # Taxatie voor BPM-vermindering (optioneel)
 MOTODIRECT_SETTINGS_KEY = "motodirect_settings"
 
 
@@ -266,6 +268,8 @@ async def motodirect_catalog_detail(motorcycle_id: str):
         "chassis_number": m.get("chassis_number", ""),
         "deposit_percentage": MOTODIRECT_DEPOSIT_PERCENTAGE,
         "deposit_amount": round(final_price * MOTODIRECT_DEPOSIT_PERCENTAGE, 2),
+        "keuring_fee": MOTODIRECT_KEURING_FEE,
+        "taxatie_fee": MOTODIRECT_TAXATIE_FEE,
     }
 
 
@@ -279,9 +283,10 @@ async def motodirect_checkout(
     """Create Stripe checkout session for 35% deposit."""
     motorcycle_id = data.get("motorcycle_id")
     origin_url = data.get("origin_url", "")
-    inspection_choice = (data.get("inspection_choice") or "motoimport").lower()
-    if inspection_choice not in ("motoimport", "motodirect"):
-        inspection_choice = "motoimport"
+    keuring_choice = (data.get("keuring_choice") or "motodirect").lower()
+    if keuring_choice not in ("motodirect", "self"):
+        keuring_choice = "motodirect"
+    include_taxatie = bool(data.get("include_taxatie", False))
     if not motorcycle_id or not origin_url:
         raise HTTPException(status_code=400, detail="motorcycle_id en origin_url vereist")
 
@@ -293,8 +298,14 @@ async def motodirect_checkout(
 
     markup = await _get_markup()
     dealer_price = float(motor["price"])
-    motor_price = round(dealer_price + markup, 2)  # Final consumer price
-    deposit_amount = round(motor_price * MOTODIRECT_DEPOSIT_PERCENTAGE, 2)
+    motor_price = round(dealer_price + markup, 2)  # Motor eindprijs (excl. keuring/taxatie)
+
+    keuring_fee = MOTODIRECT_KEURING_FEE if keuring_choice == "motodirect" else 0.0
+    taxatie_fee = MOTODIRECT_TAXATIE_FEE if include_taxatie else 0.0
+    extras_total = round(keuring_fee + taxatie_fee, 2)
+    total_price = round(motor_price + extras_total, 2)
+    # Aanbetaling: 35% van motorprijs + de gekozen extras volledig
+    deposit_amount = round(motor_price * MOTODIRECT_DEPOSIT_PERCENTAGE + extras_total, 2)
 
     snapshot = {
         "id": motor["id"],
@@ -322,11 +333,16 @@ async def motodirect_checkout(
         "buyer_city": user.get("city", ""),
         "dealer_price": dealer_price,
         "markup": markup,
-        "total_price": motor_price,
+        "motor_price": motor_price,
+        "keuring_fee": keuring_fee,
+        "taxatie_fee": taxatie_fee,
+        "extras_total": extras_total,
+        "total_price": total_price,
         "deposit_amount": deposit_amount,
         "deposit_percentage": MOTODIRECT_DEPOSIT_PERCENTAGE,
-        "remaining_amount": motor_price - deposit_amount,
-        "inspection_choice": inspection_choice,  # 'motoimport' of 'motodirect'
+        "remaining_amount": round(total_price - deposit_amount, 2),
+        "keuring_choice": keuring_choice,       # 'motodirect' of 'self'
+        "include_taxatie": include_taxatie,
         "status": "pending",
         "payment_status": "pending",
         "motorcycle_snapshot": snapshot,
@@ -351,7 +367,7 @@ async def motodirect_checkout(
                 "motorcycle_id": motorcycle_id,
                 "buyer_id": user["id"],
                 "deposit_amount": str(deposit_amount),
-                "total_price": str(motor_price),
+                "total_price": str(total_price),
             }
         )
         session = await stripe_checkout.create_checkout_session(checkout_request)
@@ -364,7 +380,7 @@ async def motodirect_checkout(
             "session_id": session.session_id,
             "order_id": order_id,
             "deposit_amount": deposit_amount,
-            "total_price": motor_price,
+            "total_price": total_price,
         }
     except Exception as e:
         await db.motodirect_orders.delete_one({"id": order_id})

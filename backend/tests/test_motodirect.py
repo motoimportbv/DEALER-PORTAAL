@@ -360,14 +360,48 @@ class TestMarkupAppliedToCatalog:
         assert abs(d["price"] - TestMarkupAppliedToCatalog._price_at_500) < 0.01
 
 
-# ---------- Checkout inspection_choice ----------
+# ---------- Catalog detail: keuring_fee + taxatie_fee (iteration 38) ----------
 
-class TestCheckoutInspectionChoice:
+class TestCatalogDetailFees:
+    """GET /motodirect/catalog/{id} must return keuring_fee=125 and taxatie_fee=160."""
+
+    def test_detail_returns_fees(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 5})
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles available")
+        r2 = session.get(f"{API}/motodirect/catalog/{motos[0]['id']}")
+        assert r2.status_code == 200
+        d = r2.json()
+        assert "keuring_fee" in d and "taxatie_fee" in d
+        assert d["keuring_fee"] == 125.0
+        assert d["taxatie_fee"] == 160.0
+
+
+# ---------- Checkout keuring_choice + include_taxatie (iteration 38) ----------
+
+class TestCheckoutKeuringChoice:
     """
-    Verify that POST /motodirect/checkout accepts inspection_choice and stores it on the order.
-    We don't complete the Stripe payment - we just verify the order row got persisted with the
-    correct inspection_choice and total_price = dealer + markup.
+    POST /motodirect/checkout accepts:
+      - keuring_choice: 'motodirect' (default) or 'self'
+      - include_taxatie: bool
+    Verify persisted order carries the correct values + total/deposit math.
     """
+
+    @pytest.fixture(scope="class", autouse=True)
+    def reset_markup(self, session, admin_token):
+        # Ensure baseline markup=500
+        session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"markup": 500.0},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        yield
+        session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"markup": 500.0},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
 
     @pytest.fixture(scope="class")
     def anchor_motor(self, session):
@@ -377,11 +411,13 @@ class TestCheckoutInspectionChoice:
             pytest.skip("No motorcycles available")
         return motos[0]
 
-    def _post_checkout(self, session, buyer, motor_id, inspection_choice=None):
+    def _post_checkout(self, session, buyer, motor_id, keuring_choice=None, include_taxatie=None):
         headers = {"Authorization": f"Bearer {buyer['token']}"}
         payload = {"motorcycle_id": motor_id, "origin_url": BASE_URL}
-        if inspection_choice is not None:
-            payload["inspection_choice"] = inspection_choice
+        if keuring_choice is not None:
+            payload["keuring_choice"] = keuring_choice
+        if include_taxatie is not None:
+            payload["include_taxatie"] = include_taxatie
         return session.post(f"{API}/motodirect/checkout", json=payload, headers=headers)
 
     def _get_my_last_order(self, session, buyer):
@@ -392,44 +428,84 @@ class TestCheckoutInspectionChoice:
         assert orders, "Expected at least one order after checkout"
         return orders[0]  # newest first
 
-    def test_checkout_with_motoimport(self, session, registered_buyer, anchor_motor, admin_token):
-        # Ensure markup default 500
-        session.put(
-            f"{API}/motodirect/admin/settings",
-            json={"markup": 500.0},
-            headers={"Authorization": f"Bearer {admin_token}"},
-        )
-        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motoimport")
+    def test_motodirect_plus_taxatie(self, session, registered_buyer, anchor_motor):
+        """keuring_choice=motodirect + include_taxatie=true → total=motor+125+160; deposit=35%*motor+125+160."""
+        motor_price = anchor_motor["price"]
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motodirect", True)
         assert r.status_code == 200, r.text
         data = r.json()
-        assert "checkout_url" in data
-        assert "order_id" in data
-        # Total price returned should be catalog price (already contains markup)
-        assert abs(data["total_price"] - anchor_motor["price"]) < 0.01
-        # Deposit is 35%
-        assert abs(data["deposit_amount"] - round(anchor_motor["price"] * 0.35, 2)) < 0.01
-        # Verify persisted order carries inspection_choice
-        last_order = self._get_my_last_order(session, registered_buyer)
-        assert last_order["inspection_choice"] == "motoimport"
-        assert last_order["markup"] == 500.0
-        assert abs(last_order["total_price"] - anchor_motor["price"]) < 0.01
+        expected_total = round(motor_price + 125 + 160, 2)
+        expected_deposit = round(motor_price * 0.35 + 125 + 160, 2)
+        assert abs(data["total_price"] - expected_total) < 0.01, f"total={data['total_price']} expected {expected_total}"
+        assert abs(data["deposit_amount"] - expected_deposit) < 0.01, f"deposit={data['deposit_amount']} expected {expected_deposit}"
+        order = self._get_my_last_order(session, registered_buyer)
+        assert order["keuring_choice"] == "motodirect"
+        assert order["include_taxatie"] is True
+        assert order["keuring_fee"] == 125.0
+        assert order["taxatie_fee"] == 160.0
+        assert order["extras_total"] == 285.0
+        assert abs(order["motor_price"] - motor_price) < 0.01
+        assert abs(order["total_price"] - expected_total) < 0.01
+        assert abs(order["deposit_amount"] - expected_deposit) < 0.01
+        assert abs(order["remaining_amount"] - round(expected_total - expected_deposit, 2)) < 0.01
 
-    def test_checkout_with_motodirect(self, session, registered_buyer, anchor_motor):
-        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motodirect")
-        assert r.status_code == 200
-        last_order = self._get_my_last_order(session, registered_buyer)
-        assert last_order["inspection_choice"] == "motodirect"
+    def test_self_no_taxatie(self, session, registered_buyer, anchor_motor):
+        """keuring_choice=self + include_taxatie=false → total=motor; deposit=35%*motor."""
+        motor_price = anchor_motor["price"]
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "self", False)
+        assert r.status_code == 200, r.text
+        data = r.json()
+        expected_total = round(motor_price, 2)
+        expected_deposit = round(motor_price * 0.35, 2)
+        assert abs(data["total_price"] - expected_total) < 0.01
+        assert abs(data["deposit_amount"] - expected_deposit) < 0.01
+        order = self._get_my_last_order(session, registered_buyer)
+        assert order["keuring_choice"] == "self"
+        assert order["include_taxatie"] is False
+        assert order["keuring_fee"] == 0.0
+        assert order["taxatie_fee"] == 0.0
+        assert order["extras_total"] == 0.0
 
-    def test_checkout_default_inspection_choice(self, session, registered_buyer, anchor_motor):
-        # No inspection_choice -> defaults to motoimport
-        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], None)
-        assert r.status_code == 200
-        last_order = self._get_my_last_order(session, registered_buyer)
-        assert last_order["inspection_choice"] == "motoimport"
+    def test_self_with_taxatie(self, session, registered_buyer, anchor_motor):
+        """keuring_choice=self + include_taxatie=true → total=motor+160; deposit=35%*motor+160."""
+        motor_price = anchor_motor["price"]
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "self", True)
+        assert r.status_code == 200, r.text
+        data = r.json()
+        expected_total = round(motor_price + 160, 2)
+        expected_deposit = round(motor_price * 0.35 + 160, 2)
+        assert abs(data["total_price"] - expected_total) < 0.01
+        assert abs(data["deposit_amount"] - expected_deposit) < 0.01
+        order = self._get_my_last_order(session, registered_buyer)
+        assert order["keuring_choice"] == "self"
+        assert order["include_taxatie"] is True
+        assert order["keuring_fee"] == 0.0
+        assert order["taxatie_fee"] == 160.0
+        assert order["extras_total"] == 160.0
 
-    def test_checkout_invalid_choice_falls_back(self, session, registered_buyer, anchor_motor):
-        # Weird value -> should silently fallback to motoimport (per router logic)
-        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "banana")
+    def test_default_keuring_choice_is_motodirect(self, session, registered_buyer, anchor_motor):
+        """Missing keuring_choice defaults to 'motodirect'."""
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], None, False)
         assert r.status_code == 200
-        last_order = self._get_my_last_order(session, registered_buyer)
-        assert last_order["inspection_choice"] == "motoimport"
+        order = self._get_my_last_order(session, registered_buyer)
+        assert order["keuring_choice"] == "motodirect"
+        assert order["keuring_fee"] == 125.0
+
+    def test_invalid_keuring_choice_falls_back_to_motodirect(self, session, registered_buyer, anchor_motor):
+        """Invalid keuring_choice like 'motoimport' falls back to 'motodirect'."""
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motoimport", False)
+        assert r.status_code == 200
+        order = self._get_my_last_order(session, registered_buyer)
+        assert order["keuring_choice"] == "motodirect"
+        assert order["keuring_fee"] == 125.0
+
+    def test_order_has_all_required_fields(self, session, registered_buyer, anchor_motor):
+        """Order should contain: keuring_choice, include_taxatie, keuring_fee, taxatie_fee,
+        extras_total, motor_price, total_price, deposit_amount, remaining_amount."""
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motodirect", True)
+        assert r.status_code == 200
+        order = self._get_my_last_order(session, registered_buyer)
+        required = ["keuring_choice", "include_taxatie", "keuring_fee", "taxatie_fee",
+                    "extras_total", "motor_price", "total_price", "deposit_amount", "remaining_amount"]
+        for f in required:
+            assert f in order, f"Missing field {f} in persisted order"
