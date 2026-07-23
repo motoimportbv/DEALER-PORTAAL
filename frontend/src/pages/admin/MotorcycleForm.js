@@ -72,6 +72,12 @@ const MotorcycleForm = () => {
   // CHF supplier price editing
   const [supplierChfPrice, setSupplierChfPrice] = useState('');
   const [savingSupplierPrice, setSavingSupplierPrice] = useState(false);
+
+  // MotoDirect dealer reference price (Optie A + B)
+  const [dealerRefPrice, setDealerRefPrice] = useState('');
+  const [savingDealerRef, setSavingDealerRef] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState(null);
   
   // Motor bron (leverancier of particulier)
   const [motorSource, setMotorSource] = useState('own'); // 'own', 'supplier', 'private'
@@ -164,6 +170,10 @@ const MotorcycleForm = () => {
       // Set supplier CHF price if this is a CHF motorcycle
       if (response.data.original_currency === 'CHF' && response.data.original_price) {
         setSupplierChfPrice(response.data.original_price.toString());
+      }
+      // MotoDirect dealer reference price
+      if (response.data.dealer_reference_price) {
+        setDealerRefPrice(String(response.data.dealer_reference_price));
       }
     } catch (error) {
       toast.error('Kon motor niet laden');
@@ -282,6 +292,63 @@ const MotorcycleForm = () => {
     setNewMotorcycleId(motorcycleId);
     setShowWhatsAppModal(true);
   };
+
+  // MotoDirect: opslaan van handmatige dealer_reference_price
+  const saveDealerReference = async () => {
+    if (!isEditing) {
+      toast.error('Sla eerst de motor op voordat je de referentieprijs zet');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    setSavingDealerRef(true);
+    try {
+      const value = dealerRefPrice === '' ? null : Number(dealerRefPrice);
+      await axios.put(
+        `${API}/motodirect/admin/motorcycle/${id}/dealer-reference-price`,
+        { dealer_reference_price: value, source: 'manual' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(value === null ? 'Referentieprijs gewist (formule wordt gebruikt)' : `Referentieprijs opgeslagen: €${value}`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Opslaan mislukt');
+    } finally {
+      setSavingDealerRef(false);
+    }
+  };
+
+  // MotoDirect: scrape Marktplaats voor gemiddelde marktprijs
+  const scrapeMarktplaats = async () => {
+    if (!formData.brand || !formData.model) {
+      toast.error('Vul eerst merk en model in');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    setScraping(true);
+    setScrapeResult(null);
+    try {
+      const res = await axios.post(
+        `${API}/motodirect/admin/scrape-marktplaats`,
+        { brand: formData.brand, model: formData.model },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setScrapeResult(res.data);
+      if (res.data.count > 0) {
+        toast.success(`${res.data.count} listings gevonden — mediaan €${res.data.median_price}`);
+      } else {
+        toast.warning('Geen resultaten gevonden op Marktplaats');
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Scrape mislukt');
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const applyScrapedPrice = (value) => {
+    setDealerRefPrice(String(Math.round(value)));
+    toast.info(`Voorstel ingevuld: €${Math.round(value)}. Klik "Opslaan" om te bevestigen.`);
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -605,6 +672,110 @@ const MotorcycleForm = () => {
                     )}
                   </div>
                 )}
+
+                {/* MotoDirect: Vergelijkbare dealerprijs voor B2C particulieren */}
+                {isEditing && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3" data-testid="motodirect-dealer-ref-editor">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">💰</span>
+                      <Label className="font-barlow uppercase tracking-wider text-xs font-semibold text-blue-700">
+                        MotoDirect — Vergelijkbare dealerprijs (B2C besparing)
+                      </Label>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      Deze prijs wordt getoond aan particulieren op moto-direct.nl als doorgestreepte {'"bij dealer"'} prijs. Leeg = automatische formule wordt gebruikt.
+                    </p>
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <div className="flex items-center border border-gray-300 focus-within:border-blue-600 bg-white rounded">
+                          <span className="px-3 text-gray-500 border-r border-gray-300">€</span>
+                          <Input
+                            type="number"
+                            value={dealerRefPrice}
+                            onChange={(e) => setDealerRefPrice(e.target.value)}
+                            placeholder="Bijv. 14995 (leeg = formule)"
+                            min="0"
+                            data-testid="dealer-ref-input"
+                            className="border-0 focus-visible:ring-0"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={saveDealerReference}
+                        disabled={savingDealerRef}
+                        data-testid="save-dealer-ref-btn"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {savingDealerRef ? 'Opslaan...' : 'Opslaan'}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={scrapeMarktplaats}
+                        disabled={scraping || !formData.brand || !formData.model}
+                        data-testid="scrape-marktplaats-btn"
+                        variant="outline"
+                        className="border-blue-600 text-blue-700 hover:bg-blue-100"
+                      >
+                        {scraping ? 'Zoeken...' : '🔍 Scrape Marktplaats'}
+                      </Button>
+                    </div>
+
+                    {scrapeResult && scrapeResult.count > 0 && (
+                      <div className="bg-white border border-blue-100 rounded p-3 space-y-2" data-testid="scrape-result">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="text-gray-700">
+                            <b>{scrapeResult.count}</b> listings gevonden voor <b>{scrapeResult.query}</b>
+                          </div>
+                          <div className="text-gray-500">
+                            €{Math.round(scrapeResult.min_price)} – €{Math.round(scrapeResult.max_price)}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => applyScrapedPrice(scrapeResult.median_price)}
+                            data-testid="apply-median"
+                            className="bg-green-50 hover:bg-green-100 border border-green-300 rounded p-2 text-left"
+                          >
+                            <div className="text-[10px] uppercase tracking-widest text-green-700 font-semibold">Mediaan (aanbevolen)</div>
+                            <div className="text-lg font-bold text-green-800">€{Math.round(scrapeResult.median_price).toLocaleString('nl-NL')}</div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyScrapedPrice(scrapeResult.avg_price)}
+                            data-testid="apply-avg"
+                            className="bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded p-2 text-left"
+                          >
+                            <div className="text-[10px] uppercase tracking-widest text-gray-700 font-semibold">Gemiddelde</div>
+                            <div className="text-lg font-bold text-gray-800">€{Math.round(scrapeResult.avg_price).toLocaleString('nl-NL')}</div>
+                          </button>
+                        </div>
+                        {scrapeResult.samples && scrapeResult.samples.length > 0 && (
+                          <details className="text-xs">
+                            <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Bekijk voorbeelden ({scrapeResult.samples.length})</summary>
+                            <ul className="mt-2 space-y-1">
+                              {scrapeResult.samples.map((s, i) => (
+                                <li key={i} className="flex items-center justify-between border-b border-gray-100 pb-1">
+                                  <span className="text-gray-700 truncate max-w-[300px]">{s.title}</span>
+                                  <span className="font-medium">€{Math.round(s.price).toLocaleString('nl-NL')}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </div>
+                    )}
+
+                    {scrapeResult && scrapeResult.count === 0 && (
+                      <div className="text-xs text-orange-600" data-testid="scrape-no-results">
+                        Geen bruikbare listings gevonden op Marktplaats voor {scrapeResult.query}. Probeer een specifiekere merk/model combinatie.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

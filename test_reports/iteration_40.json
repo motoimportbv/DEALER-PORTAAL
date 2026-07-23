@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 40 (manual dealer_reference_price override + Marktplaats scraper) volledig getest — 18 nieuwe pytest cases (9 TestManualDealerReferencePrice + 8 TestMarktplaatsScraper + 1 TestIter40Regression) allemaal groen. Volledige MotoDirect suite: 71/71 pass (53 legacy iter39 + 18 nieuw). Backend geverifieerd: (1) PUT /api/motodirect/admin/motorcycle/{id}/dealer-reference-price met 13000 slaat op en catalog/{id} toont 13000 i.p.v. formule; (2) PUT met null wist waarde en catalog valt terug op formule ceil(price*multiplier/100)*100; (3) negatieve waarde, 0, en non-numeric worden 400; (4) onbekende motor-id -> 404; (5) buyer-role -> 403; (6) unauth -> 401/403. Marktplaats scraper (echte externe API): (1) Yamaha Tracer 9 returnt count=23, median €12995, avg €12830, min €6500, max €16999 — exact zoals verwacht in review; (2) onbekende motor (ZZZZ_NoBrand XXX_NoModel_9999) returnt count=0 zonder crash; (3) samples filtered op 500<=prijs<=200000; (4) missing brand/model -> 400; (5) buyer -> 403; (6) unauth -> 401/403. Frontend UI (/admin/motorcycles/{id}/edit): (1) sectie 'MotoDirect — Vergelijkbare dealerprijs' zichtbaar met data-testid motodirect-dealer-ref-editor onder CHF-block; (2) alle testids aanwezig: dealer-ref-input, save-dealer-ref-btn, scrape-marktplaats-btn; (3) Klik Scrape → scrape-result panel toont 23 listings met Mediaan-knop (€12.995, groen 'AANBEVOLEN') en Gemiddelde-knop (€12.830); (4) Klik Mediaan → dealer-ref-input vult met 12995 + toast '23 listings gevonden — mediaan € 12995' (rechtsboven); (5) Klik Opslaan → PUT call gaat door en detail endpoint bevestigt dealer_reference_price=12995, savings=1595. Regressie: /motodirect/catalog toont nog steeds alle 31 savings-badges met dealer_reference_price/savings velden intact. Cleanup: manual override op Tracer 9 gewist aan einde, catalog terug op formule (13700). Marktplaats externe afhankelijkheid: 502-handling gecodeerd; in deze testrun was API bereikbaar (23 echte listings gefetched).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect_iter40.xml",
+    "/app/test_reports/pytest/pytest_motodirect_iter40_full.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "motodirect.py:638 `import httpx` staat binnen de scrape_marktplaats functie — cosmetisch beter naar module-top verplaatsen (minieme perf impact bij herhaalde calls).",
+    "motodirect.py:594 find_one projection {'_id': 0, 'id': 1, 'price': 1} — 'price' wordt niet gebruikt in deze functie; niet fout maar overbodig.",
+    "motodirect.py scrape_marktplaats: geen rate-limiting of caching. Marktplaats kan bij herhaalde calls 429/403 geven. Overweeg simpele in-memory cache (5 min TTL op query) om admin-side spam en IP-block risico te beperken.",
+    "motodirect.py scrape_marktplaats: hardcoded l1 category id 710. Documenteer dit in comment als 'Motoren' category (staat er al kort) en overweeg configureerbaar te maken via env voor toekomstige uitbreiding (auto's, scooters).",
+    "motodirect.py _resolve_dealer_price: bij manual value <=0 valt code terug op formule zonder waarschuwing/log. In principe onbereikbaar via API (blocked door <=0 check in PUT), maar defensief oké.",
+    "MotorcycleForm.js:305 `dealerRefPrice === '' ? null : Number(dealerRefPrice)` — geen bescherming tegen NaN als user tekst typt in input (input type=number filtert het meestal maar niet altijd op alle browsers). Overweeg extra isFinite() check voor PUT.",
+    "Toast 'listings gevonden — mediaan € 12995' toont mediaan altijd geformatteerd zonder duizend-separator ('12995' i.p.v. '12.995'). In het scrape-result panel wordt wel €12.995 mooi weergegeven — kleine inconsistentie in toast copy."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (71/71 incl. 18 iter40 nieuwe)", "frontend": "100% (editor sectie zichtbaar, scrape+median+save E2E werkt, toast + regression catalog intact)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! ; MotoDirect buyer: TEST_buyer_<uuid>@example.com (per testrun automatisch aangemaakt).",
+  "seed_data_creation": "Geen permanente seed. Testrun creëerde: 1 TEST_buyer registratie. Tijdelijk manual dealer_reference_price=12995 op Yamaha Tracer 9 (id 7dc13d6a...) via UI-flow; direct gewist aan einde. Test-suite roept ook zelf cleanup aan (test_cleanup_ensure_no_manual_override).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 40 features (manual dealer_reference_price + Marktplaats scraper) 100% verified. Endpoints: PUT /api/motodirect/admin/motorcycle/{id}/dealer-reference-price (body: {dealer_reference_price: number|null, source?: string}), POST /api/motodirect/admin/scrape-marktplaats (body: {brand, model}). Marktplaats levert echte data (Yamaha Tracer 9 → 23 listings, median €12995). Data-testids beschikbaar op MotorcycleForm.js: motodirect-dealer-ref-editor, dealer-ref-input, save-dealer-ref-btn, scrape-marktplaats-btn, scrape-result, apply-median, apply-avg, scrape-no-results. _resolve_dealer_price preferrt manual boven formule. Test suite locatie: /app/backend/tests/test_motodirect.py (nu 71 tests). Voor externe scraper: 502 pytest.skip is gedefinieerd, dus tests degraderen gracieus als Marktplaats down is. Cleanup: manual override op Tracer 9 gewist aan einde van testrun.",
+  "rca of the issue": "N/A - geen bugs gevonden. Alle acceptance criteria uit review request slagen (backend + frontend + regression)."
+}

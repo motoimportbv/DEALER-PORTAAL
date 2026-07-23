@@ -59,6 +59,20 @@ def _dealer_reference_price(motodirect_price: float, multiplier: float) -> float
     return float(math.ceil(raw / 100.0) * 100)
 
 
+def _resolve_dealer_price(motor: dict, motodirect_price: float, multiplier: float) -> float:
+    """
+    Prefer manually set dealer_reference_price from motorcycle document (Optie A),
+    fallback to computed formula (Optie C behavior).
+    """
+    manual = motor.get("dealer_reference_price")
+    try:
+        if manual is not None and float(manual) > 0:
+            return round(float(manual), 2)
+    except (TypeError, ValueError):
+        pass
+    return _dealer_reference_price(motodirect_price, multiplier)
+
+
 def _apply_markup(price, markup: float):
     """Add markup to a raw dealer price (safely handles None/0)."""
     try:
@@ -240,7 +254,7 @@ async def motodirect_catalog(
     result = []
     for m in motorcycles:
         md_price = _apply_markup(m.get("price"), markup)
-        dealer_ref = _dealer_reference_price(md_price, multiplier)
+        dealer_ref = _resolve_dealer_price(m, md_price, multiplier)
         savings = round(dealer_ref - md_price, 2)
         result.append({
             "id": m.get("id"),
@@ -283,7 +297,7 @@ async def motodirect_catalog_detail(motorcycle_id: str):
     markup = await _get_markup()
     multiplier = await _get_dealer_multiplier()
     final_price = _apply_markup(m.get("price"), markup)
-    dealer_ref = _dealer_reference_price(final_price, multiplier)
+    dealer_ref = _resolve_dealer_price(m, final_price, multiplier)
     return {
         "id": m.get("id"),
         "brand": m.get("brand"),
@@ -566,3 +580,138 @@ async def motodirect_admin_update_settings(
     }
 
 
+
+
+# ============ MANUAL dealer_reference_price + MARKTPLAATS scraper ============
+
+@router.put("/motodirect/admin/motorcycle/{motorcycle_id}/dealer-reference-price")
+async def set_dealer_reference_price(
+    motorcycle_id: str,
+    data: dict = Body(...),
+    admin: dict = Depends(_require_admin),
+):
+    """Admin: handmatig de dealer_reference_price zetten of wissen (null om te resetten naar formule)."""
+    motor = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0, "id": 1, "price": 1})
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+
+    raw = data.get("dealer_reference_price")
+    if raw in (None, "", "null"):
+        await db.motorcycles.update_one(
+            {"id": motorcycle_id},
+            {"$unset": {"dealer_reference_price": ""}}
+        )
+        return {"dealer_reference_price": None, "cleared": True}
+
+    try:
+        val = float(raw)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="dealer_reference_price moet een getal zijn")
+    if val <= 0:
+        raise HTTPException(status_code=400, detail="dealer_reference_price moet positief zijn")
+
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {"dealer_reference_price": val,
+                  "dealer_reference_price_updated_at": datetime.now(timezone.utc).isoformat(),
+                  "dealer_reference_price_source": data.get("source", "manual")}}
+    )
+    return {"dealer_reference_price": val, "cleared": False}
+
+
+@router.post("/motodirect/admin/scrape-marktplaats")
+async def scrape_marktplaats(
+    data: dict = Body(...),
+    admin: dict = Depends(_require_admin),
+):
+    """
+    Scrape gemiddelde vraagprijs van Marktplaats voor een merk+model.
+    Returns: {avg_price, median_price, count, samples: [{title, price, url}]}
+    """
+    brand = (data.get("brand") or "").strip()
+    model = (data.get("model") or "").strip()
+    if not brand or not model:
+        raise HTTPException(status_code=400, detail="brand en model verplicht")
+
+    query = f"{brand} {model}".strip()
+    # Marktplaats internal search API - filter to Motoren (categoryId=710) na fetch
+    import httpx
+    url = "https://www.marktplaats.nl/lrp/api/search"
+    params = {
+        "query": query,
+        "limit": "30",
+        "offset": "0",
+        "sortBy": "SORT_INDEX",
+        "sortOrder": "DECREASING",
+    }
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "nl-NL,nl;q=0.9",
+        "Referer": "https://www.marktplaats.nl/l/motoren/",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(url, params=params, headers=headers)
+            if resp.status_code != 200:
+                raise HTTPException(status_code=502, detail=f"Marktplaats gaf status {resp.status_code}")
+            payload = resp.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Marktplaats scrape error: {e}")
+        raise HTTPException(status_code=502, detail="Kon Marktplaats niet bereiken. Probeer later opnieuw.")
+
+    listings = payload.get("listings") or []
+    samples = []
+    prices = []
+    ACCEPTED = {"FIXED", "MIN_BID", "BIDDING_FROM"}
+    for item in listings:
+        # Filter to motorcycles category only (710) — skip parts / accessories
+        if str(item.get("categoryId") or "") != "710":
+            continue
+        pinfo = item.get("priceInfo") or {}
+        if pinfo.get("priceType") not in ACCEPTED:
+            continue
+        cents = pinfo.get("priceCents")
+        if not isinstance(cents, (int, float)) or cents <= 0:
+            continue
+        euro = cents / 100.0
+        # Skip absurd prices (< €500 = parts/scam, > €200k = errors)
+        if euro < 500 or euro > 200000:
+            continue
+        prices.append(euro)
+        if len(samples) < 8:
+            samples.append({
+                "title": item.get("title", "")[:120],
+                "price": euro,
+                "url": f"https://link.marktplaats.nl{item.get('vipUrl')}" if item.get("vipUrl") else None,
+                "location": (item.get("location") or {}).get("cityName", ""),
+                "price_type": pinfo.get("priceType"),
+            })
+
+    if not prices:
+        return {
+            "query": query,
+            "avg_price": None,
+            "median_price": None,
+            "count": 0,
+            "samples": [],
+            "message": "Geen bruikbare resultaten gevonden op Marktplaats.",
+        }
+
+    avg = round(sum(prices) / len(prices), 2)
+    sorted_prices = sorted(prices)
+    n = len(sorted_prices)
+    median = sorted_prices[n // 2] if n % 2 == 1 else round((sorted_prices[n // 2 - 1] + sorted_prices[n // 2]) / 2, 2)
+
+    return {
+        "query": query,
+        "avg_price": avg,
+        "median_price": median,
+        "count": len(prices),
+        "min_price": min(prices),
+        "max_price": max(prices),
+        "samples": samples,
+    }

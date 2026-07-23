@@ -680,3 +680,218 @@ class TestDealerMultiplierSavings:
         self._reset_multiplier(session, admin_headers)
         r = session.get(f"{API}/motodirect/admin/settings", headers=admin_headers)
         assert abs(r.json()["dealer_multiplier"] - 1.20) < 0.001
+
+
+
+# ---------- Iteration 40: manual dealer_reference_price + Marktplaats scraper ----------
+
+class TestManualDealerReferencePrice:
+    """
+    PUT /api/motodirect/admin/motorcycle/{id}/dealer-reference-price
+    Overrides the formula-based dealer_reference_price with a manually chosen value.
+    """
+
+    @pytest.fixture(scope="class")
+    def admin_headers(self, admin_token):
+        return {"Authorization": f"Bearer {admin_token}"}
+
+    @pytest.fixture(scope="class")
+    def target_motor(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 1})
+        assert r.status_code == 200
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles available")
+        return motos[0]
+
+    def _put(self, session, admin_headers, motor_id, body):
+        return session.put(
+            f"{API}/motodirect/admin/motorcycle/{motor_id}/dealer-reference-price",
+            json=body,
+            headers=admin_headers,
+        )
+
+    def test_set_manual_value_persists_and_overrides_formula(self, session, admin_headers, target_motor):
+        motor_id = target_motor["id"]
+        # Set a manual value clearly distinct from the formula output
+        manual_value = 13000.0
+        r = self._put(session, admin_headers, motor_id, {"dealer_reference_price": manual_value})
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body.get("dealer_reference_price") == manual_value
+        assert body.get("cleared") is False
+
+        # Verify via public detail endpoint (should reflect the manual override, not the formula)
+        d = session.get(f"{API}/motodirect/catalog/{motor_id}").json()
+        assert abs(d["dealer_reference_price"] - manual_value) < 0.01, (
+            f"Expected manual override {manual_value}, got {d['dealer_reference_price']}"
+        )
+        # Savings should equal manual value minus consumer price
+        expected_savings = round(manual_value - d["price"], 2)
+        assert abs(d["savings"] - expected_savings) < 0.01
+
+    def test_clear_manual_value_falls_back_to_formula(self, session, admin_headers, target_motor):
+        motor_id = target_motor["id"]
+        # Clear the override with null
+        r = self._put(session, admin_headers, motor_id, {"dealer_reference_price": None})
+        assert r.status_code == 200, r.text
+        assert r.json().get("cleared") is True
+        assert r.json().get("dealer_reference_price") is None
+
+        # Verify catalog goes back to the formula (ceil(price*multiplier/100)*100)
+        import math
+        d = session.get(f"{API}/motodirect/catalog/{motor_id}").json()
+        s = session.get(f"{API}/motodirect/admin/settings", headers=admin_headers).json()
+        multiplier = s.get("dealer_multiplier", 1.20)
+        expected = math.ceil(d["price"] * multiplier / 100.0) * 100
+        assert abs(d["dealer_reference_price"] - expected) < 0.01, (
+            f"After clear, expected formula {expected}, got {d['dealer_reference_price']}"
+        )
+
+    def test_negative_value_rejected(self, session, admin_headers, target_motor):
+        r = self._put(session, admin_headers, target_motor["id"], {"dealer_reference_price": -100})
+        assert r.status_code == 400
+
+    def test_zero_value_rejected(self, session, admin_headers, target_motor):
+        r = self._put(session, admin_headers, target_motor["id"], {"dealer_reference_price": 0})
+        assert r.status_code == 400
+
+    def test_non_numeric_value_rejected(self, session, admin_headers, target_motor):
+        r = self._put(session, admin_headers, target_motor["id"], {"dealer_reference_price": "not-a-number"})
+        assert r.status_code == 400
+
+    def test_unknown_motor_returns_404(self, session, admin_headers):
+        r = self._put(session, admin_headers, "does-not-exist-id-xyz", {"dealer_reference_price": 12000})
+        assert r.status_code == 404
+
+    def test_forbidden_for_buyer(self, session, registered_buyer, target_motor):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.put(
+            f"{API}/motodirect/admin/motorcycle/{target_motor['id']}/dealer-reference-price",
+            json={"dealer_reference_price": 12000},
+            headers=headers,
+        )
+        assert r.status_code == 403
+
+    def test_unauthenticated_rejected(self, session, target_motor):
+        r = session.put(
+            f"{API}/motodirect/admin/motorcycle/{target_motor['id']}/dealer-reference-price",
+            json={"dealer_reference_price": 12000},
+        )
+        assert r.status_code in (401, 403)
+
+    def test_cleanup_ensure_no_manual_override(self, session, admin_headers, target_motor):
+        """Ensure test target ends with no manual override (idempotent cleanup)."""
+        r = self._put(session, admin_headers, target_motor["id"], {"dealer_reference_price": None})
+        assert r.status_code == 200
+
+
+class TestMarktplaatsScraper:
+    """
+    POST /api/motodirect/admin/scrape-marktplaats — scrape brand+model asking prices.
+    External dependency: Marktplaats. 502 is acceptable if unreachable.
+    """
+
+    @pytest.fixture(scope="class")
+    def admin_headers(self, admin_token):
+        return {"Authorization": f"Bearer {admin_token}"}
+
+    def test_scrape_missing_brand_400(self, session, admin_headers):
+        r = session.post(f"{API}/motodirect/admin/scrape-marktplaats", json={"model": "Tracer 9"}, headers=admin_headers)
+        assert r.status_code == 400
+
+    def test_scrape_missing_model_400(self, session, admin_headers):
+        r = session.post(f"{API}/motodirect/admin/scrape-marktplaats", json={"brand": "Yamaha"}, headers=admin_headers)
+        assert r.status_code == 400
+
+    def test_scrape_empty_body_400(self, session, admin_headers):
+        r = session.post(f"{API}/motodirect/admin/scrape-marktplaats", json={}, headers=admin_headers)
+        assert r.status_code == 400
+
+    def test_scrape_forbidden_for_buyer(self, session, registered_buyer):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.post(
+            f"{API}/motodirect/admin/scrape-marktplaats",
+            json={"brand": "Yamaha", "model": "Tracer 9"},
+            headers=headers,
+        )
+        assert r.status_code == 403
+
+    def test_scrape_unauthenticated(self, session):
+        r = session.post(
+            f"{API}/motodirect/admin/scrape-marktplaats",
+            json={"brand": "Yamaha", "model": "Tracer 9"},
+        )
+        assert r.status_code in (401, 403)
+
+    def test_scrape_yamaha_tracer9_returns_results(self, session, admin_headers):
+        r = session.post(
+            f"{API}/motodirect/admin/scrape-marktplaats",
+            json={"brand": "Yamaha", "model": "Tracer 9"},
+            headers=admin_headers,
+            timeout=30,
+        )
+        if r.status_code == 502:
+            pytest.skip(f"Marktplaats unreachable: {r.text}")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "count" in data
+        assert "avg_price" in data
+        assert "median_price" in data
+        assert "samples" in data
+        if data["count"] > 0:
+            assert data["avg_price"] is not None and data["avg_price"] > 0
+            assert data["median_price"] is not None and data["median_price"] > 0
+            assert isinstance(data["samples"], list)
+            # Validate filtering: all sample prices should be within 500..200000 window
+            for s in data["samples"]:
+                assert 500 <= s["price"] <= 200000, f"Sample price {s['price']} outside filter window"
+                assert "title" in s and "price" in s
+
+    def test_scrape_unknown_model_returns_count_zero_no_crash(self, session, admin_headers):
+        r = session.post(
+            f"{API}/motodirect/admin/scrape-marktplaats",
+            json={"brand": "ZZZZ_NoBrand", "model": "XXX_NoModel_9999"},
+            headers=admin_headers,
+            timeout=30,
+        )
+        if r.status_code == 502:
+            pytest.skip(f"Marktplaats unreachable: {r.text}")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data.get("count") == 0
+        assert data.get("avg_price") is None
+        assert data.get("median_price") is None
+        assert data.get("samples") == []
+
+    def test_scrape_filters_parts_out(self, session, admin_headers):
+        """Search for 'parts'-heavy query and verify all returned samples are in motorcycle category.
+        Since backend filters categoryId=710 (motoren), a query heavy on parts should still return only bikes."""
+        r = session.post(
+            f"{API}/motodirect/admin/scrape-marktplaats",
+            json={"brand": "Yamaha", "model": "MT-07"},
+            headers=admin_headers,
+            timeout=30,
+        )
+        if r.status_code == 502:
+            pytest.skip(f"Marktplaats unreachable: {r.text}")
+        assert r.status_code == 200
+        data = r.json()
+        # If count>0 all sample prices must be >= 500 (parts / helmets typically below)
+        for s in data.get("samples", []):
+            assert s["price"] >= 500
+
+
+# ---------- Regression: catalog still exposes savings/dealer_reference_price ----------
+
+class TestIter40Regression:
+    def test_catalog_still_has_savings_after_iter40(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 5})
+        assert r.status_code == 200
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles")
+        for m in motos:
+            assert "dealer_reference_price" in m
+            assert "savings" in m
+            assert m["dealer_reference_price"] > 0
