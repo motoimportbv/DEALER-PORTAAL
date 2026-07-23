@@ -1,5 +1,16 @@
 # Moto Import - Changelog
 
+## Feb 2026 - MotoDirect: contact + annulering + facturen ✅
+- **Contact overal**: `info@moto-direct.nl` + `+31 6 38 52 55 41` + "24/7 online" badge (footer + motor detail)
+- **Annuleringsbeleid**: 10% van totale prijs = kosten, rest terug via Stripe iDEAL refund binnen 5-10 werkdagen
+- **Cancel modal** in klant-account met live breakdown (aanbetaling / annuleringskosten / terug te ontvangen)
+- **Automatische Stripe refund** via payment_intent_id (fallback: 'manual_required' status voor admin)
+- **PDF Facturen + Pakbon** met MotoDirect branding (fpdf2), downloadbaar via account page én admin
+- **Auto-email** na aanbetaling met factuur + pakbon als bijlage
+- Motor is_available terug naar true na cancel (weer bestelbaar)
+- Testing: 88/88 backend pytest ✅ + volledige frontend flows ✅
+
+
 ## Feb 2026 - MotoDirect: echte marktprijs koppeling ✅
 - **Handmatige dealer_reference_price per motor**: admin kan in `/admin/motorcycles/{id}/edit` de "bij dealer" prijs zelf invoeren; overschrijft de formule
 - **Marktplaats scraper knop**: haalt live vraagprijzen op via Marktplaats interne search API — toont mediaan + gemiddelde + max 8 voorbeelden
