@@ -24,6 +24,17 @@ router = APIRouter(tags=["MotoDirect"])
 
 MOTODIRECT_DEPOSIT_PERCENTAGE = 0.35  # 35% aanbetaling voor particulieren
 
+
+async def _notify_admin_new_customer(name: str, email: str, city: str):
+    """Background task: notify admin about new MotoDirect customer."""
+    try:
+        await send_admin_notification(
+            "Nieuwe MotoDirect klant",
+            f"Nieuwe particulier geregistreerd: <b>{name}</b> ({email}) uit {city}."
+        )
+    except Exception as e:
+        logger.warning(f"MotoDirect admin notification failed: {e}")
+
 # ============ AUTH ============
 
 async def get_current_motodirect_user(user: dict = Depends(get_current_user)):
@@ -80,14 +91,9 @@ async def motodirect_register(data: dict = Body(...)):
     }
     await db.users.insert_one(user_doc)
 
-    # Notify admin
-    try:
-        await send_admin_notification(
-            "Nieuwe MotoDirect klant",
-            f"Nieuwe particulier geregistreerd: <b>{name}</b> ({email}) uit {city}."
-        )
-    except Exception as e:
-        logger.warning(f"Admin notification failed: {e}")
+    # Notify admin (fire-and-forget so registration is snappy)
+    import asyncio
+    asyncio.create_task(_notify_admin_new_customer(name, email, city))
 
     token = create_token(user_id, email, "motodirect_buyer")
     return {
@@ -331,7 +337,7 @@ async def motodirect_checkout(
     except Exception as e:
         await db.motodirect_orders.delete_one({"id": order_id})
         logger.error(f"MotoDirect Stripe error: {e}")
-        raise HTTPException(status_code=500, detail=f"Betaling kon niet worden gestart: {e}")
+        raise HTTPException(status_code=500, detail="Betaling kon niet worden gestart. Probeer het later opnieuw.")
 
 
 @router.get("/motodirect/order-status/{session_id}")
