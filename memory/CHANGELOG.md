@@ -1,5 +1,14 @@
 # Moto Import - Changelog
 
+## Feb 2026 - MotoDirect besparings-visualisatie ✅
+- **Vergelijkbare dealerprijs** (doorgestreept) + groene "BESPAAR €X" badge op elke motor card
+- **Formule**: dealer_reference_price = ceil(moto-direct prijs × 1.20 / 100) × 100 (afgerond naar boven op €100)
+- **Admin instelbaar**: dealer_multiplier via `/admin/motodirect` → Instellingen (bereik 1.0–3.0, default 1.20)
+- Motor detail widget: groene "Jij bespaart €X" banner bovenaan
+- Voorbeeld effect: Ducati Multistrada V4 bespaart €4.920, Yamaha Tracer 9 €2.300
+- Testing: 53/53 backend pytest (12 nieuwe TestDealerMultiplierSavings) + volledige frontend flows ✅
+
+
 ## Feb 2026 - MotoDirect keuring & taxatie correctie ✅
 - **RDW-keuring keuze** vernieuwd: "Moto-direct regelt (€125)" of "Ik keur zelf" (op eigen rekening). MotoImport is verwijderd uit de flow.
 - **Taxatie voor BPM-vermindering** als optionele checkbox: +€160 add-on
