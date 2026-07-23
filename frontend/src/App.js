@@ -82,6 +82,15 @@ import PublicMotorListing from "./pages/PublicMotorListing";
 import PublicMotorDetail from "./pages/PublicMotorDetail";
 import CustomerMotorView from "./pages/CustomerMotorView";
 
+// MotoDirect.nl - B2C Particulieren Platform
+import MotoDirectLanding from "./pages/motodirect/MotoDirectLanding";
+import MotoDirectCatalog from "./pages/motodirect/MotoDirectCatalog";
+import MotoDirectMotorDetail from "./pages/motodirect/MotoDirectMotorDetail";
+import MotoDirectRegister from "./pages/motodirect/MotoDirectRegister";
+import MotoDirectLogin from "./pages/motodirect/MotoDirectLogin";
+import MotoDirectAccount from "./pages/motodirect/MotoDirectAccount";
+import MotoDirectCheckoutSuccess from "./pages/motodirect/MotoDirectCheckoutSuccess";
+
 // Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
   const navigate = useNavigate();
@@ -239,6 +248,15 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auto-login" element={<AutoLoginPage />} />
+
+            {/* MotoDirect.nl - B2C Particulieren Platform */}
+            <Route path="/motodirect" element={<MotoDirectLanding />} />
+            <Route path="/motodirect/catalog" element={<MotoDirectCatalog />} />
+            <Route path="/motodirect/motor/:id" element={<MotoDirectMotorDetail />} />
+            <Route path="/motodirect/register" element={<MotoDirectRegister />} />
+            <Route path="/motodirect/login" element={<MotoDirectLogin />} />
+            <Route path="/motodirect/account" element={<MotoDirectAccount />} />
+            <Route path="/motodirect/checkout/success" element={<MotoDirectCheckoutSuccess />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />

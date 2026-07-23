@@ -1,0 +1,38 @@
+{
+  "summary": "MotoDirect.nl B2C platform tested end-to-end. Backend: 24/24 pytest cases pass covering catalog (list/filter/sort/detail), register (success/duplicate/invalid BSN/short pw/missing fields), login (success/wrong pw/unknown), /me + /my-orders auth-gated, admin endpoints role-gated. Frontend: landing hero + how-it-works + value props render, catalog shows 31 motorcycles with brand/price/sort filters, motor detail shows gallery + specs + reserve widget with correct 35% deposit (Dealerprijs €2.943 -> Aanbetaling €1.030), Reserveer nu without login stores intent + redirects to /motodirect/register, register/login store motodirect_token in localStorage, account page loads profile + orders, full Stripe checkout session created and user redirected to Stripe (deposit amount €1030.05 verified). Regression: dealer + admin logins still work.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/motodirect/register", "issue": "Slow response (~10-15s) because send_admin_notification is awaited synchronously inside the request handler even though wrapped in try/except. If SMTP is slow the user waits. Consider firing notification as background task (asyncio.create_task or FastAPI BackgroundTasks)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect.xml"
+  ],
+  "action_items": [
+    "Optional: make admin notification in /api/motodirect/register non-blocking (BackgroundTasks / asyncio.create_task) to improve UX. Current UX is functional but the submit button spins for 10-15s on slow SMTP."
+  ],
+  "critical_code_review_comments": [
+    "motodirect.py stores BSN in plain text ('bsn': bsn_digits). BSN is sensitive PII in NL; consider hashing or encryption at rest, or at minimum ensuring the field is not returned in any endpoint (currently /motodirect/admin/customers explicitly excludes password but NOT bsn - admin can see plain BSN which may be intended; buyers cannot).",
+    "motodirect.py checkout error handler leaks internal exception detail to the client (f'Betaling kon niet worden gestart: {e}'). Prefer generic message + logger.error only.",
+    "motodirect.py reuses users.company_name / contact_person fields to store the full name; works but is confusing (a private buyer has no company). Consider a dedicated 'full_name' field.",
+    "MotoDirect frontend stores JWT in localStorage under 'motodirect_token' (XSS-vulnerable). Codebase-wide pattern, but a HttpOnly cookie would be safer.",
+    "Register endpoint slow due to synchronous admin notification (see minor issue)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100%"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024!. Test MotoDirect buyer created dynamically per test run (email prefix TEST_/uibuyer/uitest); cleaned up after tests.",
+  "seed_data_creation": "None - tests create their own transient users and clean them up.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "MotoDirect backend router at /api/motodirect/*, frontend routes /motodirect/*. Full regression test suite at /app/backend/tests/test_motodirect.py (24 cases, 100% pass). Stripe checkout live and returns valid session URL - real card not required. Register endpoint is slow (~10-15s) due to synchronous admin email notification; tests use longer waits (15s+).",
+  "rca of the issue": "N/A - no bugs found."
+}
