@@ -449,16 +449,37 @@ async def motodirect_order_status(
             raise HTTPException(status_code=404, detail="Bestelling niet gevonden")
 
         if status.payment_status == "paid" and order.get("payment_status") != "paid":
+            # Try to capture payment_intent_id (nodig voor refund bij annuleren)
+            payment_intent_id = None
+            for attr in ("payment_intent", "payment_intent_id", "payment_intent_ids"):
+                val = getattr(status, attr, None)
+                if val:
+                    payment_intent_id = val if isinstance(val, str) else (val[0] if isinstance(val, (list, tuple)) and val else None)
+                    if payment_intent_id:
+                        break
+
+            paid_update = {
+                "payment_status": "paid",
+                "status": "reserved",
+                "paid_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if payment_intent_id:
+                paid_update["payment_intent_id"] = payment_intent_id
+
             await db.motodirect_orders.update_one(
                 {"id": order["id"]},
-                {"$set": {"payment_status": "paid", "status": "reserved",
-                          "paid_at": datetime.now(timezone.utc).isoformat()}}
+                {"$set": paid_update}
             )
             # Reserve motorcycle
             await db.motorcycles.update_one(
                 {"id": order["motorcycle_id"]},
                 {"$set": {"is_available": False, "reserved_for_motodirect": True}}
             )
+            # Refresh order for email
+            order = await db.motodirect_orders.find_one({"id": order["id"]}, {"_id": 0})
+            # Auto-email deposit invoice to buyer (fire-and-forget)
+            import asyncio
+            asyncio.create_task(_send_deposit_invoice_email(order))
             # Notify admin
             try:
                 snap = order.get("motorcycle_snapshot", {})
@@ -715,3 +736,199 @@ async def scrape_marktplaats(
         "max_price": max(prices),
         "samples": samples,
     }
+
+
+
+# ============ ANNULEREN + REFUND (10% van totaalprijs) ============
+
+MOTODIRECT_CANCELLATION_FEE_PERCENTAGE = 0.10  # 10% van totale prijs
+
+
+async def _send_deposit_invoice_email(order: dict):
+    """Send deposit invoice PDF to buyer + admin."""
+    try:
+        from services.motodirect_pdf import generate_deposit_invoice, generate_pakbon
+        from services.email_service import send_email_with_attachment  # bestaand of nieuw
+        deposit_pdf = generate_deposit_invoice(order)
+        pakbon_pdf = generate_pakbon(order)
+
+        snap = order.get("motorcycle_snapshot") or {}
+        html = (
+            f"<p>Hallo {order.get('buyer_name', '')},</p>"
+            f"<p>Bedankt voor jouw aanbetaling! Jouw <b>{snap.get('brand', '')} {snap.get('model', '')}</b> is gereserveerd.</p>"
+            f"<p>Als bijlagen vind je:</p>"
+            f"<ul>"
+            f"<li><b>Factuur</b> voor de aanbetaling van EUR {order.get('deposit_amount', 0):.2f}</li>"
+            f"<li><b>Pakbon</b> met de motor die je hebt gekocht</li>"
+            f"</ul>"
+            f"<p>We nemen zo snel mogelijk contact op om de import en levering te regelen. Je bent gereserveerd — we regelen alles van A tot Z.</p>"
+            f"<p>Vragen? Mail <a href=\"mailto:info@moto-direct.nl\">info@moto-direct.nl</a> of bel +31 6 38 52 55 41. We zijn 24/7 online.</p>"
+            f"<p>Groet,<br>Team MotoDirect</p>"
+        )
+        # Use standard send_email with attachments if available
+        try:
+            await send_email_with_attachment(
+                to_email=order.get("buyer_email"),
+                subject=f"MotoDirect - Aanbetaling bevestigd - {snap.get('brand', '')} {snap.get('model', '')}",
+                html_body=html,
+                attachments=[
+                    (f"factuur-aanbetaling-{(order.get('id') or '')[:8]}.pdf", deposit_pdf, "application/pdf"),
+                    (f"pakbon-{(order.get('id') or '')[:8]}.pdf", pakbon_pdf, "application/pdf"),
+                ],
+            )
+        except ImportError:
+            # Fallback: plain send_email (no attachment)
+            await send_email(
+                to_email=order.get("buyer_email"),
+                subject=f"MotoDirect - Aanbetaling bevestigd",
+                html_body=html,
+            )
+    except Exception as e:
+        logger.warning(f"MotoDirect deposit invoice email failed: {e}")
+
+
+@router.post("/motodirect/orders/{order_id}/cancel")
+async def motodirect_cancel_order(
+    order_id: str,
+    user: dict = Depends(get_current_motodirect_user),
+):
+    """
+    Klant annuleert bestelling. 10% van totale prijs = annuleringskosten.
+    Rest wordt automatisch teruggestort via Stripe refund API.
+    """
+    order = await db.motodirect_orders.find_one({"id": order_id, "buyer_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Bestelling niet gevonden")
+    if order.get("status") == "cancelled":
+        raise HTTPException(status_code=400, detail="Bestelling is al geannuleerd")
+    if order.get("payment_status") != "paid":
+        # Order nog niet betaald - kan gewoon verwijderd worden
+        await db.motodirect_orders.update_one(
+            {"id": order_id},
+            {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc).isoformat(),
+                      "cancellation_fee": 0, "refund_amount": 0, "refund_status": "not_applicable"}}
+        )
+        return {"status": "cancelled", "cancellation_fee": 0, "refund_amount": 0, "refund_status": "not_applicable"}
+
+    total_price = float(order.get("total_price") or 0)
+    deposit = float(order.get("deposit_amount") or 0)
+    cancellation_fee = round(total_price * MOTODIRECT_CANCELLATION_FEE_PERCENTAGE, 2)
+    refund_amount = round(max(deposit - cancellation_fee, 0), 2)
+
+    refund_status = "pending"
+    refund_id = None
+    payment_intent = order.get("payment_intent_id")
+
+    # Try automatic refund via Stripe
+    if payment_intent and refund_amount > 0:
+        try:
+            import stripe as _stripe
+            _stripe.api_key = STRIPE_API_KEY
+            refund = _stripe.Refund.create(
+                payment_intent=payment_intent,
+                amount=int(round(refund_amount * 100)),  # cents
+                reason="requested_by_customer",
+                metadata={
+                    "motodirect_order_id": order_id,
+                    "cancellation_fee": str(cancellation_fee),
+                },
+            )
+            refund_id = refund.get("id") if isinstance(refund, dict) else getattr(refund, "id", None)
+            refund_status = "processed"
+        except Exception as e:
+            logger.error(f"MotoDirect Stripe refund error: {e}")
+            refund_status = "manual_required"
+    elif not payment_intent:
+        refund_status = "manual_required"
+
+    await db.motodirect_orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "status": "cancelled",
+            "cancelled_at": datetime.now(timezone.utc).isoformat(),
+            "cancellation_fee": cancellation_fee,
+            "refund_amount": refund_amount,
+            "refund_status": refund_status,
+            "refund_id": refund_id,
+        }}
+    )
+    # Motor is weer beschikbaar
+    await db.motorcycles.update_one(
+        {"id": order["motorcycle_id"]},
+        {"$set": {"is_available": True}, "$unset": {"reserved_for_motodirect": ""}}
+    )
+
+    # Notify admin
+    try:
+        snap = order.get("motorcycle_snapshot") or {}
+        await send_admin_notification(
+            "MotoDirect - Bestelling geannuleerd",
+            f"<h3>Annulering</h3>"
+            f"<p><b>Klant:</b> {order['buyer_name']} ({order['buyer_email']})<br>"
+            f"<b>Motor:</b> {snap.get('brand')} {snap.get('model')} - motor is weer beschikbaar<br>"
+            f"<b>Aanbetaling:</b> EUR {deposit:.2f}<br>"
+            f"<b>Annuleringskosten (10%):</b> EUR {cancellation_fee:.2f}<br>"
+            f"<b>Refund:</b> EUR {refund_amount:.2f} ({refund_status})</p>"
+        )
+    except Exception as e:
+        logger.warning(f"Admin notify cancel failed: {e}")
+
+    return {
+        "status": "cancelled",
+        "cancellation_fee": cancellation_fee,
+        "refund_amount": refund_amount,
+        "refund_status": refund_status,
+    }
+
+
+# ============ FACTUUR + PAKBON PDF downloads ============
+
+def _resolve_order_for_download(order_id: str, user: dict):
+    """Return order if user is either buyer or admin."""
+    return order_id, user
+
+
+@router.get("/motodirect/orders/{order_id}/invoice-deposit")
+async def download_deposit_invoice(
+    order_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Download aanbetalingsfactuur (buyer of admin)."""
+    from services.motodirect_pdf import generate_deposit_invoice
+    from fastapi.responses import Response
+    order = await db.motodirect_orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Bestelling niet gevonden")
+    if user.get("role") != "admin" and order.get("buyer_id") != user.get("id"):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    pdf = generate_deposit_invoice(order)
+    filename = f"factuur-aanbetaling-{order_id[:8]}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/motodirect/orders/{order_id}/pakbon")
+async def download_pakbon(
+    order_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Download pakbon (buyer of admin)."""
+    from services.motodirect_pdf import generate_pakbon
+    from fastapi.responses import Response
+    order = await db.motodirect_orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Bestelling niet gevonden")
+    if user.get("role") != "admin" and order.get("buyer_id") != user.get("id"):
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    pdf = generate_pakbon(order)
+    filename = f"pakbon-{order_id[:8]}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

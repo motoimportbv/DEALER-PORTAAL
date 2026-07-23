@@ -895,3 +895,366 @@ class TestIter40Regression:
             assert "dealer_reference_price" in m
             assert "savings" in m
             assert m["dealer_reference_price"] > 0
+
+
+# =========================================================================
+# Iteration 41: CANCEL + REFUND + PDF (factuur / pakbon)
+# =========================================================================
+
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+
+
+MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+DB_NAME = os.environ.get("DB_NAME", "test_database")
+
+
+def _mongo_run(coro):
+    """Run a coroutine synchronously in tests (creates fresh event loop)."""
+    return asyncio.get_event_loop().run_until_complete(coro) if False else asyncio.run(coro)
+
+
+def _seed_paid_order(buyer_id: str, buyer_email: str, motorcycle_id: str,
+                     motor_snapshot: dict, total_price: float = 10000.0,
+                     deposit_amount: float = 3500.0,
+                     include_payment_intent: bool = False) -> str:
+    """Directly insert a paid MotoDirect order in Mongo for cancel/PDF tests."""
+    order_id = str(uuid.uuid4())
+
+    async def _do():
+        client = AsyncIOMotorClient(MONGO_URL)
+        db = client[DB_NAME]
+        doc = {
+            "id": order_id,
+            "motorcycle_id": motorcycle_id,
+            "buyer_id": buyer_id,
+            "buyer_email": buyer_email,
+            "buyer_name": "TEST_Paid Buyer",
+            "buyer_phone": "0612345678",
+            "buyer_address": "Teststraat 1",
+            "buyer_postal_code": "1234AB",
+            "buyer_city": "Amsterdam",
+            "dealer_price": total_price - 785.0,
+            "markup": 500.0,
+            "motor_price": total_price - 285.0,
+            "keuring_fee": 125.0,
+            "taxatie_fee": 160.0,
+            "extras_total": 285.0,
+            "total_price": total_price,
+            "deposit_amount": deposit_amount,
+            "deposit_percentage": 0.35,
+            "remaining_amount": round(total_price - deposit_amount, 2),
+            "keuring_choice": "motodirect",
+            "include_taxatie": True,
+            "status": "reserved",
+            "payment_status": "paid",
+            "paid_at": "2026-01-01T00:00:00+00:00",
+            "motorcycle_snapshot": motor_snapshot,
+            "created_at": "2026-01-01T00:00:00+00:00",
+            "stripe_session_id": f"cs_test_TEST_{order_id[:8]}",
+        }
+        if include_payment_intent:
+            doc["payment_intent_id"] = f"pi_test_INVALID_{order_id[:8]}"
+        await db.motodirect_orders.insert_one(doc)
+        client.close()
+
+    _mongo_run(_do())
+    return order_id
+
+
+def _cleanup_order(order_id: str):
+    async def _do():
+        client = AsyncIOMotorClient(MONGO_URL)
+        db = client[DB_NAME]
+        await db.motodirect_orders.delete_one({"id": order_id})
+        client.close()
+
+    _mongo_run(_do())
+
+
+def _set_motor_available(motorcycle_id: str, is_available: bool):
+    async def _do():
+        client = AsyncIOMotorClient(MONGO_URL)
+        db = client[DB_NAME]
+        await db.motorcycles.update_one(
+            {"id": motorcycle_id},
+            {"$set": {"is_available": is_available}}
+        )
+        client.close()
+
+    _mongo_run(_do())
+
+
+class TestCancelOrder:
+    """POST /api/motodirect/orders/{id}/cancel"""
+
+    @pytest.fixture(scope="class")
+    def anchor_motor(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 1})
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles available")
+        return motos[0]
+
+    def test_cancel_404_unknown_order(self, session, registered_buyer):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.post(f"{API}/motodirect/orders/does-not-exist-xyz/cancel", headers=headers)
+        assert r.status_code == 404
+
+    def test_cancel_pending_order_no_refund(self, session, registered_buyer, anchor_motor):
+        """Pending (unpaid) order: status becomes cancelled with fee=0, refund=0, refund_status=not_applicable."""
+        # Create a fresh checkout (creates pending order)
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.post(
+            f"{API}/motodirect/checkout",
+            json={"motorcycle_id": anchor_motor["id"], "origin_url": BASE_URL,
+                  "keuring_choice": "self", "include_taxatie": False},
+            headers=headers,
+        )
+        assert r.status_code == 200, r.text
+        order_id = r.json()["order_id"]
+
+        # Cancel
+        c = session.post(f"{API}/motodirect/orders/{order_id}/cancel", headers=headers)
+        assert c.status_code == 200, c.text
+        body = c.json()
+        assert body["status"] == "cancelled"
+        assert body["cancellation_fee"] == 0
+        assert body["refund_amount"] == 0
+        assert body["refund_status"] == "not_applicable"
+
+        # my-orders should show this order as cancelled with cancelled_at set
+        mo = session.get(f"{API}/motodirect/my-orders", headers=headers).json()["orders"]
+        order = next((o for o in mo if o["id"] == order_id), None)
+        assert order is not None
+        assert order["status"] == "cancelled"
+        assert order.get("cancelled_at")
+        assert order.get("refund_status") == "not_applicable"
+
+        _cleanup_order(order_id)
+
+    def test_cancel_paid_order_computes_fee_and_refund(self, session, registered_buyer, anchor_motor):
+        """Paid order: fee=10% of total_price, refund_amount=deposit-fee, refund_status='manual_required' (no PI)."""
+        buyer = registered_buyer["user"]
+        motor_snapshot = {
+            "id": anchor_motor["id"],
+            "brand": anchor_motor.get("brand", "TEST"),
+            "model": anchor_motor.get("model", "TEST"),
+            "year": anchor_motor.get("year", 2024),
+            "price": anchor_motor.get("price", 10000),
+            "mileage": anchor_motor.get("mileage", 100),
+            "color": anchor_motor.get("color", "black"),
+            "images": [],
+        }
+        total_price = 10000.0
+        deposit = 3785.0
+        order_id = _seed_paid_order(buyer["id"], buyer["email"], anchor_motor["id"],
+                                    motor_snapshot, total_price=total_price, deposit_amount=deposit)
+        try:
+            _set_motor_available(anchor_motor["id"], False)  # reserved
+            headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+            r = session.post(f"{API}/motodirect/orders/{order_id}/cancel", headers=headers)
+            assert r.status_code == 200, r.text
+            body = r.json()
+            assert body["status"] == "cancelled"
+            expected_fee = round(total_price * 0.10, 2)  # 1000.0
+            expected_refund = round(deposit - expected_fee, 2)  # 2785.0
+            assert body["cancellation_fee"] == expected_fee, f"fee={body['cancellation_fee']}"
+            assert body["refund_amount"] == expected_refund, f"refund={body['refund_amount']}"
+            # No payment_intent_id in seed → refund_status should be manual_required
+            assert body["refund_status"] == "manual_required"
+
+            # Verify motor is available again
+            m = session.get(f"{API}/motodirect/catalog/{anchor_motor['id']}")
+            # Detail 404s if not available; but we just made it available → should be 200
+            assert m.status_code == 200, f"Motor should be available after cancel, got {m.status_code}"
+
+            # Verify order in my-orders has cancelled_at + refund_status
+            mo = session.get(f"{API}/motodirect/my-orders", headers=headers).json()["orders"]
+            order = next((o for o in mo if o["id"] == order_id), None)
+            assert order is not None
+            assert order["status"] == "cancelled"
+            assert order.get("cancelled_at")
+            assert order.get("refund_status") == "manual_required"
+            assert order.get("cancellation_fee") == expected_fee
+            assert order.get("refund_amount") == expected_refund
+        finally:
+            _cleanup_order(order_id)
+
+    def test_cancel_paid_with_invalid_payment_intent_still_returns_valid_schema(
+        self, session, registered_buyer, anchor_motor
+    ):
+        """Even if Stripe refund fails (invalid PI), endpoint should return 200 with refund_status=manual_required."""
+        buyer = registered_buyer["user"]
+        motor_snapshot = {
+            "id": anchor_motor["id"], "brand": "TEST", "model": "TEST",
+            "year": 2024, "price": 8000, "mileage": 1000, "color": "red", "images": [],
+        }
+        order_id = _seed_paid_order(
+            buyer["id"], buyer["email"], anchor_motor["id"], motor_snapshot,
+            total_price=8000.0, deposit_amount=3000.0, include_payment_intent=True,
+        )
+        try:
+            headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+            r = session.post(f"{API}/motodirect/orders/{order_id}/cancel", headers=headers)
+            assert r.status_code == 200, r.text
+            body = r.json()
+            assert body["status"] == "cancelled"
+            assert body["cancellation_fee"] == 800.0  # 10% of 8000
+            assert body["refund_amount"] == 2200.0    # 3000 - 800
+            # Stripe will 400 on invalid pi_test → manual_required
+            assert body["refund_status"] in ("manual_required", "processed")
+        finally:
+            _cleanup_order(order_id)
+
+    def test_cancel_already_cancelled_returns_400(self, session, registered_buyer, anchor_motor):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        # Create a pending order and cancel it
+        r = session.post(
+            f"{API}/motodirect/checkout",
+            json={"motorcycle_id": anchor_motor["id"], "origin_url": BASE_URL,
+                  "keuring_choice": "self", "include_taxatie": False},
+            headers=headers,
+        )
+        assert r.status_code == 200
+        order_id = r.json()["order_id"]
+        c1 = session.post(f"{API}/motodirect/orders/{order_id}/cancel", headers=headers)
+        assert c1.status_code == 200
+        # Second cancel → 400
+        c2 = session.post(f"{API}/motodirect/orders/{order_id}/cancel", headers=headers)
+        assert c2.status_code == 400
+        _cleanup_order(order_id)
+
+    def test_cancel_foreign_order_returns_404(self, session, admin_token, anchor_motor, registered_buyer):
+        """Another buyer's order → cancel endpoint returns 404 (not visible to this user).
+        Endpoint filters by buyer_id, so foreign orders effectively 404, not 403.
+        This is safe (no info leak). We verify 404 (or 403) is returned."""
+        # Create a second buyer
+        unique = uuid.uuid4().hex[:8]
+        other_creds = {
+            "name": "TEST_Other", "email": f"TEST_other_{unique}@example.com",
+            "password": "secret123", "phone": "0612345678",
+            "address": "X", "postal_code": "1000AA", "city": "Amsterdam",
+            "bsn": "123456789",
+        }
+        rr = session.post(f"{API}/motodirect/register", json=other_creds)
+        assert rr.status_code == 200
+        other_token = rr.json()["token"]
+        other_user = rr.json()["user"]
+
+        # Seed a paid order owned by the OTHER buyer
+        snap = {"id": anchor_motor["id"], "brand": "T", "model": "T",
+                "year": 2024, "price": 5000, "mileage": 1, "color": "b", "images": []}
+        order_id = _seed_paid_order(other_user["id"], other_user["email"],
+                                    anchor_motor["id"], snap,
+                                    total_price=5000.0, deposit_amount=2000.0)
+        try:
+            # First buyer tries to cancel other's order
+            headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+            r = session.post(f"{API}/motodirect/orders/{order_id}/cancel", headers=headers)
+            assert r.status_code in (403, 404), f"Expected 403/404, got {r.status_code}"
+        finally:
+            _cleanup_order(order_id)
+
+    def test_cancel_unauthenticated(self, session):
+        r = session.post(f"{API}/motodirect/orders/some-id/cancel")
+        assert r.status_code in (401, 403)
+
+
+class TestInvoiceAndPakbonPDF:
+    """GET /api/motodirect/orders/{id}/invoice-deposit and /pakbon"""
+
+    @pytest.fixture(scope="class")
+    def anchor_motor(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 1})
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles available")
+        return motos[0]
+
+    @pytest.fixture(scope="class")
+    def seeded_paid_order(self, registered_buyer, anchor_motor):
+        buyer = registered_buyer["user"]
+        snap = {"id": anchor_motor["id"], "brand": anchor_motor.get("brand", "TEST"),
+                "model": anchor_motor.get("model", "TEST"), "year": anchor_motor.get("year", 2024),
+                "price": anchor_motor.get("price", 10000), "mileage": 500,
+                "color": "black", "images": []}
+        order_id = _seed_paid_order(buyer["id"], buyer["email"], anchor_motor["id"], snap,
+                                    total_price=10000.0, deposit_amount=3785.0)
+        yield order_id
+        _cleanup_order(order_id)
+
+    def test_invoice_deposit_buyer_returns_pdf(self, session, registered_buyer, seeded_paid_order):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/invoice-deposit", headers=headers)
+        assert r.status_code == 200, r.text[:200]
+        assert r.headers.get("content-type", "").startswith("application/pdf")
+        assert r.content[:4] == b"%PDF"
+        assert len(r.content) > 500
+
+    def test_invoice_deposit_admin_can_download(self, session, admin_token, seeded_paid_order):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/invoice-deposit", headers=headers)
+        assert r.status_code == 200
+        assert r.headers.get("content-type", "").startswith("application/pdf")
+        assert r.content[:4] == b"%PDF"
+
+    def test_invoice_deposit_404_unknown_order(self, session, registered_buyer):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.get(f"{API}/motodirect/orders/does-not-exist-xyz/invoice-deposit", headers=headers)
+        assert r.status_code == 404
+
+    def test_invoice_deposit_403_foreign_buyer(self, session, seeded_paid_order):
+        # Register a different buyer
+        unique = uuid.uuid4().hex[:8]
+        other_creds = {"name": "TEST_Alien", "email": f"TEST_alien_{unique}@example.com",
+                       "password": "secret123", "phone": "0612345678",
+                       "address": "X", "postal_code": "1000AA", "city": "Amsterdam",
+                       "bsn": "123456789"}
+        rr = session.post(f"{API}/motodirect/register", json=other_creds)
+        assert rr.status_code == 200
+        other_token = rr.json()["token"]
+        headers = {"Authorization": f"Bearer {other_token}"}
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/invoice-deposit", headers=headers)
+        assert r.status_code == 403
+
+    def test_invoice_deposit_unauthenticated(self, session, seeded_paid_order):
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/invoice-deposit")
+        assert r.status_code in (401, 403)
+
+    def test_pakbon_buyer_returns_pdf(self, session, registered_buyer, seeded_paid_order):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/pakbon", headers=headers)
+        assert r.status_code == 200
+        assert r.headers.get("content-type", "").startswith("application/pdf")
+        assert r.content[:4] == b"%PDF"
+        assert len(r.content) > 500
+
+    def test_pakbon_admin_can_download(self, session, admin_token, seeded_paid_order):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/pakbon", headers=headers)
+        assert r.status_code == 200
+        assert r.content[:4] == b"%PDF"
+
+    def test_pakbon_404_unknown_order(self, session, admin_token):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.get(f"{API}/motodirect/orders/does-not-exist-xyz/pakbon", headers=headers)
+        assert r.status_code == 404
+
+    def test_pakbon_403_foreign_buyer(self, session, seeded_paid_order):
+        unique = uuid.uuid4().hex[:8]
+        other_creds = {"name": "TEST_Alien2", "email": f"TEST_alien2_{unique}@example.com",
+                       "password": "secret123", "phone": "0612345678",
+                       "address": "X", "postal_code": "1000AA", "city": "Amsterdam",
+                       "bsn": "123456789"}
+        rr = session.post(f"{API}/motodirect/register", json=other_creds)
+        assert rr.status_code == 200
+        other_token = rr.json()["token"]
+        headers = {"Authorization": f"Bearer {other_token}"}
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/pakbon", headers=headers)
+        assert r.status_code == 403
+
+    def test_pakbon_unauthenticated(self, session, seeded_paid_order):
+        r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/pakbon")
+        assert r.status_code in (401, 403)
+

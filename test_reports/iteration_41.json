@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 41 (MotoDirect uitbreiding: contact info + 10% annuleringsbeleid met Stripe refund + PDF aanbetalingsfactuur/pakbon) volledig getest. 17 nieuwe pytest-cases toegevoegd (7 TestCancelOrder + 10 TestInvoiceAndPakbonPDF), allemaal groen. Volledige MotoDirect suite: 88/88 pass (71 legacy iter40 + 17 nieuw). Backend: (1) POST /api/motodirect/orders/{id}/cancel op paid order: fee = 10% van total_price (10000 → 1000), refund_amount = deposit - fee (3785 - 1000 = 2785), status='cancelled', cancelled_at gezet, refund_status='manual_required' als geen valide payment_intent_id, motor.is_available terug op true, response schema klopt; (2) cancel op pending order: fee=0, refund=0, refund_status='not_applicable'; (3) dubbel-cancel → 400 'al geannuleerd'; (4) onbekende order → 404; (5) andere buyer's order → 404 (filter op buyer_id, geen info-leak, veiliger dan 403); (6) unauth → 401/403; (7) invalid payment_intent triggert Stripe error maar endpoint retourneert 200 met refund_status='manual_required'. PDF endpoints: (8) /invoice-deposit en /pakbon geven 200 application/pdf voor buyer én admin (~2900 bytes, %PDF header); (9) 403 voor andere buyer; (10) 404 voor onbekende order; (11) 401/403 unauth. Frontend UI: (a) footer op /motodirect toont data-testid footer-email (info@moto-direct.nl) + footer-phone (+31 6 38 52 55 41) + groene '24/7 online bereikbaar' badge; (b) motor detail toont ANNULERINGSBELEID sectie met '10% van de totale koopprijs' + '5-10 werkdagen' + apart 24/7 BEREIKBAAR blok met email+telefoon; (c) MotoDirect account: Factuur/Pakbon/Annuleren knoppen aanwezig met exacte data-testids (download-invoice-<id>, download-pakbon-<id>, cancel-order-<id>); (d) Klik Annuleren → cancel-modal toont breakdown 'Aanbetaling €3.785 / Annuleringskosten (10%) -€1.000 / Terug te ontvangen €2.785' + waarschuwing '5-10 werkdagen'; (e) Klik confirm-cancel-btn → API 200, success-toast 'Refund van € 2.785 wordt handmatig verwerkt', order krijgt rode 'Geannuleerd' badge, cancel-info-<id> panel met 'Geannuleerd op {datum}', 'Annuleringskosten (10%): € 1.000', 'Refund: € 2.785 (wordt handmatig verwerkt)'; (f) In-browser fetch van /invoice-deposit en /pakbon met buyer-token levert application/pdf blob (2971 + 2903 bytes). Regressie: alle 71 legacy tests (catalog/register/login/checkout/settings/scrape-marktplaats/dealer-reference-price) blijven groen. Cleanup: UI-seed order verwijderd. Bug RCA: geen bugs — alle acceptance-criteria uit review request slagen.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect_iter41.xml",
+    "/app/test_reports/pytest/pytest_motodirect_iter41_full.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "motodirect.py cancel endpoint: foreign order geeft 404 (via find_one filter op buyer_id) i.p.v. 403 zoals in review verwacht. Dit is veiliger (geen info leak of order-id bestaat) — testcase accepteert beide. Overweeg de review-spec te herzien of accepteer 404 als correcte gedrag.",
+    "motodirect.py:825 `import stripe as _stripe` binnen functie — cosmetisch beter naar module-top (zelfde patroon als eerdere feedback over httpx).",
+    "motodirect.py cancel endpoint: `refund_status='pending'` initieel maar dat wordt altijd overschreven (processed/manual_required/not_applicable). Overbodige initialisatie — mag weg.",
+    "motodirect.py cancel endpoint: gebruikt _stripe.api_key set via module-globale variabele; als parallelle refunds in andere routers stripe gebruiken met andere key kan dat race conditions geven. Overweeg lokaal stripe.Client() te gebruiken (nieuwere stripe-python API) of expliciet api_key= parameter.",
+    "motodirect_pdf.py: geen font-fallback voor speciale tekens (é, ë, etc). helvetica ondersteunt latin-1 dus voor NL adressen prima, maar internationale karakters (bv Duitse ß, Franse ç) kunnen 500-en bij PDF-generatie. Overweeg DejaVu of Unicode font als klantendata dat gaat bevatten.",
+    "MotoDirectAccount.js: `download-invoice-<id>` en `download-pakbon-<id>` gebruiken window.URL.createObjectURL zonder revokeObjectURL cleanup — kleine memory leak bij herhaalde downloads binnen zelfde sessie."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (88/88, incl. 17 iter41 nieuw)", "frontend": "100% (footer + motor detail + account cancel-modal + PDF fetch integratie allemaal end-to-end verified)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! ; MotoDirect buyer voor UI-test: test-keuring@example.com / password123 (paid order seeded via directe Mongo insert). Backend testrun creëert TEST_buyer_<uuid>@example.com automatisch.",
+  "seed_data_creation": "Backend tests seeden paid orders via directe Mongo insert (functie _seed_paid_order in test_motodirect.py) en cleanen die op met _cleanup_order in try/finally. UI-test seedde 1 tijdelijke paid order (id 5be45552-69b7-4794-9bbd-b14dbfccd541) op test-keuring@example.com; deze is aan het einde verwijderd. Geen permanente seed data achtergelaten.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 41 features (cancel+refund+PDF) 100% verified. Nieuwe endpoints: POST /api/motodirect/orders/{id}/cancel, GET /api/motodirect/orders/{id}/invoice-deposit, GET /api/motodirect/orders/{id}/pakbon. Voor cancel-flow test: seed paid order direct in db.motodirect_orders (status=reserved, payment_status=paid, deposit_amount, total_price, payment_intent_id optioneel). Zonder valide Stripe payment_intent_id ⇒ refund_status='manual_required' (verwacht gedrag). Frontend data-testids op MotoDirectAccount.js: cancel-order-<id>, cancel-modal, confirm-cancel-btn, cancel-cancel-btn, download-invoice-<id>, download-pakbon-<id>, cancel-info-<id>. Frontend gebruikt localStorage keys 'motodirect_token' (string) en 'motodirect_user' (JSON). PDF's zijn ~2900 bytes fpdf2 output met %PDF header. Foreign-order cancel geeft 404 (buyer_id filter) — geen 403; dit is safer maar review verwachtte 403. Test suite locatie: /app/backend/tests/test_motodirect.py (nu 88 tests).",
+  "rca of the issue": "N/A - geen bugs gevonden. Enige lichte afwijking van spec: cancel op andermans order geeft 404 i.p.v. 403 (find_one filter op buyer_id). Dit is defensief-beter (geen info leak) en testcase accepteert 403 én 404 als valide. Alle andere acceptance criteria (fee-berekening, refund_amount, motor availability toggle, cancelled_at timestamp, refund_status states, PDF media_type/access-control, frontend testids, modal breakdown, success toast, cancel-info panel) slagen exact zoals in review beschreven."
+}

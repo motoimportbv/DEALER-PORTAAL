@@ -274,6 +274,20 @@ export default function MotoDirectMotorDetail() {
               <TrustRow icon={Truck} text="Wekelijkse import — kort levertijd" />
               <TrustRow icon={Wallet} text="Restant pas bij aflevering" />
             </div>
+
+            <div className="border border-[#1c1c1c] p-5 text-xs text-neutral-400 space-y-1.5">
+              <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold mb-2">Annuleringsbeleid</div>
+              <div>Annuleren kan altijd. Bij annulering rekenen wij 10% van de totale koopprijs als kosten. Het resterende bedrag wordt automatisch via iDEAL of creditcard teruggestort binnen 5-10 werkdagen.</div>
+            </div>
+
+            <div className="border border-[#00FF66]/30 bg-[#00FF66]/5 p-5 text-xs space-y-2">
+              <div className="text-[10px] uppercase tracking-widest text-[#00FF66] font-semibold flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-[#00FF66] rounded-full animate-pulse" />
+                24/7 bereikbaar
+              </div>
+              <a href="mailto:info@moto-direct.nl" className="block text-white hover:text-[#0047FF] transition-colors">info@moto-direct.nl</a>
+              <a href="tel:+31638525541" className="block text-white hover:text-[#0047FF] transition-colors">+31 6 38 52 55 41</a>
+            </div>
           </aside>
         </div>
       </div>

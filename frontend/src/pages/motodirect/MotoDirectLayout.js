@@ -199,9 +199,20 @@ export default function MotoDirectLayout({ children }) {
           <div>
             <h4 className="text-xs uppercase tracking-widest text-neutral-500 mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-neutral-400">
-              <li>Onderdeel van MotoImport BV</li>
-              <li>KVK 94622086</li>
-              <li>motoimportbv@gmail.com</li>
+              <li>
+                <a href="mailto:info@moto-direct.nl" className="hover:text-white transition-colors" data-testid="footer-email">info@moto-direct.nl</a>
+              </li>
+              <li>
+                <a href="tel:+31638525541" className="hover:text-white transition-colors" data-testid="footer-phone">+31 6 38 52 55 41</a>
+              </li>
+              <li className="flex items-center gap-1.5 text-[#00FF66] text-xs mt-1">
+                <span className="w-1.5 h-1.5 bg-[#00FF66] rounded-full animate-pulse" />
+                24/7 online bereikbaar
+              </li>
+              <li className="text-xs mt-3 pt-3 border-t border-[#1c1c1c] text-neutral-500">
+                Onderdeel van MotoImport BV<br />
+                KVK 94622086
+              </li>
             </ul>
           </div>
         </div>
