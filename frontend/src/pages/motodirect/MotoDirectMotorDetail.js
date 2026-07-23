@@ -14,6 +14,7 @@ export default function MotoDirectMotorDetail() {
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [reserving, setReserving] = useState(false);
+  const [inspectionChoice, setInspectionChoice] = useState('motoimport');
 
   useEffect(() => {
     let mounted = true;
@@ -46,7 +47,7 @@ export default function MotoDirectMotorDetail() {
       const origin_url = window.location.origin;
       const res = await axios.post(
         `${API}/motodirect/checkout`,
-        { motorcycle_id: id, origin_url },
+        { motorcycle_id: id, origin_url, inspection_choice: inspectionChoice },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       window.location.href = res.data.checkout_url;
@@ -129,9 +130,47 @@ export default function MotoDirectMotorDetail() {
             </div>
 
             <div className="bg-white text-black p-6">
-              <div className="text-[10px] uppercase tracking-widest text-[#0047FF] font-semibold mb-1">Dealerprijs</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#0047FF] font-semibold mb-1">Prijs</div>
               <div className="heading text-4xl font-bold leading-none">{formatPrice(motor.price)}</div>
-              <div className="text-xs text-neutral-500 mt-1">Direct van de importeur, geen dealermarge</div>
+              <div className="text-xs text-neutral-500 mt-1">All-in prijs, geen verborgen kosten</div>
+
+              {/* Inspection choice */}
+              <div className="border-t border-neutral-200 mt-5 pt-5">
+                <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-semibold mb-3">Keuring / APK — kies wie</div>
+                <div className="space-y-2">
+                  <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${inspectionChoice === 'motoimport' ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                    <input
+                      type="radio"
+                      name="inspection"
+                      value="motoimport"
+                      checked={inspectionChoice === 'motoimport'}
+                      onChange={() => setInspectionChoice('motoimport')}
+                      data-testid="inspection-motoimport"
+                      className="mt-1 accent-[#0047FF]"
+                    />
+                    <div className="text-xs">
+                      <div className="font-semibold text-black">MotoImport keurt</div>
+                      <div className="text-neutral-500 mt-0.5">Onze eigen garage regelt APK en RDW-registratie</div>
+                    </div>
+                  </label>
+                  <label className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${inspectionChoice === 'motodirect' ? 'border-[#0047FF] bg-[#0047FF]/5' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                    <input
+                      type="radio"
+                      name="inspection"
+                      value="motodirect"
+                      checked={inspectionChoice === 'motodirect'}
+                      onChange={() => setInspectionChoice('motodirect')}
+                      data-testid="inspection-motodirect"
+                      className="mt-1 accent-[#0047FF]"
+                    />
+                    <div className="text-xs">
+                      <div className="font-semibold text-black">Moto-direct regelt het</div>
+                      <div className="text-neutral-500 mt-0.5">Wij regelen het van A tot Z via onze partners</div>
+                    </div>
+                  </label>
+                </div>
+                <div className="text-[11px] text-neutral-500 mt-3">Beide opties inclusief — geen extra kosten</div>
+              </div>
 
               <div className="border-t border-neutral-200 mt-5 pt-5 space-y-3 text-sm">
                 <div className="flex items-center justify-between">

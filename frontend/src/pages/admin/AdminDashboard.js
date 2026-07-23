@@ -279,6 +279,26 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </Link>
+
+          <Link to="/admin/motodirect" className="block" data-testid="motodirect-admin-card">
+            <Card className="kpi-card hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer border-2 border-blue-100">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-barlow uppercase tracking-wider text-xs font-semibold text-blue-600 mb-1">
+                      MotoDirect.nl
+                    </p>
+                    <p className="font-barlow text-2xl font-bold text-zinc-900">
+                      Bestellingen & marge
+                    </p>
+                  </div>
+                  <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <ArrowRight className="w-7 h-7 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Recent Orders */}

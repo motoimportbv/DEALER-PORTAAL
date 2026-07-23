@@ -90,6 +90,8 @@ import MotoDirectRegister from "./pages/motodirect/MotoDirectRegister";
 import MotoDirectLogin from "./pages/motodirect/MotoDirectLogin";
 import MotoDirectAccount from "./pages/motodirect/MotoDirectAccount";
 import MotoDirectCheckoutSuccess from "./pages/motodirect/MotoDirectCheckoutSuccess";
+import MotoDirectAdmin from "./pages/admin/MotoDirectAdmin";
+import HostnameGuard from "./components/HostnameGuard";
 
 // Helper component to handle service worker navigation and geo-language
 function NotificationHandler() {
@@ -226,6 +228,7 @@ function App() {
           <Toaster position="top-right" richColors />
           <BrowserRouter>
             <PreviewRedirect />
+            <HostnameGuard />
             <NotificationHandler />
             <TaxatieDealerGuard />
             <Routes>
@@ -268,6 +271,7 @@ function App() {
             <Route path="/admin/coc-orders" element={<CocOrders />} />
             <Route path="/admin/dealers" element={<DealerManagement />} />
             <Route path="/admin/pending-foreign" element={<PendingForeignListings />} />
+            <Route path="/admin/motodirect" element={<MotoDirectAdmin />} />
             <Route path="/admin/parts" element={<AdminParts />} />
             <Route path="/admin/part-orders" element={<AdminPartOrders />} />
             <Route path="/admin/license-plates" element={<AdminLicensePlates />} />

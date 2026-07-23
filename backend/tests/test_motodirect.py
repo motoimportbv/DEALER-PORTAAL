@@ -242,3 +242,194 @@ class TestRoleIsolation:
         headers = {"Authorization": f"Bearer {admin_token}"}
         r = session.get(f"{API}/motodirect/me", headers=headers)
         assert r.status_code == 403
+
+
+# ---------- Admin markup settings (NEW iteration 37) ----------
+
+class TestAdminSettings:
+    """Tests voor /motodirect/admin/settings (markup config)."""
+
+    def test_get_settings_admin(self, session, admin_token):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.get(f"{API}/motodirect/admin/settings", headers=headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert "markup" in data
+        assert "default_markup" in data
+        assert data["default_markup"] == 500.0
+        # markup should be a number
+        assert isinstance(data["markup"], (int, float))
+
+    def test_get_settings_forbidden_for_buyer(self, session, registered_buyer):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.get(f"{API}/motodirect/admin/settings", headers=headers)
+        assert r.status_code == 403
+
+    def test_get_settings_forbidden_unauth(self, session):
+        r = session.get(f"{API}/motodirect/admin/settings")
+        assert r.status_code in (401, 403)
+
+    def test_put_settings_negative_rejected(self, session, admin_token):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.put(f"{API}/motodirect/admin/settings", json={"markup": -10}, headers=headers)
+        assert r.status_code == 400
+
+    def test_put_settings_non_numeric_rejected(self, session, admin_token):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.put(f"{API}/motodirect/admin/settings", json={"markup": "abc"}, headers=headers)
+        assert r.status_code == 400
+
+    def test_put_settings_forbidden_for_buyer(self, session, registered_buyer):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.put(f"{API}/motodirect/admin/settings", json={"markup": 750}, headers=headers)
+        assert r.status_code == 403
+
+
+# ---------- Markup applied to catalog + reset ----------
+
+class TestMarkupAppliedToCatalog:
+    """
+    E2E: change markup, verify GET /catalog reflects new price (dealer + markup),
+    verify detail endpoint deposit is 35% of (dealer+markup), then reset to 500.
+    Uses a module-scoped 'raw_dealer_price' anchor motor.
+    """
+
+    @pytest.fixture(scope="class")
+    def admin_headers(self, admin_token):
+        return {"Authorization": f"Bearer {admin_token}"}
+
+    @pytest.fixture(scope="class")
+    def anchor_motor_id(self, session):
+        """Pick a motorcycle id we can use to test price movement."""
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 5})
+        assert r.status_code == 200
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles available for markup test")
+        return motos[0]["id"]
+
+    def _set_markup(self, session, admin_headers, value):
+        r = session.put(f"{API}/motodirect/admin/settings", json={"markup": value}, headers=admin_headers)
+        assert r.status_code == 200, r.text
+        assert r.json()["markup"] == value
+        return r.json()["markup"]
+
+    def _get_detail_price(self, session, motor_id):
+        r = session.get(f"{API}/motodirect/catalog/{motor_id}")
+        assert r.status_code == 200
+        return r.json()
+
+    def test_default_markup_500_applied(self, session, admin_headers, anchor_motor_id):
+        # Ensure markup is at default 500
+        self._set_markup(session, admin_headers, 500.0)
+        d = self._get_detail_price(session, anchor_motor_id)
+        price_at_500 = d["price"]
+        # deposit is 35% of consumer price
+        expected_deposit = round(price_at_500 * 0.35, 2)
+        assert abs(d["deposit_amount"] - expected_deposit) < 0.01
+        assert d["deposit_percentage"] == 0.35
+        # Save for later comparison
+        TestMarkupAppliedToCatalog._price_at_500 = price_at_500
+
+    def test_update_markup_750_reflected_immediately(self, session, admin_headers, anchor_motor_id):
+        # Set markup to 750, catalog price should jump by exactly 250 vs. 500 baseline
+        self._set_markup(session, admin_headers, 750.0)
+        d = self._get_detail_price(session, anchor_motor_id)
+        delta = round(d["price"] - TestMarkupAppliedToCatalog._price_at_500, 2)
+        assert abs(delta - 250.0) < 0.01, f"Expected +250 in price, got {delta}"
+        # deposit reflects new price
+        assert abs(d["deposit_amount"] - round(d["price"] * 0.35, 2)) < 0.01
+        # And in the catalog list also
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 100})
+        motos = {m["id"]: m for m in r.json()["motorcycles"]}
+        assert anchor_motor_id in motos
+        assert abs(motos[anchor_motor_id]["price"] - d["price"]) < 0.01
+
+    def test_update_markup_zero_edge_case(self, session, admin_headers, anchor_motor_id):
+        # Setting markup to 0 should work (admin wants no margin)
+        self._set_markup(session, admin_headers, 0.0)
+        d = self._get_detail_price(session, anchor_motor_id)
+        # price at 0 markup should be price_at_500 - 500
+        expected = round(TestMarkupAppliedToCatalog._price_at_500 - 500.0, 2)
+        assert abs(d["price"] - expected) < 0.01
+
+    def test_reset_markup_to_500(self, session, admin_headers, anchor_motor_id):
+        # Reset to 500 (cleanup so other tests are not affected)
+        self._set_markup(session, admin_headers, 500.0)
+        d = self._get_detail_price(session, anchor_motor_id)
+        assert abs(d["price"] - TestMarkupAppliedToCatalog._price_at_500) < 0.01
+
+
+# ---------- Checkout inspection_choice ----------
+
+class TestCheckoutInspectionChoice:
+    """
+    Verify that POST /motodirect/checkout accepts inspection_choice and stores it on the order.
+    We don't complete the Stripe payment - we just verify the order row got persisted with the
+    correct inspection_choice and total_price = dealer + markup.
+    """
+
+    @pytest.fixture(scope="class")
+    def anchor_motor(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 5})
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No motorcycles available")
+        return motos[0]
+
+    def _post_checkout(self, session, buyer, motor_id, inspection_choice=None):
+        headers = {"Authorization": f"Bearer {buyer['token']}"}
+        payload = {"motorcycle_id": motor_id, "origin_url": BASE_URL}
+        if inspection_choice is not None:
+            payload["inspection_choice"] = inspection_choice
+        return session.post(f"{API}/motodirect/checkout", json=payload, headers=headers)
+
+    def _get_my_last_order(self, session, buyer):
+        headers = {"Authorization": f"Bearer {buyer['token']}"}
+        r = session.get(f"{API}/motodirect/my-orders", headers=headers)
+        assert r.status_code == 200
+        orders = r.json().get("orders", [])
+        assert orders, "Expected at least one order after checkout"
+        return orders[0]  # newest first
+
+    def test_checkout_with_motoimport(self, session, registered_buyer, anchor_motor, admin_token):
+        # Ensure markup default 500
+        session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"markup": 500.0},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motoimport")
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "checkout_url" in data
+        assert "order_id" in data
+        # Total price returned should be catalog price (already contains markup)
+        assert abs(data["total_price"] - anchor_motor["price"]) < 0.01
+        # Deposit is 35%
+        assert abs(data["deposit_amount"] - round(anchor_motor["price"] * 0.35, 2)) < 0.01
+        # Verify persisted order carries inspection_choice
+        last_order = self._get_my_last_order(session, registered_buyer)
+        assert last_order["inspection_choice"] == "motoimport"
+        assert last_order["markup"] == 500.0
+        assert abs(last_order["total_price"] - anchor_motor["price"]) < 0.01
+
+    def test_checkout_with_motodirect(self, session, registered_buyer, anchor_motor):
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "motodirect")
+        assert r.status_code == 200
+        last_order = self._get_my_last_order(session, registered_buyer)
+        assert last_order["inspection_choice"] == "motodirect"
+
+    def test_checkout_default_inspection_choice(self, session, registered_buyer, anchor_motor):
+        # No inspection_choice -> defaults to motoimport
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], None)
+        assert r.status_code == 200
+        last_order = self._get_my_last_order(session, registered_buyer)
+        assert last_order["inspection_choice"] == "motoimport"
+
+    def test_checkout_invalid_choice_falls_back(self, session, registered_buyer, anchor_motor):
+        # Weird value -> should silently fallback to motoimport (per router logic)
+        r = self._post_checkout(session, registered_buyer, anchor_motor["id"], "banana")
+        assert r.status_code == 200
+        last_order = self._get_my_last_order(session, registered_buyer)
+        assert last_order["inspection_choice"] == "motoimport"

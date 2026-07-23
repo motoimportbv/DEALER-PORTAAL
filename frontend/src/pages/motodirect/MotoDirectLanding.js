@@ -57,7 +57,7 @@ export default function MotoDirectLanding() {
             {
               icon: Wallet,
               title: 'Bespaar duizenden euros',
-              desc: 'Je betaalt dealerprijs — de prijs die officiële dealers zelf bij ons afrekenen. Geen dealermarge, geen showroomkosten.'
+              desc: 'Onze all-in prijs is fors lager dan bij een reguliere dealer. Geen tussenpersonen, geen showroomkosten, wel dezelfde service.'
             },
             {
               icon: Shield,
@@ -112,7 +112,7 @@ export default function MotoDirectLanding() {
                 Zie het verschil.
               </h2>
               <p className="text-neutral-400 text-lg leading-relaxed mb-8">
-                Waar dealers hun marge van 20-30% bovenop de inkoopprijs plaatsen, geven wij jou toegang tot dezelfde prijs die zij zelf bij ons betalen. Punt.
+                Waar reguliere dealers hun marge van 20-30% bovenop de inkoopprijs plaatsen, geven wij jou een eerlijke all-in prijs zonder tussenpersonen. Simpel en transparant.
               </p>
               <Link
                 to="/motodirect/catalog"
@@ -124,19 +124,19 @@ export default function MotoDirectLanding() {
             </div>
             <div className="space-y-4">
               <div className="border border-neutral-800 p-6 opacity-60">
-                <div className="text-xs uppercase tracking-widest text-neutral-500 mb-2">Bij een dealer</div>
+                <div className="text-xs uppercase tracking-widest text-neutral-500 mb-2">Bij een reguliere dealer</div>
                 <div className="flex items-baseline justify-between">
                   <span className="heading text-3xl font-bold text-white line-through">€14.995</span>
-                  <span className="text-sm text-neutral-500">incl. marge</span>
+                  <span className="text-sm text-neutral-500">incl. dealermarge</span>
                 </div>
               </div>
               <div className="border-2 border-[#0047FF] bg-[#0047FF]/5 p-6">
                 <div className="text-xs uppercase tracking-widest text-[#0047FF] mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-3 h-3" /> Via MotoDirect
+                  <CheckCircle2 className="w-3 h-3" /> Via Moto-direct
                 </div>
                 <div className="flex items-baseline justify-between">
-                  <span className="heading text-4xl font-bold text-white">€11.500</span>
-                  <span className="text-sm text-[#00FF66] font-semibold">Bespaar €3.495</span>
+                  <span className="heading text-4xl font-bold text-white">€12.000</span>
+                  <span className="text-sm text-[#00FF66] font-semibold">Bespaar €2.995</span>
                 </div>
               </div>
             </div>

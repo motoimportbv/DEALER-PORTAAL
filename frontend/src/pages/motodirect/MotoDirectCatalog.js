@@ -39,7 +39,7 @@ export default function MotoDirectCatalog() {
     }
   };
 
-  useEffect(() => { fetchCatalog(); }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchCatalog(); }, [filters]);
 
   const formatPrice = (v) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0);
 
@@ -170,7 +170,7 @@ export default function MotoDirectCatalog() {
                       </div>
                       <div className="pt-4 border-t border-[#1c1c1c] flex items-baseline justify-between">
                         <div>
-                          <div className="text-[10px] uppercase tracking-widest text-[#0047FF]">Dealerprijs</div>
+                          <div className="text-[10px] uppercase tracking-widest text-[#0047FF]">All-in prijs</div>
                           <div className="heading text-2xl font-bold text-white">{formatPrice(m.price)}</div>
                         </div>
                         <ArrowRight className="w-5 h-5 text-neutral-600 group-hover:text-[#0047FF] group-hover:translate-x-1 transition-all" />

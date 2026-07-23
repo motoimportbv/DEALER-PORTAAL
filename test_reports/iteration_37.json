@@ -1,0 +1,40 @@
+{
+  "summary": "MotoDirect.nl uitbreidingen (iteration 37) volledig getest. Backend: 38/38 pytest cases geslaagd (24 bestaand + 14 nieuw). Nieuwe coverage: admin GET/PUT /motodirect/admin/settings met markup default 500, 403 voor buyer/unauth, negatieve markup afgewezen (400), non-numeric afgewezen (400), markup 0 edge case werkt. Markup end-to-end: catalog + detail endpoints tonen dealerprijs+markup direct na PUT (750 -> +250 exact vs baseline; 0 -> -500), deposit = 35% van (dealer+markup). Checkout: inspection_choice motoimport/motodirect wordt op order opgeslagen, ontbrekend default = motoimport, ongeldige waarde valt terug op motoimport. total_price = dealer + markup persisted. Markup gereset naar 500 aan einde. Frontend: /motodirect/motor/:id toont inspection radios (default motoimport, klik naar motodirect werkt); /admin/motodirect toont 3 tabs (Bestellingen/Klanten/Instellingen); markup wijzigen 500->650->500 werkt via UI met toast 'Marge bijgewerkt naar € 650'; admin dashboard MotoDirect card linkt naar /admin/motodirect. Regressie: dealer login + admin login blijven werken; motodirect register/login/me/my-orders/admin orders+customers 100% pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/motodirect/checkout", "issue": "Ongeldige inspection_choice (bv 'banana') faalt niet expliciet maar valt silently terug op 'motoimport'. Overwegen om 400 te retourneren voor onbekende waarden voor duidelijkere API-contract validatie."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect.xml"
+  ],
+  "action_items": [
+    "Optioneel: strikte validatie op inspection_choice in checkout (400 i.p.v. silent fallback).",
+    "Optioneel: markup update kan via websocket / event pushen worden zodat open frontend pagina's automatisch refreshen (nu enkel voelbaar na hard reload of nieuwe request)."
+  ],
+  "critical_code_review_comments": [
+    "motodirect.py: _get_markup wordt bij elke catalog/detail/checkout request opnieuw uit Mongo geladen — geen caching. Bij hoge load kan dit een unnodige round trip zijn; overwegen in-memory TTL cache (5-30s) om DB-hits te beperken.",
+    "motodirect.py: markup wordt als float opgeslagen zonder precision guard; voor bedragen in EUR is Decimal veiliger tegen floating point rounding (bv. €0.10 stappen).",
+    "motodirect.py catalog price filter: converteert user-facing min_price/max_price naar dealer-price bounds door markup af te trekken; als markup later verandert tijdens de sessie kunnen filters iets scheve resultaten geven — acceptabel gezien de admin-frequentie maar noemenswaardig.",
+    "motodirect.py checkout accepteert alle strings voor inspection_choice en logt ze niet als ongeldig; overwegen expliciete pydantic Literal['motoimport','motodirect'] voor duidelijker contract.",
+    "HostnameGuard.js is puur client-side — als backend directe URLs (deep links) serveert kunnen bezoekers van moto-direct.nl in theorie nog dealer-pages laden vóór React de redirect uitvoert. Voor echte hostname-isolatie zou een reverse-proxy of server-side check nodig zijn. Voor B2C-preview is client-side voldoende.",
+    "MotoDirectAdmin.js load() heeft geen debouncing / abort-controller; als admin snel tussen tabs klikt tijdens laden kan er een race zijn."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (38/38)", "frontend": "100% (motor detail radios, admin dashboard card, 3 admin tabs, markup edit + save + reset)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024!. Dealer: zoektest@dealer.nl / Test2024! (regression). MotoDirect buyer: dynamisch aangemaakt per testrun met TEST_ prefix.",
+  "seed_data_creation": "Geen permanente seed data. Testrun maakt tijdelijk 1 MotoDirect buyer + 4 pending orders (via checkout tests) aan; markup wordt gereset naar 500 aan einde. De 4 pending orders blijven staan in db.motodirect_orders (payment_status=pending) — niet kritisch maar admin kan die desgewenst opruimen.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "MotoDirect markup config zit in db.settings met key='motodirect_settings'. Default 500. Wijzigingen zijn direct actief op catalog/detail/checkout — geen cache. Test suite /app/backend/tests/test_motodirect.py bevat 38 cases (100% pass) inclusief markup-e2e + inspection_choice + admin settings. Checkout tests maken via echte Stripe API 4 sessies aan; deze blijven als pending orders staan. Frontend: MotoDirect admin URL = /admin/motodirect (protected by Layout requiredRole=admin - geen aparte guard). HostnameGuard is puur cosmetisch client-side, niet testbaar op preview-hostname.",
+  "rca of the issue": "N/A - geen bugs gevonden. Alle uitbreidingen werken correct."
+}

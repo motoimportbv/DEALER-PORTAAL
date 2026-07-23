@@ -23,6 +23,24 @@ from emergentintegrations.payments.stripe.checkout import (
 router = APIRouter(tags=["MotoDirect"])
 
 MOTODIRECT_DEPOSIT_PERCENTAGE = 0.35  # 35% aanbetaling voor particulieren
+MOTODIRECT_DEFAULT_MARKUP = 500.0     # Standaard marge boven op dealerprijs
+MOTODIRECT_SETTINGS_KEY = "motodirect_settings"
+
+
+async def _get_markup() -> float:
+    """Get current admin-configured markup (fallback to default)."""
+    doc = await db.settings.find_one({"key": MOTODIRECT_SETTINGS_KEY})
+    if doc and doc.get("markup") is not None:
+        return float(doc["markup"])
+    return MOTODIRECT_DEFAULT_MARKUP
+
+
+def _apply_markup(price, markup: float):
+    """Add markup to a raw dealer price (safely handles None/0)."""
+    try:
+        return round(float(price or 0) + markup, 2)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 async def _notify_admin_new_customer(name: str, email: str, city: str):
@@ -159,16 +177,18 @@ async def motodirect_catalog(
     offset: int = 0,
 ):
     """Public catalog: alle beschikbare motoren voor particulieren."""
+    markup = await _get_markup()
     query = {
         "is_available": True,
     }
     if brand:
         query["brand"] = brand
+    # Filter on FINAL price (dealer price + markup). Convert user-facing bounds back to dealer price.
     price_range = {}
     if min_price is not None:
-        price_range["$gte"] = float(min_price)
+        price_range["$gte"] = float(min_price) - markup
     if max_price is not None:
-        price_range["$lte"] = float(max_price)
+        price_range["$lte"] = float(max_price) - markup
     if price_range:
         query["price"] = price_range
     year_range = {}
@@ -191,7 +211,7 @@ async def motodirect_catalog(
     cursor = db.motorcycles.find(query, {"_id": 0}).sort(sort_by).skip(offset).limit(limit)
     motorcycles = await cursor.to_list(limit)
 
-    # Trim fields for public listing
+    # Trim fields for public listing + apply markup
     result = []
     for m in motorcycles:
         result.append({
@@ -199,7 +219,7 @@ async def motodirect_catalog(
             "brand": m.get("brand"),
             "model": m.get("model"),
             "year": m.get("year"),
-            "price": m.get("price"),
+            "price": _apply_markup(m.get("price"), markup),
             "mileage": m.get("mileage"),
             "color": m.get("color", ""),
             "condition": m.get("condition", ""),
@@ -230,12 +250,14 @@ async def motodirect_catalog_detail(motorcycle_id: str):
     m = await db.motorcycles.find_one({"id": motorcycle_id, "is_available": True}, {"_id": 0})
     if not m:
         raise HTTPException(status_code=404, detail="Motor niet gevonden of niet meer beschikbaar")
+    markup = await _get_markup()
+    final_price = _apply_markup(m.get("price"), markup)
     return {
         "id": m.get("id"),
         "brand": m.get("brand"),
         "model": m.get("model"),
         "year": m.get("year"),
-        "price": m.get("price"),
+        "price": final_price,
         "mileage": m.get("mileage"),
         "color": m.get("color", ""),
         "condition": m.get("condition", ""),
@@ -243,7 +265,7 @@ async def motodirect_catalog_detail(motorcycle_id: str):
         "description": m.get("description", ""),
         "chassis_number": m.get("chassis_number", ""),
         "deposit_percentage": MOTODIRECT_DEPOSIT_PERCENTAGE,
-        "deposit_amount": round(float(m.get("price", 0)) * MOTODIRECT_DEPOSIT_PERCENTAGE, 2),
+        "deposit_amount": round(final_price * MOTODIRECT_DEPOSIT_PERCENTAGE, 2),
     }
 
 
@@ -257,6 +279,9 @@ async def motodirect_checkout(
     """Create Stripe checkout session for 35% deposit."""
     motorcycle_id = data.get("motorcycle_id")
     origin_url = data.get("origin_url", "")
+    inspection_choice = (data.get("inspection_choice") or "motoimport").lower()
+    if inspection_choice not in ("motoimport", "motodirect"):
+        inspection_choice = "motoimport"
     if not motorcycle_id or not origin_url:
         raise HTTPException(status_code=400, detail="motorcycle_id en origin_url vereist")
 
@@ -266,7 +291,9 @@ async def motodirect_checkout(
     if not motor.get("is_available", True):
         raise HTTPException(status_code=400, detail="Motor is niet meer beschikbaar")
 
-    motor_price = float(motor["price"])
+    markup = await _get_markup()
+    dealer_price = float(motor["price"])
+    motor_price = round(dealer_price + markup, 2)  # Final consumer price
     deposit_amount = round(motor_price * MOTODIRECT_DEPOSIT_PERCENTAGE, 2)
 
     snapshot = {
@@ -274,7 +301,9 @@ async def motodirect_checkout(
         "brand": motor.get("brand"),
         "model": motor.get("model"),
         "year": motor.get("year"),
-        "price": motor.get("price"),
+        "price": motor_price,  # Final consumer price (incl. markup)
+        "dealer_price": dealer_price,
+        "markup": markup,
         "mileage": motor.get("mileage"),
         "color": motor.get("color"),
         "images": motor.get("images", []),
@@ -291,10 +320,13 @@ async def motodirect_checkout(
         "buyer_address": user.get("address", ""),
         "buyer_postal_code": user.get("postal_code", ""),
         "buyer_city": user.get("city", ""),
+        "dealer_price": dealer_price,
+        "markup": markup,
         "total_price": motor_price,
         "deposit_amount": deposit_amount,
         "deposit_percentage": MOTODIRECT_DEPOSIT_PERCENTAGE,
         "remaining_amount": motor_price - deposit_amount,
+        "inspection_choice": inspection_choice,  # 'motoimport' of 'motodirect'
         "status": "pending",
         "payment_status": "pending",
         "motorcycle_snapshot": snapshot,
@@ -428,3 +460,34 @@ async def motodirect_admin_customers(admin: dict = Depends(_require_admin)):
         {"_id": 0, "password": 0}
     ).sort("created_at", -1).to_list(500)
     return {"customers": users}
+
+
+@router.get("/motodirect/admin/settings")
+async def motodirect_admin_settings(admin: dict = Depends(_require_admin)):
+    """Admin: get current MotoDirect settings (markup)."""
+    markup = await _get_markup()
+    return {"markup": markup, "default_markup": MOTODIRECT_DEFAULT_MARKUP}
+
+
+@router.put("/motodirect/admin/settings")
+async def motodirect_admin_update_settings(
+    data: dict = Body(...),
+    admin: dict = Depends(_require_admin),
+):
+    """Admin: update MotoDirect markup (in EUR added to dealer price)."""
+    try:
+        markup = float(data.get("markup", MOTODIRECT_DEFAULT_MARKUP))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="markup moet een getal zijn")
+    if markup < 0:
+        raise HTTPException(status_code=400, detail="markup mag niet negatief zijn")
+    await db.settings.update_one(
+        {"key": MOTODIRECT_SETTINGS_KEY},
+        {"$set": {"key": MOTODIRECT_SETTINGS_KEY, "markup": markup,
+                  "updated_at": datetime.now(timezone.utc).isoformat(),
+                  "updated_by": admin["email"]}},
+        upsert=True,
+    )
+    return {"markup": markup}
+
+
