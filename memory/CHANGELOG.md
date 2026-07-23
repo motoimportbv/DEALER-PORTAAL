@@ -1,5 +1,15 @@
 # Moto Import - Changelog
 
+## Feb 2026 - MotoDirect: echte marktprijs koppeling ✅
+- **Handmatige dealer_reference_price per motor**: admin kan in `/admin/motorcycles/{id}/edit` de "bij dealer" prijs zelf invoeren; overschrijft de formule
+- **Marktplaats scraper knop**: haalt live vraagprijzen op via Marktplaats interne search API — toont mediaan + gemiddelde + max 8 voorbeelden
+- **Fallback keten**: handmatige waarde > formule (moto-direct × multiplier)
+- **Marktplaats API**: filter na fetch op categoryId=710 (Motoren), prijzen 500-200k, accepteert FIXED/MIN_BID/BIDDING_FROM
+- **Test resultaat live**: Yamaha Tracer 9 → 23 listings, mediaan €12.995, gemiddelde €12.830 (echt uit Marktplaats)
+- Backend endpoints: PUT `/motodirect/admin/motorcycle/{id}/dealer-reference-price`, POST `/motodirect/admin/scrape-marktplaats`
+- Testing: 71/71 backend pytest ✅ + volledige frontend flows ✅
+
+
 ## Feb 2026 - MotoDirect besparings-visualisatie ✅
 - **Vergelijkbare dealerprijs** (doorgestreept) + groene "BESPAAR €X" badge op elke motor card
 - **Formule**: dealer_reference_price = ceil(moto-direct prijs × 1.20 / 100) × 100 (afgerond naar boven op €100)
