@@ -1,5 +1,14 @@
 # Moto Import - Changelog
 
+## Feb 2026 - MotoDirect.nl uitbreidingen ✅
+- **€500 marge** (admin-configureerbaar) automatisch bovenop dealerprijs; volledig verstopt in eindprijs
+- **Keuring keuze** op motor-detail: MotoImport of Moto-direct (radio) opgeslagen bij order
+- **Admin dashboard** `/admin/motodirect`: tabs Bestellingen / Klanten / Instellingen (marge live wijzigen)
+- **Hostname routing**: bezoekers van `moto-direct.nl` zien alleen `/motodirect/*` routes; motoimport dealer platform blijft verborgen
+- **Backend endpoints**: `GET/PUT /api/motodirect/admin/settings`, `_get_markup()`, `_apply_markup()`, `inspection_choice` in checkout
+- Testing: 38/38 backend pytest + volledige frontend flows + regressie ✅
+
+
 ## Feb 2026 - MotoDirect.nl B2C Platform Launch ✅
 - Nieuw B2C platform voor particulieren gebouwd onder route `/motodirect`
 - Backend router `/api/motodirect/*`: register (NAW+BSN), login, catalog (public), motor detail, Stripe checkout (35% deposit), order status polling, my orders, admin views
