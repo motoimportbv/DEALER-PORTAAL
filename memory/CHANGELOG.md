@@ -1,5 +1,16 @@
 # Moto Import - Changelog
 
+## Feb 2026 - MotoDirect keuring & taxatie correctie ✅
+- **RDW-keuring keuze** vernieuwd: "Moto-direct regelt (€125)" of "Ik keur zelf" (op eigen rekening). MotoImport is verwijderd uit de flow.
+- **Taxatie voor BPM-vermindering** als optionele checkbox: +€160 add-on
+- **APK wording** verwijderd — bestaat niet in NL motor-context
+- **Live kostenoverzicht** op motor detail: Motor / RDW-keuring / Taxatie BPM / Totaal / Aanbetaling (35% + extras) / Restant
+- **Backend**: MOTODIRECT_KEURING_FEE=125, MOTODIRECT_TAXATIE_FEE=160; checkout accepteert `keuring_choice` ('motodirect'/'self') + `include_taxatie` bool
+- **Deposit formule**: 35% van motorprijs + volledige extras (customer betaalt extras direct)
+- **Admin dashboard**: tabel toont Keuring keuze + Taxatie kolommen
+- Testing: 41/41 backend pytest + volledige frontend flows ✅
+
+
 ## Feb 2026 - MotoDirect.nl uitbreidingen ✅
 - **€500 marge** (admin-configureerbaar) automatisch bovenop dealerprijs; volledig verstopt in eindprijs
 - **Keuring keuze** op motor-detail: MotoImport of Moto-direct (radio) opgeslagen bij order
