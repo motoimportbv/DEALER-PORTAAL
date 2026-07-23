@@ -26,6 +26,7 @@ MOTODIRECT_DEPOSIT_PERCENTAGE = 0.35  # 35% aanbetaling voor particulieren
 MOTODIRECT_DEFAULT_MARKUP = 500.0     # Standaard marge boven op dealerprijs
 MOTODIRECT_KEURING_FEE = 125.0        # RDW-keuring als Moto-direct het regelt
 MOTODIRECT_TAXATIE_FEE = 160.0        # Taxatie voor BPM-vermindering (optioneel)
+MOTODIRECT_DEFAULT_DEALER_MULTIPLIER = 1.20  # Vergelijkbare dealerprijs = moto-direct × 1.20 (20% hoger)
 MOTODIRECT_SETTINGS_KEY = "motodirect_settings"
 
 
@@ -35,6 +36,27 @@ async def _get_markup() -> float:
     if doc and doc.get("markup") is not None:
         return float(doc["markup"])
     return MOTODIRECT_DEFAULT_MARKUP
+
+
+async def _get_dealer_multiplier() -> float:
+    """Get vergelijkbare dealerprijs multiplier (default 1.20 = 20% hoger)."""
+    doc = await db.settings.find_one({"key": MOTODIRECT_SETTINGS_KEY})
+    if doc and doc.get("dealer_multiplier") is not None:
+        try:
+            m = float(doc["dealer_multiplier"])
+            if m > 1.0:
+                return m
+        except (TypeError, ValueError):
+            pass
+    return MOTODIRECT_DEFAULT_DEALER_MULTIPLIER
+
+
+def _dealer_reference_price(motodirect_price: float, multiplier: float) -> float:
+    """Return vergelijkbare dealerprijs, rounded UP to nearest €100 for psychology."""
+    raw = float(motodirect_price or 0) * multiplier
+    # Round up to nearest €100
+    import math
+    return float(math.ceil(raw / 100.0) * 100)
 
 
 def _apply_markup(price, markup: float):
@@ -180,6 +202,7 @@ async def motodirect_catalog(
 ):
     """Public catalog: alle beschikbare motoren voor particulieren."""
     markup = await _get_markup()
+    multiplier = await _get_dealer_multiplier()
     query = {
         "is_available": True,
     }
@@ -213,15 +236,20 @@ async def motodirect_catalog(
     cursor = db.motorcycles.find(query, {"_id": 0}).sort(sort_by).skip(offset).limit(limit)
     motorcycles = await cursor.to_list(limit)
 
-    # Trim fields for public listing + apply markup
+    # Trim fields for public listing + apply markup + dealer reference
     result = []
     for m in motorcycles:
+        md_price = _apply_markup(m.get("price"), markup)
+        dealer_ref = _dealer_reference_price(md_price, multiplier)
+        savings = round(dealer_ref - md_price, 2)
         result.append({
             "id": m.get("id"),
             "brand": m.get("brand"),
             "model": m.get("model"),
             "year": m.get("year"),
-            "price": _apply_markup(m.get("price"), markup),
+            "price": md_price,
+            "dealer_reference_price": dealer_ref,
+            "savings": savings,
             "mileage": m.get("mileage"),
             "color": m.get("color", ""),
             "condition": m.get("condition", ""),
@@ -253,13 +281,17 @@ async def motodirect_catalog_detail(motorcycle_id: str):
     if not m:
         raise HTTPException(status_code=404, detail="Motor niet gevonden of niet meer beschikbaar")
     markup = await _get_markup()
+    multiplier = await _get_dealer_multiplier()
     final_price = _apply_markup(m.get("price"), markup)
+    dealer_ref = _dealer_reference_price(final_price, multiplier)
     return {
         "id": m.get("id"),
         "brand": m.get("brand"),
         "model": m.get("model"),
         "year": m.get("year"),
         "price": final_price,
+        "dealer_reference_price": dealer_ref,
+        "savings": round(dealer_ref - final_price, 2),
         "mileage": m.get("mileage"),
         "color": m.get("color", ""),
         "condition": m.get("condition", ""),
@@ -480,9 +512,15 @@ async def motodirect_admin_customers(admin: dict = Depends(_require_admin)):
 
 @router.get("/motodirect/admin/settings")
 async def motodirect_admin_settings(admin: dict = Depends(_require_admin)):
-    """Admin: get current MotoDirect settings (markup)."""
+    """Admin: get current MotoDirect settings."""
     markup = await _get_markup()
-    return {"markup": markup, "default_markup": MOTODIRECT_DEFAULT_MARKUP}
+    multiplier = await _get_dealer_multiplier()
+    return {
+        "markup": markup,
+        "default_markup": MOTODIRECT_DEFAULT_MARKUP,
+        "dealer_multiplier": multiplier,
+        "default_dealer_multiplier": MOTODIRECT_DEFAULT_DEALER_MULTIPLIER,
+    }
 
 
 @router.put("/motodirect/admin/settings")
@@ -490,20 +528,41 @@ async def motodirect_admin_update_settings(
     data: dict = Body(...),
     admin: dict = Depends(_require_admin),
 ):
-    """Admin: update MotoDirect markup (in EUR added to dealer price)."""
-    try:
-        markup = float(data.get("markup", MOTODIRECT_DEFAULT_MARKUP))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="markup moet een getal zijn")
-    if markup < 0:
-        raise HTTPException(status_code=400, detail="markup mag niet negatief zijn")
+    """Admin: update MotoDirect markup en/of dealer multiplier."""
+    update = {}
+    if "markup" in data:
+        try:
+            markup = float(data.get("markup", MOTODIRECT_DEFAULT_MARKUP))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="markup moet een getal zijn")
+        if markup < 0:
+            raise HTTPException(status_code=400, detail="markup mag niet negatief zijn")
+        update["markup"] = markup
+
+    if "dealer_multiplier" in data:
+        try:
+            mult = float(data.get("dealer_multiplier"))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="dealer_multiplier moet een getal zijn")
+        if mult < 1.0 or mult > 3.0:
+            raise HTTPException(status_code=400, detail="dealer_multiplier moet tussen 1.0 en 3.0 liggen")
+        update["dealer_multiplier"] = mult
+
+    if not update:
+        raise HTTPException(status_code=400, detail="Geen geldige velden om bij te werken")
+
+    update["key"] = MOTODIRECT_SETTINGS_KEY
+    update["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update["updated_by"] = admin["email"]
+
     await db.settings.update_one(
         {"key": MOTODIRECT_SETTINGS_KEY},
-        {"$set": {"key": MOTODIRECT_SETTINGS_KEY, "markup": markup,
-                  "updated_at": datetime.now(timezone.utc).isoformat(),
-                  "updated_by": admin["email"]}},
+        {"$set": update},
         upsert=True,
     )
-    return {"markup": markup}
+    return {
+        "markup": await _get_markup(),
+        "dealer_multiplier": await _get_dealer_multiplier(),
+    }
 
 

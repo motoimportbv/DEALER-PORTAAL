@@ -509,3 +509,174 @@ class TestCheckoutKeuringChoice:
                     "extras_total", "motor_price", "total_price", "deposit_amount", "remaining_amount"]
         for f in required:
             assert f in order, f"Missing field {f} in persisted order"
+
+
+# ---------- Dealer multiplier / savings (iteration 39) ----------
+
+import math
+
+
+def _expected_dealer_ref(price: float, multiplier: float) -> float:
+    return float(math.ceil(price * multiplier / 100.0) * 100)
+
+
+class TestDealerMultiplierSavings:
+    """
+    Verify that catalog exposes dealer_reference_price + savings and admin can
+    tune the multiplier (default 1.20, rounded up to nearest €100).
+    """
+
+    @pytest.fixture(scope="class")
+    def admin_headers(self, admin_token):
+        return {"Authorization": f"Bearer {admin_token}"}
+
+    def _set_multiplier(self, session, admin_headers, value):
+        r = session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"dealer_multiplier": value},
+            headers=admin_headers,
+        )
+        return r
+
+    def _reset_multiplier(self, session, admin_headers):
+        self._set_multiplier(session, admin_headers, 1.20)
+
+    def test_settings_include_dealer_multiplier(self, session, admin_headers):
+        # First force to default so assertion is stable
+        r = self._set_multiplier(session, admin_headers, 1.20)
+        assert r.status_code == 200, r.text
+        r = session.get(f"{API}/motodirect/admin/settings", headers=admin_headers)
+        assert r.status_code == 200
+        data = r.json()
+        assert "dealer_multiplier" in data
+        assert "default_dealer_multiplier" in data
+        assert data["default_dealer_multiplier"] == 1.20
+        assert abs(data["dealer_multiplier"] - 1.20) < 0.001
+
+    def test_catalog_items_have_savings_fields(self, session, admin_headers):
+        self._reset_multiplier(session, admin_headers)
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 10})
+        assert r.status_code == 200
+        motos = r.json()["motorcycles"]
+        if not motos:
+            pytest.skip("No motorcycles available")
+        for m in motos:
+            assert "dealer_reference_price" in m, f"Missing dealer_reference_price on {m['id']}"
+            assert "savings" in m
+            assert m["dealer_reference_price"] > m["price"], (
+                f"dealer_reference_price ({m['dealer_reference_price']}) must be > price ({m['price']})"
+            )
+            assert m["savings"] > 0
+            # savings == dealer_reference_price - price
+            assert abs(m["savings"] - (m["dealer_reference_price"] - m["price"])) < 0.01
+            # dealer_reference_price ends on €100
+            assert m["dealer_reference_price"] % 100 == 0, (
+                f"dealer_reference_price {m['dealer_reference_price']} not rounded to €100"
+            )
+
+    def test_dealer_reference_price_formula(self, session, admin_headers):
+        # Ensure multiplier is 1.20
+        self._reset_multiplier(session, admin_headers)
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 20})
+        motos = r.json()["motorcycles"]
+        if not motos:
+            pytest.skip("No motorcycles")
+        for m in motos:
+            expected = _expected_dealer_ref(m["price"], 1.20)
+            assert m["dealer_reference_price"] == expected, (
+                f"For {m['id']} price={m['price']}: expected {expected}, got {m['dealer_reference_price']}"
+            )
+
+    def test_detail_has_savings_fields(self, session, admin_headers):
+        self._reset_multiplier(session, admin_headers)
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 1})
+        motos = r.json()["motorcycles"]
+        if not motos:
+            pytest.skip("No motorcycles")
+        motor_id = motos[0]["id"]
+        d = session.get(f"{API}/motodirect/catalog/{motor_id}").json()
+        assert "dealer_reference_price" in d
+        assert "savings" in d
+        assert d["dealer_reference_price"] > d["price"]
+        assert d["savings"] > 0
+        expected = _expected_dealer_ref(d["price"], 1.20)
+        assert d["dealer_reference_price"] == expected
+
+    def test_update_multiplier_reflects_in_catalog(self, session, admin_headers):
+        # Set 1.30
+        r = self._set_multiplier(session, admin_headers, 1.30)
+        assert r.status_code == 200, r.text
+        assert abs(r.json()["dealer_multiplier"] - 1.30) < 0.001
+
+        # Verify catalog uses new multiplier
+        cat = session.get(f"{API}/motodirect/catalog", params={"limit": 5}).json()
+        for m in cat["motorcycles"]:
+            expected = _expected_dealer_ref(m["price"], 1.30)
+            assert m["dealer_reference_price"] == expected, (
+                f"After multiplier=1.30, {m['id']}: expected {expected}, got {m['dealer_reference_price']}"
+            )
+
+        # Verify detail as well
+        first = cat["motorcycles"][0]
+        d = session.get(f"{API}/motodirect/catalog/{first['id']}").json()
+        assert d["dealer_reference_price"] == _expected_dealer_ref(d["price"], 1.30)
+
+        # cleanup
+        self._reset_multiplier(session, admin_headers)
+
+    def test_multiplier_below_1_rejected(self, session, admin_headers):
+        r = self._set_multiplier(session, admin_headers, 0.9)
+        assert r.status_code == 400, f"Expected 400 for multiplier=0.9, got {r.status_code} {r.text}"
+
+    def test_multiplier_above_3_rejected(self, session, admin_headers):
+        r = self._set_multiplier(session, admin_headers, 3.5)
+        assert r.status_code == 400, f"Expected 400 for multiplier=3.5, got {r.status_code} {r.text}"
+
+    def test_multiplier_non_numeric_rejected(self, session, admin_headers):
+        r = session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"dealer_multiplier": "abc"},
+            headers=admin_headers,
+        )
+        assert r.status_code == 400
+
+    def test_put_markup_only_backward_compat(self, session, admin_headers):
+        """PUT with only markup (no multiplier) must still succeed."""
+        r = session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"markup": 500.0},
+            headers=admin_headers,
+        )
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "markup" in data
+        assert data["markup"] == 500.0
+        # multiplier should be untouched (still 1.20)
+        assert abs(data["dealer_multiplier"] - 1.20) < 0.001
+
+    def test_put_multiplier_only(self, session, admin_headers):
+        """PUT with only multiplier (no markup) must succeed."""
+        r = session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"dealer_multiplier": 1.25},
+            headers=admin_headers,
+        )
+        assert r.status_code == 200, r.text
+        assert abs(r.json()["dealer_multiplier"] - 1.25) < 0.001
+        # reset
+        self._reset_multiplier(session, admin_headers)
+
+    def test_multiplier_forbidden_for_buyer(self, session, registered_buyer):
+        headers = {"Authorization": f"Bearer {registered_buyer['token']}"}
+        r = session.put(
+            f"{API}/motodirect/admin/settings",
+            json={"dealer_multiplier": 1.5},
+            headers=headers,
+        )
+        assert r.status_code == 403
+
+    def test_reset_multiplier_final(self, session, admin_headers):
+        """Ensure default 1.20 is restored at end of suite."""
+        self._reset_multiplier(session, admin_headers)
+        r = session.get(f"{API}/motodirect/admin/settings", headers=admin_headers)
+        assert abs(r.json()["dealer_multiplier"] - 1.20) < 0.001

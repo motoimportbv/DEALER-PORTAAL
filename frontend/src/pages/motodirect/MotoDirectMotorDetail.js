@@ -136,7 +136,20 @@ export default function MotoDirectMotorDetail() {
             </div>
 
             <div className="bg-white text-black p-6">
-              <div className="text-[10px] uppercase tracking-widest text-[#0047FF] font-semibold mb-1">Prijs</div>
+              {motor.dealer_reference_price > motor.price && (
+                <div className="bg-[#00FF66]/15 border-l-4 border-[#00FF66] px-3 py-2 mb-4 flex items-baseline justify-between" data-testid="savings-banner">
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-black">Jij bespaart</span>
+                  <span className="heading text-xl font-bold text-black">{formatPrice(motor.savings)}</span>
+                </div>
+              )}
+
+              {motor.dealer_reference_price > motor.price && (
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-sm text-neutral-500 line-through">{formatPrice(motor.dealer_reference_price)}</span>
+                  <span className="text-[10px] uppercase tracking-widest text-neutral-500">vergelijkbaar bij dealer</span>
+                </div>
+              )}
+              <div className="text-[10px] uppercase tracking-widest text-[#0047FF] font-semibold mb-1">Onze prijs</div>
               <div className="heading text-4xl font-bold leading-none">{formatPrice(motor.price)}</div>
               <div className="text-xs text-neutral-500 mt-1">All-in prijs, geen verborgen kosten</div>
 

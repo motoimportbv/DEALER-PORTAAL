@@ -146,8 +146,13 @@ export default function MotoDirectCatalog() {
                     key={m.id}
                     to={`/motodirect/motor/${m.id}`}
                     data-testid={`motor-card-${m.id}`}
-                    className="group block bg-[#0a0a0a] border border-[#1c1c1c] hover:border-[#0047FF] transition-all overflow-hidden"
+                    className="group block bg-[#0a0a0a] border border-[#1c1c1c] hover:border-[#0047FF] transition-all overflow-hidden relative"
                   >
+                    {m.savings > 0 && (
+                      <div className="absolute top-3 left-3 z-10 bg-[#00FF66] text-black text-[10px] uppercase tracking-widest font-bold px-2.5 py-1" data-testid={`savings-badge-${m.id}`}>
+                        Bespaar {formatPrice(m.savings)}
+                      </div>
+                    )}
                     <div className="aspect-[4/3] bg-neutral-900 overflow-hidden">
                       {m.images?.[0] ? (
                         <img
@@ -168,12 +173,22 @@ export default function MotoDirectCatalog() {
                         </div>
                         <div className="text-xs text-neutral-400">{m.year}</div>
                       </div>
-                      <div className="pt-4 border-t border-[#1c1c1c] flex items-baseline justify-between">
-                        <div>
-                          <div className="text-[10px] uppercase tracking-widest text-[#0047FF]">All-in prijs</div>
-                          <div className="heading text-2xl font-bold text-white">{formatPrice(m.price)}</div>
+                      <div className="pt-4 border-t border-[#1c1c1c]">
+                        {m.dealer_reference_price > m.price && (
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-xs text-neutral-500 line-through">{formatPrice(m.dealer_reference_price)}</span>
+                            <span className="text-[10px] uppercase tracking-widest text-neutral-500">bij dealer</span>
+                          </div>
+                        )}
+                        <div className="flex items-baseline justify-between">
+                          <div>
+                            <div className="heading text-2xl font-bold text-white">{formatPrice(m.price)}</div>
+                            {m.savings > 0 && (
+                              <div className="text-[11px] text-[#00FF66] font-semibold mt-0.5">Jij bespaart {formatPrice(m.savings)}</div>
+                            )}
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-neutral-600 group-hover:text-[#0047FF] group-hover:translate-x-1 transition-all" />
                         </div>
-                        <ArrowRight className="w-5 h-5 text-neutral-600 group-hover:text-[#0047FF] group-hover:translate-x-1 transition-all" />
                       </div>
                       {m.mileage > 0 && (
                         <div className="text-xs text-neutral-500 mt-3">{new Intl.NumberFormat('nl-NL').format(m.mileage)} km</div>

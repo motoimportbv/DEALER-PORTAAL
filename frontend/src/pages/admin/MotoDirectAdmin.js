@@ -14,7 +14,9 @@ export default function MotoDirectAdmin() {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [markup, setMarkup] = useState(500);
+  const [multiplier, setMultiplier] = useState(1.20);
   const [savingMarkup, setSavingMarkup] = useState(false);
+  const [savingMultiplier, setSavingMultiplier] = useState(false);
 
   const auth = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -29,6 +31,7 @@ export default function MotoDirectAdmin() {
       setOrders(oRes.data.orders || []);
       setCustomers(cRes.data.customers || []);
       setMarkup(sRes.data.markup ?? 500);
+      setMultiplier(sRes.data.dealer_multiplier ?? 1.20);
     } catch (e) {
       toast.error('Kon MotoDirect data niet laden');
     } finally {
@@ -47,6 +50,19 @@ export default function MotoDirectAdmin() {
       toast.error(e?.response?.data?.detail || 'Opslaan mislukt');
     } finally {
       setSavingMarkup(false);
+    }
+  };
+
+  const saveMultiplier = async () => {
+    setSavingMultiplier(true);
+    try {
+      const res = await axios.put(`${API}/motodirect/admin/settings`, { dealer_multiplier: Number(multiplier) }, auth);
+      setMultiplier(res.data.dealer_multiplier);
+      toast.success(`Dealervergelijking bijgewerkt (×${res.data.dealer_multiplier})`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Opslaan mislukt');
+    } finally {
+      setSavingMultiplier(false);
     }
   };
 
@@ -173,36 +189,72 @@ export default function MotoDirectAdmin() {
             )}
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 p-8 max-w-2xl" data-testid="settings-panel">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Marge (mark-up) op dealerprijs</h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Deze bedrag wordt automatisch bovenop de dealerprijs opgeteld voor <b>alle</b> motoren op moto-direct.nl. Klanten zien alleen de eindprijs (verstopte marge). Wijzigingen zijn direct actief.
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center border border-gray-300 focus-within:border-blue-600 bg-white">
-                <span className="px-3 text-gray-500 border-r border-gray-300">€</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="10"
-                  value={markup}
-                  onChange={(e) => setMarkup(e.target.value)}
-                  data-testid="markup-input"
-                  className="px-3 py-3 outline-none w-40 text-right font-semibold"
-                />
+          <div className="space-y-6 max-w-2xl" data-testid="settings-panel">
+            <div className="bg-white border border-gray-200 p-8">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Marge (mark-up) op dealerprijs</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Dit bedrag wordt automatisch bovenop de dealerprijs opgeteld voor <b>alle</b> motoren op moto-direct.nl. Klanten zien alleen de eindprijs (verstopte marge). Wijzigingen zijn direct actief.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-gray-300 focus-within:border-blue-600 bg-white">
+                  <span className="px-3 text-gray-500 border-r border-gray-300">€</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10"
+                    value={markup}
+                    onChange={(e) => setMarkup(e.target.value)}
+                    data-testid="markup-input"
+                    className="px-3 py-3 outline-none w-40 text-right font-semibold"
+                  />
+                </div>
+                <button
+                  onClick={saveMarkup}
+                  disabled={savingMarkup}
+                  data-testid="save-markup-btn"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 flex items-center gap-2 disabled:opacity-70"
+                >
+                  {savingMarkup ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Opslaan
+                </button>
               </div>
-              <button
-                onClick={saveMarkup}
-                disabled={savingMarkup}
-                data-testid="save-markup-btn"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 flex items-center gap-2 disabled:opacity-70"
-              >
-                {savingMarkup ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Opslaan
-              </button>
+              <div className="mt-6 text-xs text-gray-500 border-t border-gray-100 pt-4">
+                Voorbeeld: dealerprijs €10.000 + marge €{markup || 0} = <b>€{new Intl.NumberFormat('nl-NL').format(10000 + Number(markup || 0))}</b> zichtbaar voor particulier
+              </div>
             </div>
-            <div className="mt-6 text-xs text-gray-500 border-t border-gray-100 pt-4">
-              Voorbeeld: dealerprijs €10.000 + marge €{markup || 0} = <b>€{new Intl.NumberFormat('nl-NL').format(10000 + Number(markup || 0))}</b> zichtbaar voor particulier
+
+            <div className="bg-white border border-gray-200 p-8">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Vergelijkbare dealerprijs — bespaar-effect</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Deze factor bepaalt welke {'"'}bij dealer{'"'} prijs klanten zien (doorgestreept) om het besparingseffect te tonen. Standaard 1.20 = 20% hoger dan onze prijs. Verhoog voor sterkere psychologische aantrekkingskracht.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-gray-300 focus-within:border-blue-600 bg-white">
+                  <span className="px-3 text-gray-500 border-r border-gray-300">×</span>
+                  <input
+                    type="number"
+                    min="1.00"
+                    max="3.00"
+                    step="0.05"
+                    value={multiplier}
+                    onChange={(e) => setMultiplier(e.target.value)}
+                    data-testid="multiplier-input"
+                    className="px-3 py-3 outline-none w-32 text-right font-semibold"
+                  />
+                </div>
+                <button
+                  onClick={saveMultiplier}
+                  disabled={savingMultiplier}
+                  data-testid="save-multiplier-btn"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 flex items-center gap-2 disabled:opacity-70"
+                >
+                  {savingMultiplier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Opslaan
+                </button>
+              </div>
+              <div className="mt-6 text-xs text-gray-500 border-t border-gray-100 pt-4">
+                Voorbeeld: bij onze prijs van €12.500, ziet klant {'"Bij dealer '}<b>€{new Intl.NumberFormat('nl-NL').format(Math.ceil(12500 * Number(multiplier || 1.2) / 100) * 100)}</b>{'"'} doorgestreept — <b className="text-green-600">Jij bespaart €{new Intl.NumberFormat('nl-NL').format((Math.ceil(12500 * Number(multiplier || 1.2) / 100) * 100) - 12500)}</b>
+              </div>
             </div>
           </div>
         )}

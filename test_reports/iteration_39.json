@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 39 (savings UX-boost) volledig getest — backend + frontend allemaal groen. Backend: 53/53 pytest cases geslaagd (41 legacy + 12 nieuwe TestDealerMultiplierSavings). Geverifieerd: (1) GET /motodirect/catalog en /catalog/{id} bevatten dealer_reference_price + savings met savings>0 en dealer_reference_price>price; (2) formule ceil(price*multiplier/100)*100 exact gerespecteerd voor default 1.20 en aangepaste 1.30; (3) GET /admin/settings retourneert dealer_multiplier + default_dealer_multiplier=1.20; (4) PUT dealer_multiplier=1.30 reflecteert direct in catalog + detail; (5) PUT met dealer_multiplier=0.9 -> 400, dealer_multiplier=3.5 -> 400, non-numeric -> 400; (6) PUT met alleen markup (backward compat) werkt en laat multiplier ongewijzigd; (7) PUT met alleen dealer_multiplier werkt (nieuw); (8) buyer role geblokkeerd (403); (9) multiplier gereset naar 1.20 aan einde. Frontend catalog (/motodirect/catalog): 31 groene 'BESPAAR €X' badges linksboven op elke card (data-testid savings-badge-<id>), doorgestreepte '€4.200 BIJ DEALER', groene 'Jij bespaart €757' onder onze prijs — visueel geverifieerd op Suzuki SV650, Yamaha Tracer 9, Tenere 700, XSR 900, Ducati Multistrada V4 (bespaar bedragen: 757/2.300/2.245/2.090/4.920/2.035). Frontend detail (/motodirect/motor/:id): groene 'JIJ BESPAART €757' banner (data-testid savings-banner) bovenaan reserve widget, doorgestreepte '€4.200 VERGELIJKBAAR BIJ DEALER' zichtbaar boven 'ONZE PRIJS €3.443'. Frontend admin (/admin/motodirect Instellingen): 2 aparte panels — 'Marge (mark-up) op dealerprijs' met eigen Opslaan-knop + 'Vergelijkbare dealerprijs — bespaar-effect' met multiplier-input (data-testid) en save-multiplier-btn (data-testid). E2E: multiplier 1.20 -> 1.25 saved, catalog badge geüpdatet van €757 naar €957 (3443×1.25=4303.75 -> ceil €4400 -> savings €957 ✓); daarna reset naar 1.20 succesvol. Bestaande MotoDirect flows (keuring/taxatie/register/login) niet getest maar iter 38 pytest suite (41/41) blijft in dezelfde run groen — dus geen regressie.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect_iter39.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "motodirect.py:58 `import math` staat binnen de _dealer_reference_price functie — cosmetisch beter om deze naar module-top imports te verplaatsen (minieme perf impact maar cleaner).",
+    "motodirect.py _dealer_reference_price: multiplier<=1.0 wordt in _get_dealer_multiplier gefilterd naar default, maar de admin PUT laat 1.0 exact ook door (voorwaarde is mult<1.0). Bij dealer_multiplier=1.0 wordt savings=0 (of licht positief door ceil-rounding) — overweeg strengere lowerbound 1.01 als 'savings altijd zichtbaar' een productvereiste is.",
+    "MotoDirectCatalog.js:152 gebruikt hardcoded kleur bg-[#00FF66] — overweeg tailwind theme extension zodat brand-groen consistent gebruikt kan worden.",
+    "MotoDirectMotorDetail.js: crossed-out dealerprijs staat naast 'Vergelijkbaar bij dealer' — copy is duidelijk maar het label is klein (text-[10px]); overweeg iets grotere font voor betere leesbaarheid.",
+    "Geen server-side lower bound van 1.0 exclusief: PUT met dealer_multiplier=1.0 wordt geaccepteerd (voorwaarde is mult<1.0). Consistent met _get_dealer_multiplier die alleen m>1.0 accepteert (bij 1.0 fallback naar default) — kleine inconsistentie tussen validatie en runtime fallback."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (53/53)", "frontend": "100% (catalog badges + detail banner + admin dual panel + live update E2E)"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! ; MotoDirect buyer TEST_buyer_<uuid>@example.com (per testrun aangemaakt).",
+  "seed_data_creation": "Geen permanente seed. Testrun maakt 1 TEST_buyer + enkele pending checkout orders (van iter 38 tests). Multiplier expliciet gereset naar 1.20 en markup naar 500 aan einde.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 39 savings UX-boost is 100% verified. Backend endpoints intact met dealer_reference_price/savings velden. Data-testids beschikbaar: savings-badge-<motor_id> op elke catalog card, savings-banner op detail page, multiplier-input + save-multiplier-btn op admin Instellingen tab. Admin heeft 2 aparte panels die onafhankelijk opslaan. Formule: dealer_reference_price = ceil(price*multiplier/100)*100. Default multiplier=1.20. Validatie: 1.0<=mult<=3.0 (strict boven 3.0 en onder 1.0, 1.0 exact geaccepteerd door API maar runtime fallback naar default). Test suite: /app/backend/tests/test_motodirect.py (53 pass).",
+  "rca of the issue": "N/A - geen bugs gevonden. Alle iter 39 acceptance criteria uit review request slagen."
+}
