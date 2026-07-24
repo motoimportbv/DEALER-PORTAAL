@@ -50,8 +50,49 @@ export default function MotoDirectLanding() {
         </div>
       </section>
 
+      {/* BRAND STORY */}
+      <section className="border-y border-[#1c1c1c] bg-[#0a0a0a]" data-testid="brand-story">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-24 lg:py-32 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-16 items-center">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-[#0047FF] mb-6 flex items-center gap-3">
+              <span className="w-8 h-px bg-[#0047FF]" />
+              Ons verhaal
+            </div>
+            <h2 className="heading text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[0.95] tracking-tight mb-8">
+              Al jaren dé importeur<br />
+              voor de motorbranche.
+            </h2>
+            <div className="space-y-6 text-neutral-300 text-lg leading-relaxed">
+              <p>
+                Al jaren leveren wij motoren aan officiële dealers en motorzaken door heel Nederland. Onze buitenlandse contacten, onze inkoopkracht en onze RDW-expertise hebben honderden motoren bij de juiste rijder gebracht — via de traditionele weg.
+              </p>
+              <p className="text-white">
+                Maar we vonden het niet langer eerlijk dat particulieren de rekening betalen voor een tussenschakel. <b>Iedereen heeft recht op goedkope motoren, rechtstreeks van de importeur.</b>
+              </p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="border-2 border-[#0047FF] bg-[#0047FF]/5 p-10 lg:p-14">
+              <div className="text-[10px] uppercase tracking-[0.3em] text-[#0047FF] mb-6">Onze missie</div>
+              <blockquote className="heading text-4xl md:text-5xl font-bold text-white leading-[1.1] tracking-tight">
+                &ldquo;Te veel betalen is<br />
+                <span className="text-[#0047FF]">verleden tijd.</span>&rdquo;
+              </blockquote>
+              <div className="mt-10 pt-6 border-t border-[#0047FF]/20 flex items-center gap-3">
+                <span className="w-1.5 h-1.5 bg-[#00FF66] rounded-full animate-pulse" />
+                <span className="text-xs uppercase tracking-widest text-neutral-400">Nu ook voor particulieren</span>
+              </div>
+            </div>
+            {/* Decorative corner accent */}
+            <div className="absolute -top-3 -left-3 w-16 h-16 border-t-2 border-l-2 border-[#0047FF]" />
+            <div className="absolute -bottom-3 -right-3 w-16 h-16 border-b-2 border-r-2 border-[#0047FF]" />
+          </div>
+        </div>
+      </section>
+
       {/* VALUE PROPS */}
-      <section className="border-y border-[#1c1c1c] bg-[#0a0a0a]">
+      <section className="bg-[#050505]">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 grid grid-cols-1 md:grid-cols-3 gap-10">
           {[
             {
