@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Truck, Wallet, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Shield, Truck, Wallet, CheckCircle2, Quote } from 'lucide-react';
 import MotoDirectLayout from './MotoDirectLayout';
 
 export default function MotoDirectLanding() {
@@ -88,6 +88,76 @@ export default function MotoDirectLanding() {
             <div className="absolute -top-3 -left-3 w-16 h-16 border-t-2 border-l-2 border-[#0047FF]" />
             <div className="absolute -bottom-3 -right-3 w-16 h-16 border-b-2 border-r-2 border-[#0047FF]" />
           </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-10 py-24" data-testid="testimonials">
+        <div className="max-w-3xl mb-16">
+          <div className="text-xs uppercase tracking-widest text-[#0047FF] mb-4 flex items-center gap-3">
+            <span className="w-8 h-px bg-[#0047FF]" />
+            Klantverhalen
+          </div>
+          <h2 className="heading text-4xl md:text-5xl font-bold text-white leading-tight">
+            Zij besparen al<br />
+            <span className="text-[#0047FF]">duizenden euros.</span>
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              name: 'Peter',
+              city: 'Utrecht',
+              motor: 'Ducati Multistrada V4',
+              savings: '4.920',
+              quote: 'Ik had wekenlang zitten kijken bij dealers. Toen ik zag wat ik hier kon bespaaren was mijn keuze snel gemaakt. Import perfect geregeld, motor stond binnen 3 weken bij mij op de oprit.',
+              rating: 5,
+            },
+            {
+              name: 'Sanne',
+              city: 'Amsterdam',
+              motor: 'Yamaha Tracer 9',
+              savings: '2.300',
+              quote: 'Duidelijk, transparant en snel. Aanbetaling via iDEAL was zo geregeld. Ik heb zelf de keuring geregeld want dat scheelt weer, maar de service is top.',
+              rating: 5,
+            },
+            {
+              name: 'Mark',
+              city: 'Rotterdam',
+              motor: 'BMW R 1250 GS',
+              savings: '3.500',
+              quote: 'Als je jaren in de motorwereld zit ken je alle trucjes van dealers. Deze mensen zijn eerlijk: dezelfde motor, gewoon zonder de marge. Zo simpel kan het zijn.',
+              rating: 5,
+            },
+          ].map((t, i) => (
+            <div
+              key={i}
+              className="group border border-[#1c1c1c] bg-[#0a0a0a] p-8 hover:border-[#0047FF]/40 transition-colors relative"
+              data-testid={`testimonial-${i}`}
+            >
+              <Quote className="w-8 h-8 text-[#0047FF]/40 mb-6" strokeWidth={1.5} />
+              <p className="text-neutral-300 leading-relaxed text-sm mb-6">
+                &ldquo;{t.quote}&rdquo;
+              </p>
+              <div className="pt-6 border-t border-[#1c1c1c] flex items-center justify-between">
+                <div>
+                  <div className="text-white font-semibold text-sm">{t.name} uit {t.city}</div>
+                  <div className="text-neutral-500 text-xs mt-0.5">{t.motor}</div>
+                </div>
+                <div className="text-right">
+                  <div className="heading text-lg font-bold text-[#00FF66]">€{t.savings}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-neutral-500">bespaard</div>
+                </div>
+              </div>
+              {/* Stars */}
+              <div className="flex gap-0.5 absolute top-8 right-8">
+                {[...Array(t.rating)].map((_, si) => (
+                  <span key={si} className="text-[#0047FF] text-sm">★</span>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
