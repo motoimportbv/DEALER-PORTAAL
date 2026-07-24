@@ -1,5 +1,17 @@
 # Moto Import - Changelog
 
+## Feb 2026 - MotoDirect Publieke API voor externe app ✅
+- Toegevoegd op motoimport backend zodat aparte moto-direct.nl app kan koppelen via HTTP API
+- **Endpoints** (allen beveiligd met MOTODIRECT_API_TOKEN Bearer):
+  - `GET /api/motodirect/public/health` — connectiviteit test
+  - `POST /api/motodirect/public/reserve/{id}` — externe app markeert motor als verkocht
+  - `POST /api/motodirect/public/release/{id}` — externe app annuleert reservering
+- **Bestaande public endpoints** (geen auth): `/api/motodirect/catalog` en `/catalog/{id}` blijven werken voor externe app om motoren op te halen
+- **Token**: MOTODIRECT_API_TOKEN=zYQwbk7IZTZrQ-HAy-6x8j2_ranPTkI8ZZu9mbqyPPY (opgeslagen in backend/.env)
+- Admin krijgt email notificatie bij externe reservering/release
+- Testing: 103/103 backend pytest ✅
+
+
 ## Feb 2026 - MotoDirect: contact + annulering + facturen ✅
 - **Contact overal**: `info@moto-direct.nl` + `+31 6 38 52 55 41` + "24/7 online" badge (footer + motor detail)
 - **Annuleringsbeleid**: 10% van totale prijs = kosten, rest terug via Stripe iDEAL refund binnen 5-10 werkdagen
