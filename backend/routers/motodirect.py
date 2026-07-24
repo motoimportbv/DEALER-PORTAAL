@@ -932,3 +932,113 @@ async def download_pakbon(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ============ PUBLIC API voor externe MotoDirect app ============
+# Deze endpoints zijn bedoeld voor de aparte moto-direct.nl app om
+# motoren te reserveren/vrijgeven wanneer klanten daar bestellen.
+# Beveiligd via een gedeelde token (MOTODIRECT_API_TOKEN in .env).
+
+import os as _os
+from fastapi import Header
+
+MOTODIRECT_API_TOKEN = _os.environ.get("MOTODIRECT_API_TOKEN", "")
+
+
+def _verify_motodirect_api_token(authorization: Optional[str] = Header(None)):
+    """Verify Bearer token voor externe MotoDirect API calls."""
+    if not MOTODIRECT_API_TOKEN:
+        raise HTTPException(status_code=500, detail="MOTODIRECT_API_TOKEN niet geconfigureerd op server")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Bearer token")
+    token = authorization.split(" ", 1)[1].strip()
+    if token != MOTODIRECT_API_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid API token")
+    return True
+
+
+@router.post("/motodirect/public/reserve/{motorcycle_id}")
+async def public_reserve_motorcycle(
+    motorcycle_id: str,
+    data: dict = Body(default={}),
+    _auth=Depends(_verify_motodirect_api_token),
+):
+    """
+    Externe MotoDirect app meldt: "Deze motor is verkocht via ons — reserveren".
+    Body kan bevatten: buyer_name, buyer_email, external_order_id (voor tracking).
+    """
+    motor = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+    if not motor.get("is_available", True):
+        raise HTTPException(status_code=409, detail="Motor is al niet beschikbaar")
+
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {
+            "is_available": False,
+            "reserved_for_motodirect": True,
+            "motodirect_reserved_at": datetime.now(timezone.utc).isoformat(),
+            "motodirect_buyer_email": data.get("buyer_email"),
+            "motodirect_buyer_name": data.get("buyer_name"),
+            "motodirect_external_order_id": data.get("external_order_id"),
+        }}
+    )
+
+    # Notify admin
+    try:
+        await send_admin_notification(
+            "MotoDirect (externe app) - Motor gereserveerd",
+            f"<h3>Motor gereserveerd door externe MotoDirect app</h3>"
+            f"<p><b>Motor:</b> {motor.get('brand')} {motor.get('model')} ({motor.get('year')})<br>"
+            f"<b>Klant:</b> {data.get('buyer_name', 'onbekend')} ({data.get('buyer_email', 'onbekend')})<br>"
+            f"<b>Externe order ID:</b> {data.get('external_order_id', 'onbekend')}</p>"
+        )
+    except Exception as e:
+        logger.warning(f"Admin notify (reserve) failed: {e}")
+
+    return {"success": True, "motorcycle_id": motorcycle_id, "status": "reserved"}
+
+
+@router.post("/motodirect/public/release/{motorcycle_id}")
+async def public_release_motorcycle(
+    motorcycle_id: str,
+    data: dict = Body(default={}),
+    _auth=Depends(_verify_motodirect_api_token),
+):
+    """
+    Externe MotoDirect app meldt: "Reservering geannuleerd — motor terug beschikbaar".
+    """
+    motor = await db.motorcycles.find_one({"id": motorcycle_id}, {"_id": 0})
+    if not motor:
+        raise HTTPException(status_code=404, detail="Motor niet gevonden")
+
+    await db.motorcycles.update_one(
+        {"id": motorcycle_id},
+        {"$set": {"is_available": True},
+         "$unset": {
+             "reserved_for_motodirect": "",
+             "motodirect_reserved_at": "",
+             "motodirect_buyer_email": "",
+             "motodirect_buyer_name": "",
+             "motodirect_external_order_id": "",
+         }}
+    )
+
+    try:
+        await send_admin_notification(
+            "MotoDirect (externe app) - Reservering geannuleerd",
+            f"<p>Motor <b>{motor.get('brand')} {motor.get('model')}</b> is weer beschikbaar. "
+            f"Reden: {data.get('reason', 'niet opgegeven')}</p>"
+        )
+    except Exception as e:
+        logger.warning(f"Admin notify (release) failed: {e}")
+
+    return {"success": True, "motorcycle_id": motorcycle_id, "status": "available"}
+
+
+@router.get("/motodirect/public/health")
+async def public_health(_auth=Depends(_verify_motodirect_api_token)):
+    """Ping endpoint voor externe MotoDirect app om connectiviteit + token te verifiëren."""
+    return {"status": "ok", "service": "motoimport-api", "time": datetime.now(timezone.utc).isoformat()}
+

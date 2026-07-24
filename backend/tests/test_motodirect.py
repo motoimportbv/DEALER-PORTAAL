@@ -1258,3 +1258,231 @@ class TestInvoiceAndPakbonPDF:
         r = session.get(f"{API}/motodirect/orders/{seeded_paid_order}/pakbon")
         assert r.status_code in (401, 403)
 
+
+
+# ---------- Iteration 42: Public API for external moto-direct.nl app ----------
+
+MOTODIRECT_API_TOKEN = "zYQwbk7IZTZrQ-HAy-6x8j2_ranPTkI8ZZu9mbqyPPY"
+
+
+class TestPublicApiHealth:
+    """GET /api/motodirect/public/health - shared-secret Bearer auth."""
+
+    def test_health_no_auth_returns_401(self, session):
+        r = session.get(f"{API}/motodirect/public/health")
+        assert r.status_code == 401, f"expected 401, got {r.status_code}: {r.text}"
+
+    def test_health_wrong_token_returns_403(self, session):
+        r = session.get(
+            f"{API}/motodirect/public/health",
+            headers={"Authorization": "Bearer WRONG_TOKEN_XYZ"},
+        )
+        assert r.status_code == 403, f"expected 403, got {r.status_code}: {r.text}"
+
+    def test_health_valid_token_returns_200_status_ok(self, session):
+        r = session.get(
+            f"{API}/motodirect/public/health",
+            headers={"Authorization": f"Bearer {MOTODIRECT_API_TOKEN}"},
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body.get("status") == "ok"
+        assert body.get("service") == "motoimport-api"
+        assert "time" in body
+
+    def test_health_non_bearer_scheme_returns_401(self, session):
+        # No "Bearer " prefix
+        r = session.get(
+            f"{API}/motodirect/public/health",
+            headers={"Authorization": MOTODIRECT_API_TOKEN},
+        )
+        assert r.status_code == 401
+
+
+class TestPublicApiReserveRelease:
+    """
+    POST /api/motodirect/public/reserve/{id} and /public/release/{id}
+    Used by the external moto-direct.nl app to lock/unlock a motorcycle.
+    """
+
+    @pytest.fixture(scope="class")
+    def api_headers(self):
+        return {"Authorization": f"Bearer {MOTODIRECT_API_TOKEN}", "Content-Type": "application/json"}
+
+    @pytest.fixture(scope="class")
+    def target_motor_id(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 1})
+        assert r.status_code == 200
+        motos = r.json().get("motorcycles", [])
+        if not motos:
+            pytest.skip("No available motorcycles for reserve tests")
+        return motos[0]["id"]
+
+    @pytest.fixture(scope="class", autouse=True)
+    def _ensure_released_after_class(self, session, api_headers, target_motor_id):
+        """Class-level teardown: make sure motor is available after all tests run."""
+        yield
+        try:
+            session.post(
+                f"{API}/motodirect/public/release/{target_motor_id}",
+                json={"reason": "test cleanup"},
+                headers=api_headers,
+            )
+        except Exception:
+            pass
+
+    # ---- Auth negatives ----
+
+    def test_reserve_no_auth_returns_401(self, session, target_motor_id):
+        r = session.post(f"{API}/motodirect/public/reserve/{target_motor_id}", json={})
+        assert r.status_code == 401, r.text
+
+    def test_reserve_wrong_token_returns_403(self, session, target_motor_id):
+        r = session.post(
+            f"{API}/motodirect/public/reserve/{target_motor_id}",
+            json={},
+            headers={"Authorization": "Bearer wrong-token"},
+        )
+        assert r.status_code == 403, r.text
+
+    def test_release_no_auth_returns_401(self, session, target_motor_id):
+        r = session.post(f"{API}/motodirect/public/release/{target_motor_id}", json={})
+        assert r.status_code == 401, r.text
+
+    def test_release_wrong_token_returns_403(self, session, target_motor_id):
+        r = session.post(
+            f"{API}/motodirect/public/release/{target_motor_id}",
+            json={},
+            headers={"Authorization": "Bearer wrong-token"},
+        )
+        assert r.status_code == 403, r.text
+
+    # ---- Not found ----
+
+    def test_reserve_unknown_motor_returns_404(self, session, api_headers):
+        fake_id = f"nonexistent-{uuid.uuid4().hex}"
+        r = session.post(
+            f"{API}/motodirect/public/reserve/{fake_id}",
+            json={},
+            headers=api_headers,
+        )
+        assert r.status_code == 404, r.text
+
+    # ---- Full happy path: reserve -> conflict -> release -> re-reserve ----
+
+    def test_reserve_release_full_cycle(self, session, api_headers, target_motor_id):
+        buyer_name = f"TEST_Buyer_{uuid.uuid4().hex[:6]}"
+        buyer_email = f"TEST_external_{uuid.uuid4().hex[:6]}@example.com"
+        external_order_id = f"EXT-{uuid.uuid4().hex[:8]}"
+
+        # 1. Reserve
+        r = session.post(
+            f"{API}/motodirect/public/reserve/{target_motor_id}",
+            json={
+                "buyer_name": buyer_name,
+                "buyer_email": buyer_email,
+                "external_order_id": external_order_id,
+            },
+            headers=api_headers,
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body.get("success") is True
+        assert body.get("motorcycle_id") == target_motor_id
+        assert body.get("status") == "reserved"
+
+        # 2. Verify motor is now marked unavailable via public catalog detail
+        detail = session.get(f"{API}/motodirect/catalog/{target_motor_id}")
+        # Catalog detail filters is_available=True so it should be 404 now
+        assert detail.status_code == 404, f"Motor still visible after reserve: {detail.status_code}"
+
+        # 3. Verify persisted fields via admin motor list (which does not filter is_available)
+        #    Admin path may vary — instead confirm via a fresh reserve attempt: should return 409
+        r_conflict = session.post(
+            f"{API}/motodirect/public/reserve/{target_motor_id}",
+            json={"buyer_name": "Second"},
+            headers=api_headers,
+        )
+        assert r_conflict.status_code == 409, r_conflict.text
+
+        # 4. Release
+        r_rel = session.post(
+            f"{API}/motodirect/public/release/{target_motor_id}",
+            json={"reason": "test rollback"},
+            headers=api_headers,
+        )
+        assert r_rel.status_code == 200, r_rel.text
+        rel_body = r_rel.json()
+        assert rel_body.get("success") is True
+        assert rel_body.get("motorcycle_id") == target_motor_id
+        assert rel_body.get("status") == "available"
+
+        # 5. Motor now visible again in public detail
+        detail2 = session.get(f"{API}/motodirect/catalog/{target_motor_id}")
+        assert detail2.status_code == 200, f"Motor not restored after release: {detail2.status_code}"
+
+        # 6. Verify motodirect_* fields removed by attempting another reserve (should succeed 200)
+        r_reserve2 = session.post(
+            f"{API}/motodirect/public/reserve/{target_motor_id}",
+            json={},
+            headers=api_headers,
+        )
+        assert r_reserve2.status_code == 200, r_reserve2.text
+        # Cleanup
+        session.post(
+            f"{API}/motodirect/public/release/{target_motor_id}",
+            json={},
+            headers=api_headers,
+        )
+
+    def test_reserve_empty_body_accepted(self, session, api_headers, target_motor_id):
+        """Body is optional — reserving without body must still work."""
+        # ensure available first
+        session.post(
+            f"{API}/motodirect/public/release/{target_motor_id}",
+            json={},
+            headers=api_headers,
+        )
+        r = session.post(
+            f"{API}/motodirect/public/reserve/{target_motor_id}",
+            headers=api_headers,
+        )
+        assert r.status_code == 200, r.text
+        assert r.json().get("status") == "reserved"
+        # cleanup
+        session.post(
+            f"{API}/motodirect/public/release/{target_motor_id}",
+            json={},
+            headers=api_headers,
+        )
+
+
+class TestPublicApiRegressionExistingEndpoints:
+    """Regression: existing endpoints must still work unchanged."""
+
+    def test_catalog_still_public_no_auth(self, session):
+        r = session.get(f"{API}/motodirect/catalog", params={"limit": 1})
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert "motorcycles" in body
+        assert "total" in body
+
+    def test_admin_settings_still_works(self, session, admin_token):
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        r = session.get(f"{API}/motodirect/admin/settings", headers=headers)
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert "markup" in body
+        assert "dealer_multiplier" in body
+
+    def test_admin_scrape_marktplaats_still_requires_admin(self, session):
+        # Without token -> 401/403
+        r = session.post(f"{API}/motodirect/admin/scrape-marktplaats", json={"brand": "Yamaha", "model": "MT-07"})
+        assert r.status_code in (401, 403)
+
+    def test_admin_dealer_reference_price_still_requires_admin(self, session):
+        r = session.put(
+            f"{API}/motodirect/admin/motorcycle/some-id/dealer-reference-price",
+            json={"dealer_reference_price": 10000},
+        )
+        assert r.status_code in (401, 403)

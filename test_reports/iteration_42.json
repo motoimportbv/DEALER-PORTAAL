@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 42 (Public API endpoints voor externe moto-direct.nl app) volledig backend-getest. 15 nieuwe pytest-cases toegevoegd (4 TestPublicApiHealth + 7 TestPublicApiReserveRelease + 4 TestPublicApiRegressionExistingEndpoints), allemaal groen. Volledige MotoDirect suite: 103/103 pass (88 legacy iter41 + 15 nieuw iter42). Verified: (1) GET /api/motodirect/public/health zonder Authorization header -> 401 'Missing Bearer token'; (2) met verkeerde token -> 403 'Invalid API token'; (3) met juiste Bearer zYQwbk7IZTZrQ-HAy-6x8j2_ranPTkI8ZZu9mbqyPPY -> 200 met {status: 'ok', service: 'motoimport-api', time: <iso>}; (4) niet-Bearer scheme (raw token zonder 'Bearer ' prefix) -> 401. Reserve/Release: (5) POST /public/reserve/{id} met token + body {buyer_name, buyer_email, external_order_id} -> 200 {success:true, motorcycle_id, status:'reserved'}; (6) verified motor daarna niet meer in publieke catalog detail (404 want is_available=false); (7) tweede reserve op zelfde motor -> 409 'al niet beschikbaar'; (8) POST /public/release/{id} -> 200 {success:true, status:'available'}, motor daarna weer 200 in catalog detail; (9) na release kan motor opnieuw gereserveerd worden (motodirect_* velden $unset succesvol); (10) reserve zonder body werkt ook (body optioneel via default={}); (11) reserve/release zonder auth -> 401; (12) reserve/release met wrong token -> 403; (13) reserve op onbekende motor-id -> 404. Regressie: (14) /api/motodirect/catalog werkt nog steeds zonder auth (200); (15) admin/settings + scrape-marktplaats + dealer-reference-price endpoints blijven admin-only (401/403 zonder token). Alle 88 legacy tests (catalog, register, login, checkout, settings, marktplaats scrape, dealer-reference-price, cancel+refund, PDF invoice+pakbon) blijven groen. Cleanup: class-level teardown fixture _ensure_released_after_class release't automatisch de test-motor zodat public catalog state onveranderd blijft na de suite. Geen bugs gevonden.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_motodirect.py",
+    "/app/test_reports/pytest/pytest_motodirect_iter42.xml",
+    "/app/test_reports/pytest/pytest_motodirect_iter42_full.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "motodirect.py:945 - MOTODIRECT_API_TOKEN wordt op module-import gelezen (module-level). Als iemand de .env aanpast en 'sudo supervisorctl restart backend' vergeet dan blijft de oude token actief. Overweeg os.environ.get() binnen de dependency-functie zodat runtime .env-changes direct effect hebben (kleine perf hit, maar veiliger).",
+    "motodirect.py:948-957 - _verify_motodirect_api_token gooit 500 als env-var leeg is. Dit is correct fail-fast gedrag, maar bij deployment naar een nieuwe omgeving zonder token krijgen alle externe clients 500. Overweeg een startup-check op te nemen (bijv. in server startup log 'WARNING: MOTODIRECT_API_TOKEN not configured') zodat het duidelijk zichtbaar is voor devops.",
+    "motodirect.py:942 - `import os as _os` en `from fastapi import Header` staan onderin het bestand na alle route definities. Cosmetisch beter naar de top imports verplaatsen (PEP 8) — geen functioneel probleem.",
+    "motodirect.py:960-1000 - public_reserve_motorcycle: geen validatie op buyer_email format of external_order_id length/format. Externe app kan willekeurige strings sturen. Als moto-direct.nl app deze data doorgeeft aan admin notification / andere flows kan dat XSS/injection zijn in email HTML. Overweeg strippen + max length + email-regex.",
+    "motodirect.py:1000 - Response na reserve bevat geen buyer_email/external_order_id echo. Voor idempotency check door externe app is het handig om een reserved_at timestamp of het gepersisteerde external_order_id in de response mee te geven, zodat de externe app kan verifieren dat zijn payload correct is aangekomen.",
+    "motodirect.py:1037 - public_release geeft altijd 200 (ook als motor al available was). Overweeg 409/200-idempotent onderscheid als externe app dat wil weten (nu is release volledig idempotent = veilig maar 'stille' no-op)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_motodirect.py"
+  ],
+  "success_rate": {"backend": "100% (103/103, incl. 15 iter42 nieuw)", "frontend": "N/A - alleen backend getest per review request"},
+  "test_credentials": "Admin: motoimportbv@gmail.com / Admin2024! ; MOTODIRECT_API_TOKEN=zYQwbk7IZTZrQ-HAy-6x8j2_ranPTkI8ZZu9mbqyPPY (uit /app/backend/.env). Buyer voor legacy tests: auto-gegenereerde TEST_buyer_<uuid>@example.com.",
+  "seed_data_creation": "Geen permanente seed data. Backend tests gebruiken bestaande motor uit publieke catalog (eerste beschikbare) en zetten die tijdelijk op is_available=false/reserved, gevolgd door release aan het einde van de test-class via autouse teardown fixture (_ensure_released_after_class). Na de suite is motor state weer identiek aan begin (is_available=true, geen motodirect_reserved_at / motodirect_buyer_email velden meer).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 42 features (public API endpoints voor externe app) 100% verified. Nieuwe endpoints: GET /api/motodirect/public/health, POST /api/motodirect/public/reserve/{id}, POST /api/motodirect/public/release/{id}. Auth: Bearer MOTODIRECT_API_TOKEN uit /app/backend/.env. Reserve zet motorcycle.is_available=false + reserved_for_motodirect=true + motodirect_reserved_at + motodirect_buyer_name/email/external_order_id. Release keert is_available=true en $unset alle motodirect_* velden. 401 = missing Bearer token / geen prefix; 403 = wrong token; 409 = motor al niet beschikbaar; 404 = motor niet gevonden. Body optioneel (default={}). Test suite: /app/backend/tests/test_motodirect.py (nu 103 tests). Volgende iteratie kan bouwen op TestPublicApi* classes voor uitbreidingen (bv. GET /public/motorcycles voor externe app catalog sync).",
+  "rca of the issue": "N/A - geen bugs gevonden. Alle acceptance criteria uit review request slagen exact zoals beschreven: 401 zonder auth, 403 met verkeerde token, 200 met status=ok, 409 bij dubbele reserve, 404 op onbekende motor, motorcycle is_available toggle + motodirect_* fields persistence + cleanup via $unset, regressie op bestaande catalog/admin endpoints alle groen."
+}
